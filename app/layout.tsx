@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Playfair_Display, Lato, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
@@ -10,6 +10,9 @@ import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 import { RootProviders } from "@/components/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 const lato = Lato({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-lato" });
@@ -26,7 +29,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${playfair.variable} ${lato.variable} ${cormorant.variable}`}>
+    <html lang="fr" className={cn(playfair.variable, lato.variable, cormorant.variable, "font-sans", inter.variable)}>
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
       </head>
