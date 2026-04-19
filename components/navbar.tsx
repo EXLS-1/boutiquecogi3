@@ -1,80 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import useCart from "@/store/use-cart";
-import { AuthButton } from "@/components/auth-button";
+import { X, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/store/use-ui-store";
-import { useState } from "react";
+
+const CATEGORIES = [
+  { label: "Femme", href: "/category/femme" },
+  { label: "Homme", href: "/category/homme" },
+  { label: "Enfant", href: "/category/enfant" },
+  { label: "Sac", href: "/category/sac" },
+  { label: "Chaussure", href: "/category/chaussure" },
+  { label: "Accessoire", href: "/category/accessoire" },
+];
 
 export const Navbar = () => {
-  const { items } = useCart();
-  const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const { toggleLeftSidebar, toggleRightSidebar } = useUIStore();
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-60 h-17.5 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all">
-      <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-[var(--navbar-height)] bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)]">
+      <div className="max-w-7xl mx-auto h-full px-4 flex items-center justify-between">
         
-          {/* Menu Toggle (Mobile/Desktop Left) */}
-        <button
-          onClick={toggleLeftSidebar}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
-          aria-label="Menu"
-        >
-          <i className="fas fa-bars text-xl"></i>
-        </button>
-
-          {/* Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2"></div>
-          <Link href="/" className="flex items-center gap-2">
-            <div className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-pink-500 bg-clip-text text-transparent">
-              Boutique COGI
-            </div>
+        {/* Left Section: "X" Trigger & Brand */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleLeftSidebar}
+            className="p-2 text-[var(--turquoise)] hover:text-[var(--rose)] transition-colors focus:outline-none focus-visible:ring-2"
+            aria-label="Ouvrir le menu gauche"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <Link 
+            href="/" 
+            className="font-playfair text-xl md:text-2xl font-bold tracking-widest uppercase text-[var(--turquoise)] hover:text-[var(--rose)] transition-colors"
+          >
+            Boutique COGI
           </Link>
         </div>
 
-          {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-gray-700 hover:text-cyan-600 transition">
-            Femme
-          </Link>
-          <Link href="/" className="text-gray-700 hover:text-cyan-600 transition">
-            Homme
-          </Link>
-          <Link href="/" className="text-gray-700 hover:text-cyan-600 transition">
-            Enfant
-          </Link>
-          <Link href="/" className="text-gray-700 hover:text-cyan-600 transition">
-            Sac
-          </Link>
-          <Link href="/" className="text-gray-700 hover:text-cyan-600 transition">
-            Chaussure
-          </Link>
-          <Link href="/" className="text-gray-700 hover:text-cyan-600 transition">
-            Accessoire
-          </Link>
+        {/* Middle Section: Categories (Hidden on mobile for responsiveness) */}
+        <div className="hidden lg:flex items-center gap-2">
+          {CATEGORIES.map((cat) => (
+            <Button
+              key={cat.label}
+              variant="ghost"
+              asChild
+              className="font-lato font-bold uppercase tracking-wider text-[var(--turquoise)] hover:text-[var(--rose)] hover:bg-[var(--rose)]/10 transition-all"
+            >
+              <Link href={cat.href}>{cat.label}</Link>
+            </Button>
+          ))}
         </div>
 
-          {/* Actions Droite */}
-        <div className="flex items-center gap-2 md:gap-4">
-          
-          <div className="hidden md:block">
-            <AuthButton />
-          </div>
-
+        {/* Right Section: Auth & Right Sidebar Trigger */}
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/auth/login" 
+            className="hidden md:block font-lato font-bold uppercase text-sm tracking-wider text-[var(--turquoise)] hover:text-[var(--rose)] transition-colors"
+          >
+            Connexion
+          </Link>
           <button
             onClick={toggleRightSidebar}
-            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
-            >
-              <i className="fas fa-shopping-cart text-xl"></i>
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 h-5 w-5 bg-black text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white">
-                {cartCount}
-              </span>
-            )}            
+            className="p-2 text-[var(--turquoise)] hover:text-[var(--rose)] transition-colors focus:outline-none focus-visible:ring-2"
+            aria-label="Ouvrir le panneau droit"
+          >
+            <Menu className="w-6 h-6" />
           </button>
-
         </div>
 
       </div>
