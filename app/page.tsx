@@ -1,4 +1,4 @@
-import {Hero} from "@/components/hero";
+
 import Boutique from "@/components/boutique";
 import ProductCatalog from "@/components/product-catalog";
 import { getAllProducts } from "@/lib/products";
@@ -10,7 +10,7 @@ export default async function Home() {
 
   return (
     <body>
-      <Hero />
+
       <Boutique />
       <ProductCatalog
         title="Nos dernières nouveautés"

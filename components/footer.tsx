@@ -33,7 +33,6 @@ export const Footer = () => {
               ))}
             </ul>
           </div>
-
           {/* Newsletter (Nouveau) */}
           <div className="lg:col-span-2">
             <h4 className="font-lato font-bold tracking-widest uppercase mb-6 text-white">
