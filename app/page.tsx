@@ -1,5 +1,5 @@
 // app/page.tsx
-import { Hero } from "@/components/hero"; // Le Hero revient ici
+import { Hero } from "@/components/hero";
 import Boutique from "@/components/boutique";
 import ProductCatalog from "@/components/product-catalog";
 import { getAllProducts } from "@/lib/products";
