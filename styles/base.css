@@ -1,0 +1,46 @@
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+@layer base {
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+
+h1, h2, h3, h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Boutons globaux */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 32px; border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.5px; text-decoration: none;
+  cursor: pointer; border: none;
+  transition: var(--transition);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--turquoise), var(--turquoise-deep));
+  color: #fff; box-shadow: 0 8px 30px rgba(64,224,208,0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(64,224,208,0.4);
+}
+.btn-outline {
+  background: transparent; border: 2px solid var(--border); color: var(--text-primary);
+}
+.btn-outline:hover {
+  border-color: var(--turquoise); color: var(--turquoise); transform: translateY(-2px);
+}
+
+/* Animations de révélation */
+.reveal {
+  opacity: 0; transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+}

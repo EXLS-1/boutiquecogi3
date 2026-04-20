@@ -1,0 +1,33 @@
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+@layer {
+
+@media (max-width: 960px) {
+  .hero-inner { grid-template-columns: 1fr; text-align: center; }
+  .hero-desc { margin-left: auto; margin-right: auto; }
+  .hero-btns { justify-content: center; }
+  .hero-visual { display: none; }
+  .about-grid { grid-template-columns: 1fr; }
+  .contact-grid { grid-template-columns: 1fr; }
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .nav-links.mobile-open {
+    display: flex; flex-direction: column;
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
+    padding: 24px; gap: 20px;
+    box-shadow: var(--shadow-md);
+  }
+  .footer-inner { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+  .newsletter-form { flex-direction: column; }
+  .about-visual { grid-template-columns: 1fr; }
+  .about-box:nth-child(1) { grid-row: auto; }
+  .trust-bar-inner { gap: 24px; }
+}
+}
