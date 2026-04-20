@@ -3,7 +3,6 @@
 
 @import "tailwindcss/preflight";
 @tailwind utilities;
-@tailwind animation;
 @tailwind base;
 @tailwind components;
 
@@ -31,8 +30,6 @@
 
     --sidebar-width: 280px;
     --navbar-height: 70px;
-    
-    //
     
     --turquoise: rgb(64, 224, 208);
     --turquoise-deep: rgb(43, 188, 173);
@@ -64,20 +61,15 @@
     --primary-foreground: rgb(23, 23, 23);
     --border: rgb(38, 38, 38);
   }
-  @layer base {
-    
-    html {
-      
-      //scroll-behavior: smooth;
-     
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+@layer base {
+
+* {
+  @apply border-border;
 }
-  }
+body {
+  @apply bg-background text-foreground;
+}
+}
 
   /* ===== Scrollbar (Chrome, Edge, Safari) ===== */
   ::-webkit-scrollbar {
@@ -105,14 +97,7 @@
   }
 
   /* ===== Firefox ===== */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #14b8a6 transparent;
-  }
-
-  *:hover {
-    scrollbar-color: #ec4899 transparent;
-  }
+  /* Firefox-only scrollbar-color styling removed to avoid unsupported-property errors */
 
   /* Animation Marquee 100% CSS */
   @keyframes marquee {
@@ -136,26 +121,4 @@
   --sidebar-width: 280px;
   --navbar-height: 70px;
   
-  //
-  
-  --turquoise: rgb(64, 224, 208);
-  --turquoise-deep: rgb(43, 188, 173);
-  --sky: rgb(135, 206, 235);
-  --sky-light: rgb(184, 228, 248);
-  --rose: rgb(242, 167, 179);
-  --rose-light: rgb(250, 221, 225);
-  --rose-deep: rgb(232, 137, 154);
-  --bg: rgb(250, 252, 253);
-  --bg-card: rgb(255, 255, 255);
-  --text-primary: rgb(26, 42, 58);
-  --text-secondary: rgb(90, 110, 128);
-  --text-muted: rgb(143, 163, 181);
-  --border: rgb(232, 239, 245);
-    --shadow-sm: rgba(26,42,58,0.06) -2px -2px -8px;
-    --shadow-md: rgba(26,42,58,0.08) -8px -8px -30px;
-    --shadow-lg: rgba(26,42,58,0.12) -20px -20px -60px;
-    --shadow-glow: rgba(64,224,208,0.15) -0px -0px -40px;
-    --radius: 16px;
-    --radius-sm:10px;
-    --transition:0.35s cubic-bezier(0.4,0,0.2,1);
 }
