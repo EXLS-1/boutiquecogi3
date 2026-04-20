@@ -1,5 +1,5 @@
 // components/boutique.tsx
-import image from next
+import Image from 'next/image'
 
 export default function Boutique() {
   return (
@@ -18,9 +18,11 @@ export default function Boutique() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Catégorie : Femme */}
           <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-            <image
-              src="/Media-p-20260218/pict01.jpeg"
+            <Image
+              src="@/Media/pict01.webp"
               alt="Habit Femme"
+              width={400}
+              height={500}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
@@ -39,9 +41,11 @@ export default function Boutique() {
 
           {/* Catégorie : Homme */}
           <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-            <image
-              src="/category-homme.jpeg"
+            <Image
+              src="@/Media/pict02.webp"
               alt="Habit Homme"
+              width={400}
+              height={500}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
@@ -60,9 +64,11 @@ export default function Boutique() {
 
           {/* Catégorie : Enfant */}
           <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-            <image
-              src="/category-enfant.jpg"
+            <Image
+              src="@/Media/pict03.webp"
               alt="Habit Enfant"
+              width={400}
+              height={500}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
@@ -81,9 +87,11 @@ export default function Boutique() {
 
           {/* Catégorie : Chaussure */}
           <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-            <image
-              src="/category-chaussure.jpg"
+            <Image
+              src="@/Media/pict04.webp"
               alt="Chaussure Dame"
+              width={400}
+              height={500}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
@@ -102,9 +110,11 @@ export default function Boutique() {
 
           {/* Catégorie : Sac */}
           <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-            <img
-              src="/category-sac.jpg"
+            <Image
+              src="@/Media/pict05.webp"
               alt="Sac Dame"
+              width={400}
+              height={500}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
@@ -123,9 +133,11 @@ export default function Boutique() {
 
           {/* Catégorie : Accessoire */}
           <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-            <img
-              src="/category-accessoire.jpg"
+            <Image
+              src="@/Media/pict06.webp"
               alt="Accessoire"
+              width={400}
+              height={500}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
