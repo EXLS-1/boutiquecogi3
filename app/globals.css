@@ -3,14 +3,25 @@
 
 @import "tailwindcss";
 
+/* ===== SOURCES (remplace l'ancien content) ===== */
+@source "../app/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../components/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../pages/**/*.{js,ts,jsx,tsx,mdx}";
+@source "../src/**/*.{js,ts,jsx,tsx,mdx}";
+
+/* ===== VARIANT MODE SOMBRE ===== */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ===== THÈME ===== */
 @theme {
   --font-playfair: "Playfair Display", serif;
   --font-lato: "Lato", sans-serif;
+  --sidebar-width: 280px;
+  --navbar-height: 70px;
 }
-@layer base {
 
+@layer base {
   :root {
-    
     --background: rgb(255, 255, 255);
     --foreground: rgb(10, 10, 10);
     --card: rgb(255, 255, 255);
@@ -25,9 +36,6 @@
     --color-primary: var(--primary);
     --color-border: var(--border);
 
-    --sidebar-width: 280px;
-    --navbar-height: 70px;
-    
     --turquoise: rgb(64, 224, 208);
     --turquoise-deep: rgb(43, 188, 173);
     --sky: rgb(135, 206, 235);
@@ -58,64 +66,43 @@
     --primary-foreground: rgb(23, 23, 23);
     --border: rgb(38, 38, 38);
   }
+}
+
 @layer base {
-
-* {
-  @apply border-border;
-}
-body {
-  @apply bg-background text-foreground;
-}
-}
-
-  /* ===== Scrollbar (Chrome, Edge, Safari) ===== */
-  ::-webkit-scrollbar {
-    width: 10px;
+  * {
+    @apply border-border;
   }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: #14b8a6; /* turquoise (tailwind: teal-500) */
-    border-radius: 9999px;
-    transition: background-color 0.2s ease;
-  }
-
-  /* Hover */
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #ec4899; /* rose (tailwind: pink-500) */
-  }
-
-  /* Click / active */
-  ::-webkit-scrollbar-thumb:active {
-    background-color: #ec4899;
-  }
-
-  /* ===== Firefox ===== */
-  /* Firefox-only scrollbar-color styling removed to avoid unsupported-property errors */
-
-  /* Animation Marquee 100% CSS */
-  @keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-  .animate-marquee {
-    display: flex;
-    width: max-content;
-    animation: marquee 20s linear infinite;
+  body {
+    @apply bg-background text-foreground;
   }
 }
-@theme {
-  --font-playfair: "Playfair Display", serif;
-  --font-lato: "Lato", sans-serif;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-border: var(--border);
-  --sidebar-width: 280px;
-  --navbar-height: 70px;
-  
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #14b8a6;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #ec4899;
+}
+::-webkit-scrollbar-thumb:active {
+  background-color: #ec4899;
+}
+
+/* ===== Animation Marquee ===== */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 20s linear infinite;
 }
