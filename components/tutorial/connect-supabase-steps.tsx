@@ -2,7 +2,7 @@ import { TutorialStep } from "./tutorial-step";
 
 export function ConnectSupabaseSteps() {
   return (
-    <ol className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <TutorialStep title="Create Supabase project">
         <p>
           Head over to{" "}
@@ -10,7 +10,7 @@ export function ConnectSupabaseSteps() {
             href="https://app.supabase.com/project/_/settings/api"
             target="_blank"
             className="font-bold hover:underline text-foreground/80"
-            rel="noreferrer"
+            rel="noopener"
           >
             database.new
           </a>{" "}
@@ -33,7 +33,7 @@ export function ConnectSupabaseSteps() {
             href="https://app.supabase.com/project/_/settings/api"
             target="_blank"
             className="font-bold hover:underline text-foreground/80"
-            rel="noreferrer"
+            rel="noopener"
           >
             your Supabase project&apos;s API Settings
           </a>
@@ -57,6 +57,6 @@ export function ConnectSupabaseSteps() {
           environment variables.
         </p>
       </TutorialStep>
-    </ol>
+    </div>
   );
 }

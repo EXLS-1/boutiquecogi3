@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 
 export function SignUpUserSteps() {
   return (
-    <ol className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {process.env.VERCEL_ENV === "preview" ||
       process.env.VERCEL_ENV === "production" ? (
         <TutorialStep title="Set up redirect urls">
@@ -86,6 +86,6 @@ export function SignUpUserSteps() {
           for now. Your awesome idea will have plenty of users later!
         </p>
       </TutorialStep>
-    </ol>
+    </div>
   );
 }
