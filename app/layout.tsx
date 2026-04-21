@@ -5,11 +5,10 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
-import { Footer } from "@/components/footer"; // Import corrigé
+import { Footer } from "@/components/footer";
 import { RootProviders } from "@/components/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
 import { cn } from "@/lib/utils";
-import { defaultUrl } from "@/lib/constants";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -17,7 +16,7 @@ const lato = Lato({ subsets: ["latin"], weight: ["300", "400", "700", "900"], va
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-cormorant" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
+  metadataBase: new URL('http://localhost:3000'),
   title: "Boutique COGI",
   description: "Boutique en ligne de mode élégante - Habits pour femmes, hommes et enfants",
 };
@@ -36,9 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RightSidebar />
           
           <UIWrapper>
-            {/* pt-17.5 correspond à la hauteur de ta navbar (70px) */}
+              { /* pt-17.5 correspond à la hauteur de ta navbar (50px) */ }
             <main className="min-h-screen pt-[var(--navbar-height)]">
-              {children}
+              { children }
             </main>
           </UIWrapper>
 
