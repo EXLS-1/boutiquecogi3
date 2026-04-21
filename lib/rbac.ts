@@ -7,7 +7,7 @@ interface SessionUser {
   };
 }
 
-export function assertAdmin(session: SessionUser) {
+export function requireAdmin(session: SessionUser) {
   if (session?.user?.role !== "ADMIN") {
     throw new Error("FORBIDDEN");
   }
