@@ -1,7 +1,8 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
+import React from "react";
+import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
 import { Navbar } from "@/components/navbar";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
