@@ -3,98 +3,180 @@
 
 @import "tailwindcss";
 
-/* ===== SOURCES (remplace l'ancien content) ===== */
-@source "../app/**/*.{js,ts,jsx,tsx,mdx}";
-@source "../components/**/*.{js,ts,jsx,tsx,mdx}";
-@source "../pages/**/*.{js,ts,jsx,tsx,mdx}";
-@source "../src/**/*.{js,ts,jsx,tsx,mdx}";
-
-/* ===== VARIANT MODE SOMBRE ===== */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* ===== THÈME ===== */
+/* ==========================================================================
+   CONFIG TAILWIND v4 & DESIGN TOKENS
+   ========================================================================== */
 @theme {
-  --font-playfair: "Playfair Display", serif;
-  --font-lato: "Lato", sans-serif;
-  --sidebar-width: 280px;
-  --navbar-height: 70px;
+  /* Typographie système robuste */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Rayons de courbure standardisés */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Couleurs Sémantiques (Mappées pour shadcn) */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  --primary: oklch(0.70 0.14 194);
+  --primary-foreground: oklch(0.985 0 0);
+
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+
+  --accent: oklch(0.95 0.07 335);
+  --accent-foreground: oklch(0.27 0.11 335);
+
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.70 0.14 194);
+
+  /* Brand Colors pour usage spécifique e-commerce */
+  --brand-turquoise: oklch(0.70 0.14 194);
+  --brand-rose: oklch(0.72 0.18 335);
+  --gradient-brand: linear-gradient(135deg, var(--brand-turquoise), var(--brand-rose));
 }
 
+/* ==========================================================================
+   GESTION DES THÈMES (Dark & Variantes)
+   ========================================================================== */
+
+/* Dark Mode : Contrastes renforcés pour l'e-commerce */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.75 0.12 194);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(0.35 0.1 335);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.75 0.12 194);
+}
+
+/* Variantes de marque dynamiques via data-attribute */
+:root[data-theme="turquoise"] { --primary: var(--brand-turquoise); --ring: var(--brand-turquoise); }
+:root[data-theme="rose"]      { --primary: var(--brand-rose); --ring: var(--brand-rose); }
+
+/* ==========================================================================
+   BASE & RESET
+   ========================================================================== */
 @layer base {
-  :root {
-    --background: rgb(255, 255, 255);
-    --foreground: rgb(10, 10, 10);
-    --card: rgb(255, 255, 255);
-    --card-foreground: rgb(10, 10, 10);
-    --primary: rgb(23, 23, 23);
-    --primary-foreground: rgb(250, 250, 250);
-    --border: rgb(229, 229, 229);
-    --radius: 0.625rem;
-
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --color-primary: var(--primary);
-    --color-border: var(--border);
-
-    --turquoise: rgb(64, 224, 208);
-    --turquoise-deep: rgb(43, 188, 173);
-    --sky: rgb(135, 206, 235);
-    --sky-light: rgb(184, 228, 248);
-    --rose: rgb(242, 167, 179);
-    --rose-light: rgb(250, 221, 225);
-    --rose-deep: rgb(232, 137, 154);
-    --bg: rgb(250, 252, 253);
-    --bg-card: rgb(255, 255, 255);
-    --text-primary: rgb(26, 42, 58);
-    --text-secondary: rgb(90, 110, 128);
-    --text-muted: rgb(143, 163, 181);
-    --border: rgb(232, 239, 245);
-    --shadow-sm: 0 2px 8px rgba(26,42,58,0.06);
-    --shadow-md: 0 8px 30px rgba(26,42,58,0.08);
-    --shadow-lg: 0 20px 60px rgba(26,42,58,0.12);
-    --shadow-glow: 0 0 40px rgba(64,224,208,0.15);
-    --radius: 16px;
-    --radius-sm: 10px;
-    --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+  *, ::before, ::after {
+    box-sizing: border-box;
+    border-color: var(--border);
   }
-  .dark {
-    --background: rgb(10, 10, 10);
-    --foreground: rgb(250, 250, 250);
-    --card: rgb(10, 10, 10);
-    --card-foreground: rgb(250, 250, 250);
-    --primary: rgb(250, 250, 250);
-    --primary-foreground: rgb(23, 23, 23);
-    --border: rgb(38, 38, 38);
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Protection contre les nausées (Accessibilité) */
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Focus visuel clair pour la navigation au clavier */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Performance images : prévient le Layout Shift */
+  img, video {
+    display: block;
+    max-width: 100%;
+    height: auto;
   }
 }
 
+/* ==========================================================================
+   COMPOSANTS ROBUSTES (Logique E-commerce)
+   ========================================================================== */
+@layer components {
+  /* Layout Page */
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
 
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background-color: #14b8a6;
-  border-radius: 9999px;
-  transition: background-color 0.2s ease;
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: #ec4899;
-}
-::-webkit-scrollbar-thumb:active {
-  background-color: #ec4899;
+  /* Surfaces interactives */
+  .surface {
+    @apply rounded-xl border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md;
+  }
+
+  /* Système de Boutons (Gestion des états réels) */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold transition-all;
+    @apply active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:brightness-110;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  /* Inputs Robustes */
+  .input-field {
+    @apply flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background;
+    @apply file:border-0 file:bg-transparent file:text-sm file:font-medium;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Badges de statut (Prix, Stock, Promo) */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider;
+  }
 }
 
-/* ===== Animation Marquee ===== */
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.animate-marquee {
-  display: flex;
-  width: max-content;
-  animation: marquee 20s linear infinite;
+/* ==========================================================================
+   UTILITIES
+   ========================================================================== */
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty  { text-wrap: pretty; }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
 }
