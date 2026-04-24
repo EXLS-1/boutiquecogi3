@@ -1,7 +1,10 @@
-export function auditLog(params: AuditParams) {
-  prisma.auditLog
+import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+
+export function auditLog(params: Prisma.AuditLogCreateInput) {
+  return prisma.auditLog
     .create({ data: params })
-    .catch((err) => {
-      console.error("Audit log failed", err);
+    .catch((error: unknown) => {
+      console.error("Audit log failed", error);
     });
 }
