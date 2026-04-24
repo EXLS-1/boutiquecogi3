@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import data from '../public/data.json'
+import data from '../data/product-data.json'
 
 const prisma = new PrismaClient()
 

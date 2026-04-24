@@ -5,9 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ==========================================
@@ -87,7 +85,7 @@ model Product {
   id          String      @id @default(cuid()) // Permet de garder tes IDs personnalisés (ex: "femme-1")
   name        String
   description String      @db.Text
-  price       float        
+  price       Float        
   images      String[]    // tableau d'URLs
   category    String      // femme, homme, enfant, chaussure, sac, accessoire
   stock       Int         @default(0)
