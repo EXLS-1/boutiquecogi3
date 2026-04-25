@@ -74,7 +74,7 @@ export const Hero = () => {
             Boutique COGI
           </h1>
           <p className="mt-4 text-xl tracking-[0.2em] font-lato">
-            L'ÉLÉGANCE REDÉFINIE
+            L&apos;ÉLÉGANCE REDÉFINIE
           </p>
         </div>
 
