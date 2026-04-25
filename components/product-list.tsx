@@ -44,7 +44,7 @@ export const ProductList = ({ products, title }: Props) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} products={[product]} title={product.name} />
           ))}
         </div>
       </div>

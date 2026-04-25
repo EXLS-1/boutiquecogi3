@@ -2,9 +2,21 @@
 "use client";
 
 import { useState } from "react";
-import ProductCard from "@/components/product-card";
 
-export default function ProductList({ products, title }: { products: any[], title: string }) {
+type Product = {
+  id: string | number;
+  name?: string;
+};
+
+function ProductCard({ product }: { product: Product }) {
+  return (
+    <div className="group relative bg-white border border-gray-200 p-6 rounded-xl shadow-sm hover:shadow-lg transition">
+      <div className="text-lg font-semibold">{product.name}</div>
+    </div>
+  );
+}
+
+export default function ProductList({ products, title }: { products: Product[]; title: string }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = (products || []).filter(p =>

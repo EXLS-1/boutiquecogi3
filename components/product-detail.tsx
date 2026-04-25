@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Product } from "@/types/product";
+import { Product } from "../types/products";
 import useCart from "@/store/use-cart";
 import toast from "react-hot-toast";
 
