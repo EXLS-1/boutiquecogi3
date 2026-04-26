@@ -25,7 +25,7 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={toggleLeftSidebar}
-            className="p-2 text-sky-500 hover:text-rose-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-md"
+            className="p-2 text-cyan-400 hover:text-pink-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-md"
             aria-label="Ouvrir le menu de navigation"
           >
             <Menu className="w-6 h-6" />
@@ -33,7 +33,7 @@ export const Navbar = () => {
           
           <Link 
             href="/" 
-            className="font-playfair text-xl md:text-2xl font-bold tracking-widest uppercase text-sky-500 hover:text-rose-500 transition-colors"
+            className="font-playfair text-xl md:text-2xl font-bold tracking-widest uppercase text-cyan-400 hover:text-pink-400 transition-colors"
           >
             Boutique COGI
           </Link>
@@ -46,7 +46,7 @@ export const Navbar = () => {
               key={cat.label}
               variant="ghost"
               asChild
-              className="font-lato font-bold uppercase tracking-wider text-sky-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all px-3"
+              className="font-lato font-bold uppercase tracking-wider text-cyan-400 hover:text-pink-400 hover:bg-pink-400/10 transition-all px-3"
             >
               <Link href={cat.href}>{cat.label}</Link>
             </Button>
@@ -57,7 +57,7 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           <Link 
             href="/auth/login" 
-            className="hidden md:block font-lato font-bold uppercase text-sm tracking-wider text-sky-500 hover:text-rose-500 transition-colors"
+            className="hidden md:block font-lato font-bold uppercase text-sm tracking-wider text-cyan-400 hover:text-pink-400 transition-colors"
           >
             Connexion
           </Link>
@@ -65,7 +65,7 @@ export const Navbar = () => {
           {/* Extrême droite : Tribar pour Right Sidebar */}
           <button
             onClick={toggleRightSidebar}
-            className="p-2 text-sky-500 hover:text-rose-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-md"
+            className="p-2 text-cyan-400 hover:text-pink-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-md"
             aria-label="Ouvrir le panier et profil"
           >
             <Menu className="w-6 h-6" />
