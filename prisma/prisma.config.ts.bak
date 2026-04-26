@@ -1,4 +1,5 @@
 // This file configures Prisma for the project
+
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
