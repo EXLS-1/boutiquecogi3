@@ -7,13 +7,13 @@ interface SessionUser {
   };
 }
 
-export function requireAdmin(session: SessionUser) {
-  if (session?.user?.role !== "ADMIN") {
+export function requireAdmin(session: any) {
+  if (!session?.user?.role || session.user.role !== "ADMIN") {
     throw new Error("FORBIDDEN");
   }
 }
 
-export function requireAuth(session: SessionUser) {
+export function requireAuth(session: any) {
   if (!session?.user?.id) {
     redirect("/login");
   }

@@ -8,7 +8,7 @@ export async function getAllOrdersAdmin() {
       user: {
         select: { id: true, email: true, name: true },
       },
-      items: {
+      orderItems: {
         include: { product: true },
       },
     },

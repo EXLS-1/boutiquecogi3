@@ -9,7 +9,7 @@ export async function getUserOrders(
   return prisma.order.findMany({
     where: { userId },
     include: {
-      items: {
+      orderItems: {
         include: { product: true },
       },
     },
