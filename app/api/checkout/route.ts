@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.create({
       data: {
         userId: userId || "guest",
-        total: items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
-        items: {
+        totalAmount: items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0),
+        orderItems: {
           create: items.map((item: any) => ({
             productId: item.id,
             quantity: item.quantity,
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         product_data: {
           name: item.name,
           description: item.description || "",
-          images: [item.image] || [],
+          images: item.image ? [item.image] : [],
         },
         unit_amount: Math.round(item.price * 100), // Conversion en centimes (xof)
       },

@@ -17,8 +17,8 @@ export default async function AdminOrdersPage() {
         {orders.map(order => (
           <div key={order.id} className="border p-4 rounded">
             <p>Commande #{order.id}</p>
-            <p>Client : {order.user.email}</p>
-            <p>Total : {order.total} usd</p>
+            <p>Client : {order.user?.email || "Anonyme"}</p>
+            <p>Total : {order.totalAmount} usd</p>
             <p>Status : {order.isPaid ? "Payée" : "En attente"}</p>
           </div>
         ))}
