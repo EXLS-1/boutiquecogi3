@@ -1,7 +1,7 @@
 // app/product/[id]/page.tsx
 
 import { notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { ProductDetail } from "@/components/product-detail";
 import type { Metadata } from "next";
 

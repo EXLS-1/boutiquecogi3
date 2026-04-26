@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { headers } from "next/headers";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { revalidateTag } from "next/cache";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);

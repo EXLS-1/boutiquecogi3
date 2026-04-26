@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Stripe from "stripe";
 
 interface SessionUser {
   user?: {
@@ -18,3 +19,5 @@ export function requireAuth(session: SessionUser) {
     redirect("/login");
   }
 }
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
