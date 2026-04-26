@@ -2,11 +2,11 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==========================================
@@ -22,6 +22,9 @@ model AuditLog {
   metadata  Json?
   ip        String?
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
 }
 
 model Account {
@@ -60,7 +63,7 @@ model User {
   role          Role      @default(USER)
   accounts      Account[]
   sessions      Session[]
-  orders        Order[]   // Historique des commandes de l'utilisateur
+  orders        Order[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -83,33 +86,41 @@ enum Role {
 // ==========================================
 
 model Product {
-  id          String      @id @default(cuid()) // Permet de garder tes IDs personnalisés (ex: "femme-1")
+  id          String           @id @default(cuid())
   name        String
-  description String      @db.Text
-  price       Float        
-  images      String[]    // tableau d'URLs
-  category    String      // femme, homme, enfant, chaussure, sac, accessoire
-  stock       Int         @default(0)
-  isFeatured  Boolean     @default(false) // Pour mettre en avant sur l'accueil
-  isArchived  Boolean     @default(false) // Pour masquer un produit sans le supprimer
+  description String           @db.Text
+  price       Decimal          @db.Decimal(10, 2)
+  images      String[]
+  category    String           @db.VarChar(50)
+  stock       Int              @default(0)
+  isFeatured  Boolean          @default(false)
+  isArchived  Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+
+  @@index([category, isArchived])
+  @@index([isFeatured, isArchived])
+  @@index([createdAt, isArchived])
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String?     // Optionnel (permet les commandes "invité")
-  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status          OrderStatus @default(PENDING)
-  totalAmount     Int
-  stripeSessionId String?     @unique
-  isPaid          Boolean     @default(false)
-  phone           String      @default("")
-  address         String      @default("")
+  id              String           @id @default(cuid())
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status          OrderStatus      @default(PENDING)
+  totalAmount     Int              // Stocké en centimes
+  stripeSessionId String?          @unique
+  isPaid          Boolean          @default(false)
+  phone           String           @default("")
+  address         String           @default("")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([isPaid, createdAt])
 }
 
 model OrderItem {
@@ -119,7 +130,10 @@ model OrderItem {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int     @default(1)
-  price     Int     // Prix au moment de l'achat (historisation)
+  price     Int     // Prix en centimes au moment de l'achat (historisation)
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 enum OrderStatus {
