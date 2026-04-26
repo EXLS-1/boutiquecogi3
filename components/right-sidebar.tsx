@@ -10,9 +10,9 @@ export const RightSidebar = () => {
 
   return (
     <Sheet open={isRightSidebarOpen} onOpenChange={setRightSidebar}>
-      <SheetContent side="right" className="w-[var(--sidebar-width)] bg-[var(--background)] border-l border-[var(--border)] flex flex-col p-6">
+      <SheetContent side="right" className="w-80 bg-slate-50 border-l border-slate-200 flex flex-col p-6">
         <SheetHeader className="mb-8 text-left">
-          <SheetTitle className="font-playfair text-2xl font-bold uppercase tracking-widest text-[var(--turquoise)]">
+          <SheetTitle className="font-playfair text-2xl font-bold uppercase tracking-widest text-sky-500">
             Espace Client
           </SheetTitle>
         </SheetHeader>
@@ -23,8 +23,8 @@ export const RightSidebar = () => {
             onClick={() => setRightSidebar(false)}
             className="flex items-center gap-4 group"
           >
-            <User className="w-5 h-5 text-[var(--turquoise)] group-hover:text-[var(--rose)] transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-[var(--text-primary)] group-hover:text-[var(--rose)] transition-colors">
+            <User className="w-5 h-5 text-sky-500 group-hover:text-rose-500 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-slate-950 group-hover:text-rose-500 transition-colors">
               Mon Profil
             </span>
           </Link>
@@ -34,8 +34,8 @@ export const RightSidebar = () => {
             onClick={() => setRightSidebar(false)}
             className="flex items-center gap-4 group"
           >
-            <Heart className="w-5 h-5 text-[var(--turquoise)] group-hover:text-[var(--rose)] transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-[var(--text-primary)] group-hover:text-[var(--rose)] transition-colors">
+            <Heart className="w-5 h-5 text-sky-500 group-hover:text-rose-500 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-slate-950 group-hover:text-rose-500 transition-colors">
               Mes Favoris
             </span>
           </Link>
@@ -45,8 +45,8 @@ export const RightSidebar = () => {
             onClick={() => setRightSidebar(false)}
             className="flex items-center gap-4 group"
           >
-            <ShoppingBag className="w-5 h-5 text-[var(--turquoise)] group-hover:text-[var(--rose)] transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-[var(--text-primary)] group-hover:text-[var(--rose)] transition-colors">
+            <ShoppingBag className="w-5 h-5 text-sky-500 group-hover:text-rose-500 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-slate-950 group-hover:text-rose-500 transition-colors">
               Mon Panier
             </span>
           </Link>

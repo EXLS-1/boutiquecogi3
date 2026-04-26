@@ -47,9 +47,6 @@
   --ring: oklch(0.70 0.14 194);
 
   /* Brand Colors pour usage spécifique e-commerce */
-  --brand-turquoise: oklch(0.70 0.14 194);
-  --brand-rose: oklch(0.72 0.18 335);
-  --gradient-brand: linear-gradient(135deg, var(--brand-turquoise), var(--brand-rose));
 }
 
 /* ==========================================================================
@@ -78,8 +75,6 @@
 }
 
 /* Variantes de marque dynamiques via data-attribute */
-:root[data-theme="turquoise"] { --primary: var(--brand-turquoise); --ring: var(--brand-turquoise); }
-:root[data-theme="rose"]      { --primary: var(--brand-rose); --ring: var(--brand-rose); }
 
 /* ==========================================================================
    BASE & RESET

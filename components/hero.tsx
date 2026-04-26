@@ -58,7 +58,7 @@ export const Hero = () => {
   }, []);
 
   return (
-    <section className="relative w-full overflow-hidden bg-[var(--background)]">
+    <section className="relative w-full overflow-hidden bg-slate-50">
       <Carousel
         plugins={[plugin.current]}
         className="w-full"
@@ -70,7 +70,7 @@ export const Hero = () => {
         
         {/* Contenu superposé (Statique par-dessus le carrousel) */}
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white px-4 text-center pointer-events-none">
-           <h1 className="text-5xl md:text-7xl font-playfair font-bold tracking-widest uppercase drop-shadow-md text-[var(--turquoise)]">
+           <h1 className="text-5xl md:text-7xl font-playfair font-bold tracking-widest uppercase drop-shadow-md text-sky-500">
             Boutique COGI
           </h1>
           <p className="mt-4 text-xl tracking-[0.2em] font-lato">
@@ -78,8 +78,8 @@ export const Hero = () => {
           </p>
         </div>
 
-        <CarouselPrevious className="absolute left-4 z-20 text-[var(--turquoise)] border-[var(--turquoise)] hover:bg-[var(--rose)] hover:text-white pointer-events-auto hidden md:flex" />
-        <CarouselNext className="absolute right-4 z-20 text-[var(--turquoise)] border-[var(--turquoise)] hover:bg-[var(--rose)] hover:text-white pointer-events-auto hidden md:flex" />
+        <CarouselPrevious className="absolute left-4 z-20 text-sky-500 border-sky-500 hover:bg-rose-500 hover:text-white pointer-events-auto hidden md:flex" />
+        <CarouselNext className="absolute right-4 z-20 text-sky-500 border-sky-500 hover:bg-rose-500 hover:text-white pointer-events-auto hidden md:flex" />
       </Carousel>
     </section>
   );

@@ -29,15 +29,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* FontAwesome est lourd, mais conservé selon ta structure actuelle */}
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
       </head>
-      <body className="bg-[var(--background)] text-[var(--foreground)] antialiased overflow-x-hidden">
+      <body className="bg-slate-50 text-slate-950 antialiased overflow-x-hidden">
         <RootProviders>
           <Navbar />
           <LeftSidebar />
           <RightSidebar />
           
           <UIWrapper>
-              { /* pt-17.5 correspond à la hauteur de ta navbar (50px) */ }
-            <main className="min-h-screen pt-[var(--navbar-height)]">
+              { /* pt-14 correspond à la hauteur de ta navbar */ }
+            <main className="min-h-screen pt-14">
               { children }
             </main>
           </UIWrapper>

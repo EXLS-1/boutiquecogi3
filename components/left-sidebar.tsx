@@ -25,9 +25,9 @@ export const LeftSidebar = () => {
 
   return (
     <Sheet open={isLeftSidebarOpen} onOpenChange={setLeftSidebar}>
-      <SheetContent side="left" className="w-[var(--sidebar-width)] bg-[var(--background)] border-r border-[var(--border)] flex flex-col p-6">
+      <SheetContent side="left" className="w-80 bg-slate-50 border-r border-slate-200 flex flex-col p-6">
         <SheetHeader className="mb-8 text-left">
-          <SheetTitle className="font-playfair text-2xl font-bold uppercase tracking-widest text-[var(--turquoise)]">
+          <SheetTitle className="font-playfair text-2xl font-bold uppercase tracking-widest text-sky-500">
             Menu Principal
           </SheetTitle>
         </SheetHeader>
@@ -39,20 +39,20 @@ export const LeftSidebar = () => {
                 key={link.label}
                 href={link.href}
                 onClick={() => setLeftSidebar(false)}
-                className="block font-lato font-bold text-lg uppercase tracking-wide text-[var(--text-primary)] hover:text-[var(--rose)] transition-colors"
+                className="block font-lato font-bold text-lg uppercase tracking-wide text-slate-950 hover:text-rose-500 transition-colors"
               >
                 {link.label}
               </Link>
             ))}
           </div>
 
-          <hr className="border-[var(--border)] my-6" />
+          <hr className="border-slate-200 my-6" />
 
           <div className="space-y-4">
             <Link 
               href="/settings"
               onClick={() => setLeftSidebar(false)}
-              className="block font-lato text-sm uppercase tracking-widest text-[var(--text-secondary)] hover:text-[var(--rose)] transition-colors"
+              className="block font-lato text-sm uppercase tracking-widest text-slate-500 hover:text-rose-500 transition-colors"
             >
               Paramètres
             </Link>
@@ -66,13 +66,13 @@ export const LeftSidebar = () => {
                 key={social.label}
                 href={social.href}
                 aria-label={social.label}
-                className="text-[var(--turquoise)] hover:text-[var(--rose)] transition-colors text-xl"
+                className="text-sky-500 hover:text-rose-500 transition-colors text-xl"
               >
                 <i className={social.icon}></i>
               </a>
             ))}
           </div>
-          <p className="text-xs text-[var(--text-muted)] font-lato">
+          <p className="text-xs text-slate-400 font-lato">
             &copy; {new Date().getFullYear()} Boutique COGI
           </p>
         </footer>
