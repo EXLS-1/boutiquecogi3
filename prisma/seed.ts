@@ -15,19 +15,19 @@ async function main() {
         where: { id: product.id },
         update: {
           name: product.name,
-          description: product.description,
-          price: product.price,
+          description: product.description || "",
+          price: parseInt(product.price),
           images: [product.image], // Pour l'instant une seule image
-          category: product.category,
+          category: product.category || "",
           stock: 10, // Stock par défaut
         },
         create: {
           id: product.id,
           name: product.name,
-          description: product.description,
-          price: product.price,
+          description: product.description || "",
+          price: parseInt(product.price),
           images: [product.image],
-          category: product.category,
+          category: product.category || "",
           stock: 10,
         },
       })
