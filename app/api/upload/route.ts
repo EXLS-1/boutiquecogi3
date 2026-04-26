@@ -36,10 +36,8 @@ export async function POST(request: Request) {
     .getPublicUrl(`produits/${uniqueName}`);
   
   // On retourne à la fois le chemin (si besoin de le supprimer plus tard) et l'URL publique
-    return NextResponse.json({ 
-    path: data.path, 
+  return NextResponse.json({ 
+    path: data!.path, 
     url: publicUrlData.publicUrl 
   });
-
-    return NextResponse.json({ path: data.path });
 }

@@ -39,12 +39,12 @@ export async function POST(req: Request) {
       // Récupérer les items de la commande pour décrémenter le stock
       const order = await prisma.order.findUnique({
         where: { id: orderId },
-        include: { items: true },
+        include: { orderItems: true },
       });
 
-      if (order && order.items.length > 0) {
+      if (order && order.orderItems.length > 0) {
         // Décrémenter le stock pour chaque produit vendu
-        for (const item of order.items) {
+        for (const item of order.orderItems) {
           await prisma.product.update({
             where: { id: item.productId },
             data: {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       });
 
       console.log(`✅ Commande ${orderId} payée avec succès !`);
-      console.log(`📦 Stock décrémenté pour ${order?.items.length || 0} produit(s)`);
+      console.log(`📦 Stock décrémenté pour ${order?.orderItems.length || 0} produit(s)`);
     }
 
     // Événement : le client a oublié de payer
