@@ -7,7 +7,7 @@ export default function BoutiqueSac() {
   
         <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
             <Image
-                src="@/Media/pict04.webp"
+                src="/Media/pict04.webp"
                 alt="Chaussure Dame"
                 width={400}
                 height={500}

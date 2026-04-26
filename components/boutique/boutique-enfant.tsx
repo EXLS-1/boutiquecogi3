@@ -7,7 +7,7 @@ export default function BoutiqueEnfant() {
   
        <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
             <Image
-            src="@/Media/pict03.webp"
+            src="/Media/pict03.webp"
             alt="Habit Enfant"
             width={400}
             height={500}
