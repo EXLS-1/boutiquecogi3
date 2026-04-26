@@ -16,9 +16,11 @@ interface CartItem {
 export const checkoutAction = async (formData: FormData): Promise<void> => {
   const session = await getServerSession();
 
-  if (!session?.user?.id) {
+  if (!session || !(session.user as any)?.id) {
     redirect("/login?callbackUrl=/checkout");
   }
+
+  const userId = (session.user as any).id;
 
   const itemsJson = formData.get("items") as string;
   const items: CartItem[] = JSON.parse(itemsJson);
@@ -30,12 +32,14 @@ export const checkoutAction = async (formData: FormData): Promise<void> => {
   // Créer la commande en base de données
   const order = await prisma.order.create({
     data: {
-      userId: session.user.id,
-      total: items.reduce((acc, item) => acc + item.price * item.quantity, 0),
-      items: {
+      userId,
+      totalAmount: items.reduce((acc, item) => acc + item.price * item.quantity, 0),
+      orderItems: {
         create: items.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
+          price: Math.round(item.price * 100),
+          product: { connect: { id: item.id } },
         })),
       },
     },

@@ -5,6 +5,8 @@ interface UIState {
   isRightSidebarOpen: boolean;
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
+  setLeftSidebar: (open: boolean) => void;
+  setRightSidebar: (open: boolean) => void;
   closeAll: () => void;
 }
 
@@ -17,7 +19,9 @@ export const useUIStore = create<UIState>((set) => ({
   })),
   toggleRightSidebar: () => set((state) => ({ 
     isRightSidebarOpen: !state.isRightSidebarOpen, 
-    isLeftSidebarOpen: false 
+    isLeftSidebarOpen: false
   })),
+  setLeftSidebar: (open: boolean) => set({ isLeftSidebarOpen: open }),
+  setRightSidebar: (open: boolean) => set({ isRightSidebarOpen: open }),
   closeAll: () => set({ isLeftSidebarOpen: false, isRightSidebarOpen: false }),
 }));

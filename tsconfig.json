@@ -23,6 +23,8 @@
       "@/*": ["./*"]
     }
   },
+  "exclude": ["node_modules", "hello-prisma"]
+},
   "include": [
     "next-env.d.ts",
     "**/*.ts",

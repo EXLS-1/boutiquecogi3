@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const sig = headers().get("stripe-signature")!;
+  const sig = (await headers()).get("stripe-signature")!;
 
   let event: Stripe.Event;
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       data: { isPaid: true },
     });
 
-    revalidateTag("orders");
+    // revalidateTag("orders");
   }
 
   return new Response("OK");

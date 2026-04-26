@@ -67,7 +67,7 @@ export default async function ProfilePage() {
 
                     <div className="text-right">
                       <p className="font-bold">
-                        {formatPriceXOF(order.total)}
+                        {formatPriceXOF(order.totalAmount)}
                       </p>
                       <span
                         className={`text-sm px-3 py-1 rounded ${
@@ -82,7 +82,7 @@ export default async function ProfilePage() {
                   </header>
 
                   <p className="text-sm text-gray-600">
-                    {order.items.length} article(s)
+                    {order.orderItems.length} article(s)
                   </p>
 
                   {order.address && (
