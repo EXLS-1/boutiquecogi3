@@ -2,7 +2,7 @@
 'use server';
 
 import { cache } from "react";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { Product } from "@prisma/client";
 
 // Type standardisé pour les actions serveur
