@@ -39,7 +39,7 @@ export const Carousel = ({ products }: Props) => {
           {currentProduct.name}
         </CardTitle>
         <p className="text-2xl font-light">
-          {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(currentProduct.price)}
+          {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(currentProduct.price)}
         </p>
       </CardContent>
     </Card>
