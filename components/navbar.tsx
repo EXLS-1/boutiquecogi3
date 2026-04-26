@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUIStore } from "@/store/use-ui-store";
+import { AuthButton } from "@/components/auth-button";
 
 const CATEGORIES = [
   { label: "Femme", href: "/category/femme" },
@@ -53,14 +54,9 @@ export const Navbar = () => {
           ))}
         </div>
 
-        {/* Section Droite : Connexion et Tribar Right Sidebar */}
+        {/* Section Droite : AuthButton et Tribar Right Sidebar */}
         <div className="flex items-center gap-4">
-          <Link 
-            href="/auth/login" 
-            className="hidden md:block font-lato font-bold uppercase text-sm tracking-wider text-cyan-400 hover:text-pink-400 transition-colors"
-          >
-            Connexion
-          </Link>
+          <AuthButton />
           
           {/* Extrême droite : Tribar pour Right Sidebar */}
           <button

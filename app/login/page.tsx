@@ -2,22 +2,43 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    // callbackUrl: "/" redirige l'utilisateur vers l'accueil après la connexion
-    await signIn("google", { callbackUrl: "/" }); 
+    await signIn("google", { callbackUrl: "/" });
+  };
+
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+      callbackUrl: "/",
+    });
+
+    if (result?.error) {
+      setError(result.error);
+      setIsLoading(false);
+    } else {
+      router.push("/");
+    }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
-      {/* Conteneur principal (La Carte) */}
       <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-10 shadow-xl">
-        
-        {/* En-tête de la page */}
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">
             Bienvenue
@@ -27,14 +48,18 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="mt-8 space-y-6">
-          {/* Bouton Google */}
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {/* Icône Google (SVG) */}
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -56,7 +81,6 @@ export default function LoginPage() {
             {isLoading ? "Connexion en cours..." : "Continuer avec Google"}
           </button>
 
-          {/* Séparateur visuel pour l'esthétique */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200" />
@@ -66,8 +90,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Formulaire Email (Design uniquement - à câbler si vous utilisez le CredentialsProvider) */}
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleCredentialsSignIn}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Adresse email
@@ -76,17 +99,33 @@ export default function LoginPage() {
                 type="email"
                 id="email"
                 placeholder="vous@exemple.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Mot de passe
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm"
               />
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-black px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+              disabled={isLoading}
+              className="w-full rounded-lg bg-black px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Continuer avec l'email
+              {isLoading ? "Connexion en cours..." : "Se connecter"}
             </button>
           </form>
-
         </div>
       </div>
     </div>
