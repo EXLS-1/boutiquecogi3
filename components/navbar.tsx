@@ -33,7 +33,7 @@ export const Navbar = () => {
           
           <Link 
             href="/" 
-            className="font-playfair text-xl md:text-2xl font-bold tracking-widest uppercase text-cyan-400 hover:text-pink-400 transition-colors"
+            className="font-playfair text-2xl md:text-2xl font-bold tracking-widest uppercase text-cyan-400 hover:text-pink-400 transition-colors"
           >
             Boutique COGI
           </Link>
