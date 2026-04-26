@@ -7,7 +7,7 @@
         "price": "95",
         "size": "42 à 48",
         "couleur": "Jaune-Vert vif",
-        "image": "Media-p-20260218/pict09.jpeg",
+        "image": "Media-p-20260218/pict01.jpeg",
         "description": "Robe élégante avec motif étoilé, parfaite pour les occasions spéciales",
         "category": "femme"
       },
@@ -17,7 +17,7 @@
         "price": "95",
         "size": "42 à 48",
         "couleur": "Noir avec paillette",
-        "image": "Media-p-20260218/pict14.jpeg",
+        "image": "Media-p-20260218/pict02.jpeg",
         "description": "Ensemble composé d'une blouse et d'une jupe, style moderne et raffiné",
         "category": "femme"
       },
@@ -27,7 +27,7 @@
         "price": "95",
         "size": "42 à 48",
         "couleur": "Brun-Marron",
-        "image": "Media-p-20260218/pict12.jpeg",
+        "image": "Media-p-20260218/pict03.jpeg",
         "description": "Robe longue fluide, idéale pour les soirées élégantes",
         "category": "femme"
       },
@@ -37,7 +37,9 @@
         "price": "95",
         "size": "42 à 48",
         "couleur": "Rouge avec paillette",
-        "image": "Media-p-20260218/pict15.jpeg"
+        "image": "Media-p-20260218/pict04.jpeg",
+        "description": "Robe élégante avec paillettes, parfaite pour les occasions spéciales",
+        "category": "femme"
       },
       {
         "id": "f5",
@@ -45,7 +47,7 @@
         "price": "65",
         "size": "44 à 50",
         "couleur": "Rouge sang",
-        "image": "Media-p-20260308/FEMME/WhatsApp Image 2026-03-08 at 11.02.31 PM (1).jpeg",
+        "image": "Media-p-20260218/pict05.jpeg",
         "description": "Jupe plissée légère et confortable, parfaite pour le quotidien",
         "category": "femme"
       },
@@ -55,7 +57,7 @@
         "price": "75",
         "size": "36 à 42",
         "couleur": "Bleu",
-        "image": "Media-p-20260308/FEMME/WhatsApp Image 2026-03-08 at 11.02.31 PM (2).jpeg",
+        "image": "Media-p-20260218/pict06.jpeg",
         "description": "Robe légère et fleurie, idéale pour la saison printanière",
         "category": "femme"
       },
@@ -65,7 +67,7 @@
         "price": "65",
         "size": "44 à 50",
         "couleur": "Noir - Blanc",
-        "image": "Media-p-20260308/FEMME/WhatsApp Image 2026-03-08 at 11.02.31 PM.jpeg",
+        "image": "Media-p-20260218/pict07.jpeg",
         "description": "sizeur complet pour femme, élégance professionnelle",
         "category": "femme"
       },
@@ -75,7 +77,7 @@
         "price": "35",
         "size": "36 à 50",
         "couleur": "Blanc",
-        "image": "Media-p-20260308/FEMME/WhatsApp Image 2026-03-08 at 11.02.32 PM (1).jpeg",
+        "image": "Media-p-20260218/pict08.jpeg",
         "description": "Chemisier blanc classique, essentiel de toute garde-robe",
         "category": "femme"
       }      
