@@ -1,11 +1,11 @@
 "use client";
 
-import { signIn, signOut, useSession } from "next-auth/react";
+import { useSession, signOut, SessionUser } from "@/lib/auth-client";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
 export function AuthButton() {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession() as { data: { user: SessionUser } | null; isPending: boolean };
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -23,6 +23,12 @@ export function AuthButton() {
     }
   }, [menuOpen]);
 
+  if (isPending) {
+    return (
+      <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse" />
+    );
+  }
+
   if (session) {
     return (
       <div ref={menuRef} className="relative">
@@ -32,7 +38,7 @@ export function AuthButton() {
         >
           <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
             <span className="text-xs font-bold">
-              {session.user?.name?.charAt(0).toUpperCase()}
+              {session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase()}
             </span>
           </div>
         </button>
@@ -40,8 +46,13 @@ export function AuthButton() {
         {menuOpen && (
           <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
             <div className="p-4 border-b">
-              <p className="font-semibold text-sm">{session.user?.name}</p>
+              <p className="font-semibold text-sm">{session.user?.name || "Utilisateur"}</p>
               <p className="text-xs text-gray-600">{session.user?.email}</p>
+              {session.user?.role && (
+                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 rounded">
+                  {session.user.role === "ADMIN" ? "Admin" : "User"}
+                </span>
+              )}
             </div>
             <Link
               href="/profile"
@@ -65,11 +76,11 @@ export function AuthButton() {
   }
 
   return (
-    <button
-      onClick={() => signIn("google")}
+    <Link
+      href="/login"
       className="bg-black text-white px-3 py-2 rounded text-sm font-medium hover:bg-gray-800"
     >
       Connexion
-    </button>
+    </Link>
   );
 }

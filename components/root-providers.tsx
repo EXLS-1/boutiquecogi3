@@ -1,13 +1,12 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
 import { ReactNode } from "react";
 import { ThemeProvider } from "@/app/provider";
 
 export function RootProviders({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <>
       <ThemeProvider>
         {children}
         <Toaster
@@ -44,6 +43,6 @@ export function RootProviders({ children }: { children: ReactNode }) {
           }}
         />
       </ThemeProvider>
-    </SessionProvider>
+    </>
   );
 }
