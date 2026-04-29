@@ -1,9 +1,13 @@
-import { PrismaClient } from "@prisma/client";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const auth = betterAuth({
+    database: prismaAdapter(prisma, {
+        provider: "postgresql",
+    }),
+    emailAndPassword: {
+        enabled: true,
+    },
+    // Configuration indispensable pour les environnements Next.js
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+});
