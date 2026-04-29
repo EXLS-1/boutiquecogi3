@@ -1,32 +1,46 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/better-auth";
 
 export async function proxy(request: NextRequest) {
-    // 1. Récupération de la session via BetterAuth
-    const session = await auth.api.getSession({
-        headers: request.headers,
+  let session = null;
+
+  try {
+    // 1. Interrogation HTTP de l'API BetterAuth (Compatible Edge)
+    // On extrait l'URL de base et on transmet les cookies entrants
+    const baseURL = process.env.BETTER_AUTH_URL || request.nextUrl.origin;
+    const res = await fetch(`${baseURL}/api/auth/get-session`, {
+      headers: {
+        cookie: request.headers.get("cookie") || "",
+      },
     });
 
-    const { pathname } = request.nextUrl;
-    const isAuthRoute = pathname.startsWith("/auth") || pathname.startsWith("/login");
-    const isPublicRoute = pathname === "/";
-
-    // 2. Protection des routes privées
-    if (!session && !isAuthRoute && !isPublicRoute) {
-        return NextResponse.redirect(new URL("/auth/login", request.url));
+    if (res.ok) {
+      session = await res.json();
     }
+  } catch (error) {
+    console.error("Erreur de validation de session dans le proxy :", error);
+    // En cas de panne de l'API, on sécurise par défaut en refusant la session
+  }
 
-    // 3. Redirection si l'utilisateur est déjà connecté
-    if (session && isAuthRoute) {
-        return NextResponse.redirect(new URL("/", request.url));
-    }
+  const { pathname } = request.nextUrl;
+  const isAuthRoute = pathname.startsWith("/auth") || pathname.startsWith("/login");
+  const isPublicRoute = pathname === "/";
 
-    return NextResponse.next();
+  // 2. Protection rigoureuse des routes
+  if (!session && !isAuthRoute && !isPublicRoute) {
+    return NextResponse.redirect(new URL("/auth/login", request.url));
+  }
+
+  // 3. Empêcher la double authentification
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-    matcher: [
-        // Exclut les fichiers statiques, images et API internes
-        "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
-    ],
+  matcher: [
+    // Le matcher exclut "/api", ce qui empêche une boucle infinie avec notre fetch
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
+  ],
 };

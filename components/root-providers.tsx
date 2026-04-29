@@ -1,48 +1,17 @@
+// components/root-providers.tsx
 "use client";
 
-import { Toaster } from "react-hot-toast";
-import { ReactNode } from "react";
 import { ThemeProvider } from "@/app/provider";
 
-export function RootProviders({ children }: { children: ReactNode }) {
+export function RootProviders({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <ThemeProvider>
-        {children}
-        <Toaster
-          position="top-right"
-          reverseOrder={false}
-          gutter={8}
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: "#363636",
-              color: "#fff",
-              fontSize: "14px",
-              padding: "16px",
-              borderRadius: "8px",
-            },
-            success: {
-              style: {
-                background: "#10b981",
-              },
-              iconTheme: {
-                primary: "#fff",
-                secondary: "#10b981",
-              },
-            },
-            error: {
-              style: {
-                background: "#ef4444",
-              },
-              iconTheme: {
-                primary: "#fff",
-                secondary: "#ef4444",
-              },
-            },
-          }}
-        />
-      </ThemeProvider>
-    </>
+    <ThemeProvider
+      attribute="class" // OBLIGATOIRE pour une intégration native Shadcn / Tailwind
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange // Optimisation : Empêche le scintillement des transitions CSS lors du changement de thème
+    >
+      {children}
+    </ThemeProvider>
   );
 }

@@ -47,7 +47,7 @@ export const Navbar = () => {
               key={cat.label}
               variant="ghost"
               asChild
-              className="font-lato font-bold uppercase tracking-wider text-cyan-400 hover:text-pink-400 hover:bg-pink-400/10 transition-all px-3"
+              className="font-lato uppercase tracking-wider text-cyan-400 hover:text-pink-400 hover:bg-pink-400/10 transition-all px-3"
             >
               <Link href={cat.href}>{cat.label}</Link>
             </Button>

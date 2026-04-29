@@ -24,12 +24,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={cn(playfair.variable, lato.variable, cormorant.variable, inter.variable, "scroll-smooth")}>
+    <html lang="fr" suppressHydrationWarning>
       <head>
-        {/* FontAwesome est lourd, mais conservé selon ta structure actuelle */}
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
       </head>
-      <body className="bg-slate-50 text-slate-950 antialiased overflow-x-hidden">
+      <body className="antialiased">
         <RootProviders>
           <Navbar />
           <LeftSidebar />

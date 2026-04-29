@@ -1,6 +1,8 @@
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/better-auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-const { GET, POST } = toNextJsHandler(auth);
+// Ce fichier s'exécute dans l'environnement Node.js standard.
+// Il a le droit d'importer BetterAuth et Prisma.
+const handler = toNextJsHandler(auth);
 
-export { GET, POST };
+export { handler as GET, handler as POST };
