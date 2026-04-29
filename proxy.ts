@@ -1,41 +1,32 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/lib/auth/session";
+import { auth } from "@/lib/auth/better-auth";
 
 export async function proxy(request: NextRequest) {
-  try {
-    // Récupération de la session BetterAuth
-    const session = await updateSession(request);
-    const pathname = request.nextUrl.pathname;
+    // 1. Récupération de la session via BetterAuth
+    const session = await auth.api.getSession({
+        headers: request.headers,
+    });
 
-    // Routes publiques (non protégées)
-    const publicPaths = ["/", "/auth/login", "/auth/register", "/auth/error"];
-    const isPublic = publicPaths.some((p) => pathname.startsWith(p));
+    const { pathname } = request.nextUrl;
+    const isAuthRoute = pathname.startsWith("/auth") || pathname.startsWith("/login");
+    const isPublicRoute = pathname === "/";
 
-    // Si pas de session et route non publique → redirection login
-    if (!session && !isPublic) {
-      const loginUrl = new URL("/auth/login", request.url);
-      return NextResponse.redirect(loginUrl);
+    // 2. Protection des routes privées
+    if (!session && !isAuthRoute && !isPublicRoute) {
+        return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
-    // Si session présente et route publique "login" ou "register" → rediriger vers dashboard
-    if (session && (pathname === "/auth/login" || pathname === "/auth/register")) {
-      const dashboardUrl = new URL("/dashboard", request.url);
-      return NextResponse.redirect(dashboardUrl);
+    // 3. Redirection si l'utilisateur est déjà connecté
+    if (session && isAuthRoute) {
+        return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // Tout va bien, poursuivre
-    return NextResponse.next({ request });
-  } catch (error) {
-    console.error("Proxy error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
+    return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
-  ],
+    matcher: [
+        // Exclut les fichiers statiques, images et API internes
+        "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$).*)",
+    ],
 };
