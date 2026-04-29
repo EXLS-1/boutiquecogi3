@@ -56,4 +56,6 @@ export const auth = betterAuth({
   plugins: [
     nextCookies(),
   ],
+   // Configuration indispensable pour les environnements Next.js
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
