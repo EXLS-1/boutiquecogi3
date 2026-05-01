@@ -29,7 +29,7 @@ export const Hero = () => {
 
   const renderedMedia = useMemo(() => {
     return MEDIA_ITEMS.map((media, index) => (
-      <CarouselItem key={media.id} className="relative w-full h-[80vh] min-h-[600px]">
+      <CarouselItem key={media.id} className="relative w-full h-[80vh] min-h-150">
         {media.type === "image" ? (
           <Image
             src={media.src}
@@ -48,7 +48,7 @@ export const Hero = () => {
             playsInline
             preload="none" // Performance: Do not preload background videos
           >
-            <source src={media.src} type="video/mp4" />
+            <source src={media.src} type="video/webm" />
           </video>
         )}
         {/* Overlay gradient */}
