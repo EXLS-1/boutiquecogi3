@@ -30,9 +30,9 @@ export default function CartPage() {
 
   // Formatage robuste de la devise
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("fr-FR", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "EUR", // À adapter en XOF si nécessaire
+      currency: "USD",
     }).format(price);
   };
 

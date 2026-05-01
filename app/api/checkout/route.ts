@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "better-auth";
 
 interface CheckoutItem {
   id: string;
@@ -47,6 +48,7 @@ function validateCheckoutBody(body: any): { valid: boolean; error?: string; data
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession();
     const body = await request.json();
     const validation = validateCheckoutBody(body);
 
@@ -57,10 +59,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { items, email, userId, phone, address } = validation.data;
+    const { items, email, phone, address } = validation.data;
+
+    // Sécurité : On utilise l'ID de la session, pas celui du body
+    const userId = session?.user?.id;
+
+    // Agrégation des quantités pour gérer les doublons d'ID dans la requête
+    const aggregatedItems = items.reduce((acc, item) => {
+      acc[item.id] = (acc[item.id] || 0) + item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
 
     // Récupérer les produits depuis la base de données (prix réels)
-    const productIds = items.map(item => item.id);
+    const productIds = Object.keys(aggregatedItems);
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
@@ -87,17 +98,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier les stocks
-    for (const item of items) {
-      const product = products.find(p => p.id === item.id);
+    for (const productId of productIds) {
+      const product = products.find(p => p.id === productId);
+      const requestedQty = aggregatedItems[productId];
+      
       if (!product) {
         return NextResponse.json(
-          { error: `Produit non trouvé: ${item.id}` },
+          { error: `Produit non trouvé: ${productId}` },
           { status: 404 }
         );
       }
-      if (product.stock < item.quantity) {
+      if (product.stock < requestedQty) {
         return NextResponse.json(
-          { error: `Stock insuffisant pour ${product.name}. Stock: ${product.stock}, demandé: ${item.quantity}` },
+          { error: `Stock insuffisant pour ${product.name}. Disponible: ${product.stock}` },
           { status: 400 }
         );
       }
@@ -106,7 +119,7 @@ export async function POST(request: NextRequest) {
     // Calculer le montant total depuis la base de données (sécurisé)
     const totalAmount = items.reduce((sum, item) => {
       const product = products.find(p => p.id === item.id)!;
-      // Prix en centimes (price est en Decimal, on le convertit)
+      // Le Dollar utilise les cents (x100)
       const priceInCents = Math.round(Number(product.price) * 100);
       return sum + (priceInCents * item.quantity);
     }, 0);
@@ -118,31 +131,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Créer la commande en base de données avec transaction
-    const order = await prisma.order.create({
-      data: {
-        userId: userId || null,
-        totalAmount,
-        isPaid: false,
-        phone: phone || "",
-        address: address || "",
-        orderItems: {
-          create: items.map(item => {
-            const product = products.find(p => p.id === item.id)!;
-            return {
-              productId: item.id,
-              quantity: item.quantity,
-              price: Math.round(Number(product.price) * 100) // Prix en centimes
-            };
-          })
-        }
-      },
-      select: {
-        id: true,
-        totalAmount: true
-      }
-    });
-
     // Créer les line items pour Stripe
     const lineItems = items.map(item => {
       const product = products.find(p => p.id === item.id)!;
@@ -150,7 +138,7 @@ export async function POST(request: NextRequest) {
       
       return {
         price_data: {
-          currency: "xof",
+          currency: "usd",
           product_data: {
             name: product.name,
             description: product.description || "",
@@ -162,6 +150,34 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Créer la commande en base de données *après* la création de la session Stripe
+    // pour éviter les commandes orphelines en cas d'échec de Stripe.
+    // Ou créer la commande ici en statut 'pending' et la supprimer si Stripe échoue.
+    const order = await prisma.order.create({
+      data: {
+        userId: userId || null,
+        totalAmount,
+        isPaid: false, // Sera mis à jour par le webhook Stripe
+        phone: phone || "",
+        address: address || "", // L'adresse complète sera mise à jour par le webhook
+        orderItems: {
+          create: items.map(item => {
+            const product = products.find(p => p.id === item.id)!;
+            return {
+              productId: item.id,
+              quantity: item.quantity,
+              price: Math.round(Number(product.price) * 100)
+            };
+          })
+        }
+      },
+      select: {
+        id: true,
+        totalAmount: true
+      }
+    });
+
+
     // Créer la session Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -171,7 +187,8 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout`,
       customer_email: email,
       metadata: {
-        orderId: order.id
+        orderId: order.id,
+        userId: userId || "", // Stocker l'ID utilisateur pour le webhook
       }
     });
 

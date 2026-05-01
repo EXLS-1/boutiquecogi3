@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/better-auth";
+import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
 // Ce fichier s'exécute dans l'environnement Node.js standard.

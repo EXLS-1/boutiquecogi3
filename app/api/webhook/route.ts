@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+// Importation de Prisma client
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
@@ -36,37 +37,51 @@ export async function POST(req: Request) {
         });
       }
 
-      // Récupérer les items de la commande pour décrémenter le stock
+      // Utiliser une transaction pour garantir l'atomicité des opérations
+      await prisma.$transaction(async (tx) => {
+        // Récupérer les items de la commande pour décrémenter le stock
       const order = await prisma.order.findUnique({
         where: { id: orderId },
         include: { orderItems: true },
       });
 
-      if (order && order.orderItems.length > 0) {
-        // Décrémenter le stock pour chaque produit vendu
-        for (const item of order.orderItems) {
-          await prisma.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
-              },
-            },
-          });
+        // Vérifier si la commande a déjà été traitée pour éviter les doublons
+        if (!order || order.isPaid) {
+          // Si déjà traitée, on retourne 200 pour ne pas re-déclencher le webhook
+          return new NextResponse("Commande déjà traitée ou inexistante", { status: 200 });
         }
-      }
 
-      // Mise à jour de la commande en base de données
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          isPaid: true,
-          address: session?.customer_details?.address?.line1 || "",
-        },
+        if (order && order.orderItems.length > 0) {
+          // Décrémenter le stock pour chaque produit vendu
+          for (const item of order.orderItems) {
+            await tx.product.update({ // Utiliser 'tx' pour la transaction
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+          }
+        }
+
+        // Mise à jour de la commande en base de données
+        await tx.order.update({ // Utiliser 'tx' pour la transaction
+          where: { id: orderId },
+          data: {
+            isPaid: true,
+            // Stocker l'adresse complète pour une meilleure traçabilité
+            address: session?.customer_details?.address?.line1 || "", // Exemple: "123 Main St"
+            city: session?.customer_details?.address?.city || "",
+            country: session?.customer_details?.address?.country || "",
+            postalCode: session?.customer_details?.address?.postal_code || "",
+          },
+        });
+
+        console.log(`✅ Commande ${orderId} payée avec succès !`);
+        console.log(`📦 Stock décrémenté pour ${order?.orderItems.length || 0} produit(s)`);
       });
 
-      console.log(`✅ Commande ${orderId} payée avec succès !`);
-      console.log(`📦 Stock décrémenté pour ${order?.orderItems.length || 0} produit(s)`);
     }
 
     // Événement : le client a oublié de payer

@@ -3,9 +3,10 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Session } from "next-auth";
 
 import { getUserOrders } from "@/app/actions/order.actions";
-import { formatDateFR, formatPriceXOF } from "@/lib/format";
+import { formatDateFR } from "@/lib/format";
 
 export default async function ProfilePage() {
   const session = await getServerSession();
@@ -14,7 +15,15 @@ export default async function ProfilePage() {
     redirect("/login?callbackUrl=/profile");
   }
 
-  const orders = await getUserOrders((session.user as any).id);
+  const userId = session.user?.id;
+  const orders = userId ? await getUserOrders(userId) : [];
+
+  const formatPriceUSD = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(price / 100); // On divise par 100 car stocké en cents pour Stripe
+  };
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -67,7 +76,7 @@ export default async function ProfilePage() {
 
                     <div className="text-right">
                       <p className="font-bold">
-                        {formatPriceXOF(order.totalAmount)}
+                        {formatPriceUSD(order.totalAmount)}
                       </p>
                       <span
                         className={`text-sm px-3 py-1 rounded ${
@@ -85,9 +94,13 @@ export default async function ProfilePage() {
                     {order.orderItems.length} article(s)
                   </p>
 
-                  {order.address && (
-                    <p className="text-sm mt-1">
-                      Adresse : {order.address}
+                  {(order.address || order.city || order.postalCode || order.country) && (
+                    <p className="text-sm mt-1 text-gray-700">
+                      Adresse de livraison :{" "}
+                      {[order.address, order.city, order.postalCode, order.country]
+                        .filter(Boolean)
+                        .join(", ")
+                      }
                     </p>
                   )}
                 </article>
