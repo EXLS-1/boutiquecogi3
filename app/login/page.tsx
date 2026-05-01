@@ -2,76 +2,132 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth/auth-client"; // TON nouveau client
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@/lib/auth-client";
+import toast from "react-hot-toast";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+
+// 1. Définition stricte du schéma de validation
+const loginSchema = z.object({
+  email: z.string().email({ message: "Adresse email invalide." }),
+  password: z.string().min(6, { message: "Le mot de passe est requis." }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+export function LoginForm() {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // 2. Initialisation de React Hook Form pour la performance et la validation
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
-    await authClient.signIn.email({
-      email,
-      password,
-    }, {
-      onRequest: () => {
-        setIsPending(true);
+  // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
+  const onSubmit = async (data: LoginFormValues) => {
+    await authClient.signIn.email(
+      {
+        email: data.email,
+        password: data.password,
       },
-      onSuccess: () => {
-        router.push("/");
-        router.refresh(); // Crucial pour forcer le proxy à re-valider la session
-      },
-      onError: (ctx) => {
-        setIsPending(false);
-        alert(ctx.error.message || "Erreur de connexion");
-      },
-    });
+      {
+        onRequest: () => {
+          setIsPending(true);
+        },
+        onSuccess: () => {
+          toast.success("Connexion réussie !");
+          router.push("/");
+          router.refresh(); 
+        },
+        onError: (ctx) => {
+          setIsPending(false);
+          toast.error(ctx.error.message || "Identifiants incorrects.");
+        },
+      }
+    );
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-6">
-      <div className="w-full max-w-sm space-y-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-xl backdrop-blur-sm">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-turquoise-500">Connexion</h1>
-          <p className="text-sm text-zinc-400">Entre tes identifiants pour accéder à la boutique</p>
-        </div>
-
-        <form onSubmit={handleSignIn} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300" htmlFor="email">Email</label>
-            <input
+    <Card className="w-full max-w-sm shadow-xl">
+      <CardHeader>
+        <CardTitle className="text-2xl">Connexion</CardTitle>
+        <CardDescription>
+          Entrez vos identifiants pour accéder à votre compte.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
               id="email"
               type="email"
-              required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 p-2.5 text-white outline-none focus:ring-2 focus:ring-rose-500/50 transition-all"
-              placeholder="nom@exemple.com"
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="m@example.com"
+              {...register("email")}
+              disabled={isPending} // Désactivation pendant le chargement
+              className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
+            {errors.email && (
+              <span className="text-sm text-red-500">{errors.email.message}</span>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300" htmlFor="password">Mot de passe</label>
-            <input
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-zinc-500 underline-offset-4 hover:underline"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
+            <Input
               id="password"
               type="password"
-              required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 p-2.5 text-white outline-none focus:ring-2 focus:ring-rose-500/50 transition-all"
-              onChange={(e) => setPassword(e.target.value)}
+              {...register("password")}
+              disabled={isPending}
+              className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
+            {errors.password && (
+              <span className="text-sm text-red-500">{errors.password.message}</span>
+            )}
           </div>
 
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full rounded-lg bg-rose-600 px-4 py-2.5 font-semibold text-white hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50 transition-all"
-          >
+          <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Vérification..." : "Se connecter"}
-          </button>
+          </Button>
+
+          <div className="text-center text-sm text-zinc-500">
+            Pas encore de compte ?{" "}
+            <Link
+              href="/auth/sign-up"
+              className="text-zinc-900 underline underline-offset-4 hover:text-zinc-700 dark:text-zinc-100"
+            >
+              S'inscrire
+            </Link>
+          </div>
         </form>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

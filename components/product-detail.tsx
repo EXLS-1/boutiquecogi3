@@ -20,23 +20,23 @@ export const ProductDetail = ({ product }: Props) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-12 px-4 grid lg:grid-cols-2 gap-12">
+    <div className="max-w-5xl mx-auto py-10 px-4 grid lg:grid-cols-2 gap-10">
       <Image
         src={product.image}
         alt={product.name}
-        width={600}
-        height={600}
+        width={400}
+        height={400}
         className="rounded-xl object-cover"
         priority
       />
 
       <div className="space-y-6">
-        <h1 className="text-5xl font-playfair font-bold">
+        <h1 className="text-3xl font-playfair">
           {product.name}
         </h1>
 
-        <p className="text-3xl">
-          {product.price.toLocaleString()} XOF
+        <p className="text-1xl">
+          {product.price.toLocaleString()} USD
         </p>
 
         <p className="text-gray-600">
