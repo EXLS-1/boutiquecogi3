@@ -22,7 +22,7 @@ import Link from "next/link";
 
 // Définition stricte et vérification croisée des mots de passe
 const signUpSchema = z.object({
-  name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères." }),
+  name: z.string().min(4, { message: "Le nom doit contenir au moins 4 caractères." }),
   email: z.string().email({ message: "Adresse email invalide." }),
   password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères." }),
   confirmPassword: z.string(),
@@ -58,7 +58,7 @@ export function SignUpForm() {
         onSuccess: () => {
           toast.success("Inscription réussie ! Redirection...");
           // Remplace "signed-up-form" : On redirige simplement vers une route protégée ou la connexion
-          router.push("/"); 
+          router.push("/auth/signed-up-form"); 
           router.refresh(); 
         },
         onError: (ctx) => {
