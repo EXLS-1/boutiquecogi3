@@ -1,6 +1,13 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@/lib/auth-client";
+import toast from "react-hot-toast";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,124 +19,132 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { signUp } from "@/lib/auth-client";
-import toast from "react-hot-toast";
 
-export function SignUpForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+// Définition stricte et vérification croisée des mots de passe
+const signUpSchema = z.object({
+  name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères." }),
+  email: z.string().email({ message: "Adresse email invalide." }),
+  password: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères." }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Les mots de passe ne correspondent pas.",
+  path: ["confirmPassword"], // Cible l'erreur sur le champ de confirmation
+});
+
+type SignUpFormValues = z.infer<typeof signUpSchema>;
+
+export function SignUpForm() {
+  const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+  });
 
-    if (password !== repeatPassword) {
-      setError("Les mots de passe ne correspondent pas");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const { error } = await signUp.email({
-        email,
-        password,
-        name,
-        callbackURL: "/protected",
-      });
-      
-      if (error) throw new Error(error.message || "An error occurred");
-      
-      toast.success("Compte créé avec succès !");
-      router.push("/protected");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-      toast.error(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = async (data: SignUpFormValues) => {
+    await authClient.signUp.email(
+      {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      },
+      {
+        onRequest: () => setIsPending(true),
+        onSuccess: () => {
+          toast.success("Inscription réussie ! Redirection...");
+          // Remplace "signed-up-form" : On redirige simplement vers une route protégée ou la connexion
+          router.push("/"); 
+          router.refresh(); 
+        },
+        onError: (ctx) => {
+          setIsPending(false);
+          toast.error(ctx.error.message || "Une erreur est survenue lors de l'inscription.");
+        },
+      }
+    );
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Inscription</CardTitle>
-          <CardDescription>Créez un nouveau compte</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nom</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Votre nom"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Mot de passe</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Confirmer le mot de passe</Label>
-                </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-rose-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Création du compte..." : "S'inscrire"}
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Déjà un compte ?{" "}
-              <Link href="/login" className="underline underline-offset-4">
-                Se connecter
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-sm shadow-xl">
+      <CardHeader>
+        <CardTitle className="text-2xl text-cyan-700">Inscription</CardTitle>
+        <CardDescription>
+          Créez un compte pour accéder à la plateforme.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+          
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nom complet</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Jean Dupont"
+              {...register("name")}
+              disabled={isPending}
+              className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.name && <span className="text-sm text-red-500">{errors.name.message}</span>}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              {...register("email")}
+              disabled={isPending}
+              className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.email && <span className="text-sm text-red-500">{errors.email.message}</span>}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input
+              id="password"
+              type="password"
+              {...register("password")}
+              disabled={isPending}
+              className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.password && <span className="text-sm text-red-500">{errors.password.message}</span>}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              {...register("confirmPassword")}
+              disabled={isPending}
+              className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.confirmPassword && <span className="text-sm text-red-500">{errors.confirmPassword.message}</span>}
+          </div>
+
+          <Button type="submit" className="w-full hover:text-rose-700" disabled={isPending}>
+            {isPending ? "Création du compte..." : "S'inscrire"}
+          </Button>
+
+          <div className="text-center text-sm text-cyan-400">
+            Déjà un compte ?{" "}
+            <Link
+              href="/auth/login"
+              className="text-cyan-500 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
+            >
+              Se connecter
+            </Link>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
