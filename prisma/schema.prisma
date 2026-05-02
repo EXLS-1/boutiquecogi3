@@ -24,6 +24,7 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   @@index([email])
+  @@map("users")
 }
 
 model Session {

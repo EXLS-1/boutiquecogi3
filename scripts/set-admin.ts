@@ -1,36 +1,34 @@
 import { PrismaClient } from "@prisma/client";
+import * as dotenv from "dotenv";
+
+// 1. Charger les variables d'environnement du fichier .env
+dotenv.config();
 
 const prisma = new PrismaClient();
 
 async function setAdmin(email: string) {
   try {
-    // 1. Recherche de l'utilisateur
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    console.log(`🚀 Tentative de passage en ADMIN pour : ${email}`);
 
-    if (!user) {
-      console.error(`❌ Erreur : Aucun utilisateur trouvé avec l'email : ${email}`);
-      return;
-    }
-
-    // 2. Mise à jour du rôle
+    // 2. Mise à jour avec la valeur de l'enum (doit être ADMIN en majuscules)
     const updatedUser = await prisma.user.update({
-      where: { email },
+      where: { email: email },
       data: {
-        role: "admin", // Doit correspondre à la valeur attendue par Better-Auth
+        role: "ADMIN", 
       },
     });
 
-    console.log(`✅ Succès : L'utilisateur ${updatedUser.email} est désormais "admin".`);
+    console.log(`✅ Succès ! ${updatedUser.name || updatedUser.email} est maintenant ADMIN.`);
   } catch (error) {
-    console.error("❌ Erreur lors de la migration :", error);
+    console.error("❌ Erreur de migration :");
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
   } finally {
     await prisma.$disconnect();
   }
 }
 
-// Récupération de l'email via les arguments de la ligne de commande
 const targetEmail = process.argv[2];
 
 if (!targetEmail) {
