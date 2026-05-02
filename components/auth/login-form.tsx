@@ -69,7 +69,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl">Connexion</CardTitle>
+        <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
         <CardDescription>
           Entrez vos identifiants pour accéder à votre compte.
         </CardDescription>
@@ -96,7 +96,7 @@ export function LoginForm() {
               <Label htmlFor="password">Mot de passe</Label>
               <Link
                 href="/auth/forgot-password"
-                className="text-sm text-zinc-500 underline-offset-4 hover:underline"
+                className="text-sm text-cyan-400 underline-offset-4 hover:underline"
               >
                 Mot de passe oublié ?
               </Link>
@@ -113,15 +113,15 @@ export function LoginForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button type="submit" className="w-full hover:text-rose-700" disabled={isPending}>
             {isPending ? "Vérification..." : "Se connecter"}
           </Button>
 
-          <div className="text-center text-sm text-zinc-500">
+          <div className="text-center text-sm text-cyan-400">
             Pas encore de compte ?{" "}
             <Link
               href="/auth/sign-up"
-              className="text-zinc-900 underline underline-offset-4 hover:text-zinc-700 dark:text-zinc-100"
+              className="text-cyan-500 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
               S'inscrire
             </Link>
