@@ -5,13 +5,14 @@ generator client {
 }
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==========================================
 // MODÈLES D'AUTHENTIFICATION (BetterAuth)
 // ==========================================
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @db.Uuid
   name          String?
   email         String?   @unique
   emailVerified DateTime?
