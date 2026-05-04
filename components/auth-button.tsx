@@ -25,7 +25,7 @@ export function AuthButton() {
 
   if (isPending) {
     return (
-      <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse" />
+      <div className="w-8 h-8 rounded-full bg-cyan-200 animate-pulse" />
     );
   }
 
@@ -36,7 +36,7 @@ export function AuthButton() {
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center gap-2 text-sm font-medium hover:text-gray-700"
         >
-          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-cyan-200 flex items-center justify-center">
             <span className="text-xs font-bold">
               {session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase()}
             </span>
@@ -44,19 +44,19 @@ export function AuthButton() {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-cyan-200 rounded-lg shadow-lg z-50">
             <div className="p-4 border-b">
               <p className="font-semibold text-sm">{session.user?.name || "Utilisateur"}</p>
               <p className="text-xs text-gray-600">{session.user?.email}</p>
               {session.user?.role && (
-                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 rounded">
+                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-cyan-100 rounded">
                   {session.user.role === "ADMIN" ? "Admin" : "User"}
                 </span>
               )}
             </div>
             <Link
               href="/profile"
-              className="block px-4 py-2 hover:bg-gray-100 text-sm"
+              className="block px-4 py-2 hover:bg-rose-200 text-sm"
             >
               Mon Profil
             </Link>
@@ -65,7 +65,7 @@ export function AuthButton() {
                 setMenuOpen(false);
                 signOut();
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600"
+              className="w-full text-left px-4 py-2 hover:bg-rose-200 text-sm text-red-600"
             >
               Déconnexion
             </button>
@@ -77,8 +77,8 @@ export function AuthButton() {
 
   return (
     <Link
-      href="/login"
-      className="bg-black text-white px-3 py-2 rounded text-sm font-medium hover:bg-gray-800"
+      href="/auth/login"
+      className="bg-white text-cyan-500 px-3 py-2 rounded-full text-lg font-medium hover:bg-cyan-100"
     >
       Connexion
     </Link>

@@ -30,4 +30,4 @@ export const {
   signOut, 
   useSession, 
   getSession
-} = authClient;
+} = createAuthClient()

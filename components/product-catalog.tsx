@@ -32,8 +32,8 @@ export default function ProductCatalog({ products, title }: Props) {
             onClick={() => setCategory(cat)}
             className={`px-6 py-2 uppercase text-sm font-bold border
               ${category === cat
-                ? "bg-black text-white"
-                : "bg-white text-black hover:bg-gray-100"
+                ? "bg-blue-500 text-white"
+                : "bg-rose-100 text-shadow-rose-500 hover:bg-gray-100"
               }`}
           >
             {cat}
