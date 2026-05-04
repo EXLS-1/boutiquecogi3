@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
-      <h1 className="mb-8 text-3xl font-bold text-slate-900">Votre Tableau de Bord</h1>
+      <h1 className="mb-8 text-3xl font-bold text-Cyan-900">Votre Tableau de Bord</h1>
       
       {/* 3. Injection des données utilisateur dans le composant client */}
       <UserProfile user={session.user} />
