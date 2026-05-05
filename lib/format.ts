@@ -1,19 +1,15 @@
-export const formatPriceUSD = (price: number) =>
-  new Intl.NumberFormat("en-US", {
+// lib/format.ts
+export const formatPriceUSD = (cents: number): string => {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(price);
+  }).format(cents / 100);
+};
 
-export const formatPriceXOF = (amount: number) =>
-  new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "XOF",
-    minimumFractionDigits: 0,
-  }).format(amount);
-
-export const formatDateFR = (date: Date) =>
-  new Intl.DateTimeFormat("fr-FR", {
+export const formatDateFR = (date: Date | string): string => {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "long", // Note: La nomenclature technique reste en anglais dans le code, mais l'affichage respecte le français ici
     year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
+  }).format(new Date(date));
+};
