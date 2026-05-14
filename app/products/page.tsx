@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { ProductSchema } from "@/lib/validation-product";
+import { ProductSchema } from "@/lib/validator/product.schema.ts";
 import { unstable_cache } from "next/cache";
 
 export const revalidate = 300; // ISR toutes les 5 minutes

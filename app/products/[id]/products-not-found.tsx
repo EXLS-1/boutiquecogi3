@@ -1,4 +1,5 @@
 import Link from "next/link";
+Import { SearchX } from "lucide-react";
 
 export function ProductNotFound() {
   return (
@@ -15,7 +16,7 @@ export function ProductNotFound() {
             Produit Introuvable
           </h1>
           <p className="text-gray-500 font-lato leading-relaxed">
-            Désolé, l’article que vous recherchez semble être épuisé ou n’existe plus.
+            Désolé, l&apos;article que vous recherchez semble être épuisé ou n&apos;est plus disponible.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">

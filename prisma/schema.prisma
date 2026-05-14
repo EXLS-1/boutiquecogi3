@@ -131,7 +131,10 @@ model Order {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   orderItems      OrderItem[]
-
+   cinetpayTransId  String?
+  paymentStatus    PaymentStatus
+  paymentMethod    String?
+  
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([isPaid, createdAt])

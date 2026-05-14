@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { ProductDetail } from "@/components/product-detail";
 import { ProductNotFound } from "./products-not-found"; // composant séparé (voir plus bas)
-import { ProductIdSchema, ProductSchema } from "@/lib/validation-product"; // Importation des schémas de validation
+import { ProductIdSchema, ProductSchema } from "@/lib/validator/product.schema.ts"; // Importation des schémas de validation
 
 export const revalidate = 60;
 
