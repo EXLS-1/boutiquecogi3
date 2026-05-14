@@ -51,9 +51,11 @@ export default async function ProductsPage() {
 
   return (
     <main className="pb-12">
-      <h1 className="text-3xl font-bold text-center mb-8">
-        Tous les produits
-      </h1>
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-center">
+          Tous les produits
+        </h1>
+      </header>
       {products.length === 0 ? (
         <p className="text-center text-gray-500">
           Aucun produit disponible pour le moment.
