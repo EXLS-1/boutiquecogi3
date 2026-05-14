@@ -19,9 +19,9 @@ const MEDIA_ITEMS = [
   { id: "img5", type: "image", src: "/media/pict05.webp" },
   { id: "img6", type: "image", src: "/media/pict06.webp" },
   { id: "img7", type: "image", src: "/media/pict07.webp" },
-  { id: "vid1", type: "video", src: "/video/vid01.mp4" },
-  { id: "vid2", type: "video", src: "/video/vid02.mp4" },
-  { id: "vid3", type: "video", src: "/video/vid03.mp4" },
+  { id: "vid1", type: "video", src: "/video/vid01.webm" },
+  { id: "vid2", type: "video", src: "/video/vid02.webm" },
+  { id: "vid3", type: "video", src: "/video/vid03.webm" },
 ];
 
 export const Hero = () => {
@@ -35,7 +35,7 @@ export const Hero = () => {
             src={media.src}
             alt={`Slide ${index + 1}`}
             fill
-            priority={index === 0} // LCP optimization: only priority load the first image
+            priority  // {index === 0}  LCP optimization: only priority load the first image
             className="object-cover"
             sizes="100vw"
           />
@@ -74,7 +74,7 @@ export const Hero = () => {
             Boutique COGI
           </h1>
           <p className="mt-4 text-xl tracking-[0.2em] font-lato">
-            L&apos;ÉLÉGANCE REDÉFINIE
+            L&apos;ÉLÉGANCE REDÉFINIE PAR LE STYLE
           </p>
         </div>
 

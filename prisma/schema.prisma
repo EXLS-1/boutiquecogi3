@@ -5,7 +5,6 @@ generator client {
 }
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ==========================================
@@ -23,13 +22,22 @@ model User {
   orders        Order[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  posts        Post[]
 
   @@index([email])
   @@map("users")
 }
-
+model Post { 
+  id        String @id @db.Uuid
+  title     String
+  userId    String
+  content   String?
+  published Boolean @default(false) 
+  authorId  Int
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+} 
 model Session {
-  id           String   @id @default(cuid())
+  id           String  @id @db.Uuid
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -41,7 +49,7 @@ model Session {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @db.Uuid
   userId            String
   type              String
   provider          String
@@ -74,7 +82,7 @@ enum Role {
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
+  id        String   @id @db.Uuid
   userId    String?
   action    String
   entity    String?
@@ -92,7 +100,7 @@ model AuditLog {
 // ==========================================
 
 model Product {
-  id          String           @id @default(cuid())
+  id          String           @id @db.Uuid
   name        String
   description String           @db.Text
   price       Decimal          @db.Decimal(10, 2)
@@ -111,7 +119,7 @@ model Product {
 }
 
 model Order {
-  id              String           @id @default(cuid())
+  id              String           @id @db.Uuid
   userId          String?
   user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   status          OrderStatus      @default(PENDING)
@@ -130,7 +138,7 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String  @id @db.Uuid
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String

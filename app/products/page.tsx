@@ -1,34 +1,66 @@
 // app/products/page.tsx
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { cache } from "react";
+import { prisma } from "@/lib/prisma";
+import { ProductSchema } from "@/lib/validation-product";
+import { unstable_cache } from "next/cache";
 
-import { ProductList } from "@/components/product-list";
-import { stripe } from "@/lib/stripe";
+export const revalidate = 300; // ISR toutes les 5 minutes
 
-export const revalidate = 300;
+// Mise en cache manuelle optionnelle (plus robuste)
+const getProducts = unstable_cache(
+  async () => {
+    try {
+      const products = await prisma.product.findMany({
+        where: { isArchived: false },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          images: true,
+          description: true,
+          category: true,
+        },
+      });
+
+      // Validation et formatage
+      return products.map((p) => {
+        const validated = ProductSchema.parse({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          image: p.images?.[0] ?? "/placeholder.jpg",
+          description: p.description ?? "",
+          category: p.category ?? "general",
+        });
+        return validated;
+      });
+    } catch (error) {
+      console.error("Erreur chargement produits:", error);
+      return []; // fallback silencieux
+    }
+  },
+  ["products-list"],
+  { revalidate: 300 }
+);
 
 export default async function ProductsPage() {
-  const stripeProducts = await stripe.products.list({
-    expand: ["data.default_price"],
-  });
-
-  const products = stripeProducts.data.map((p) => ({
-    id: p.id,
-    name: p.name,
-    price: Number((p.default_price as any)?.unit_amount ?? 0) / 100,
-    image: p.images?.[0] ?? "/placeholder.jpg",
-    description: p.description ?? "",
-    category: "stripe",
-  }));
+  const products = await getProducts();
 
   return (
     <main className="pb-12">
       <h1 className="text-3xl font-bold text-center mb-8">
         Tous les produits
       </h1>
-
-      <ProductList
-        title="Catalogue Stripe"
-        products={products}
-      />
+      {products.length === 0 ? (
+        <p className="text-center text-gray-500">
+          Aucun produit disponible pour le moment.
+        </p>
+      ) : (
+        <ProductList title="Catalogue" products={products} />
+      )}
     </main>
   );
 }

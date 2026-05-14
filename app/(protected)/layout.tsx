@@ -1,12 +1,27 @@
-// /app/(protected)/layout.tsx
-import { requireUser } from "@/lib/auth/server";
+// app/(protected)/layout.tsx
+import { auth } from "@/lib/auth"; // BetterAuth
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function ProtectedLayout({ children }) {
+export default async function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  let isAuthorized = false;
+
   try {
-    await requireUser();
-  } catch {
-    redirect("/auth/login");
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+    isAuthorized = !!session?.user;
+  } catch (error) {
+    isAuthorized = false;
+  }
+
+  // Redirection propre, libérée du try...catch
+  if (!isAuthorized) {
+    redirect("/login");
   }
 
   return <>{children}</>;

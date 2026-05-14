@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth"; // Ton instance BetterAuth configurée
 import { getUserOrders } from "@/app/actions/order.actions";
-import { formatDateFR, formatPriceUSD } from "@/lib/format";
+import { formatDateFR, formatPriceUSD } from "@/lib/format-currency";
 
 export default async function ProfilePage() {
   // 1. Session BetterAuth (Server-side)

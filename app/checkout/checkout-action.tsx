@@ -1,74 +1,41 @@
+// app/checkout/checkout-action.tsx
 "use server";
 
-import { stripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { auth } from "better-auth"; // exemple, à adapter
 import { redirect } from "next/navigation";
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
+export async function processCinetPayCheckout(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  const amount = Number(formData.get("amount"));
+  const currency = (formData.get("currency") as string) || "USD";
+
+  const payload = {
+    apikey: process.env.CINETPAY_API_KEY,
+    site_id: process.env.CINETPAY_SITE_ID,
+    transaction_id: `B-COGI-${Date.now()}`,
+    amount,
+    currency,
+    description: `Commande Boutique COGI - ${session.user.email}`,
+    customer_email: session.user.email,
+    customer_phone_number: formData.get("phone") as string,
+    notify_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/cinetpay`,
+    return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/success`,
+    channels: "ALL",
+  };
+
+  const response = await fetch("https://api-checkout.cinetpay.com/v2/payment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (data.code === "201") {
+    redirect(data.data.payment_url);
+  } else {
+    throw new Error("Paiement échoué");
+  }
 }
-
-export const checkoutAction = async (formData: FormData): Promise<void> => {
-  const session = await getServerSession();
-
-  if (!session || !(session.user as any)?.id) {
-    redirect("/login?callbackUrl=/checkout");
-  }
-
-  const userId = (session.user as any).id;
-
-  const itemsJson = formData.get("items") as string;
-  const items: CartItem[] = JSON.parse(itemsJson);
-
-  if (!items || items.length === 0) {
-    throw new Error("Panier vide");
-  }
-
-  // Créer la commande en base de données
-  const order = await prisma.order.create({
-    data: {
-      userId,
-      totalAmount: items.reduce((acc, item) => acc + item.price * item.quantity, 0),
-      orderItems: {
-        create: items.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
-          price: Math.round(item.price * 100),
-          product: { connect: { id: item.id } },
-        })),
-      },
-    },
-  });
-
-  // Créer les ligne d'articles pour Stripe
-  const line_items = items.map((item: CartItem) => ({
-    price_data: {
-      currency: "xof",
-      product_data: { 
-        name: item.name,
-        images: [item.image],
-      },
-      unit_amount: Math.round(item.price),
-    },
-    quantity: item.quantity,
-  }));
-
-  // Créer la session Stripe avec l'orderId en metadata
-  const stripeSession = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items,
-    mode: "payment",
-    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout`,
-    metadata: {
-      orderId: order.id,
-    },
-  });
-
-  redirect(stripeSession.url!);
-};

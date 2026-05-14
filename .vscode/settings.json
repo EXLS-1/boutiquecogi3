@@ -1,3 +1,5 @@
 {
-    "chat.useAgentsMdFile": false
+    "chat.useAgentsMdFile": false,
+    "geminicodeassist.inlineSuggestions.nextEditPredictions": true,
+    "geminicodeassist.outlines.automaticOutlineGeneration": true
 }

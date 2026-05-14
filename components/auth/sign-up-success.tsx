@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import toast from "react-hot-toast";
 import { MailCheck, ArrowLeft, RefreshCw } from "lucide-react";
 

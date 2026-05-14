@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Product } from "../types/products";
 import useCart from "@/store/use-cart";
 import toast from "react-hot-toast";
-
+import { formatCurrency } from "@/lib/format-currency";
 interface Props {
   product: Product;
 }
@@ -36,7 +36,7 @@ export const ProductDetail = ({ product }: Props) => {
         </h1>
 
         <p className="text-1xl">
-          {product.price.toLocaleString()} USD
+          {formatCurrency(product.priceUSD, 'USD')}
         </p>
 
         <p className="text-gray-600">

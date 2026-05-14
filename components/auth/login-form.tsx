@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm shadow-xl">
+    <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
       <CardHeader>
         <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
         <CardDescription>
@@ -76,12 +76,12 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          <div className="grid gap-2">
+          <div className="grid bg-cyan-100 gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="m@example.com"
+              placeholder="mon_email@example.com"
               {...register("email")}
               disabled={isPending} // Désactivation pendant le chargement
               className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -91,8 +91,8 @@ export function LoginForm() {
             )}
           </div>
 
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between">
+          <div className="grid gap-2 bg-cyan-100">
+            <div className="flex items-center bg-cyan-100 justify-between">
               <Label htmlFor="password">Mot de passe</Label>
               <Link
                 href="/auth/forgot-password"

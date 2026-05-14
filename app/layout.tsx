@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import React from "react";
 import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
+import { CurrencySwitcher } from "@/components/currency-switcher";
 import { Navbar } from "@/components/navbar";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
@@ -10,6 +11,8 @@ import { Footer } from "@/components/footer";
 import { RootProviders } from "@/components/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
 import { cn } from "@/lib/utils";
+import { cookies } from "next/headers";
+import { CurrencyProvider } from "./provider";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -22,22 +25,27 @@ export const metadata: Metadata = {
   description: "Boutique en ligne de mode élégante - Habits pour femmes, hommes et enfants",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  
+  const cookieStore = await cookies();
+  const currencyCookie = cookieStore.get("displayCurrency")?.value as "USD" | "CDF" | undefined;
+  const initialCurrency = currencyCookie || "USD";
+  
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-      </head>
+    <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>  
       <body className="antialiased">
         <RootProviders>
+          <CurrencySwitcher />
           <Navbar />
           <LeftSidebar />
           <RightSidebar />
-          
+         
           <UIWrapper>
               { /* pt-14 correspond à la hauteur de ta navbar */ }
             <main className="min-h-screen pt-14">
               { children }
+              {/* Chargez vos scripts ici de manière optimisée */}
+                
             </main>
           </UIWrapper>
 

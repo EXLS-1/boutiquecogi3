@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/lib/auth-client"; // Ton client Better-Auth
+import { useSession } from "@/lib/auth/auth-client"; // Ton client Better-Auth
 
 interface RoleGuardProps {
   children: React.ReactNode;

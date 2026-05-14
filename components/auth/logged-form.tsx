@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import { LogoutButton } from "@/components/auth/logout-button";
 
 export function LoggedForm() {

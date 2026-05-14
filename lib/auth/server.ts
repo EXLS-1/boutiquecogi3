@@ -1,40 +1,46 @@
 // /lib/auth/server.ts
 
-import { getSession } from "better-auth/server";
-import { cookies } from "next/headers";
-import { rolePermissions, Permission } from "./rbac";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth"; // Ton instance configurée de Better-Auth
+import { ROLES, Role, Permission, hasPermission } from "./rbac";
 
 export async function getServerSession() {
-  return await getSession({ cookies });
+  return await auth.api.getSession({
+    headers: await headers(),
+  });
 }
 
-export async function requireUser() {
+/**
+ * Exige une session valide. Redirige sinon.
+ */
+export async function requireAuth() {
   const session = await getServerSession();
 
   if (!session?.user) {
-    throw new Error("UNAUTHORIZED");
+    redirect("/login");
   }
 
-  return session.user;
+  // Sécurisation stricte du rôle
+  const rawRole = session.user.role;
+  const userRole: Role = Object.values(ROLES).includes(rawRole as Role) 
+    ? (rawRole as Role) 
+    : ROLES.USER;
+
+  return {
+    ...session.user,
+    role: userRole,
+  };
 }
 
-export async function requireRole(requiredRole: string) {
-  const user = await requireUser();
-
-  if (user.role !== requiredRole) {
-    throw new Error("FORBIDDEN");
-  }
-
-  return user;
-}
-
+/**
+ * Exige une permission spécifique. Jette une erreur si refusé.
+ */
 export async function requirePermission(permission: Permission) {
-  const user = await requireUser();
+  const user = await requireAuth();
 
-  const permissions = rolePermissions[user.role] ?? [];
-
-  if (!permissions.includes(permission)) {
-    throw new Error("FORBIDDEN");
+  if (!hasPermission(user.role, permission)) {
+    throw new Error(`FORBIDDEN: Missing ${permission}`);
   }
 
   return user;

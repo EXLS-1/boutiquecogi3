@@ -2,9 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 
-export const Footer = () => {
+export const NewsLetter = () => {
   return (
-    <footer className="bg-sky-500 text-white pt-20 pb-10 border-t border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
@@ -59,6 +58,5 @@ export const Footer = () => {
         </div>
 
       </div>
-    </footer>
   );
 };
