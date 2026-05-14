@@ -3,6 +3,7 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
 }
@@ -11,33 +12,40 @@ datasource db {
 // MODÈLES D'AUTHENTIFICATION (BetterAuth)
 // ==========================================
 model User {
-  id            String    @id @db.Uuid
+  id            String      @id @db.Uuid
   name          String?
-  email         String?   @unique
+  email         String?     @unique
   emailVerified DateTime?
   image         String?
-  role          Role      @default(USER)
+  role          Role        @default(USER)
   sessions      Session[]
   accounts      Account[]
   orders        Order[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  posts        Post[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  posts         Post[]
+  dashboards    dashboard[]
+  carts         cart[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  wishlists     Wishlist[]
 
   @@index([email])
   @@map("users")
 }
-model Post { 
-  id        String @id @db.Uuid
+
+model Post {
+  id        String  @id @db.Uuid
   title     String
   userId    String
   content   String?
-  published Boolean @default(false) 
+  published Boolean @default(false)
   authorId  Int
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-} 
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Session {
-  id           String  @id @db.Uuid
+  id           String   @id @db.Uuid
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -81,6 +89,13 @@ enum Role {
   ADMIN
 }
 
+model dashboard {
+  id     String @id @db.Uuid
+  name   String
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model AuditLog {
   id        String   @id @db.Uuid
   userId    String?
@@ -100,44 +115,212 @@ model AuditLog {
 // ==========================================
 
 model Product {
-  id          String           @id @db.Uuid
-  name        String
-  description String           @db.Text
-  price       Decimal          @db.Decimal(10, 2)
-  images      String[]
-  category    String           @db.VarChar(50)
-  stock       Int              @default(0)
-  isFeatured  Boolean          @default(false)
-  isArchived  Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  orderItems  OrderItem[]
+  id              String           @id @db.Uuid
+  name            String
+  description     String           @db.Text
+  price           Decimal          @db.Decimal(10, 2)
+  images          String[]
+  category        String           @db.VarChar(50)
+  stock           Int              @default(0)
+  isFeatured      Boolean          @default(false)
+  isArchived      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  categoryId      String?          @db.Uuid // Make categoryId optional
+  categoryRel     Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems      OrderItem[]
+  productOptions  ProductOption[] // Relation to ProductOption model
+  productImages   ProductImage[]
+  inventory       Inventory?
+  productVariants ProductVariant[]
+  cartItems       CartItem[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
 
   @@index([category, isArchived])
   @@index([isFeatured, isArchived])
   @@index([createdAt, isArchived])
 }
 
+model ProductImage {
+  id        String  @id @db.Uuid
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id        String  @id @db.Uuid
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Decimal @db.Decimal(10, 2)
+  stock     Int     @default(0)
+
+  @@unique([productId, name])
+  @@index([productId])
+}
+
+model ProductOption {
+  id        String  @id @db.Uuid
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  value     String
+
+  @@unique([productId, name, value])
+  @@index([productId])
+}
+
 model Order {
-  id              String           @id @db.Uuid
+  id              String        @id @db.Uuid
   userId          String?
-  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status          OrderStatus      @default(PENDING)
-  totalAmount     Int              // Stocké en centimes
-  stripeSessionId String?          @unique
-  isPaid          Boolean          @default(false)
-  phone           String           @default("")
-  address         String           @default("")
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status          OrderStatus   @default(PENDING)
+  totalAmount     Int // Stocké en centimes
+  stripeSessionId String?       @unique
+  isPaid          Boolean       @default(false)
+  phone           String        @default("")
+  address         String        @default("")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   orderItems      OrderItem[]
-   cinetpayTransId  String?
-  paymentStatus    PaymentStatus
-  paymentMethod    String?
-  
+  cinetpayTransId String?
+  paymentId       String?       @unique
+  payment         Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  paymentStatus   PaymentStatus
+  couponId        String?       @db.Uuid // Make couponId optional
+  coupon          Coupon?       @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  paymentMethod   String?
+
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([isPaid, createdAt])
+}
+
+model cart {
+  id        String     @id @db.Uuid
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+
+  @@index([userId])
+}
+
+model CartItem {
+  id        String  @id @db.Uuid
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity  Int
+  cart      cart?   @relation(fields: [cartId], references: [id])
+  cartId    String? @db.Uuid
+
+  @@index([userId])
+  @@index([productId])
+}
+
+model Payment {
+  id            String        @id @db.Uuid
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Int // Montant en centimes
+  currency      String        @default("XOF")
+  status        PaymentStatus @default(PENDING)
+  method        String?
+  transactionId String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  refund        Refund?
+}
+
+model Refund {
+  id        String       @id @db.Uuid
+  paymentId String       @unique
+  payment   Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount    Int // Montant en centimes
+  reason    String?
+  status    RefundStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Review {
+  id        String   @id @db.Uuid
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      @default(0)
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId])
+  @@index([productId])
+}
+
+model Inventory {
+  id        String   @id @db.Uuid
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model Wishlist {
+  id        String         @id @db.Uuid
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  items     WishlistItem[]
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id         String   @id @db.Uuid
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  addedAt    DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+}
+
+model Category {
+  id        String    @id @db.Uuid
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Coupon {
+  id         String   @id @db.Uuid
+  code       String   @unique
+  discount   Int // Pourcentage de réduction (ex: 20 pour 20%)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  orders     Order[]
+  active     Boolean  @default(true)
+  usageLimit Int? // Nombre de fois que le coupon peut être utilisé
 }
 
 model OrderItem {
@@ -147,7 +330,7 @@ model OrderItem {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int     @default(1)
-  price     Int     // Prix en centimes au moment de l'achat (historisation)
+  price     Int // Prix en centimes au moment de l'achat (historisation)
 
   @@index([orderId])
   @@index([productId])
@@ -160,4 +343,10 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
