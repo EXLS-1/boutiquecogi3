@@ -27,13 +27,15 @@ Ce document retrace l'organisation des dossiers et la structure technique de l'a
 /boutiquecogi3
 │
 ├── app
-│   ├── (store)
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   │
-│   │   ├── products
-│   │   │   ├── page.tsx
-│   │   │   └── loading.tsx
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── provider.tsx
+│   └── error.tsx
+│   │   
+│   ├── profile
+│   │   └── page.tsx
 │   │   │
 │   │   ├── product
 │   │   │   └── [id]

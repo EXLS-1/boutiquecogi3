@@ -29,7 +29,8 @@ model User {
   reviews       Review[]
   wishlist      Wishlist?
 
-  addresses Address[]
+  addresses      Address[]
+  productReviews ProductReview[]
 
   @@index([email])
   // Relation avec
@@ -113,10 +114,8 @@ model AuditLog {
 }
 
 // ==========================================
-// MODÈLES E-COMMERCE (Boutique COGI) - OPTIMISÉS
-// ==========================================
-
 // --- UTILISATEURS & ADRESSES ---
+// ==========================================
 model Address {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
@@ -137,7 +136,15 @@ model Address {
   @@index([userId])
 }
 
-// --- CATALOGUE ---
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
+// ==========================================
+// PRODUITS & CATALOGUE
+// ==========================================
+
 model Category {
   id          String    @id @default(uuid()) @db.Uuid
   name        String    @unique
@@ -164,10 +171,17 @@ model Product {
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  variants        ProductVariant[]
-  reviews         Review[]
-  wishlistItems   WishlistItem[]
-  inventoryLedger InventoryTransaction[]
+  variants               ProductVariant[]
+  reviews                Review[]
+  wishlistItems          WishlistItem[]
+  inventoryLedger        InventoryTransaction[]
+  productImages          ProductImage[]
+  productOptions         ProductOption[]
+  productTags            ProductTag[]
+  productAttributeValues ProductAttributeValue[]
+  productReviews         ProductReview[]
+  taxClass               TaxClass?               @relation(fields: [taxClassId], references: [id])
+  taxClassId             String?                 @db.Uuid
 
   @@index([categoryId, isArchived])
   @@index([slug])
@@ -188,6 +202,119 @@ model ProductVariant {
   @@index([productId])
 }
 
+model ProductImage {
+  id        String  @id @db.Uuid
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  position  Int     @default(0)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductOption {
+  id        String  @id @db.Uuid
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  value     String
+
+  @@unique([productId, name, value])
+  @@index([productId])
+  @@map("product_options")
+}
+
+model Tag {
+  id   String @id @db.Uuid
+  name String @unique
+  slug String @unique
+
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+model ProductTag {
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
+}
+
+model ProductAttribute {
+  id     String                  @id @db.Uuid
+  name   String                  @unique
+  type   String // "text", "number", "boolean", "select"
+  values ProductAttributeValue[]
+
+  @@map("product_attributes")
+}
+
+model ProductAttributeValue {
+  id          String           @id @db.Uuid
+  productId   String
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String
+
+  @@unique([productId, attributeId])
+  @@map("product_attribute_values")
+}
+
+model ProductReview {
+  id        String   @id @db.Uuid
+  productId String   @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([productId])
+  @@map("product_reviews")
+}
+
+// ==========================================
+// TAXES
+// ==========================================
+
+model TaxClass {
+  id          String    @id @db.Uuid
+  name        String    @unique
+  description String?
+  products    Product[]
+  taxRates    TaxRate[]
+
+  @@map("tax_classes")
+}
+
+model TaxRate {
+  id         String   @id @db.Uuid
+  taxClassId String   @db.Uuid
+  taxClass   TaxClass @relation(fields: [taxClassId], references: [id], onDelete: Cascade)
+  country    String   @default("RDC")
+  region     String? // Ex: "Kinshasa", "Haut-Katanga 
+  rate       Decimal  @db.Decimal(5, 4) // Ex: 0.16 pour 16%
+  // Exemple: Une taxe de 16% pour la classe "Standard" en RDC, province du "Haut-Katanga". Si `region` est null, la taxe s'applique à tout le pays. Le `unique` garantit qu'il n'y a pas de doublons. Notez que `region` peut être null.
+
+  @@unique([taxClassId, country, region]) // Une seule taxe par classe/pays/région
+  @@index([taxClassId])
+  @@index([country, region])
+  @@index([country, region, taxClassId]) // Pour des recherches rapides de taxes applicables 
+  @@map("tax_rates")
+}
+
+// ==========================================
+// INVENTAIRE
+// ==========================================
 // --- GESTION DES STOCKS (Event Sourcing Ledger) ---
 // Au lieu de mettre à jour un simple chiffre, on trace chaque mouvement.
 // Le stock réel est la somme de ces transactions. C'est la seule méthode robuste.
@@ -211,7 +338,33 @@ enum TransactionType {
   SHRINKAGE // Perte, vol, casse
 }
 
+// ==========================================
+// PANIER
+// ==========================================
 // --- COMMANDES ET LOGISTIQUE ---
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @unique @db.Uuid
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String         @id @default(uuid()) @db.Uuid
+  cartId    String         @db.Uuid
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId String         @db.Uuid
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int            @default(1)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+}
+
 model Order {
   id          String  @id @default(uuid()) @db.Uuid
   orderNumber String  @unique // Identifiant lisible par l'humain (ex: COGI-2026-001)
@@ -363,28 +516,6 @@ enum DiscountType {
 }
 
 // --- PANIER ---
-model Cart {
-  id        String     @id @default(uuid()) @db.Uuid
-  userId    String     @unique @db.Uuid
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-}
-
-model CartItem {
-  id        String         @id @default(uuid()) @db.Uuid
-  cartId    String         @db.Uuid
-  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  variantId String         @db.Uuid
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  quantity  Int            @default(1)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-
-  @@unique([cartId, variantId])
-  @@index([cartId])
-}
 
 // --- AVIS ---
 model Review {
