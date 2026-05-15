@@ -1,5 +1,5 @@
 {
-    "chat.useAgentsMdFile": false,
+    "chat.useAgentsMdFile": true,
     "geminicodeassist.inlineSuggestions.nextEditPredictions": true,
     "geminicodeassist.outlines.automaticOutlineGeneration": true,
     "prisma.trace.server": "verbose",
@@ -7,4 +7,5 @@
     "editor.defaultFormatter": "Prisma.prisma"
     },
     "editor.formatOnSave": true
+       
 }

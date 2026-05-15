@@ -25,12 +25,14 @@ model User {
   updatedAt     DateTime    @updatedAt
   posts         Post[]
   dashboards    dashboard[]
-  carts         cart[]
   cartItems     CartItem[]
   reviews       Review[]
   wishlists     Wishlist[]
 
+  addresses Address[]
+
   @@index([email])
+  // Relation avec
   @@map("users")
 }
 
@@ -111,241 +113,276 @@ model AuditLog {
 }
 
 // ==========================================
-// MODÈLES E-COMMERCE (Boutique COGI)
+// MODÈLES E-COMMERCE (Boutique COGI) - OPTIMISÉS
 // ==========================================
 
-model Product {
-  id              String           @id @db.Uuid
-  name            String
-  description     String           @db.Text
-  price           Decimal          @db.Decimal(10, 2)
-  images          String[]
-  category        String           @db.VarChar(50)
-  stock           Int              @default(0)
-  isFeatured      Boolean          @default(false)
-  isArchived      Boolean          @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  categoryId      String?          @db.Uuid // Make categoryId optional
-  categoryRel     Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  orderItems      OrderItem[]
-  productOptions  ProductOption[] // Relation to ProductOption model
-  productImages   ProductImage[]
-  inventory       Inventory?
-  productVariants ProductVariant[]
-  cartItems       CartItem[]
-  reviews         Review[]
-  wishlistItems   WishlistItem[]
+// --- UTILISATEURS & ADRESSES ---
+model Address {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String? // Ex: "Domicile", "Bureau"
+  street    String
+  commune   String // Indispensable pour la tarification locale
+  city      String   @default("Kinshasa")
+  country   String   @default("RDC")
+  phone     String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([category, isArchived])
-  @@index([isFeatured, isArchived])
-  @@index([createdAt, isArchived])
+  ordersBilling  Order[] @relation("BillingAddress")
+  ordersShipping Order[] @relation("ShippingAddress")
+
+  @@index([userId])
 }
 
-model ProductImage {
-  id        String  @id @db.Uuid
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String
+// --- CATALOGUE ---
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique
+  slug        String    @unique // Obligatoire pour le SEO et le routage
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
 
-  @@index([productId])
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique // Indispensable pour des URLs propres
+  description String   @db.Text
+  basePrice   Int // Toujours stocker la valeur absolue la plus petite (ex: centimes USD ou unité CDF)
+  currency    String   @default("USD") @db.VarChar(3)
+  images      String[]
+  isFeatured  Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String?   @db.Uuid
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  variants        ProductVariant[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  inventoryLedger InventoryTransaction[]
+
+  @@index([categoryId, isArchived])
+  @@index([slug])
 }
 
 model ProductVariant {
-  id        String  @id @db.Uuid
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  price     Decimal @db.Decimal(10, 2)
-  stock     Int     @default(0)
+  id          String   @id @default(uuid()) @db.Uuid
+  productId   String   @db.Uuid
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku         String   @unique // Stock Keeping Unit : Obligatoire pour la gestion d'entrepôt
+  attributes  Json // Ex: {"taille": "XL", "couleur": "Rouge"} -> Plus flexible que ProductOption
+  priceOffset Int      @default(0) // Différence de prix par rapport au produit de base
+  createdAt   DateTime @default(now())
 
-  @@unique([productId, name])
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
   @@index([productId])
 }
 
-model ProductOption {
-  id        String  @id @db.Uuid
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  value     String
+// --- GESTION DES STOCKS (Event Sourcing Ledger) ---
+// Au lieu de mettre à jour un simple chiffre, on trace chaque mouvement.
+// Le stock réel est la somme de ces transactions. C'est la seule méthode robuste.
+model InventoryTransaction {
+  id          String          @id @default(uuid()) @db.Uuid
+  productId   String          @db.Uuid
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId   String?         @db.Uuid // Nullable si le produit n'a pas de variante
+  quantity    Int // Positif (ajout) ou Négatif (vente/perte)
+  reason      TransactionType
+  referenceId String? // ID de la commande si reason == SALE
+  createdAt   DateTime        @default(now())
 
-  @@unique([productId, name, value])
-  @@index([productId])
+  @@index([productId, variantId])
 }
 
+enum TransactionType {
+  RESTOCK
+  SALE
+  RETURN
+  SHRINKAGE // Perte, vol, casse
+}
+
+// --- COMMANDES ET LOGISTIQUE ---
 model Order {
-  id              String        @id @db.Uuid
-  userId          String?
-  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status          OrderStatus   @default(PENDING)
-  totalAmount     Int // Stocké en centimes
-  stripeSessionId String?       @unique
-  isPaid          Boolean       @default(false)
-  phone           String        @default("")
-  address         String        @default("")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  orderItems      OrderItem[]
-  cinetpayTransId String?
-  paymentId       String?       @unique
-  payment         Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  paymentStatus   PaymentStatus
-  couponId        String?       @db.Uuid // Make couponId optional
-  coupon          Coupon?       @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  paymentMethod   String?
+  id          String  @id @default(uuid()) @db.Uuid
+  orderNumber String  @unique // Identifiant lisible par l'humain (ex: COGI-2026-001)
+  userId      String? @db.Uuid
+  user        User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  status      OrderStatus @default(PENDING)
+  totalAmount Int
+  currency    String      @default("USD") @db.VarChar(3) // USD ou CDF
+
+  // Relations d'adresses strictes
+  billingAddressId  String?  @db.Uuid
+  billingAddress    Address? @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  shippingAddressId String?  @db.Uuid
+  shippingAddress   Address? @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+
+  // Expédition
+  shippingMethodId String?         @db.Uuid
+  shippingMethod   ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
+  shippingCost     Int             @default(0)
+  trackingNumber   String?
+
+  // Paiement CinetPay
+  paymentStatus   PaymentStatus @default(PENDING)
+  cinetpayTransId String?       @unique // Remplacé stripeSessionId
+  paymentMethod   String? // M-Pesa, Orange Money, etc.
+
+  couponId String? @db.Uuid
+  coupon   Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items    OrderItem[]
+  payments Payment[]
 
   @@index([userId, createdAt])
-  @@index([status, createdAt])
-  @@index([isPaid, createdAt])
+  @@index([status])
 }
 
-model cart {
-  id        String     @id @db.Uuid
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+model OrderItem {
+  id        String         @id @default(uuid()) @db.Uuid
+  orderId   String         @db.Uuid
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String         @db.Uuid
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity  Int
+  unitPrice Int // Prix unitaire figé au moment de l'achat
+  subtotal  Int // unitPrice * quantity
+
+  @@index([orderId])
+}
+
+model Shipment {
+  id      String @id @default(uuid()) @db.Uuid
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  carrierId String?
+  carrier   Carrier? @relation(fields: [carrierId], references: [id])
+
+  trackingNumber String? @unique
+
+  status ShipmentStatus @default(PENDING)
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Carrier {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique
+  code      String     @unique // Ex: "DHL", "FEDEX", "POSTE_RDC"
+  contact   String?
+  isActive  Boolean    @default(true)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  items     CartItem[]
-
-  @@index([userId])
+  shipments Shipment[]
 }
 
-model CartItem {
-  id        String  @id @db.Uuid
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int
-  cart      cart?   @relation(fields: [cartId], references: [id])
-  cartId    String? @db.Uuid
-
-  @@index([userId])
-  @@index([productId])
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  EXCEPTION // Problème de livraison
 }
 
+model ShippingMethod {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String // Ex: "Livraison Express Kinshasa"
+  description String?
+  basePrice   Int
+  isActive    Boolean @default(true)
+  orders      Order[]
+}
+
+// --- PAIEMENT ---
 model Payment {
-  id            String        @id @db.Uuid
-  orderId       String        @unique
+  id            String        @id @default(uuid()) @db.Uuid
+  orderId       String        @db.Uuid
   order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount        Int // Montant en centimes
-  currency      String        @default("XOF")
+  amount        Int
+  currency      String // Ex: CDF ou USD
   status        PaymentStatus @default(PENDING)
-  method        String?
-  transactionId String?       @unique
+  provider      String        @default("CINETPAY")
+  transactionId String?       @unique // ID fourni par CinetPay
+  metadata      Json? // Pour stocker le payload brut de CinetPay en cas de litige
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  refund        Refund?
+
+  refunds Refund[]
 }
 
 model Refund {
-  id        String       @id @db.Uuid
-  paymentId String       @unique
+  id        String       @id @default(uuid()) @db.Uuid
+  paymentId String       @db.Uuid
   payment   Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  amount    Int // Montant en centimes
+  amount    Int
   reason    String?
   status    RefundStatus @default(PENDING)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 }
 
-enum RefundStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
-
-model Review {
-  id        String   @id @db.Uuid
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rating    Int      @default(0)
-  comment   String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([productId, userId])
-  @@index([productId])
-}
-
-model Inventory {
-  id        String   @id @db.Uuid
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int      @default(0)
-  updatedAt DateTime @updatedAt
-
-  @@index([productId])
-}
-
-model Wishlist {
-  id        String         @id @db.Uuid
-  userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  items     WishlistItem[]
-
-  @@index([userId])
-}
-
-model WishlistItem {
-  id         String   @id @db.Uuid
-  wishlistId String
-  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  addedAt    DateTime @default(now())
-
-  @@unique([wishlistId, productId])
-}
-
-model Category {
-  id        String    @id @db.Uuid
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
-}
-
+// --- PROMOTIONS ---
 model Coupon {
-  id         String   @id @db.Uuid
-  code       String   @unique
-  discount   Int // Pourcentage de réduction (ex: 20 pour 20%)
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  orders     Order[]
-  active     Boolean  @default(true)
-  usageLimit Int? // Nombre de fois que le coupon peut être utilisé
+  id            String       @id @default(uuid()) @db.Uuid
+  code          String       @unique
+  discountType  DiscountType
+  discountValue Int // Soit un pourcentage, soit un montant fixe
+  minOrderValue Int? // Montant minimum d'achat pour que le coupon soit valide
+  expiresAt     DateTime
+  isActive      Boolean      @default(true)
+  usageLimit    Int?
+  usageCount    Int          @default(0)
+  createdAt     DateTime     @default(now())
+
+  orders Order[]
 }
 
-model OrderItem {
-  id        String  @id @db.Uuid
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int     @default(1)
-  price     Int // Prix en centimes au moment de l'achat (historisation)
-
-  @@index([orderId])
-  @@index([productId])
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
+// (Conserve tes modèles existants pour Review, Cart, CartItem, Wishlist en adaptant les clés étrangères @db.Uuid)
+
+// ENUMS MIS À JOUR
 enum OrderStatus {
   PENDING
-  PAID
+  CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
+  REFUNDED
 }
 
 enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum RefundStatus {
   PENDING
   COMPLETED
   FAILED

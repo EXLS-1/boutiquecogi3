@@ -37,7 +37,7 @@ boutiquecogi3/
 - **`app/`** : Utilise les fonctionnalités modernes de Next.js. Les fichiers `page.tsx` gèrent le rendu, tandis que `layout.tsx` définit la structure globale.
 - **`lib/`** : C'est le "cerveau" de l'application. On y trouve la gestion des prix (conversion USD/CDF), la connexion à la base de données et les clients tiers.
 - **`components/`** : Séparé de la logique de route pour favoriser la réutilisation. Les composants comme `ProfilePage` ou les cartes de produits y résident.
-- **`generated/prisma/`** : Crucial pour la robustesse du typage. Ce dossier contient le client de base de données généré spécifiquement pour ton schéma.
+- **`Prisma Client`** : Généré automatiquement dans `node_modules/@prisma/client` pour un typage optimal et une compatibilité maximale avec l'écosystème.
 
 ## 🔐 Sécurité et Versioning
 

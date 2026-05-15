@@ -1,109 +1,361 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+
+<h1 align="center">Boutique Cogi3</h1>
 
 <p align="center">
- The fastest way to build apps with Next.js and Supabase
+  Bienvenue sur Boutique Cogi3, votre destination en ligne pour des produits de qualité.
 </p>
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+## Description du Projet
 
-## Features
+Boutique Cogi3 est une plateforme e-commerce moderne construite avec les dernières technologies. Elle vise à offrir une expérience d'achat fluide et intuitive pour les utilisateurs, tout en fournissant une gestion robuste pour les administrateurs.
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+## Technologies Utilisées
 
-## Demo
+- **Next.js**: Framework React pour le rendu côté serveur et la génération de sites statiques.
+- **React**: Bibliothèque JavaScript pour la construction d'interfaces utilisateur interactives.
+- **TypeScript**: Langage de programmation qui ajoute le typage statique à JavaScript.
+- **Tailwind CSS**: Framework CSS utilitaire pour un stylisme rapide et personnalisable.
+- **Better-Auth**: Solution d'authentification personnalisée.
+- **Prisma**: ORM (Object-Relational Mapper) pour Node.js et TypeScript.
+- **Zod**: Bibliothèque de validation de schémas.
+- **PostgreSQL**: Système de gestion de base de données relationnelle open source.
+- **Supabase**: Plateforme de développement backend open source.
+- **CinetPay**: Solution de paiement en ligne.
+- **Zustand**: Bibliothèque de gestion d'état.
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+## Fonctionnalités Principales  
 
-## Deploy to Vercel
+- **Authentification Utilisateur**: Inscription, connexion et gestion de profil.
+- **Catalogue Produits**: Affichage des produits avec filtres et recherche.
+- **Panier d'Achat**: Ajout, suppression et mise à jour des articles dans le panier.
+- **Processus de Commande**: Étapes de commande sécurisées et suivi des commandes.
+- **Gestion des Commandes**: Interface administrateur pour la gestion et le suivi des commandes.
+- **Tableau de Bord Administrateur**: Gestion des produits, des utilisateurs et des statistiques.
+- **Intégration CinetPay**: Paiements sécurisés via CinetPay.
+- **Notifications**: Alertes par e-mail pour les commandes et les mises à jour de statut.
 
-Vercel deployment will guide you through creating a Supabase account and project.
+## Installation et Lancement
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+Pour installer et lancer le projet, suivez les étapes ci-dessous :
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### Prérequis
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+Assurez-vous d'avoir les éléments suivants installés sur votre machine :
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+- Node.js (version 18 ou supérieure)
+- npm ou Yarn
+- Git
 
-## Clone and run locally
+### Étapes d'Installation
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+1. **Cloner le dépôt :**
 
-2. Create a Next.js app using the Supabase Starter template npx command
+   git clone https://github.com/votre-utilisateur/boutiquecogi3.git
+   cd boutiquecogi3
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+2. **Installer les dépendances :**
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+   npm install
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+3. **Configuration des variables d'environnement :**
+   Créez un fichier `.env.local` à la racine du projet et ajoutez-y les variables d'environnement nécessaires. Un fichier `.env.example` est fourni pour référence.
 
-3. Use `cd` to change into the app's directory
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-   ```bash
-   cd with-supabase-app
-   ```
 
-4. Rename `.env.example` to `.env.local` and update the following:
-
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
-
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
-
-5. You can now run the Next.js local development server:
-
-   ```bash
+4. **Lancer le serveur de développement :**
+  
    npm run dev
-   ```
+  
+Le projet devrait maintenant être accessible à l'adresse `http://localhost:3000`.
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+## Structure du Projet
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
 
-## Feedback and issues
+/boutiquecogi3
+│
+├── app
+│   ├── (store)
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   │
+│   │   ├── products
+│   │   │   ├── page.tsx
+│   │   │   └── loading.tsx
+│   │   │
+│   │   ├── product
+│   │   │   └── [id]
+│   │   │       ├── page.tsx
+│   │   │       ├── loading.tsx
+│   │   │       ├── error.tsx
+│   │   │       └── not-found.tsx
+│   │   │
+│   │   ├── checkout
+│   │   │   ├── page.tsx
+│   │   │   ├── success
+│   │   │   │   └── page.tsx
+│   │   │   └── cancel
+│   │   │       └── page.tsx
+│   │   │
+│   │   ├── cart
+│   │   │   └── page.tsx
+│   │   │
+│   │   ├── account
+│   │   │   ├── page.tsx
+│   │   │   ├── orders
+│   │   │   │   └── page.tsx
+│   │   │   └── settings
+│   │   │       └── page.tsx
+│   │   │
+│   │   └── auth
+│   │       ├── sign-in
+│   │       │   └── page.tsx
+│   │       ├── sign-up
+│   │       │   └── page.tsx
+│   │       └── forgot-password
+│   │           └── page.tsx
+│   │
+│   ├── admin
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   │
+│   │   ├── products
+│   │   │   ├── page.tsx
+│   │   │   ├── create
+│   │   │   │   └── page.tsx
+│   │   │   └── [id]
+│   │   │       ├── page.tsx
+│   │   │       └── edit
+│   │   │           └── page.tsx
+│   │   │
+│   │   ├── orders
+│   │   │   └── page.tsx
+│   │   │
+│   │   ├── customers
+│   │   │   └── page.tsx
+│   │   │
+│   │   └── analytics
+│   │       └── page.tsx
+│   │
+│   ├── api
+│   │   ├── auth
+│   │   │   └── [...all]
+│   │   │       └── route.ts
+│   │   │
+│   │   ├── products
+│   │   │   ├── route.ts
+│   │   │   └── [id]
+│   │   │       └── route.ts
+│   │   │
+│   │   ├── checkout
+│   │   │   ├── create-payment
+│   │   │   │   └── route.ts
+│   │   │   ├── verify-payment
+│   │   │   │   └── route.ts
+│   │   │   └── webhook
+│   │   │       └── cinetpay
+│   │   │           └── route.ts
+│   │   │
+│   │   ├── cart
+│   │   │   └── route.ts
+│   │   │
+│   │   ├── upload
+│   │   │   └── route.ts
+│   │   │
+│   │   └── health
+│   │       └── route.ts
+│   │
+│   ├── global-error.tsx
+│   ├── not-found.tsx
+│   ├── layout.tsx
+│   ├── loading.tsx
+│   └── globals.css
+│
+├── components
+│   ├── ui
+│   │   ├── button.tsx
+│   │   ├── input.tsx
+│   │   ├── modal.tsx
+│   │   ├── dialog.tsx
+│   │   ├── skeleton.tsx
+│   │   ├── badge.tsx
+│   │   ├── dropdown-menu.tsx
+│   │   ├── table.tsx
+│   │   └── toast.tsx
+│   │
+│   ├── layout
+│   │   ├── navbar
+│   │   │   ├── navbar-shell.tsx
+│   │   │   ├── navbar-brand.tsx
+│   │   │   ├── navbar-links.tsx
+│   │   │   ├── navbar-actions.tsx
+│   │   │   └── index.tsx
+│   │   │
+│   │   ├── footer.tsx
+│   │   ├── container.tsx
+│   │   └── mobile-menu.tsx
+│   │
+│   ├── products
+│   │   ├── product-card.tsx
+│   │   ├── product-grid.tsx
+│   │   ├── product-list.tsx
+│   │   ├── product-detail.tsx
+│   │   ├── product-gallery.tsx
+│   │   ├── product-price.tsx
+│   │   ├── product-not-found.tsx
+│   │   ├── product-form.tsx
+│   │   └── product-actions.tsx
+│   │
+│   ├── cart
+│   │   ├── cart-sheet.tsx
+│   │   ├── cart-item.tsx
+│   │   ├── cart-summary.tsx
+│   │   └── add-to-cart-button.tsx
+│   │
+│   ├── checkout
+│   │   ├── checkout-form.tsx
+│   │   ├── payment-button.tsx
+│   │   ├── payment-status.tsx
+│   │   └── order-summary.tsx
+│   │
+│   ├── auth
+│   │   ├── sign-in-form.tsx
+│   │   ├── sign-up-form.tsx
+│   │   ├── auth-provider.tsx
+│   │   └── protected-route.tsx
+│   │
+│   ├── admin
+│   │   ├── admin-sidebar.tsx
+│   │   ├── dashboard-card.tsx
+│   │   ├── orders-table.tsx
+│   │   └── products-table.tsx
+│   │
+│   └── providers
+│       ├── theme-provider.tsx
+│       ├── session-provider.tsx
+│       └── query-provider.tsx
+│
+├── lib
+│   ├── auth
+│   │   ├── auth.ts
+│   │   ├── client.ts
+│   │   ├── server.ts
+│   │   ├── permissions.ts
+│   │   └── session.ts
+│   │
+│   ├── prisma
+│   │   ├── client.ts
+│   │   ├── extensions.ts
+│   │   └── seed.ts
+│   │
+│   ├── db
+│   │   ├── repositories
+│   │   │   ├── product.repository.ts
+│   │   │   ├── order.repository.ts
+│   │   │   ├── user.repository.ts
+│   │   │   └── cart.repository.ts
+│   │   │
+│   │   └── transactions
+│   │       └── order.transaction.ts
+│   │
+│   ├── services
+│   │   ├── product.service.ts
+│   │   ├── order.service.ts
+│   │   ├── payment.service.ts
+│   │   ├── cart.service.ts
+│   │   └── upload.service.ts
+│   │
+│   ├── cinetpay
+│   │   ├── client.ts
+│   │   ├── create-payment.ts
+│   │   ├── verify-payment.ts
+│   │   ├── webhook.ts
+│   │   └── types.ts
+│   │
+│   ├── validators
+│   │   ├── product.schema.ts
+│   │   ├── auth.schema.ts
+│   │   ├── checkout.schema.ts
+│   │   ├── cart.schema.ts
+│   │   └── order.schema.ts
+│   │
+│   ├── mappers
+│   │   ├── product.mapper.ts
+│   │   ├── order.mapper.ts
+│   │   └── user.mapper.ts
+│   │
+│   ├── stores
+│   │   ├── cart.store.ts
+│   │   ├── ui.store.ts
+│   │   ├── currency.store.ts
+│   │   └── auth.store.ts
+│   │
+│   ├── hooks
+│   │   ├── use-cart.ts
+│   │   ├── use-currency.ts
+│   │   ├── use-session.ts
+│   │   └── use-checkout.ts
+│   │
+│   ├── utils
+│   │   ├── currency.ts
+│   │   ├── price.ts
+│   │   ├── slug.ts
+│   │   ├── env.ts
+│   │   ├── logger.ts
+│   │   ├── pagination.ts
+│   │   └── errors.ts
+│   │
+│   ├── constants
+│   │   ├── routes.ts
+│   │   ├── roles.ts
+│   │   └── payment.ts
+│   │
+│   └── types
+│       ├── product.ts
+│       ├── order.ts
+│       ├── auth.ts
+│       └── cart.ts
+│
+├── prisma
+│   ├── schema.prisma
+│   ├── migrations
+│   └── seed.ts
+│
+├── public
+│   ├── media
+│   ├── video
+│
+├── styles
+│   ├── globals.css
+│   ├── utilities.css
+│   └── animations.css
+│
+├── types
+│   ├── better-auth.d.ts # Type definitions for better-auth
+│   ├── order.ts # Type definitions for orders
+│   ├── product.ts # Type definitions for products
+│   ├── cart.ts # Type definitions for carts
+│   ├── user.ts # Type definitions for users
+│   ├── review.ts # Type definitions for reviews
+│   ├── category.ts # Type definitions for categories
+│   ├── payment.ts # Type definitions for payments
+│   └── address.ts # Type definitions for addresses
+│
+├── middleware.ts
+├── next.config.ts
+├── tsconfig.json
+├── package.json
+├── postcss.config.js
+├── tailwind.config.ts
+├── eslint.config.js
+├── prettier.config.js
+├── .env
+├── .env.local
+├── .gitignore
+└── README.md
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
 
-## More Supabase examples
-
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+## Contribution
+```
