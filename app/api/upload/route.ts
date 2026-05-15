@@ -1,7 +1,7 @@
 // app/api/upload/route.ts
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUUIDv7 } from "@/lib/uuid";
 
 export async function POST(request: Request) {
   // Vérifier l'authentification et les droits admin
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   const extension = file.name.split('.').pop();
-  const uniqueName = `${uuidv4()}.${extension}`;
+  const uniqueName = `${generateUUIDv7()}.${extension}`;
   
   const { data, error } = await supabaseAdmin.storage
     .from('images-boutique')

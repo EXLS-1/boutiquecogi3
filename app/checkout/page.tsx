@@ -11,7 +11,7 @@ export default async function CheckoutPage() {
   });
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/auth/login?callbackUrl=/checkout");
   }
 
   // 2. Passage propre des données au client

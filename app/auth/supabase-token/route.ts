@@ -7,7 +7,7 @@ export async function GET() {
   try {
     // 1. Vérification stricte de l'identité via BetterAuth
     const session = await auth.api.getSession({
-      headers: headers(),
+      headers: await headers(),
     });
 
     if (!session || !session.user) {

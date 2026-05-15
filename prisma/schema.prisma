@@ -25,9 +25,9 @@ model User {
   updatedAt     DateTime    @updatedAt
   posts         Post[]
   dashboards    dashboard[]
-  cartItems     CartItem[]
+  cart          Cart?
   reviews       Review[]
-  wishlists     Wishlist[]
+  wishlist      Wishlist?
 
   addresses Address[]
 
@@ -247,6 +247,7 @@ model Order {
 
   items    OrderItem[]
   payments Payment[]
+  shipment Shipment?
 
   @@index([userId, createdAt])
   @@index([status])
@@ -267,7 +268,7 @@ model OrderItem {
 
 model Shipment {
   id      String @id @default(uuid()) @db.Uuid
-  orderId String @unique
+  orderId String @unique @db.Uuid
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   carrierId String?
@@ -361,7 +362,67 @@ enum DiscountType {
   FIXED_AMOUNT
 }
 
-// (Conserve tes modèles existants pour Review, Cart, CartItem, Wishlist en adaptant les clés étrangères @db.Uuid)
+// --- PANIER ---
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @unique @db.Uuid
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String         @id @default(uuid()) @db.Uuid
+  cartId    String         @db.Uuid
+  cart      Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId String         @db.Uuid
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int            @default(1)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+}
+
+// --- AVIS ---
+model Review {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String   @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([productId])
+}
+
+// --- LISTE DE SOUHAITS ---
+model Wishlist {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @unique @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  wishlistId String   @db.Uuid
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String   @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId])
+}
 
 // ENUMS MIS À JOUR
 enum OrderStatus {

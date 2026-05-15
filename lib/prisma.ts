@@ -1,5 +1,4 @@
-// On importe depuis l'alias 'db' défini dans package.json qui pointe vers /generated/prisma
-import { PrismaClient } from 'db';
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 

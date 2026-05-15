@@ -21,7 +21,7 @@ export default async function ProtectedLayout({
 
   // Redirection propre, libérée du try...catch
   if (!isAuthorized) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
   return <>{children}</>;

@@ -13,7 +13,11 @@ export function RoleGuard({ children, allowedRoles, fallback = null }: RoleGuard
 
   if (isPending) return null;
 
-  const userRole = session?.user?.role as "admin" | "user";
+  const raw = session?.user?.role;
+  const userRole =
+    String(raw ?? "user").toLowerCase() === "admin" || raw === "ADMIN"
+      ? "admin"
+      : "user";
 
   if (!session || !allowedRoles.includes(userRole)) {
     return <>{fallback}</>;

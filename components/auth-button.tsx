@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, logOut, SessionUser } from "@/lib/auth/auth-client";
+import { useSession, signOut, SessionUser } from "@/lib/auth/auth-client";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
@@ -63,7 +63,7 @@ export function AuthButton() {
             <button
               onClick={() => {
                 setMenuOpen(false);
-                logOut();
+                signOut();
               }}
               className="w-full text-left px-4 py-2 hover:bg-rose-200 text-sm text-red-600"
             >

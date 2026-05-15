@@ -1,66 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-// Validation helpers
-function isValidPrice(price: any): price is number {
-  return price !== undefined && price !== null && !isNaN(parseFloat(price)) && parseFloat(price) >= 0
-}
-
-function isValidStock(stock: any): stock is number {
-  return stock !== undefined && stock !== null && !isNaN(parseInt(stock)) && parseInt(stock) >= 0
+async function findProduct(id: string) {
+  return prisma.product.findFirst({
+    where: {
+      OR: [{ id }, { slug: id }, { variants: { some: { sku: id } } }],
+      isArchived: false,
+    },
+    include: {
+      category: { select: { slug: true, name: true } },
+      variants: { take: 1 },
+    },
+  });
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-
-    if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        { status: 'error', message: 'Invalid product ID' },
-        { status: 400 }
-      )
-    }
-
-    const product = await prisma.product.findUnique({
-      where: { id, isArchived: false },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        images: true,
-        category: true,
-        stock: true,
-        isFeatured: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
+    const { id } = await params;
+    const product = await findProduct(id);
 
     if (!product) {
       return NextResponse.json(
-        { status: 'error', message: 'Product not found' },
+        { status: "error", message: "Product not found" },
         { status: 404 }
-      )
+      );
     }
 
     return NextResponse.json({
-      status: 'success',
-      data: product
-    })
-  } catch (error) {
-    console.error('Error fetching product:', error)
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Failed to fetch product',
-        error: error instanceof Error ? error.message : 'Unknown error'
+      status: "success",
+      data: {
+        id: product.variants[0]?.sku ?? product.id,
+        name: product.name,
+        description: product.description,
+        price: Math.round(product.basePrice / 100),
+        images: product.images,
+        category: product.category?.slug ?? "femme",
+        isFeatured: product.isFeatured,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
       },
+    });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return NextResponse.json(
+      { status: "error", message: "Failed to fetch product" },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -69,200 +57,75 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const { id } = await params;
+    const existing = await findProduct(id);
 
-    if (!id || typeof id !== 'string') {
+    if (!existing) {
       return NextResponse.json(
-        { status: 'error', message: 'Invalid product ID' },
-        { status: 400 }
-      )
-    }
-
-    const body = await request.json()
-    const { name, description, price, images, category, stock, isFeatured } = body
-
-    // Build update data with validation
-    const updateData: any = {}
-
-    if (name !== undefined) {
-      if (typeof name !== 'string' || name.trim().length === 0) {
-        return NextResponse.json(
-          { status: 'error', message: 'Name must be a non-empty string' },
-          { status: 400 }
-        )
-      }
-      updateData.name = name.trim()
-    }
-
-    if (description !== undefined) {
-      if (typeof description !== 'string') {
-        return NextResponse.json(
-          { status: 'error', message: 'Description must be a string' },
-          { status: 400 }
-        )
-      }
-      updateData.description = description
-    }
-
-    if (price !== undefined) {
-      if (!isValidPrice(price)) {
-        return NextResponse.json(
-          { status: 'error', message: 'Price must be a positive number' },
-          { status: 400 }
-        )
-      }
-      updateData.price = parseFloat(price)
-    }
-
-    if (images !== undefined) {
-      if (!Array.isArray(images)) {
-        return NextResponse.json(
-          { status: 'error', message: 'Images must be an array' },
-          { status: 400 }
-        )
-      }
-      updateData.images = images
-    }
-
-    if (category !== undefined) {
-      if (typeof category !== 'string' || category.trim().length === 0) {
-        return NextResponse.json(
-          { status: 'error', message: 'Category must be a non-empty string' },
-          { status: 400 }
-        )
-      }
-      updateData.category = category
-    }
-
-    if (stock !== undefined) {
-      if (!isValidStock(stock)) {
-        return NextResponse.json(
-          { status: 'error', message: 'Stock must be a non-negative integer' },
-          { status: 400 }
-        )
-      }
-      updateData.stock = typeof stock === 'string' ? parseInt(stock) : stock
-    }
-
-    if (isFeatured !== undefined) {
-      if (typeof isFeatured !== 'boolean') {
-        return NextResponse.json(
-          { status: 'error', message: 'isFeatured must be a boolean' },
-          { status: 400 }
-        )
-      }
-      updateData.isFeatured = isFeatured
-    }
-
-    // Check if product exists and is not archived
-    const existingProduct = await prisma.product.findUnique({
-      where: { id, isArchived: false }
-    })
-
-    if (!existingProduct) {
-      return NextResponse.json(
-        { status: 'error', message: 'Product not found' },
+        { status: "error", message: "Product not found" },
         { status: 404 }
-      )
+      );
     }
+
+    const body = await request.json();
+    const data: {
+      name?: string;
+      description?: string;
+      basePrice?: number;
+      images?: string[];
+      isFeatured?: boolean;
+      isArchived?: boolean;
+    } = {};
+
+    if (body.name) data.name = String(body.name).trim();
+    if (body.description !== undefined) data.description = String(body.description);
+    if (body.price !== undefined) data.basePrice = Math.round(parseFloat(body.price) * 100);
+    if (Array.isArray(body.images)) data.images = body.images;
+    if (body.isFeatured !== undefined) data.isFeatured = Boolean(body.isFeatured);
+    if (body.isArchived !== undefined) data.isArchived = Boolean(body.isArchived);
 
     const product = await prisma.product.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        images: true,
-        category: true,
-        stock: true,
-        isFeatured: true,
-        updatedAt: true
-      }
-    })
+      where: { id: existing.id },
+      data,
+      include: { category: true, variants: true },
+    });
 
-    return NextResponse.json({
-      status: 'success',
-      data: product
-    })
+    return NextResponse.json({ status: "success", data: product });
   } catch (error) {
-    console.error('Error updating product:', error)
+    console.error("Error updating product:", error);
     return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Failed to update product',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { status: "error", message: "Failed to update product" },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const { id } = await params;
+    const existing = await findProduct(id);
 
-    if (!id || typeof id !== 'string') {
+    if (!existing) {
       return NextResponse.json(
-        { status: 'error', message: 'Invalid product ID' },
-        { status: 400 }
-      )
-    }
-
-    // Check if product exists
-    const product = await prisma.product.findUnique({
-      where: { id, isArchived: false }
-    })
-
-    if (!product) {
-      return NextResponse.json(
-        { status: 'error', message: 'Product not found' },
+        { status: "error", message: "Product not found" },
         { status: 404 }
-      )
+      );
     }
 
-    // Check if product has order items (soft delete instead)
-    const orderItemsCount = await prisma.orderItem.count({
-      where: { productId: id }
-    })
+    await prisma.product.update({
+      where: { id: existing.id },
+      data: { isArchived: true },
+    });
 
-    if (orderItemsCount > 0) {
-      // Soft delete: mark as archived instead of hard delete
-      await prisma.product.update({
-        where: { id },
-        data: { isArchived: true }
-      })
-
-      return NextResponse.json({
-        status: 'success',
-        message: 'Product archived (could not delete due to order history)',
-        data: { archived: true }
-      })
-    }
-
-    // Hard delete if no order history
-    await prisma.product.delete({
-      where: { id }
-    })
-
-    return NextResponse.json({
-      status: 'success',
-      message: 'Product deleted successfully',
-      data: { archived: false }
-    })
+    return NextResponse.json({ status: "success" });
   } catch (error) {
-    console.error('Error deleting product:', error)
+    console.error("Error deleting product:", error);
     return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Failed to delete product',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { status: "error", message: "Failed to delete product" },
       { status: 500 }
-    )
+    );
   }
 }

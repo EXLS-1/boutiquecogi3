@@ -4,34 +4,6 @@ Ce document retrace l'organisation des dossiers et la structure technique de l'a
 
 ## 📁 Arborescence des Dossiers
 
-```text
-boutiquecogi3/
-├── app/                    # Coeur de l'application (App Router)
-│   ├── actions/            # Server Actions (Logique métier côté serveur, ex: commandes)
-│   ├── api/                # Endpoints API (Route Handlers, ex: upload média)
-│   ├── (auth)/             # Routes liées à l'authentification (login, register)
-│   ├── checkout/           # Logique du tunnel d'achat et intégration Stripe
-│   └── profile/            # Gestion du compte utilisateur
-├── components/             # Composants React réutilisables (UI & Logique client)
-├── data/                   # Sources de données statiques (fichiers JSON)
-├── docs/                   # Guides de configuration et documentation technique
-├── generated/              # Code auto-généré (Client Prisma personnalisé)
-├── lib/                    # Utilitaires et configurations partagées
-│   ├── supabase/           # Configuration des clients Supabase (Anon & Admin)
-│   ├── auth.ts             # Instance et configuration de BetterAuth
-│   ├── products.ts         # Logique d'accès et de formatage des produits
-│   ├── mappers/            # Fonctions de mappage pour transformer les données brutes
-│   └── format-currency.ts  # Utilitaires de formatage monétaire (USD/CDF)
-├── public/                 # Assets statiques accessibles publiquement
-│   └── media/              # Images des produits et ressources visuelles
-├── types/                  # Définitions de types TypeScript (Interfaces)
-├── .env                    # Variables d'environnement locales (SECRET - non versionné)
-├── .gitignore              # Configuration des fichiers exclus de Git (node_modules, .env, etc.)
-├── package.json            # Manifeste du projet (Scripts et Dépendances)
-├── prisma/                 # Schéma de la base de données et migrations
-└── README.md               # Présentation générale du projet
-```
-
 ## 🛠️ Responsabilités des Dossiers Clés
 
 - **`app/`** : Utilise les fonctionnalités modernes de Next.js. Les fichiers `page.tsx` gèrent le rendu, tandis que `layout.tsx` définit la structure globale.

@@ -1,11 +1,8 @@
-// app/actions/product.actions.ts
-'use server';
+"use server";
 
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { Product } from "@prisma/client";
 
-// Type standardisé pour les actions serveur
 export type ActionResponse<T> =
   | { success: true; data: T }
   | { success: false; error: string; code?: string };
@@ -16,7 +13,7 @@ interface GetActiveProductsParams {
   featured?: boolean;
 }
 
-interface ProductSummary {
+export interface ProductSummary {
   id: string;
   name: string;
   description: string;
@@ -29,13 +26,47 @@ interface ProductSummary {
   updatedAt: Date;
 }
 
-/**
- * Action métier :
- * - retourne les produits actifs
- * - filtrage optionnel par catégorie
- * - pagination
- * - cache serveur
- */
+const productSelect = {
+  id: true,
+  name: true,
+  description: true,
+  basePrice: true,
+  images: true,
+  isFeatured: true,
+  createdAt: true,
+  updatedAt: true,
+  category: { select: { slug: true } },
+  variants: { select: { sku: true }, take: 1 },
+} as const;
+
+function mapProduct(
+  p: {
+    id: string;
+    name: string;
+    description: string;
+    basePrice: number;
+    images: string[];
+    isFeatured: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    category: { slug: string } | null;
+    variants: { sku: string }[];
+  }
+): ProductSummary {
+  return {
+    id: p.variants[0]?.sku ?? p.id,
+    name: p.name,
+    description: p.description,
+    price: Math.round(p.basePrice / 100),
+    images: p.images,
+    category: p.category?.slug ?? "femme",
+    stock: 10,
+    isFeatured: p.isFeatured,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
+
 export const getActiveProducts = cache(
   async (
     params: GetActiveProductsParams = {}
@@ -43,182 +74,122 @@ export const getActiveProducts = cache(
     try {
       const { category, limit = 20, featured } = params;
 
-      // Validation
       if (limit < 1 || limit > 50) {
         return {
           success: false,
-          error: "La limite doit être comprise entre 1 et 50"
+          error: "La limite doit être comprise entre 1 et 50",
         };
       }
 
-      const where: any = {
-        isArchived: false,
-      };
+      const where: {
+        isArchived: boolean;
+        isFeatured?: boolean;
+        category?: { slug: string };
+      } = { isArchived: false };
 
       if (category) {
-        where.category = category;
+        where.category = { slug: category };
       }
-
       if (featured !== undefined) {
         where.isFeatured = featured;
       }
 
-      // Compter le total
       const total = await prisma.product.count({ where });
-
-      // Récupérer les produits avec sélection explicite des champs
       const products = await prisma.product.findMany({
         where,
         orderBy: { createdAt: "desc" },
         take: limit,
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          price: true,
-          images: true,
-          category: true,
-          stock: true,
-          isFeatured: true,
-          createdAt: true,
-          updatedAt: true
-        }
+        select: productSelect,
       });
 
       return {
         success: true,
-        data: { products, total }
+        data: {
+          products: products.map(mapProduct),
+          total,
+        },
       };
     } catch (error) {
       console.error("[getActiveProducts]", error);
-
       return {
         success: false,
         error: "Impossible de charger le catalogue pour le moment.",
-        code: "PRODUCT_FETCH_ERROR"
+        code: "PRODUCT_FETCH_ERROR",
       };
     }
   }
 );
 
-/**
- * Récupérer un produit par son ID
- */
-export const getProductById = cache(
+export const getProductByIdAction = cache(
   async (id: string): Promise<ActionResponse<ProductSummary | null>> => {
     try {
-      if (!id || typeof id !== 'string') {
-        return {
-          success: false,
-          error: "ID de produit invalide"
-        };
+      if (!id) {
+        return { success: false, error: "ID de produit invalide" };
       }
 
-      const product = await prisma.product.findUnique({
-        where: { id, isArchived: false },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          price: true,
-          images: true,
-          category: true,
-          stock: true,
-          isFeatured: true,
-          createdAt: true,
-          updatedAt: true
-        }
+      const product = await prisma.product.findFirst({
+        where: {
+          OR: [{ id }, { slug: id }, { variants: { some: { sku: id } } }],
+          isArchived: false,
+        },
+        select: productSelect,
       });
 
       return {
         success: true,
-        data: product
+        data: product ? mapProduct(product) : null,
       };
     } catch (error) {
-      console.error("[getProductById]", error);
-
+      console.error("[getProductByIdAction]", error);
       return {
         success: false,
         error: "Impossible de charger le produit",
-        code: "PRODUCT_FETCH_ERROR"
+        code: "PRODUCT_FETCH_ERROR",
       };
     }
   }
 );
 
-/**
- * Récupérer les produits mis en avant
- */
 export const getFeaturedProducts = cache(
-  async (limit: number = 8): Promise<ActionResponse<ProductSummary[]>> => {
+  async (limit = 8): Promise<ActionResponse<ProductSummary[]>> => {
     try {
-      if (limit < 1 || limit > 50) {
-        return {
-          success: false,
-          error: "La limite doit être comprise entre 1 et 50"
-        };
-      }
-
       const products = await prisma.product.findMany({
-        where: {
-          isArchived: false,
-          isFeatured: true
-        },
+        where: { isArchived: false, isFeatured: true },
         orderBy: { createdAt: "desc" },
-        take: limit,
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          price: true,
-          images: true,
-          category: true,
-          stock: true,
-          isFeatured: true,
-          createdAt: true,
-          updatedAt: true
-        }
+        take: Math.min(Math.max(limit, 1), 50),
+        select: productSelect,
       });
 
-      return {
-        success: true,
-        data: products
-      };
+      return { success: true, data: products.map(mapProduct) };
     } catch (error) {
       console.error("[getFeaturedProducts]", error);
-
       return {
         success: false,
         error: "Impossible de charger les produits en vedette",
-        code: "FEATURED_FETCH_ERROR"
+        code: "FEATURED_FETCH_ERROR",
       };
     }
   }
 );
 
-/**
- * Récupérer les catégories disponibles
- */
 export const getProductCategories = cache(
   async (): Promise<ActionResponse<string[]>> => {
     try {
-      const categories = await prisma.product.findMany({
-        where: { isArchived: false },
-        distinct: ['category'],
-        select: { category: true }
+      const categories = await prisma.category.findMany({
+        select: { slug: true },
+        orderBy: { name: "asc" },
       });
 
       return {
         success: true,
-        data: categories.map(c => c.category).filter(Boolean) as string[]
+        data: categories.map((c) => c.slug),
       };
     } catch (error) {
       console.error("[getProductCategories]", error);
-
       return {
         success: false,
         error: "Impossible de charger les catégories",
-        code: "CATEGORIES_FETCH_ERROR"
+        code: "CATEGORIES_FETCH_ERROR",
       };
     }
   }

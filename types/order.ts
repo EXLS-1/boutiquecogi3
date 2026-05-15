@@ -1,7 +1,10 @@
-import { Order, OrderItem, Product } from "@prisma/client";
+import type { Order, OrderItem, Product, ProductVariant, User } from "@prisma/client";
 
 export type OrderWithItems = Order & {
-  orderItems: (OrderItem & {
-    product: Product;
+  items: (OrderItem & {
+    variant: ProductVariant & {
+      product: Product;
+    };
   })[];
+  user?: Pick<User, "id" | "name" | "email"> | null;
 };

@@ -1,15 +1,23 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/auth/server";
+import { PERMISSIONS } from "@/lib/auth/rbac";
 
 export async function getAllOrdersAdmin() {
+  await requirePermission(PERMISSIONS.ADMIN_DASHBOARD);
+
   return prisma.order.findMany({
     include: {
       user: {
         select: { id: true, email: true, name: true },
       },
-      orderItems: {
-        include: { product: true },
+      items: {
+        include: {
+          variant: {
+            include: { product: true },
+          },
+        },
       },
     },
     orderBy: { createdAt: "desc" },

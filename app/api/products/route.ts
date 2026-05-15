@@ -1,229 +1,182 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/utils/slug";
+import { generateUUIDv7 } from "@/lib/uuid";
 
-const MAX_LIMIT = 50
-const DEFAULT_LIMIT = 20
+const MAX_LIMIT = 50;
+const DEFAULT_LIMIT = 20;
 
 interface ProductFilters {
-  category?: string
-  search?: string
-  isFeatured?: boolean
-  minPrice?: number
-  maxPrice?: number
-}
-
-function validateFilters(filters: ProductFilters): { valid: boolean; error?: string } {
-  if (filters.minPrice !== undefined && filters.minPrice < 0) {
-    return { valid: false, error: 'minPrice must be positive' }
-  }
-  if (filters.maxPrice !== undefined && filters.maxPrice < 0) {
-    return { valid: false, error: 'maxPrice must be positive' }
-  }
-  if (filters.minPrice !== undefined && filters.maxPrice !== undefined) {
-    if (filters.minPrice > filters.maxPrice) {
-      return { valid: false, error: 'minPrice cannot be greater than maxPrice' }
-    }
-  }
-  return { valid: true }
+  category?: string;
+  search?: string;
+  isFeatured?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 function buildWhereClause(filters: ProductFilters) {
-  const where: any = {
-    isArchived: false
-  }
+  const where: {
+    isArchived: boolean;
+    isFeatured?: boolean;
+    category?: { slug: string };
+    OR?: Array<{ name?: object; description?: object }>;
+    basePrice?: { gte?: number; lte?: number };
+  } = { isArchived: false };
 
-  if (filters.category && filters.category !== 'all') {
-    where.category = filters.category
+  if (filters.category && filters.category !== "all") {
+    where.category = { slug: filters.category };
   }
 
   if (filters.isFeatured !== undefined) {
-    where.isFeatured = filters.isFeatured
+    where.isFeatured = filters.isFeatured;
   }
 
   if (filters.search) {
     where.OR = [
-      { name: { contains: filters.search, mode: 'insensitive' } },
-      { description: { contains: filters.search, mode: 'insensitive' } }
-    ]
+      { name: { contains: filters.search, mode: "insensitive" } },
+      { description: { contains: filters.search, mode: "insensitive" } },
+    ];
   }
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-    where.price = {}
+    where.basePrice = {};
     if (filters.minPrice !== undefined) {
-      where.price.gte = filters.minPrice
+      where.basePrice.gte = Math.round(filters.minPrice * 100);
     }
     if (filters.maxPrice !== undefined) {
-      where.price.lte = filters.maxPrice
+      where.basePrice.lte = Math.round(filters.maxPrice * 100);
     }
   }
 
-  return where
+  return where;
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    
-    // Pagination
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get('limit') || String(DEFAULT_LIMIT))))
-    const skip = (page - 1) * limit
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(
+      MAX_LIMIT,
+      Math.max(1, parseInt(searchParams.get("limit") || String(DEFAULT_LIMIT), 10))
+    );
+    const skip = (page - 1) * limit;
 
-    // Filters
     const filters: ProductFilters = {
-      category: searchParams.get('category') || undefined,
-      search: searchParams.get('search') || undefined,
-      isFeatured: searchParams.get('isFeatured') === 'true',
-      minPrice: searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined,
-      maxPrice: searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined
-    }
+      category: searchParams.get("category") || undefined,
+      search: searchParams.get("search") || undefined,
+      isFeatured:
+        searchParams.get("isFeatured") === "true" ? true : undefined,
+      minPrice: searchParams.get("minPrice")
+        ? parseFloat(searchParams.get("minPrice")!)
+        : undefined,
+      maxPrice: searchParams.get("maxPrice")
+        ? parseFloat(searchParams.get("maxPrice")!)
+        : undefined,
+    };
 
-    // Validate filters
-    const validation = validateFilters(filters)
-    if (!validation.valid) {
-      return NextResponse.json(
-        { status: 'error', message: validation.error },
-        { status: 400 }
-      )
-    }
+    const where = buildWhereClause(filters);
+    const total = await prisma.product.count({ where });
 
-    const where = buildWhereClause(filters)
-
-    // Get total count for pagination
-    const total = await prisma.product.count({ where })
-
-    // Get products with pagination
     const products = await prisma.product.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       skip,
       take: limit,
       select: {
         id: true,
         name: true,
+        slug: true,
         description: true,
-        price: true,
+        basePrice: true,
         images: true,
-        category: true,
-        stock: true,
         isFeatured: true,
         createdAt: true,
-        updatedAt: true
-      }
-    })
+        updatedAt: true,
+        category: { select: { slug: true, name: true } },
+        variants: { select: { sku: true }, take: 1 },
+      },
+    });
 
     return NextResponse.json({
-      status: 'success',
+      status: "success",
       data: {
-        products,
+        products: products.map((p) => ({
+          id: p.variants[0]?.sku ?? p.id,
+          name: p.name,
+          description: p.description,
+          price: Math.round(p.basePrice / 100),
+          images: p.images,
+          category: p.category?.slug ?? "femme",
+          isFeatured: p.isFeatured,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        })),
         pagination: {
           page,
           limit,
           total,
           totalPages: Math.ceil(total / limit),
           hasNext: page * limit < total,
-          hasPrev: page > 1
-        }
-      }
-    })
-  } catch (error) {
-    console.error('Error fetching products:', error)
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Failed to fetch products',
-        error: error instanceof Error ? error.message : 'Unknown error'
+          hasPrev: page > 1,
+        },
       },
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return NextResponse.json(
+      { status: "error", message: "Failed to fetch products" },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, description, price, images, category, stock, isFeatured } = body
+    const body = await request.json();
+    const { name, description, price, images, category, isFeatured } = body;
 
-    // Validation
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    if (!name?.trim()) {
       return NextResponse.json(
-        { status: 'error', message: 'Name is required and must be a non-empty string' },
+        { status: "error", message: "Name is required" },
         { status: 400 }
-      )
+      );
     }
 
-    if (!description || typeof description !== 'string') {
-      return NextResponse.json(
-        { status: 'error', message: 'Description is required and must be a string' },
-        { status: 400 }
-      )
-    }
+    const categoryRecord = await prisma.category.findFirst({
+      where: { slug: String(category || "femme") },
+    });
 
-    if (price === undefined || price === null || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
-      return NextResponse.json(
-        { status: 'error', message: 'Price is required and must be a positive number' },
-        { status: 400 }
-      )
-    }
-
-    if (!category || typeof category !== 'string') {
-      return NextResponse.json(
-        { status: 'error', message: 'Category is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!Array.isArray(images)) {
-      return NextResponse.json(
-        { status: 'error', message: 'Images must be an array' },
-        { status: 400 }
-      )
-    }
+    const slug = slugify(`${name}-${Date.now()}`);
+    const basePrice = Math.round(parseFloat(price) * 100);
 
     const product = await prisma.product.create({
       data: {
+        id: generateUUIDv7(),
         name: name.trim(),
-        description,
-        price: parseFloat(price),
-        images,
-        category,
-        stock: parseInt(stock) || 0,
-        isFeatured: isFeatured === true
+        slug,
+        description: String(description || ""),
+        basePrice,
+        images: Array.isArray(images) ? images : [],
+        categoryId: categoryRecord?.id,
+        isFeatured: isFeatured === true,
+        variants: {
+          create: {
+            id: generateUUIDv7(),
+            sku: slug,
+            attributes: {},
+            priceOffset: 0,
+          },
+        },
       },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        images: true,
-        category: true,
-        stock: true,
-        isFeatured: true,
-        createdAt: true
-      }
-    })
+      include: { category: true, variants: true },
+    });
 
-    return NextResponse.json({
-      status: 'success',
-      data: product
-    }, { status: 201 })
+    return NextResponse.json({ status: "success", data: product }, { status: 201 });
   } catch (error) {
-    console.error('Error creating product:', error)
-    
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json(
-        { status: 'error', message: 'A product with this identifier already exists' },
-        { status: 409 }
-      )
-    }
-
+    console.error("Error creating product:", error);
     return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Failed to create product',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { status: "error", message: "Failed to create product" },
       { status: 500 }
-    )
+    );
   }
 }

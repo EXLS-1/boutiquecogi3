@@ -18,14 +18,17 @@ export async function requireAuth() {
   const session = await getServerSession();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
-  // Sécurisation stricte du rôle
   const rawRole = session.user.role;
-  const userRole: Role = Object.values(ROLES).includes(rawRole as Role) 
-    ? (rawRole as Role) 
-    : ROLES.USER;
+  const normalized = String(rawRole ?? "user").toLowerCase();
+  const userRole: Role =
+    normalized === "admin" || rawRole === "ADMIN"
+      ? ROLES.ADMIN
+      : normalized === "super_admin"
+        ? ROLES.SUPER_ADMIN
+        : ROLES.USER;
 
   return {
     ...session.user,
