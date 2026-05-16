@@ -31,6 +31,8 @@ model User {
 
   addresses      Address[]
   productReviews ProductReview[]
+  couponUsages   CouponUsage[]
+  notifications  Notification[]
 
   @@index([email])
   // Relation avec
@@ -114,7 +116,7 @@ model AuditLog {
 }
 
 // ==========================================
-// --- UTILISATEURS & ADRESSES ---
+// --- ADRESSES UTILISATEURS ---
 // ==========================================
 model Address {
   id        String   @id @default(uuid()) @db.Uuid
@@ -339,9 +341,9 @@ enum TransactionType {
 }
 
 // ==========================================
-// PANIER
+// PANIER, COMMANDES ET LOGISTIQUE
 // ==========================================
-// --- COMMANDES ET LOGISTIQUE ---
+
 model Cart {
   id        String     @id @default(uuid()) @db.Uuid
   userId    String     @unique @db.Uuid
@@ -398,26 +400,58 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items    OrderItem[]
-  payments Payment[]
-  shipment Shipment?
+  items                OrderItem[]
+  payments             Payment[]
+  shipment             Shipment?
+  orderStatusHistories OrderStatusHistory[]
+  returnRequests       ReturnRequest[]
+  couponUsage          CouponUsage?
+  giftCardRedemptions  GiftCardRedemption[]
 
   @@index([userId, createdAt])
   @@index([status])
 }
 
 model OrderItem {
-  id        String         @id @default(uuid()) @db.Uuid
-  orderId   String         @db.Uuid
-  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variantId String         @db.Uuid
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
-  quantity  Int
-  unitPrice Int // Prix unitaire figé au moment de l'achat
-  subtotal  Int // unitPrice * quantity
+  id             String          @id @default(uuid()) @db.Uuid
+  orderId        String          @db.Uuid
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId      String          @db.Uuid
+  variant        ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity       Int
+  unitPrice      Int // Prix unitaire figé au moment de l'achat
+  subtotal       Int // unitPrice * quantity
+  returnRequests ReturnRequest[]
 
   @@index([orderId])
 }
+
+model OrderStatusHistory {
+  id        String      @id @db.Uuid
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?     @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}
+
+model Carrier {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique
+  code      String     @unique // Ex: "DHL", "FEDEX", "POSTE_RDC"
+  contact   String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  shipments Shipment[]
+}
+
+// ==========================================
+// EXPÉDITION
+// ==========================================
 
 model Shipment {
   id      String @id @default(uuid()) @db.Uuid
@@ -434,19 +468,26 @@ model Shipment {
   shippedAt   DateTime?
   deliveredAt DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  shippingMethod   ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
+  shippingMethodId String?         @db.Uuid
 }
 
-model Carrier {
-  id        String     @id @default(uuid()) @db.Uuid
-  name      String     @unique
-  code      String     @unique // Ex: "DHL", "FEDEX", "POSTE_RDC"
-  contact   String?
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  shipments Shipment[]
+model ShippingMethod {
+  id            String     @id @db.Uuid
+  name          String
+  description   String?
+  price         Int // centimes
+  freeShipping  Boolean    @default(false)
+  minAmount     Int? // montant minimum pour la gratuité (centimes)
+  carrier       String?
+  estimatedDays String?
+  isActive      Boolean    @default(true)
+  orders        Order[]
+  shipments     Shipment[]
+
+  @@map("shipping_methods")
 }
 
 enum ShipmentStatus {
@@ -457,30 +498,103 @@ enum ShipmentStatus {
   EXCEPTION // Problème de livraison
 }
 
-model ShippingMethod {
-  id          String  @id @default(uuid()) @db.Uuid
-  name        String // Ex: "Livraison Express Kinshasa"
-  description String?
-  basePrice   Int
-  isActive    Boolean @default(true)
-  orders      Order[]
+// ==========================================
+// PAIEMENTS
+// ==========================================
+
+model Payment {
+  id            String           @id @db.Uuid
+  orderId       String           @unique
+  order         Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Int // centimes
+  currency      String           @default("XOF")
+  method        String? // "stripe", "cinetpay", "paypal"
+  status        PaymentStatus    @default(PENDING)
+  transactionId String?          @unique
+  paidAt        DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  attempts      PaymentAttempt[]
+  refund        Refund?
+
+  @@map("payments")
 }
 
-// --- PAIEMENT ---
-model Payment {
-  id            String        @id @default(uuid()) @db.Uuid
-  orderId       String        @db.Uuid
-  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount        Int
-  currency      String // Ex: CDF ou USD
-  status        PaymentStatus @default(PENDING)
-  provider      String        @default("CINETPAY")
-  transactionId String?       @unique // ID fourni par CinetPay
-  metadata      Json? // Pour stocker le payload brut de CinetPay en cas de litige
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+model PaymentAttempt {
+  id        String        @id @default(uuid()) @db.Uuid
+  paymentId String        @db.Uuid
+  payment   Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount    Int // Montant de la tentative (peut être différent du montant total du paiement)
+  status    PaymentStatus @default(PENDING)
+  method    String? // Méthode utilisée pour cette tentative (ex: "CinetPay", "Stripe")
+  createdAt DateTime      @default(now())
 
-  refunds Refund[]
+  @@index([paymentId, createdAt])
+  @@map("payment_attempts")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ==========================================
+// RETOURS
+// ==========================================
+
+model Return {
+  id          String       @id @db.Uuid
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reason      String
+  status      ReturnStatus @default(PENDING)
+  requestedAt DateTime     @default(now())
+  resolvedAt  DateTime?
+
+  returnItems ReturnItem[]
+}
+
+model ReturnItem {
+  id             String       @id @db.Uuid
+  returnId       String
+  return         Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItemId    String
+  orderItem      OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  quantity       Int          @default(1)
+  reason         String
+  status         ReturnStatus @default(REQUESTED)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([returnId])
+  @@index([orderItemId])
+  @@map("return_items")
+}
+
+model ReturnRequest {
+  id          String       @id @db.Uuid
+  orderItemId String
+  orderItem   OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quantity    Int          @default(1)
+  reason      String
+  status      ReturnStatus @default(REQUESTED)
+  requestedAt DateTime     @default(now())
+  resolvedAt  DateTime?
+
+  @@index([orderId])
+  @@map("return_requests")
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RECEIVED
+  REFUNDED
 }
 
 model Refund {
@@ -492,9 +606,35 @@ model Refund {
   status    RefundStatus @default(PENDING)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+  refundItems RefundItem[]
+
+  @@unique([paymentId])
 }
 
-// --- PROMOTIONS ---
+model RefundItem {
+  id        String       @id @default(uuid()) @db.Uuid
+  refundId  String       @db.Uuid
+  refund    Refund       @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  orderId   String       @db.Uuid
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quantity  Int          @default(1)
+  reason    String?
+  status    RefundStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([refundId])
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+// ==========================================
+// PROMOTIONS & FIDÉLITÉ (Coupons, Cartes Cadeaux, Programmes de Fidélité, Points de Fidélité, Récompenses, Parrainage, Abonnements, Niveaux de Fidélité, Historique de Fidélité, Avantages Exclusifs)
+// ==========================================
 model Coupon {
   id            String       @id @default(uuid()) @db.Uuid
   code          String       @unique
@@ -507,7 +647,23 @@ model Coupon {
   usageCount    Int          @default(0)
   createdAt     DateTime     @default(now())
 
-  orders Order[]
+  orders       Order[]
+  couponUsages CouponUsage[]
+}
+
+model CouponUsage {
+  id       String   @id @db.Uuid
+  couponId String
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId  String   @unique
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  usedAt   DateTime @default(now())
+
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_usages")
 }
 
 enum DiscountType {
@@ -515,47 +671,6 @@ enum DiscountType {
   FIXED_AMOUNT
 }
 
-// --- PANIER ---
-
-// --- AVIS ---
-model Review {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId String   @db.Uuid
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  rating    Int
-  comment   String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, productId])
-  @@index([productId])
-}
-
-// --- LISTE DE SOUHAITS ---
-model Wishlist {
-  id        String         @id @default(uuid()) @db.Uuid
-  userId    String         @unique @db.Uuid
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     WishlistItem[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-}
-
-model WishlistItem {
-  id         String   @id @default(uuid()) @db.Uuid
-  wishlistId String   @db.Uuid
-  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  productId  String   @db.Uuid
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-
-  @@unique([wishlistId, productId])
-  @@index([wishlistId])
-}
-
-// ENUMS MIS À JOUR
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -566,16 +681,105 @@ enum OrderStatus {
   REFUNDED
 }
 
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  REFUNDED
+// ==========================================
+// CARTES CADEAUX
+// ==========================================
+
+model GiftCard {
+  id             String               @id @db.Uuid
+  code           String               @unique
+  initialBalance Int // centimes
+  balance        Int
+  expiresAt      DateTime?
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  redemptions    GiftCardRedemption[]
+
+  @@map("gift_cards")
 }
 
-enum RefundStatus {
-  PENDING
-  COMPLETED
-  FAILED
+model GiftCardRedemption {
+  id         String   @id @db.Uuid
+  giftCardId String
+  giftCard   GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount     Int // centimes utilisés
+  createdAt  DateTime @default(now())
+
+  @@index([giftCardId])
+  @@map("gift_card_redemptions")
+}
+
+// ==========================================
+// AVIS & SOUHAITS
+// ==========================================
+
+model Review {
+  id        String   @id @db.Uuid
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      @default(0)
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model Wishlist {
+  id        String         @id @db.Uuid
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  items     WishlistItem[]
+
+  @@index([userId])
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String   @id @db.Uuid
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  addedAt    DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+  @@map("wishlist_items")
+}
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id        String   @id @db.Uuid
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // ex: "order_confirmed", "shipped", "promo"
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationTemplate {
+  id      String @id @db.Uuid
+  name    String @unique
+  subject String
+  body    String @db.Text
+  vars    Json? // variables disponibles pour le template
+
+  @@map("notification_templates")
 }
