@@ -1,6 +1,6 @@
 // This component is adapted from the one in the shadcn/ui template, with some custom themes added.
 // Source: https://github.com/shadcn/ui/blob/main/apps/www/components/theme-switcher.tsx
-// components/theme-switcher.tsx
+// components/theme/theme-switcher.tsx
 
 "use client";
 

@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { Product } from "@/types/products";
 import { ProductList } from "@/components/product/product-list";
 import { SearchBar } from "@/components/search-bar";
-import { CategoryFilter } from "@/components/category-filter";
+import { CategoryFilter } from "@/components/category/category-filter";
 import { SortFilter } from "@/components/sort-filter";
 import { CurrencyCode } from "@/lib/format-currency";
 

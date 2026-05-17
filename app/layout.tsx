@@ -8,11 +8,11 @@ import { Navbar } from "@/components/navbar";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 import { Footer } from "@/components/footer";
-import { RootProviders } from "@/components/root-providers";
+import { RootProviders } from "@/components/theme/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
 import { cn } from "@/lib/utils";
 import { cookies } from "next/headers";
-import { CurrencyProvider } from "./theme-provider";
+import { CurrencyProvider } from "../components/theme/theme-provider";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });

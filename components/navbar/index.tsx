@@ -5,7 +5,7 @@ import React from "react";
 
 import { useUIStore } from "@/store/use-ui-store";
 
-import { AuthButton } from "@/components/auth-button";
+import { AuthButton } from "@/components/auth/auth-button";
 
 import { NavbarShell } from "@/components/navbar/navbar-shell";
 import { NavbarBrand } from "@/components/navbar/navbar-brand";

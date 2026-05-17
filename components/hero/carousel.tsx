@@ -1,7 +1,7 @@
 "use client";
 
 import { Product } from "@prisma/client"; // Utilisation du type Prisma
-import { Card, CardContent, CardTitle } from "./ui/card";
+import { Card, CardContent, CardTitle } from "../ui/cardd";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
