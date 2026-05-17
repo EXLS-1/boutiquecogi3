@@ -1,7 +1,13 @@
+// composant Carousel pour la page d'accueil, affichant les produits en rotation automatique
+// Utilise le type Product de Prisma pour garantir la cohérence des données
+// Affiche une image, le nom et le prix du produit en surimpression
+// Le carousel change de produit toutes les 5 secondes grâce à useEffect et setInterval
+// Le composant est conçu pour être réutilisable et facilement intégrable dans la page d'accueil ou d'autres sections du site
+// components/hero/carousel.tsx
 "use client";
 
 import { Product } from "@prisma/client"; // Utilisation du type Prisma
-import { Card, CardContent, CardTitle } from "../ui/cardd";
+import { Card, CardContent, CardTitle } from "../ui/card";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
