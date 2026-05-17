@@ -1,7 +1,7 @@
 // components/root-providers.tsx
 "use client";
 
-import { ThemeProvider } from "@/app/provider";
+import { ThemeProvider } from "@/app/theme-provider";
 
 export function RootProviders({ children }: { children: React.ReactNode }) {
   return (

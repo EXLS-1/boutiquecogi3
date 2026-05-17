@@ -2,7 +2,7 @@
 import { cookies } from 'next/headers';
 import { Hero } from "@/components/hero";
 import Boutique from "@/components/category/boutique";
-import ProductCatalog from "@/components/product-catalog";
+import ProductCatalog from "@/components/product/product-catalog";
 import { getAllProducts } from "@/lib/products";
 import { CurrencyCode } from "@/lib/format-currency";
 

@@ -4,7 +4,7 @@
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { Product } from "@/types/products";
-import { ProductList } from "@/components/product-list";
+import { ProductList } from "@/components/product/product-list";
 import { SearchBar } from "@/components/search-bar";
 import { CategoryFilter } from "@/components/category-filter";
 import { SortFilter } from "@/components/sort-filter";

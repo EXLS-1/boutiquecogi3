@@ -12,7 +12,7 @@ import { RootProviders } from "@/components/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
 import { cn } from "@/lib/utils";
 import { cookies } from "next/headers";
-import { CurrencyProvider } from "./provider";
+import { CurrencyProvider } from "./theme-provider";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });

@@ -1,4 +1,4 @@
-// app/providers.tsx
+// app/theme-provider.tsx
 "use client";
 
 import * as React from "react";
