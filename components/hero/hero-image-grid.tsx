@@ -13,24 +13,74 @@ export function HeroImageGrid({
   priority = false,
 }: Props) {
   return (
-    <div className="grid h-full w-full grid-cols-3">
-      {items.map((image, index) => (
-        <div
-          key={image.id}
-          className="relative h-full overflow-hidden"
-        >
-          <Image
-            src={image.src}
-            alt={image.id}
-            fill
-            priority={priority && index === 0}
-            sizes="33vw"
-            className="object-cover"
-          />
+    <div className="flex h-full w-full items-center justify-center overflow-hidden px-6 md:px-10">
+      <div className="flex h-full w-full max-w-450 items-center justify-center gap-4 md:gap-6 lg:gap-8">
+        {items.map((image, index) => {
+          const isCenter = index === 1;
 
-          <div className="absolute inset-0 bg-black/30" />
-        </div>
-      ))}
+          return (
+            <div
+              key={image.id}
+              className={`
+                relative
+                overflow-hidden
+                rounded-3xl
+                border
+                border-white/10
+                bg-black/20
+                shadow-2xl
+                backdrop-blur-sm
+                transition-all
+                duration-700
+                ease-out
+                will-change-transform
+                ${
+                  isCenter
+                    ? `
+                      z-20
+                      h-[72%]
+                      w-[38%]
+                      scale-100
+                    `
+                    : `
+                      z-10
+                      h-[62%]
+                      w-[28%]
+                      scale-80
+                      opacity-90
+                    `
+                }
+              `}
+            >
+              {/* Image */}
+              <Image
+                src={image.src}
+                alt={image.id}
+                fill
+                priority={priority && isCenter}
+                sizes={
+                  isCenter
+                    ? "(max-width: 768px) 90vw, 38vw"
+                    : "(max-width: 768px) 45vw, 28vw"
+                }
+                className="
+                  object-cover
+                  transition-transform
+                  duration-1000
+                  ease-out
+                  hover:scale-105
+                "
+              />
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/10 to-transparent" />
+
+              {/* Glass reflection */}
+              <div className="absolute inset-0 bg-white/3" />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
