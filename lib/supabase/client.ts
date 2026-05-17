@@ -1,17 +1,11 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+// lib/supabase/client.ts
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { createBrowserClient } from "@supabase/ssr";
+import { SupabaseClient } from "@supabase/supabase-js";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Variables Supabase client manquantes");
-}
-
-/*
- * Client Supabase public (ANON)
- * Utilisable côté client UNIQUEMENT
- */
-export const supabase: SupabaseClient = createClient(
-  supabaseUrl,
-  supabaseAnonKey
+export const createClient = (): SupabaseClient =>
+  
+createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );

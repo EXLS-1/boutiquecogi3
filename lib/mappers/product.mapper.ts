@@ -1,3 +1,4 @@
+// lib/mappers/product.mapper.ts
 import { ProductSchema } from "@/lib/validators/product.schema";
 
 export function mapProduct(product: unknown) {
@@ -5,15 +6,10 @@ export function mapProduct(product: unknown) {
 
   return {
     id: validated.id,
-
     name: validated.name,
-
     description: validated.description ?? "",
-
     price: validated.price,
-
-    image: validated.images[0] ?? "/placeholder.jpg",
-
+    image: validated.images[0] ?? "/placeholder.webp",
     category: validated.category,
   };
 }
