@@ -1,3 +1,4 @@
+// lib/cinetplay/client.ts
 import type { CinetPayInitPayload, CinetPayInitResponse } from "./types";
 
 const CINETPAY_API_URL = "https://api-checkout.cinetpay.com/v2/payment";

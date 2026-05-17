@@ -1,3 +1,4 @@
+// lib/cinetplay/types.ts
 export interface CinetPayInitPayload {
   apikey: string;
   site_id: string;

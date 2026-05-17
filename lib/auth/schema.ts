@@ -13,6 +13,6 @@ export const signupSchema = loginSchema.extend({
   path: ["confirmPassword"],
 });
 
-export type LoginInput = z.infer<typeof loginSchema>;
+export type SignInInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
-export type AuthInput = LoginInput | SignupInput;   
+export type AuthInput = SignInInput | SignupInput;   

@@ -1,3 +1,4 @@
+// lib/auth/auth-client.ts
 "use client";
 
 import { createAuthClient } from "better-auth/react";
