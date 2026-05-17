@@ -1,6 +1,9 @@
 "use client";
 
-import Image from "next/image";
+import { useRef } from "react";
+
+import Autoplay from "embla-carousel-autoplay";
+
 import {
   Carousel,
   CarouselContent,
@@ -8,79 +11,58 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
-import { useRef, useMemo } from "react";
 
-const MEDIA_ITEMS = [
-  { id: "img1", type: "image", src: "/media/pict01.webp" },
-  { id: "img2", type: "image", src: "/media/pict02.webp" },
-  { id: "img3", type: "image", src: "/media/pict03.webp" },
-  { id: "img4", type: "image", src: "/media/pict04.webp" },
-  { id: "img5", type: "image", src: "/media/pict05.webp" },
-  { id: "img6", type: "image", src: "/media/pict06.webp" },
-  { id: "img7", type: "image", src: "/media/pict07.webp" },
-  { id: "vid1", type: "video", src: "/video/vid01.webm" },
-  { id: "vid2", type: "video", src: "/video/vid02.webm" },
-  { id: "vid3", type: "video", src: "/video/vid03.webm" },
-];
+import { HERO_SLIDES } from "./hero-media";
+import { HeroSlide } from "./hero-slide";
 
-export const Hero = () => {
-  const plugin = useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
-
-  const renderedMedia = useMemo(() => {
-    return MEDIA_ITEMS.map((media, index) => (
-      <CarouselItem key={media.id} className="relative w-full h-[80vh] min-h-150">
-        {media.type === "image" ? (
-          <Image
-            src={media.src}
-            alt={`Slide ${index + 1}`}
-            fill
-            priority  // {index === 0}  LCP optimization: only priority load the first image
-            className="object-cover"
-            sizes="100vw"
-          />
-        ) : (
-          <video
-            className="absolute inset-0 w-full h-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none" // Performance: Do not preload background videos
-          >
-            <source src={media.src} type="video/webm" />
-          </video>
-        )}
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-black/40" />
-      </CarouselItem>
-    ));
-  }, []);
+export function Hero() {
+  const autoplay = useRef(
+    Autoplay({
+      delay: 5000,
+      stopOnInteraction: false,
+      stopOnMouseEnter: true,
+    })
+  );
 
   return (
-    <section className="relative w-full overflow-hidden bg-slate-50">
+    <section className="relative w-full overflow-hidden bg-black">
       <Carousel
-        plugins={[plugin.current]}
+        plugins={[autoplay.current]}
+        opts={{
+          loop: true,
+          align: "start",
+        }}
         className="w-full"
-        opts={{ loop: true }}
       >
         <CarouselContent>
-          {renderedMedia}
+          {HERO_SLIDES.map((slide, index) => (
+            <CarouselItem
+              key={index}
+              className="relative h-[80vh] min-h-[700px] w-full"
+            >
+              <HeroSlide
+                slide={slide}
+                priority={index === 0}
+              />
+            </CarouselItem>
+          ))}
         </CarouselContent>
-        
-        {/* Contenu superposé (Statique par-dessus le carrousel) */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-white px-4 text-center pointer-events-none">
-           <h1 className="text-5xl md:text-7xl font-playfair font-bold tracking-widest uppercase drop-shadow-md text-sky-500">
+
+        {/* Overlay Content */}
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-4 text-center text-white">
+          <h1 className="font-playfair text-5xl font-bold uppercase tracking-[0.25em] text-sky-400 drop-shadow-lg md:text-7xl">
             Boutique COGI
           </h1>
-          <p className="mt-4 text-xl tracking-[0.2em] font-lato">
+
+          <p className="mt-6 font-lato text-lg tracking-[0.3em] md:text-2xl">
             L&apos;ÉLÉGANCE REDÉFINIE PAR LE STYLE
           </p>
         </div>
 
-        <CarouselPrevious className="absolute left-4 z-20 text-sky-500 border-sky-500 hover:bg-rose-500 hover:text-white pointer-events-auto hidden md:flex" />
-        <CarouselNext className="absolute right-4 z-20 text-sky-500 border-sky-500 hover:bg-rose-500 hover:text-white pointer-events-auto hidden md:flex" />
+        <CarouselPrevious className="absolute left-4 z-30 hidden border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white md:flex" />
+
+        <CarouselNext className="absolute right-4 z-30 hidden border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white md:flex" />
       </Carousel>
     </section>
   );
-};
+}
