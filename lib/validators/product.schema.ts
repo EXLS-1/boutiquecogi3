@@ -12,3 +12,4 @@ export const ProductSchema = z.object({
 });
 
 export type ProductSchemaType = z.infer<typeof ProductSchema>;
+

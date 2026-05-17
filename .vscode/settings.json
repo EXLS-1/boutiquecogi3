@@ -7,5 +7,12 @@
     "editor.defaultFormatter": "Prisma.prisma"
     },
     "editor.formatOnSave": true
-       
+    {
+        "servers": {
+            "supabase": {
+                "type": "http",
+                "url": "https://mcp.supabase.com/mcp?project_ref=cyiwlubjrqyjwgggnqhu"
+            }
+        }
+    }   
 }
