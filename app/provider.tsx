@@ -28,25 +28,19 @@ export function CurrencyProvider({
   children,
   initialCurrency,
 }: CurrencyProviderProps) {
-  /**
-   * Zustand setter
-   */
+
+  // Zustand setter pour la devise d'affichage.
   const setCurrency =
     useCurrencyStore(
       (s) => s.setDisplayCurrency
     );
 
-  /**
-   * Evite les updates répétées.
-   */
+  // Evite les updates répétées.
   const initialized = useRef(false);
 
-  /**
-   * Initialisation synchrone unique.
-   */
+  // Initialisation synchrone unique.
   if (!initialized.current) {
     setCurrency(initialCurrency);
-
     initialized.current = true;
   }
 
