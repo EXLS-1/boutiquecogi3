@@ -1,3 +1,4 @@
+// app/actions/admin/users-table.tsx
 "use client";
 
 import { useState, useTransition } from "react";
@@ -88,7 +89,7 @@ export function UsersTable({ initialUsers }: { initialUsers: User[] }) {
                   defaultValue={user.role}
                   onValueChange={(value) => handleRoleChange(user.id, value)}
                 >
-                  <SelectTrigger className="w-[140px] ml-auto h-8 text-xs">
+                  <SelectTrigger className="w-35 ml-auto h-8 text-xs">
                     <SelectValue placeholder="Changer rôle" />
                   </SelectTrigger>
                   <SelectContent>

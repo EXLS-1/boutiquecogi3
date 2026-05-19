@@ -4,8 +4,7 @@
 import React from "react";
 
 import { useUIStore } from "@/store/use-ui-store";
-
-import { AuthButton } from "@/components/auth/auth-button";
+import { NavbarRole } from "@/components/navbar/navbar-role";
 
 import { NavbarShell } from "@/components/navbar/navbar-shell";
 import { NavbarBrand } from "@/components/navbar/navbar-brand";
@@ -44,12 +43,13 @@ export function Navbar({
         logo={logo}
         onMenuClick={toggleLeftSidebar}
       />
-
+      
       <NavbarLinks items={links} />
-
-      <NavbarActions onMenuClick={toggleRightSidebar}>
-        <AuthButton />
-      </NavbarActions>
+<NavbarRole />
+      
+      <NavbarActions onMenuClick={toggleRightSidebar}/>
+      
+      
     </NavbarShell>
   );
 }

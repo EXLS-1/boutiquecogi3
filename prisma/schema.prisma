@@ -41,6 +41,7 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   productViews ProductView[]
+  auditLogs    AuditLog[]
 
   @@index([email])
   @@map("user")
@@ -155,6 +156,7 @@ model Dashboard {
 
 model AuditLog {
   id         String   @id @db.Uuid
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull) // Add this line
   userId     String?
   action     String
   entity     String?

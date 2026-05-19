@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma/client";
-import { UsersTable } from "@/components/admin/users-table";
+import { UsersTable } from "@/app/actions/admin/users-tables";
 import { Shield } from "lucide-react";
 
 export const dynamic = "force-dynamic";

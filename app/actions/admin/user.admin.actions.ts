@@ -1,4 +1,4 @@
-/// Fich app/actions/admin/user.admin.actions.ts
+// app/actions/admin/user.admin.actions.ts
 "use server";
 
 import { prisma } from "@/lib/prisma/client";
