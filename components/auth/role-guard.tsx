@@ -1,3 +1,4 @@
+// components/auth/role-guard.tsx
 "use client";
 
 import { useSession } from "@/lib/auth/auth-client"; // Ton client Better-Auth

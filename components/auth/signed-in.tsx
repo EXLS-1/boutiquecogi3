@@ -1,3 +1,4 @@
+// components/auth/signed-in.tsx
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";

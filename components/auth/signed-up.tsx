@@ -1,3 +1,4 @@
+// components/auth/signed-up.tsx
 "use client";
 
 import Link from "next/link";
@@ -11,7 +12,7 @@ export function SignedUpForm() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p>Votre compte a été créé avec succès.</p>
-        <Link href="/auth/login" className="underline">
+        <Link href="/auth/sign-in" className="underline">
           Aller à la connexion
         </Link>
       </CardContent>

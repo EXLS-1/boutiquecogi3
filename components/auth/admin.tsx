@@ -1,3 +1,4 @@
+// components/auth/admin.tsx
 import Link from "next/link";
 import { getServerSession } from "@/lib/auth/server";
 import { hasPermission } from "@/lib/auth/rbac";

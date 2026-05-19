@@ -1,3 +1,4 @@
+// components/auth/auth-button.tsx
 "use client";
 
 import { useSession, signOut, SessionUser } from "@/lib/auth/auth-client";

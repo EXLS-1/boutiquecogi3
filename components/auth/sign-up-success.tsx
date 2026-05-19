@@ -1,3 +1,4 @@
+// components/auth/sign-up-success.tsx
 "use client";
 
 import { useState } from "react";

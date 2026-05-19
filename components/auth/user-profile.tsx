@@ -1,3 +1,4 @@
+// components/auth/user-profile.tsx
 "use client";
 
 import { LogoutButton } from "./sign-out-button";
