@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { LoginForm } from "@/components/auth/login-form";
+import { LoginForm } from "@/components/auth/sign-in-form";
 
 // Optimisation SEO : Métadonnées injectées directement par le serveur
 export const metadata: Metadata = {

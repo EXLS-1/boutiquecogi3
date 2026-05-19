@@ -1,6 +1,6 @@
 "use client";
 
-import { LogoutButton } from "./logout-button";
+import { LogoutButton } from "./sign-out-button";
 import { 
   Card, 
   CardContent, 

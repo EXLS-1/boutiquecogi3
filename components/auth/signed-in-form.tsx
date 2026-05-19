@@ -1,9 +1,9 @@
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 
-export function LoggedForm() {
+export function SignedForm() {
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) return <p>Chargement...</p>;
@@ -12,7 +12,7 @@ export function LoggedForm() {
   return (
     <div className="flex flex-col gap-4">
       <p>Connecté en tant que {session.user.email}</p>
-      <LogoutButton />
+      <SignOutButton />
     </div>
   );
 }

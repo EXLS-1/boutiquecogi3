@@ -21,12 +21,12 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 // 1. Définition stricte du schéma de validation
-const loginSchema = z.object({
+const signinSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide." }),
   password: z.string().min(6, { message: "Le mot de passe est requis." }),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginFormValues = z.infer<typeof signinSchema>;
 
 export function LoginForm() {
   const [isPending, setIsPending] = useState(false);
@@ -38,7 +38,7 @@ export function LoginForm() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(signinSchema),
     defaultValues: { email: "", password: "" },
   });
 
@@ -60,7 +60,7 @@ export function LoginForm() {
         },
         onError: (ctx) => {
           setIsPending(false);
-          toast.error(ctx.error.message || "Identifiants incorrects.");
+          toast.error(ctx.error.message || "Vos identifiants sont incorrects.");
         },
       }
     );
@@ -81,7 +81,7 @@ export function LoginForm() {
             <Input
               id="email"
               type="email"
-              placeholder="mon_email@example.com"
+              placeholder="votre_email@example.com"
               {...register("email")}
               disabled={isPending} // Désactivation pendant le chargement
               className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
