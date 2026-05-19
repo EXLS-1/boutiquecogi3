@@ -1,87 +1,89 @@
 // components/auth/auth-button.tsx
 "use client";
 
-import { useSession, signOut, SessionUser } from "@/lib/auth/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { LogOut, User, Settings, ShieldCheck } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export function AuthButton() {
-  const { data: session, isPending } = useSession() as { data: { user: SessionUser } | null; isPending: boolean };
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Fermer le menu quand on clique en dehors
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [menuOpen]);
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
 
   if (isPending) {
-    return (
-      <div className="w-8 h-8 rounded-full bg-cyan-200 animate-pulse" />
-    );
+    return <Skeleton className="h-9 w-9 rounded-full" />;
   }
 
-  if (session) {
-    return (
-      <div ref={menuRef} className="relative">
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="flex items-center gap-2 text-sm font-medium hover:text-gray-700"
-        >
-          <div className="w-8 h-8 rounded-full bg-cyan-200 flex items-center justify-center">
-            <span className="text-xs font-bold">
-              {session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        </button>
+  // Si non connecté, on ne rend rien : SignInButton et SignUpButton prennent le relais dans la navbar
+  if (!session) return null;
 
-        {menuOpen && (
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-cyan-200 rounded-lg shadow-lg z-50">
-            <div className="p-4 border-b">
-              <p className="font-semibold text-sm">{session.user?.name || "Utilisateur"}</p>
-              <p className="text-xs text-gray-600">{session.user?.email}</p>
-              {session.user?.role && (
-                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-cyan-100 rounded">
-                  {session.user.role === "ADMIN" ? "Admin" : "User"}
-                </span>
-              )}
-            </div>
-            <Link
-              href="/profile"
-              className="block px-4 py-2 hover:bg-rose-200 text-sm"
-            >
-              Mon Profil
-            </Link>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                signOut();
-              }}
-              className="w-full text-left px-4 py-2 hover:bg-rose-200 text-sm text-red-600"
-            >
-              Déconnexion
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          toast.success("Déconnexion réussie");
+          router.push("/");
+          router.refresh();
+        }
+      }
+    });
+  };
+
+  const initials = session.user.name?.slice(0, 2).toUpperCase() || "U";
+
+  // Normalisation du rôle pour une vérification robuste (Admin ou ADMIN)
+  const isAdmin = 
+    session.user.role?.toLowerCase() === "admin" || 
+    session.user.role === "ADMIN";
 
   return (
-    <Link
-      href="/auth/login"
-      className="bg-white text-cyan-500 px-3 py-2 rounded-full text-lg font-medium hover:bg-cyan-100"
-    >
-      Connexion
-    </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="outline-none focus:ring-2 focus:ring-cyan-500 rounded-full transition-opacity hover:opacity-80">
+          <Avatar className="h-9 w-9 border border-cyan-100">
+            <AvatarImage src={session.user.image || ""} alt={session.user.name} />
+            <AvatarFallback className="bg-cyan-700 text-white text-[10px] font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 mt-2">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{session.user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">{session.user.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profile" className="cursor-pointer flex items-center gap-2">
+            <User className="h-4 w-4" /> Profil
+          </Link>
+        </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem asChild className="text-cyan-700 font-medium">
+            <Link href="/admin" className="cursor-pointer flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" /> Dashboard Admin
+            </Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut} className="text-rose-600 cursor-pointer focus:bg-rose-50 focus:text-rose-700 flex items-center gap-2">
+          <LogOut className="h-4 w-4" /> Déconnexion
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

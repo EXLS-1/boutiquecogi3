@@ -7,12 +7,12 @@ import { authClient } from "@/lib/auth/auth-client";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 
-interface LogoutButtonProps {
+interface SignOutButtonProps {
   className?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
-export function LogoutButton({ className, variant = "outline" }: LogoutButtonProps) {
+export function SignOutButton({ className, variant = "outline" }: SignOutButtonProps) {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
@@ -23,7 +23,7 @@ export function LogoutButton({ className, variant = "outline" }: LogoutButtonPro
         fetchOptions: {
           onSuccess: () => {
             toast.success("Déconnexion réussie.");
-            router.push("/auth/login"); // Redirection immédiate
+            router.push("/auth/Sign-in"); // Redirection immédiate
             router.refresh(); // Force la purge du cache Next.js
           },
           onError: (ctx) => {

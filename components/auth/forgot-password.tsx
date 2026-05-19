@@ -1,9 +1,14 @@
 // components/auth/forgot-password.tsx
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { z } from "zod";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth/auth-client"; // Ajuste le chemin selon ton architecture
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -11,10 +16,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useState } from "react";
+
+// Schéma de validation strict
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Veuillez entrer une adresse email valide."),
+});
 
 export function ForgotPasswordForm({
   className,
@@ -27,21 +33,31 @@ export function ForgotPasswordForm({
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
-    try {
-      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
-      if (error) throw error;
-      setSuccess(true);
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+    // Validation Zod avant l'appel réseau (Optimisation)
+    const validation = forgotPasswordSchema.safeParse({ email });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
     }
+
+    setIsLoading(true);
+
+    // Better-Auth retourne un objet avec data et error, il ne throw pas par défaut
+    const { error: authError } = await authClient.forgetPassword({
+      email: validation.data.email,
+      redirectTo: `${window.location.origin}/auth/update-password`,
+    });
+
+    setIsLoading(false);
+
+    if (authError) {
+      setError(authError.message || "Une erreur est survenue lors de la demande.");
+      return;
+    }
+
+    setSuccess(true);
   };
 
   return (
@@ -49,23 +65,21 @@ export function ForgotPasswordForm({
       {success ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>Password reset instructions sent</CardDescription>
+            <CardTitle className="text-2xl">Vérifiez votre boîte mail</CardTitle>
+            <CardDescription>Les instructions ont été envoyées.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
+              Si un compte est associé à cette adresse, vous recevrez un lien pour réinitialiser votre mot de passe.
             </p>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+            <CardTitle className="text-2xl">Réinitialiser le mot de passe</CardTitle>
             <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
+              Entrez votre email pour recevoir un lien de réinitialisation.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -80,20 +94,21 @@ export function ForgotPasswordForm({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading} // Verrouillage d'état
                   />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {error && <p className="text-sm font-medium text-red-500">{error}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send reset email"}
+                  {isLoading ? "Envoi en cours..." : "Envoyer le lien"}
                 </Button>
               </div>
               <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
+                Vous avez déjà un compte ?{" "}
                 <Link
                   href="/auth/login"
                   className="underline underline-offset-4"
                 >
-                  Login
+                  Se connecter
                 </Link>
               </div>
             </form>

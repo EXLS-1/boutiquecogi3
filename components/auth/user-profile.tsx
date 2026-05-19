@@ -1,7 +1,7 @@
 // components/auth/user-profile.tsx
 "use client";
 
-import { LogoutButton } from "./sign-out-button";
+import { SignOutButton } from "./sign-out-button";
 import { 
   Card, 
   CardContent, 
@@ -53,7 +53,7 @@ export function UserProfile({ user }: UserProfileProps) {
         </div>
       </CardContent>
       <CardFooter>
-        <LogoutButton className="w-full" variant="destructive" />
+        <SignOutButton className="w-full" variant="destructive" />
       </CardFooter>
     </Card>
   );

@@ -14,7 +14,7 @@ export function RoleGuard({ children, allowedRoles, fallback = null }: RoleGuard
 
   if (isPending) return null;
 
-  const raw = session?.user?.role;
+  const raw = session?.user?.role as string | undefined;
   const userRole =
     String(raw ?? "user").toLowerCase() === "admin" || raw === "ADMIN"
       ? "admin"
