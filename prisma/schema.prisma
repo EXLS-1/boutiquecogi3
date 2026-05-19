@@ -19,7 +19,7 @@ model User {
   emailVerified    DateTime?
   password         String?          @db.Text
   image            String?
-  role             Role             @default(USER)
+  role             String           @default("USER")
   sessions         Session[]
   accounts         Account[]
   orders           Order[]

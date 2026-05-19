@@ -1,8 +1,11 @@
 // types/better-auth.d.ts
-import type { Role } from "@/lib/auth/rbac"; // adaptez le chemin
+import type { Role } from "@/lib/auth/rbac";
 
 declare module "better-auth" {
   interface User {
-    role: Role;
+    role: Role | string;
+  }
+  interface Session {
+    user: User;
   }
 }

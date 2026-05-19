@@ -1,52 +1,36 @@
-import Link from "next/link";
-import { headers } from "next/headers";
+"use client";
+
+import { useIsAdmin } from "@/lib/hooks/use-is-admin";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
 
-function isAdminRole(role?: string | null) {
-  if (!role) return false;
-  const normalized = role.toLowerCase();
-  return normalized === "admin" || normalized === "super_admin";
-}
-
-export default async function AdminLayout({
+/**
+ * AdminLayout
+ * Sécurise toutes les routes sous /admin.
+ * Redirige vers /403 si l'utilisateur n'est pas autorisé.
+ */
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { isAdmin, isPending } = useIsAdmin();
 
-  if (!session?.user) {
-    redirect("/auth/login?callbackUrl=/admin");
+  // Gestion du chargement pour éviter le "Flash of Unprivileged Content"
+  if (isPending) {
+    return (
+      <div className="flex h-screen w-full flex-col gap-4 p-8">
+        <Skeleton className="h-12 w-1/4" />
+        <Skeleton className="h-full w-full rounded-xl" />
+      </div>
+    );
   }
 
-  if (!isAdminRole(session.user.role)) {
+  // Redirection immédiate si non autorisé
+  if (!isAdmin) {
     redirect("/403");
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <Link href="/admin" className="text-lg font-semibold text-cyan-900">
-            Admin COGI
-          </Link>
-          <nav className="flex gap-4 text-sm">
-            <Link href="/admin" className="hover:text-cyan-700">
-              Tableau de bord
-            </Link>
-            <Link href="/admin/orders" className="hover:text-cyan-700">
-              Commandes
-            </Link>
-            <Link href="/" className="text-zinc-500 hover:text-zinc-800">
-              Boutique
-            </Link>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-8">{children}</main>
-    </div>
-  );
+  return <div className="min-h-screen bg-slate-50/50">{children}</div>;
 }
