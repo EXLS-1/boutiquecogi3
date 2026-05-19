@@ -1,13 +1,16 @@
 // components/auth/sign-up-form.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/auth-client";
 import toast from "react-hot-toast";
+import { zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core";
+import * as commonTransitions from "@zxcvbn-ts/language-common";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +22,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+
+// Configuration de zxcvbn pour optimiser les performances (chargement des dictionnaires communs)
+zxcvbnOptions.setOptions({
+  dictionary: {
+    ...commonTransitions.dictionary,
+  },
+  graphs: commonTransitions.adjacencyGraphs,
+});
 
 // Définition stricte et vérification croisée des mots de passe
 const signUpSchema = z.object({
@@ -36,16 +48,24 @@ type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 export function SignUpForm() {
   const [isPending, setIsPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
+
+  // Surveillance du mot de passe pour calculer la force
+  const passwordValue = watch("password", "");
+  const passwordScore = useMemo(() => {
+    return passwordValue ? zxcvbn(passwordValue).score : -1;
+  }, [passwordValue]);
 
   const onSubmit = async (data: SignUpFormValues) => {
     await authClient.signUp.email(
@@ -111,11 +131,37 @@ export function SignUpForm() {
             <Label htmlFor="password">Mot de passe</Label>
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               {...register("password")}
               disabled={isPending}
               className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
+            {/* Barre de force du mot de passe */}
+            {passwordValue && (
+              <div className="flex flex-col gap-1.5 mt-1">
+                <div className="flex h-1 w-full gap-1">
+                  {[0, 1, 2, 3].map((step) => (
+                    <div
+                      key={step}
+                      className={cn(
+                        "h-full w-full rounded-full transition-colors duration-300",
+                        step <= passwordScore
+                          ? [
+                              "bg-red-500",    // Très faible
+                              "bg-orange-500", // Faible
+                              "bg-amber-400",  // Moyen
+                              "bg-emerald-500" // Fort
+                            ][passwordScore]
+                          : "bg-slate-200"
+                      )}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                  Force : {["Très faible", "Faible", "Moyen", "Fort", "Excellent"][passwordScore]}
+                </p>
+              </div>
+            )}
             {errors.password && <span className="text-sm text-red-500">{errors.password.message}</span>}
           </div>
 
@@ -123,12 +169,22 @@ export function SignUpForm() {
             <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
             <Input
               id="confirmPassword"
-              type="password"
+              type={showPassword ? "text" : "password"}
               {...register("confirmPassword")}
               disabled={isPending}
               className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
             {errors.confirmPassword && <span className="text-sm text-red-500">{errors.confirmPassword.message}</span>}
+            <div className="flex items-center gap-2 mt-1">
+              <Checkbox
+                id="show-passwords"
+                checked={showPassword}
+                onCheckedChange={(checked) => setShowPassword(!!checked)}
+              />
+              <Label htmlFor="show-passwords" className="text-sm font-normal cursor-pointer text-cyan-700">
+                Afficher les mots de passe
+              </Label>
+            </div>
           </div>
 
           <Button type="submit" className="w-full hover:text-rose-700" disabled={isPending}>

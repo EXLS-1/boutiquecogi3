@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 
 // 1. Définition stricte du schéma de validation
@@ -31,6 +32,7 @@ type LoginFormValues = z.infer<typeof signinSchema>;
 
 export function LoginForm() {
   const [isPending, setIsPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   // 2. Initialisation de React Hook Form pour la performance et la validation
@@ -104,7 +106,7 @@ export function LoginForm() {
             </div>
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               {...register("password")}
               disabled={isPending}
               className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -112,6 +114,16 @@ export function LoginForm() {
             {errors.password && (
               <span className="text-sm text-red-500">{errors.password.message}</span>
             )}
+            <div className="flex items-center gap-2 mt-1">
+              <Checkbox
+                id="show-password"
+                checked={showPassword}
+                onCheckedChange={(checked) => setShowPassword(!!checked)}
+              />
+              <Label htmlFor="show-password" className="text-sm font-normal cursor-pointer text-cyan-700">
+                Afficher le mot de passe
+              </Label>
+            </div>
           </div>
 
           <Button type="submit" className="w-full hover:text-rose-700" disabled={isPending}>
