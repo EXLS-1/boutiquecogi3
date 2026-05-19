@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password";
 
 // Optimisation SEO : Métadonnées injectées directement par le serveur
 export const metadata: Metadata = {
