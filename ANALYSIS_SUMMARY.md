@@ -252,6 +252,7 @@ Breakdown:
    - Focus: Services, validators, API routes
 
 3. **Configurer Error Tracking** (30 min)
+
    ```ts
    npm install @sentry/nextjs
    ```
@@ -291,6 +292,7 @@ Breakdown:
    - Advanced filtering
 
 9. **Load Testing** (1-2 jours)
+
    ```bash
    npm install --save-dev k6
    ```
