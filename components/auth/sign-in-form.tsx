@@ -28,9 +28,9 @@ const signinSchema = z.object({
   password: z.string().min(6, { message: "Le mot de passe est requis." }),
 });
 
-type LoginFormValues = z.infer<typeof signinSchema>;
+type SignInFormValues = z.infer<typeof signinSchema>;
 
-export function LoginForm() {
+export function SignInForm() {
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -40,13 +40,13 @@ export function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
+  } = useForm<SignInFormValues>({
     resolver: zodResolver(signinSchema),
     defaultValues: { email: "", password: "" },
   });
 
   // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: SignInFormValues) => {
     await authClient.signIn.email(
       {
         email: data.email,
@@ -63,7 +63,7 @@ export function LoginForm() {
         },
         onError: (ctx) => {
           setIsPending(false);
-          toast.error(ctx.error.message || "Vos identifiants sont incorrects.");
+          toast.error(ctx.error.message || "Identifiants incorrects.");
         },
       }
     );
@@ -126,8 +126,8 @@ export function LoginForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full hover:text-rose-700" disabled={isPending}>
-            {isPending ? "Vérification..." : "Se connecter"}
+          <Button type="submit" className="w-full text-xl hover:text-rose-700" disabled={isPending}>
+            {isPending ? "La connexion est en cours..." : "Se connecter"}
           </Button>
 
           <div className="text-center text-sm text-cyan-400">

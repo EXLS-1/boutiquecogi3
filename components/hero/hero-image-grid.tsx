@@ -31,7 +31,7 @@ export function HeroImageGrid({
                 shadow-2xl
                 backdrop-blur-sm
                 transition-all
-                duration-700
+                duration-2000
                 ease-out
                 will-change-transform
                 ${
@@ -66,14 +66,14 @@ export function HeroImageGrid({
                 className="
                   object-cover
                   transition-transform
-                  duration-1000
-                  ease-out
+                  duration-3000
+                  // ease-out
                   hover:scale-105
                 "
               />
 
               {/* Overlay */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/10 to-transparent"   />
 
               {/* Glass reflection */}
               <div className="absolute inset-0 bg-white/3" />

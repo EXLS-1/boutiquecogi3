@@ -38,7 +38,7 @@ export function Hero() {
           {HERO_SLIDES.map((slide, index) => (
             <CarouselItem
               key={index}
-              className="relative h-[80vh] min-h-[700px] w-full"
+              className="relative h-[80vh] min-h-175 w-full"
             >
               <HeroSlide
                 slide={slide}

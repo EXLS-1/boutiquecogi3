@@ -1,3 +1,4 @@
+// components/hero/hero-slide.tsx
 "use client";
 
 import { HeroSlide as SlideType } from "./hero-types";

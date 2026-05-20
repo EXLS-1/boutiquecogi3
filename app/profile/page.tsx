@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ProfilePage() {
     return (
         <main className="flex min-h-screen items-center justify-center bg-cyan-100 text-cyan-500 p-4">
-            <LoginForm />
+            <SignInForm />
         </main>
     );
 }

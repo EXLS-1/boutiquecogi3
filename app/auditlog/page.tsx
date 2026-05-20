@@ -2,8 +2,8 @@
 
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma/client";
-import { AuditLogViewer } from "@/components/admin/audit-log-viewer";
+import { prisma } from "@/lib/prisma";
+import { AuditLogViewer } from "@/app/auditlog/audit-log-viewer";
 import { History } from "lucide-react";
 
 export const dynamic = "force-dynamic"; // Assure que les données sont toujours fraîches
@@ -37,9 +37,8 @@ export default async function AdminAuditLogsPage() {
     </div>
   );
 }
-}
 
 export const metadata: Metadata = {
   title: "Journaux d'Audit - Administration",
-  description: "Visualisez et gérez les journaux d'audit du système.",
-};
+  description: "Visualisez et gérez les journaux d'audit du système."  
+}

@@ -20,7 +20,7 @@ export function HeroVideoSlide({ item }: Props) {
         <source src={item.src} type="video/webm" />
       </video>
 
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-white/40" />
     </div>
   );
 }
