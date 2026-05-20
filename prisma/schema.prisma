@@ -216,7 +216,7 @@ model Address {
 
 model Category {
   id             String    @id @db.Uuid
-  name           String
+  name           String    @unique
   slug           String    @unique
   description    String?   @db.Text
   seoTitle       String?
@@ -783,15 +783,54 @@ model PaymentWebhookEvent {
   @@map("payment_webhook_event")
 }
 
-model IdempotencyKey {
-  id          String   @id @db.Uuid
-  key         String   @unique
-  requestHash String
-  response    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum IdempotencyStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
 
+model IdempotencyKey {
+  id     String            @id @db.Uuid
+  key    String            @unique
+  scope  String
+  status IdempotencyStatus @default(PENDING)
+  userId String? // L'utilisateur qui a initié la requête
+
+  method       String?
+  route        String?
+  requestHash  String
+  responseBody Json?
+  errorBody    Json?
+  metadata     Json?
+  retryCount   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lockedAt    DateTime  @default(now())
+  completedAt DateTime?
+  expiresAt   DateTime?
+
+  @@index([scope])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([userId])
+  @@index([key])
   @@map("idempotency_key")
+}
+
+model ReturnReason {
+  id          String       @id @db.Uuid
+  reason      String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  returns     Return[]
+  returnItems ReturnItem[]
+  refunds     Refund[]
+  refundItems RefundItem[]
+
+  @@map("return_reason")
 }
 
 // ==========================================
@@ -799,13 +838,15 @@ model IdempotencyKey {
 // ==========================================
 
 model Return {
-  id          String       @id @db.Uuid
-  orderId     String
-  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  reason      String
-  status      ReturnStatus @default(REQUESTED)
-  requestedAt DateTime     @default(now())
-  resolvedAt  DateTime?
+  id             String        @id @db.Uuid
+  orderId        String
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reason         String
+  status         ReturnStatus  @default(REQUESTED)
+  returnReason   ReturnReason? @relation(fields: [returnReasonId], references: [id])
+  returnReasonId String?       @db.Uuid
+  requestedAt    DateTime      @default(now())
+  resolvedAt     DateTime?
 
   returnItems ReturnItem[]
 
@@ -813,16 +854,18 @@ model Return {
 }
 
 model ReturnItem {
-  id          String       @id @db.Uuid
-  returnId    String
-  return      Return       @relation(fields: [returnId], references: [id], onDelete: Cascade)
-  orderItemId String
-  orderItem   OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
-  quantity    Int          @default(1)
-  reason      String
-  status      ReturnStatus @default(REQUESTED)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             String        @id @db.Uuid
+  returnId       String
+  return         Return        @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItemId    String
+  orderItem      OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  quantity       Int           @default(1)
+  reason         String
+  status         ReturnStatus  @default(REQUESTED)
+  returnReason   ReturnReason? @relation(fields: [returnReasonId], references: [id])
+  returnReasonId String?       @db.Uuid
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([returnId])
   @@index([orderItemId])
@@ -838,30 +881,34 @@ enum ReturnStatus {
 }
 
 model Refund {
-  id          String       @id @db.Uuid
-  paymentId   String       @unique @db.Uuid
-  payment     Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  amount      Int
-  reason      String?
-  status      RefundStatus @default(PENDING)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  refundItems RefundItem[]
+  id             String        @id @db.Uuid
+  paymentId      String        @unique @db.Uuid
+  payment        Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount         Int
+  reason         String?
+  returnReason   ReturnReason? @relation(fields: [returnReasonId], references: [id])
+  returnReasonId String?       @db.Uuid
+  status         RefundStatus  @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  refundItems    RefundItem[]
 
   @@map("refund")
 }
 
 model RefundItem {
-  id        String       @id @db.Uuid
-  refundId  String       @db.Uuid
-  refund    Refund       @relation(fields: [refundId], references: [id], onDelete: Cascade)
-  orderId   String       @db.Uuid
-  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  quantity  Int          @default(1)
-  reason    String?
-  status    RefundStatus @default(PENDING)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id             String        @id @db.Uuid
+  refundId       String        @db.Uuid
+  refund         Refund        @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  orderId        String        @db.Uuid
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quantity       Int           @default(1)
+  reason         String?
+  returnReason   ReturnReason? @relation(fields: [returnReasonId], references: [id])
+  returnReasonId String?       @db.Uuid
+  status         RefundStatus  @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([refundId])
   @@map("refund_item")
