@@ -69,7 +69,7 @@ export default function SignUpSuccess({ email = "votre boîte mail" }: SignUpSuc
               </Button>
               
               <Button variant="ghost" asChild className="w-full text-cyan-700 hover:text-cyan-800">
-                <Link href="/auth/login" className="flex items-center gap-2">
+                <Link href="/auth/Sign-in" className="flex items-center gap-2">
                   <ArrowLeft className="h-4 w-4" />
                   Retour à la connexion
                 </Link>
