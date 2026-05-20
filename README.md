@@ -1,4 +1,3 @@
-
 <h1 align="center">Boutique Cogi3</h1>
 
 <p align="center">
@@ -23,339 +22,118 @@ Boutique Cogi3 est une plateforme e-commerce moderne construite avec les derniè
 - **CinetPay**: Solution de paiement en ligne.
 - **Zustand**: Bibliothèque de gestion d'état.
 
-## Fonctionnalités Principales  
+## 🌟 Fonctionnalités Principales
 
-- **Authentification Utilisateur**: Inscription, connexion et gestion de profil.
-- **Catalogue Produits**: Affichage des produits avec filtres et recherche.
-- **Panier d'Achat**: Ajout, suppression et mise à jour des articles dans le panier.
-- **Processus de Commande**: Étapes de commande sécurisées et suivi des commandes.
-- **Gestion des Commandes**: Interface administrateur pour la gestion et le suivi des commandes.
-- **Tableau de Bord Administrateur**: Gestion des produits, des utilisateurs et des statistiques.
-- **Intégration CinetPay**: Paiements sécurisés via CinetPay.
-- **Notifications**: Alertes par e-mail pour les commandes et les mises à jour de statut.
+### Pour les Clients
 
-## Installation et Lancement
+- ✅ **Authentification Sécurisée** - Inscription, connexion, réinitialisation de mot de passe
+- ✅ **Catalogue Produits** - Navigation, filtrage avancé, recherche, recommandations
+- ✅ **Variantes Produits** - Sélection d'attributs (taille, couleur, etc.)
+- ✅ **Panier Persistant** - Synchronisation cross-device via sessions
+- ✅ **Processus de Checkout** - Multi-étapes sécurisé avec validation
+- ✅ **Paiement CinetPay** - Intégration directe et webhooks validés
+- ✅ **Historique Commandes** - Suivi des commandes et détails
+- ✅ **Profil Utilisateur** - Gestion d'adresses, préférences
+- ✅ **Notifications** - Confirmations de commande, suivi d'expédition
+- ✅ **Wishlist** - Sauvegarde de favoris produits
+- ✅ **Avis Produits** - Notes et commentaires vérifiés
 
-Pour installer et lancer le projet, suivez les étapes ci-dessous :
+### Pour les Administrateurs
 
-### Prérequis
+- ✅ **Dashboard Analytics** - Ventes, revenus, tendances temps réel
+- ✅ **Gestion Catalogue** - CRUD produits, variantes, images
+- ✅ **Gestion Inventaire** - Stock, réservations, transactions
+- ✅ **Gestion Commandes** - Statuts, expéditions, retours
+- ✅ **Gestion Clients** - Listes, segmentation, historiques
+- ✅ **Gestion Paiements** - Transactions, remboursements, litiges
+- ✅ **Audit Logging** - Traçabilité complète des actions
+- ✅ **Gestion Coupon** - Création et suivi des promotions
+- ✅ **Gestion Taxes** - Configuration par région/pays
+- ✅ **Rapports Exportables** - CSV, PDF pour BI
 
-Assurez-vous d'avoir les éléments suivants installés sur votre machine :
+---
 
-- Node.js (version 18 ou supérieure)
-- npm ou Yarn
-- Git
+## 🔍 Caractéristiques Techniques
 
-### Étapes d'Installation
+### Performance & Scalabilité
 
-1. **Cloner le dépôt :**
+- **Server Components** - Rendu côté serveur par défaut pour réduire JS client
+- **Image Optimization** - Compression, lazy loading via Next.js Image
+- **Edge Caching** - Revalidation intelligente avec revalidatePath()
+- **Database Indexing** - Index stratégiques sur clés fréquemment interrogées
+- **Connection Pooling** - Prisma avec PgBouncer
+- **Zod Parsing** - Validation ultra-rapide côté serveur
 
-   git clone https://github.com/votre-utilisateur/boutiquecogi3.git
-   cd boutiquecogi3
+### Sécurité
 
-2. **Installer les dépendances :**
+- **HTTPS/TLS** - En production obligatoire
+- **CSRF Protection** - Tokens générés par Better-Auth
+- **XSS Prevention** - Sanitization React + CSP headers
+- **SQL Injection** - Requêtes paramétrées Prisma
+- **Rate Limiting** - À implémenter sur routes sensibles
+- **Secrets Management** - Variables sécurisées en .env.local
+- **Webhook Signature Validation** - CinetPay + timestamp check
 
-   npm install
+### Observabilité
 
-3. **Configuration des variables d'environnement :**
-   Créez un fichier `.env.local` à la racine du projet et ajoutez-y les variables d'environnement nécessaires. Un fichier `.env.example` est fourni pour référence.
+- **Audit Logs** - Toutes actions sensibles tracées
+- **Error Boundaries** - Gestion gracieuse des erreurs UI
+- **Structured Logging** - Format JSON pour stacktraces
+- **Health Check** - Endpoint `/api/health` pour monitoring
 
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+---
 
+## 💾 Architecture des Données
 
-4. **Lancer le serveur de développement :**
-  
-   npm run dev
-  
-Le projet devrait maintenant être accessible à l'adresse `http://localhost:3000`.
+### Domaines Métier
 
+1. **Authentication** : User, Session, TwoFactor, VerificationToken
+2. **Catalog** : Product, ProductVariant, Category, Review, Tag
+3. **Commerce** : Cart, CartItem, Order, OrderItem, Payment
+4. **Inventory** : InventorySnapshot, InventoryTransaction, StockReservation
+5. **Fulfillment** : Shipment, ShippingMethod, Carrier, Return, Refund
+6. **Business** : Coupon, GiftCard, TaxRate, AuditLog
 
-## Structure du Projet
+### Stratégies d'Indexing
 
+```prisma
+// Clés étrangères (automatique)
+@@index([userId, createdAt])
 
-/boutiquecogi3
-│
-├── app
-│   ├── (store)
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   │
-│   │   ├── products
-│   │   │   ├── page.tsx
-│   │   │   └── loading.tsx
-│   │   │
-│   │   ├── product
-│   │   │   └── [id]
-│   │   │       ├── page.tsx
-│   │   │       ├── loading.tsx
-│   │   │       ├── error.tsx
-│   │   │       └── not-found.tsx
-│   │   │
-│   │   ├── checkout
-│   │   │   ├── page.tsx
-│   │   │   ├── success
-│   │   │   │   └── page.tsx
-│   │   │   └── cancel
-│   │   │       └── page.tsx
-│   │   │
-│   │   ├── cart
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── account
-│   │   │   ├── page.tsx
-│   │   │   ├── orders
-│   │   │   │   └── page.tsx
-│   │   │   └── settings
-│   │   │       └── page.tsx
-│   │   │
-│   │   └── auth
-│   │       ├── sign-in
-│   │       │   └── page.tsx
-│   │       ├── sign-up
-│   │       │   └── page.tsx
-│   │       └── forgot-password
-│   │           └── page.tsx
-│   │
-│   ├── admin
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   │
-│   │   ├── products
-│   │   │   ├── page.tsx
-│   │   │   ├── create
-│   │   │   │   └── page.tsx
-│   │   │   └── [id]
-│   │   │       ├── page.tsx
-│   │   │       └── edit
-│   │   │           └── page.tsx
-│   │   │
-│   │   ├── orders
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── customers
-│   │   │   └── page.tsx
-│   │   │
-│   │   └── analytics
-│   │       └── page.tsx
-│   │
-│   ├── api
-│   │   ├── auth
-│   │   │   └── [...all]
-│   │   │       └── route.ts
-│   │   │
-│   │   ├── products
-│   │   │   ├── route.ts
-│   │   │   └── [id]
-│   │   │       └── route.ts
-│   │   │
-│   │   ├── checkout
-│   │   │   ├── create-payment
-│   │   │   │   └── route.ts
-│   │   │   ├── verify-payment
-│   │   │   │   └── route.ts
-│   │   │   └── webhook
-│   │   │       └── cinetpay
-│   │   │           └── route.ts
-│   │   │
-│   │   ├── cart
-│   │   │   └── route.ts
-│   │   │
-│   │   ├── upload
-│   │   │   └── route.ts
-│   │   │
-│   │   └── health
-│   │       └── route.ts
-│   │
-│   ├── global-error.tsx
-│   ├── not-found.tsx
-│   ├── layout.tsx
-│   ├── loading.tsx
-│   └── globals.css
-│
-├── components
-│   ├── ui
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── modal.tsx
-│   │   ├── dialog.tsx
-│   │   ├── skeleton.tsx
-│   │   ├── badge.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── table.tsx
-│   │   └── toast.tsx
-│   │
-│   ├── layout
-│   │   ├── navbar
-│   │   │   ├── navbar-shell.tsx
-│   │   │   ├── navbar-brand.tsx
-│   │   │   ├── navbar-links.tsx
-│   │   │   ├── navbar-actions.tsx
-│   │   │   └── index.tsx
-│   │   │
-│   │   ├── footer.tsx
-│   │   ├── container.tsx
-│   │   └── mobile-menu.tsx
-│   │
-│   ├── products
-│   │   ├── product-card.tsx
-│   │   ├── product-grid.tsx
-│   │   ├── product-list.tsx
-│   │   ├── product-detail.tsx
-│   │   ├── product-gallery.tsx
-│   │   ├── product-price.tsx
-│   │   ├── product-not-found.tsx
-│   │   ├── product-form.tsx
-│   │   └── product-actions.tsx
-│   │
-│   ├── cart
-│   │   ├── cart-sheet.tsx
-│   │   ├── cart-item.tsx
-│   │   ├── cart-summary.tsx
-│   │   └── add-to-cart-button.tsx
-│   │
-│   ├── checkout
-│   │   ├── checkout-form.tsx
-│   │   ├── payment-button.tsx
-│   │   ├── payment-status.tsx
-│   │   └── order-summary.tsx
-│   │
-│   ├── auth
-│   │   ├── sign-in-form.tsx
-│   │   ├── sign-up-form.tsx
-│   │   ├── auth-provider.tsx
-│   │   └── protected-route.tsx
-│   │
-│   ├── admin
-│   │   ├── admin-sidebar.tsx
-│   │   ├── dashboard-card.tsx
-│   │   ├── orders-table.tsx
-│   │   └── products-table.tsx
-│   │
-│   └── providers
-│       ├── theme-provider.tsx
-│       ├── session-provider.tsx
-│       └── query-provider.tsx
-│
-├── lib
-│   ├── auth
-│   │   ├── auth.ts
-│   │   ├── client.ts
-│   │   ├── server.ts
-│   │   ├── permissions.ts
-│   │   └── session.ts
-│   │
-│   ├── prisma
-│   │   ├── client.ts
-│   │   ├── extensions.ts
-│   │   └── seed.ts
-│   │
-│   ├── db
-│   │   ├── repositories
-│   │   │   ├── product.repository.ts
-│   │   │   ├── order.repository.ts
-│   │   │   ├── user.repository.ts
-│   │   │   └── cart.repository.ts
-│   │   │
-│   │   └── transactions
-│   │       └── order.transaction.ts
-│   │
-│   ├── services
-│   │   ├── product.service.ts
-│   │   ├── order.service.ts
-│   │   ├── payment.service.ts
-│   │   ├── cart.service.ts
-│   │   └── upload.service.ts
-│   │
-│   ├── cinetpay
-│   │   ├── client.ts
-│   │   ├── create-payment.ts
-│   │   ├── verify-payment.ts
-│   │   ├── webhook.ts
-│   │   └── types.ts
-│   │
-│   ├── validators
-│   │   ├── product.schema.ts
-│   │   ├── auth.schema.ts
-│   │   ├── checkout.schema.ts
-│   │   ├── cart.schema.ts
-│   │   └── order.schema.ts
-│   │
-│   ├── mappers
-│   │   ├── product.mapper.ts
-│   │   ├── order.mapper.ts
-│   │   └── user.mapper.ts
-│   │
-│   ├── stores
-│   │   ├── cart.store.ts
-│   │   ├── ui.store.ts
-│   │   ├── currency.store.ts
-│   │   └── auth.store.ts
-│   │
-│   ├── hooks
-│   │   ├── use-cart.ts
-│   │   ├── use-currency.ts
-│   │   ├── use-session.ts
-│   │   └── use-checkout.ts
-│   │
-│   ├── utils
-│   │   ├── currency.ts
-│   │   ├── price.ts
-│   │   ├── slug.ts
-│   │   ├── env.ts
-│   │   ├── logger.ts
-│   │   ├── pagination.ts
-│   │   └── errors.ts
-│   │
-│   ├── constants
-│   │   ├── routes.ts
-│   │   ├── roles.ts
-│   │   └── payment.ts
-│   │
-│   └── types
-│       ├── product.ts
-│       ├── order.ts
-│       ├── auth.ts
-│       └── cart.ts
-│
-├── prisma
-│   ├── schema.prisma
-│   ├── migrations
-│   └── seed.ts
-│
-├── public
-│   ├── media
-│   ├── video
-│
-├── styles
-│   ├── globals.css
-│   ├── utilities.css
-│   └── animations.css
-│
-├── types
-│   ├── better-auth.d.ts # Type definitions for better-auth
-│   ├── order.ts # Type definitions for orders
-│   ├── product.ts # Type definitions for products
-│   ├── cart.ts # Type definitions for carts
-│   ├── user.ts # Type definitions for users
-│   ├── review.ts # Type definitions for reviews
-│   ├── category.ts # Type definitions for categories
-│   ├── payment.ts # Type definitions for payments
-│   └── address.ts # Type definitions for addresses
-│
-├── middleware.ts
-├── next.config.ts
-├── tsconfig.json
-├── package.json
-├── postcss.config.js
-├── tailwind.config.ts
-├── eslint.config.js
-├── prettier.config.js
-├── .env
-├── .env.local
-├── .gitignore
-└── README.md
+// Requêtes fréquentes
+@@index([categoryId, isArchived, basePrice])
 
+// Recherche par slug
+@@index([slug])
 
-## Contribution
+// Composites pour IN/WHERE complexes
+@@index([productId, variantId, createdAt])
+```
+
+---
+
+## 🧪 Validation des Données
+
+### Zod Schemas
+
+Tous les inputs (formulaires, API) sont validés avec Zod :
+
+```ts
+// lib/validators/product.schema.ts
+export const ProductSchema = z.object({
+  name: z.string().min(3).max(255),
+  description: z.string().min(10),
+  basePrice: z.number().int().positive(),
+  categoryId: z.string().uuid().optional(),
+});
+
+// Usage: await ProductSchema.parseAsync(req.body)
+```
+
+---
+
+## 📝 Contribution
+
+```
+
 ```
