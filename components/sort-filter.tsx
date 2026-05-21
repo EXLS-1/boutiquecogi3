@@ -39,25 +39,13 @@ export function SortFilter() {
           <ChevronsUpDown className="h-4 w-4 text-gray-400" />
         </Listbox.Button>
 
-        <Transition
-          enter="transition duration-100 ease-out"
-          enterFrom="transform scale-95 opacity-0"
-          enterTo="transform scale-100 opacity-100"
-          leave="transition duration-75 ease-out"
-          leaveFrom="transform scale-100 opacity-100"
-          leaveTo="transform scale-95 opacity-0"
-        >
-          <Listbox.Options className="absolute right-0 z-50 mt-2 min-w-45 overflow-hidden rounded-lg bg-white py-1 text-base shadow-xl ring-1 ring-black/5 focus:outline-none sm:text-sm">
+        <Transition>
+          <Listbox.Options className="absolute right-0 z-50 mt-2 min-w-45 overflow-hidden rounded-lg bg-white py-1 text-base shadow-xl ring-1 ring-black/5 focus:outline-none sm:text-sm transition duration-100 ease-out data-closed:scale-95 data-closed:opacity-0">
             {SORT_OPTIONS.map((option) => (
               <Listbox.Option
                 key={option.value}
                 value={option.value}
-                className={({ active }) =>
-                  clsx(
-                    "relative cursor-pointer select-none py-2.5 pl-10 pr-4 text-xs font-bold uppercase tracking-widest transition-colors",
-                    active ? "bg-cyan-50 text-cyan-700" : "text-gray-700"
-                  )
-                }
+                className="relative cursor-pointer select-none py-2.5 pl-10 pr-4 text-xs font-bold uppercase tracking-widest text-gray-700 transition-colors ui-active:bg-cyan-50 ui-active:text-cyan-700"
               >
                 {({ selected }) => (
                   <>
