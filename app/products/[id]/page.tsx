@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { ProductDetail } from "@/components/product-detail";
+import { ProductDetail } from "@/components/product/product-detail";
 import { ProductNotFound } from "./products-not-found";
 import { getProductById, getAllProducts } from "@/lib/products";
 
-export const revalidate = 60;
+export const revalidate = 3600; // Revalidate every hour
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;

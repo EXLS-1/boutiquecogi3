@@ -1,9 +1,9 @@
 // components/product-list.tsx
 "use client";
 
-import { Product } from "@/types/products";
 import ProductCard from "./product-card";
 import { CurrencyCode } from "@/lib/format-currency";
+import { Product } from "@/types/products";
 
 interface ProductListProps {
   products: Product[];
@@ -31,7 +31,7 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
   }
 
   return (
-    <div className="grid ...">
+    <div className="grid  grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
       {products.map((product) => (
         <ProductCard 
           key={product.id} 
