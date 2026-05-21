@@ -68,7 +68,7 @@ export default function Contact() {
               </div>
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-3 bg-black text-white px-8 py-4 rounded-lg font-bold tracking-widest uppercase hover:bg-gray-800 transition-colors shadow-lg shadow-black/20"
+                className="w-full flex items-center justify-center gap-3 bg-black text-white px-8 py-4 rounded-lg font-bold tracking-widest uppercase hover:bg-cyan-400 hover:text-black transition-colors shadow-lg shadow-black/20"
               >
                 <span>ENVOYER</span>
                 <i className="fas fa-paper-plane"></i>

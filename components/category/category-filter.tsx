@@ -35,7 +35,7 @@ export function CategoryFilter({ categories }: { categories: string[] }) {
             "px-4 py-2 text-xs font-bold uppercase transition-all border",
             activeCategory === cat 
               ? "bg-black text-white" 
-              : "bg-white text-gray-500 hover:border-black"
+              : "bg-white text-gray-500 hover:border-cyan-400"
           )}
         >
           {cat}

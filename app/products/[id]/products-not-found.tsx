@@ -22,7 +22,7 @@ export function ProductNotFound() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Link
             href="/"
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-black hover:bg-gray-800 transition-colors duration-200 shadow-sm"
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-black hover:bg-cyan-400 hover:text-black transition-colors duration-200 shadow-sm"
           >
             <i className="fas fa-home mr-2"></i>
             Retour à l’accueil
@@ -35,7 +35,7 @@ export function ProductNotFound() {
           </Link>
         </div>
         <p className="text-sm text-gray-400 pt-8">
-          Besoin d’aide ? <a href="#contact" className="underline hover:text-black">Contactez notre support</a>
+          Besoin d’aide ? <a href="#contact" className="underline hover:text-cyan-400">Contactez notre support</a>
         </p>
       </div>
     </main>
