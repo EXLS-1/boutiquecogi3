@@ -81,6 +81,116 @@
         "description": "Chemisier blanc classique, essentiel de toute garde-robe",
         "category": "femme"
       }      
+    ],
+    "homme": [
+      {
+        "id": "h1",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h2",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      }
+    ],
+    "enfant": [
+      {
+        "id": "e1",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e2",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      }
+    ],
+    "chaussure": [
+      {
+        "id": "ch1",
+        "name": "Chaussure Talons Hauts Noir",
+        "price": "65",
+        "size": "35 à 42",
+        "couleur": "Noir",
+        "image": "/pict05.webp",
+        "description": "Chaussure élégante avec talons hauts pour femme",
+        "category": "chaussure"
+      },
+      {
+        "id": "ch2",
+        "name": "Chaussure Confort Homme",
+        "price": "55",
+        "size": "38 à 46",
+        "couleur": "Marron",
+        "image": "/pict06.webp",
+        "description": "Chaussure confortable pour homme",
+        "category": "chaussure"
+      }
+    ],
+    "sac": [
+      {
+        "id": "s1",
+        "name": "Sac à Main Cuir Noir",
+        "price": "85",
+        "size": "Unique",
+        "couleur": "Noir",
+        "image": "/pict07.webp",
+        "description": "Sac à main en cuir véritable, élégant et spacieux",
+        "category": "sac"
+      },
+      {
+        "id": "s2",
+        "name": "Sac Bandoulière Marron",
+        "price": "60",
+        "size": "Unique",
+        "couleur": "Marron",
+        "image": "/pict08.webp",
+        "description": "Sac bandoulière pratique pour tous les jours",
+        "category": "sac"
+      }
+    ],
+    "accessoire": [
+      {
+        "id": "a1",
+        "name": "Ceinture Cuir Marron",
+        "price": "35",
+        "size": "Unique",
+        "couleur": "Marron",
+        "image": "/pict09.webp",
+        "description": "Ceinture en cuir véritable, accessoire incontournable",
+        "category": "accessoire"
+      },
+      {
+        "id": "a2",
+        "name": "Foulard Soie Coloré",
+        "price": "28",
+        "size": "Unique",
+        "couleur": "Multicolore",
+        "image": "/pict10.webp",
+        "description": "Foulard en soie, parfait pour accessoiriser vos tenues",
+        "category": "accessoire"
+      }
     ]
   }
 }

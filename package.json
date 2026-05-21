@@ -46,6 +46,7 @@
     "pg": "^8.20.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.6",
+    "react-aria": "^3.48.0",
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.74.0",
     "react-hot-toast": "^2.6.0",
