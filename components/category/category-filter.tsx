@@ -34,8 +34,8 @@ export function CategoryFilter({ categories }: { categories: string[] }) {
           className={cn(
             "px-4 py-2 text-xs font-bold uppercase transition-all border",
             activeCategory === cat 
-              ? "bg-black text-white" 
-              : "bg-white text-gray-500 hover:border-cyan-400"
+              ? "bg-cyan-200 border-cyan-500 text-cyan-400  hover:text-cyan-700" 
+              : "bg-white border-cyan-200 text-cyan-400 hover:border-cyan-400"
           )}
         >
           {cat}

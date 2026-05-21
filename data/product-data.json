@@ -165,7 +165,7 @@
         "price": "60",
         "size": "Unique",
         "couleur": "Marron",
-        "image": "/pict08.webp",
+        "image": "/pict013.webp",
         "description": "Sac bandoulière pratique pour tous les jours",
         "category": "sac"
       }
@@ -177,7 +177,7 @@
         "price": "35",
         "size": "Unique",
         "couleur": "Marron",
-        "image": "/pict09.webp",
+        "image": "/pict01.webp",
         "description": "Ceinture en cuir véritable, accessoire incontournable",
         "category": "accessoire"
       },
@@ -187,7 +187,7 @@
         "price": "28",
         "size": "Unique",
         "couleur": "Multicolore",
-        "image": "/pict10.webp",
+        "image": "/pict12.webp",
         "description": "Foulard en soie, parfait pour accessoiriser vos tenues",
         "category": "accessoire"
       }
