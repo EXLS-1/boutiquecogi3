@@ -80,6 +80,166 @@
         "image": "/pict12.webp",
         "description": "Chemisier blanc classique, essentiel de toute garde-robe",
         "category": "femme"
+      },
+      {
+        "id": "f9",
+        "name": "Robe Lumineux à motif floral brillant",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Jaune-Vert vif",
+        "image": "/pict01.webp",
+        "description": "Robe élégante avec motif étoilé, parfaite pour les occasions spéciales",
+        "category": "femme"
+      },
+      {
+        "id": "f10",
+        "name": "Robe Elégante Espoll",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Noir avec paillette",
+        "image": "/pict02.webp",
+        "description": "Ensemble composé d'une blouse et d'une jupe, style moderne et raffiné",
+        "category": "femme"
+      },
+      {
+        "id": "f11",
+        "name": "Robe Elégante à motif floral foncé",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Brun-Marron",
+        "image": "/pict03.webp",
+        "description": "Robe longue fluide, idéale pour les soirées élégantes",
+        "category": "femme"
+      },
+      {
+        "id": "f12",
+        "name": "Robe Elégante Espoll ",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Rouge avec paillette",
+        "image": "/pict04.webp",
+        "description": "Robe élégante avec paillettes, parfaite pour les occasions spéciales",
+        "category": "femme"
+      },
+      {
+        "id": "f13",
+        "name": "Robe Plissée Zera à Ceinture Rouge",
+        "price": "65",
+        "size": "44 à 50",
+        "couleur": "Rouge sang",
+        "image": "/pict05.webp",
+        "description": "Jupe plissée légère et confortable, parfaite pour le quotidien",
+        "category": "femme"
+      },
+      {
+        "id": "f14",
+        "name": "Complet pantalon et gilet lovelf Bras Cassé Bleu  ",
+        "price": "75",
+        "size": "36 à 42",
+        "couleur": "Bleu",
+        "image": "/pict06.webp",
+        "description": "Robe légère et fleurie, idéale pour la saison printanière",
+        "category": "femme"
+      },
+      {
+        "id": "f15",
+        "name": "Robe Plissée Zera à Ceinture Noire",
+        "price": "65",
+        "size": "44 à 50",
+        "couleur": "Noir - Blanc",
+        "image": "/pict07.webp",
+        "description": "sizeur complet pour femme, élégance professionnelle",
+        "category": "femme"
+      },
+      {
+        "id": "f16",
+        "name": "Blouse blanche Unique avec boutons décoratifs ",
+        "price": "35",
+        "size": "36 à 50",
+        "couleur": "Blanc",
+        "image": "/pict12.webp",
+        "description": "Chemisier blanc classique, essentiel de toute garde-robe",
+        "category": "femme"
+      },
+      {
+        "id": "f17",
+        "name": "Robe Lumineux à motif floral brillant",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Jaune-Vert vif",
+        "image": "/pict01.webp",
+        "description": "Robe élégante avec motif étoilé, parfaite pour les occasions spéciales",
+        "category": "femme"
+      },
+      {
+        "id": "f18",
+        "name": "Robe Elégante Espoll",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Noir avec paillette",
+        "image": "/pict02.webp",
+        "description": "Ensemble composé d'une blouse et d'une jupe, style moderne et raffiné",
+        "category": "femme"
+      },
+      {
+        "id": "f19",
+        "name": "Robe Elégante à motif floral foncé",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Brun-Marron",
+        "image": "/pict03.webp",
+        "description": "Robe longue fluide, idéale pour les soirées élégantes",
+        "category": "femme"
+      },
+      {
+        "id": "f20",
+        "name": "Robe Elégante Espoll ",
+        "price": "95",
+        "size": "42 à 48",
+        "couleur": "Rouge avec paillette",
+        "image": "/pict04.webp",
+        "description": "Robe élégante avec paillettes, parfaite pour les occasions spéciales",
+        "category": "femme"
+      },
+      {
+        "id": "f21",
+        "name": "Robe Plissée Zera à Ceinture Rouge",
+        "price": "65",
+        "size": "44 à 50",
+        "couleur": "Rouge sang",
+        "image": "/pict05.webp",
+        "description": "Jupe plissée légère et confortable, parfaite pour le quotidien",
+        "category": "femme"
+      },
+      {
+        "id": "f22",
+        "name": "Complet pantalon et gilet lovelf Bras Cassé Bleu  ",
+        "price": "75",
+        "size": "36 à 42",
+        "couleur": "Bleu",
+        "image": "/pict06.webp",
+        "description": "Robe légère et fleurie, idéale pour la saison printanière",
+        "category": "femme"
+      },
+      {
+        "id": "f23",
+        "name": "Robe Plissée Zera à Ceinture Noire",
+        "price": "65",
+        "size": "44 à 50",
+        "couleur": "Noir - Blanc",
+        "image": "/pict07.webp",
+        "description": "sizeur complet pour femme, élégance professionnelle",
+        "category": "femme"
+      },
+      {
+        "id": "f24",
+        "name": "Blouse blanche Unique avec boutons décoratifs ",
+        "price": "35",
+        "size": "36 à 50",
+        "couleur": "Blanc",
+        "image": "/pict12.webp",
+        "description": "Chemisier blanc classique, essentiel de toute garde-robe",
+        "category": "femme"
       }      
     ],
     "homme": [
@@ -102,6 +262,226 @@
         "image": "/pict02.webp",
         "description": "Chemise bleue de qualité supérieure pour homme",
         "category": "homme"
+      },
+      {
+        "id": "h3",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h4",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h5",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h6",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h7",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h8",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h9",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h10",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h11",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h12",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h13",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h14",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h15",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h16",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h17",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h18",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h19",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h20",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h21",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h22",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
+      },
+      {
+        "id": "h23",
+        "name": "Costume Classique Noir",
+        "price": "120",
+        "size": "40 à 56",
+        "couleur": "Noir",
+        "image": "/pict01.webp",
+        "description": "Costume élégant pour homme, parfait pour les occasions professionnelles",
+        "category": "homme"
+      },
+      {
+        "id": "h24",
+        "name": "Chemise Bleue Elegant",
+        "price": "45",
+        "size": "36 à 48",
+        "couleur": "Bleu",
+        "image": "/pict02.webp",
+        "description": "Chemise bleue de qualité supérieure pour homme",
+        "category": "homme"
       }
     ],
     "enfant": [
@@ -117,6 +497,226 @@
       },
       {
         "id": "e2",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e3",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e4",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e5",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e6",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e7",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e8",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e9",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e10",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e11",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e12",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e13",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e14",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e15",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e16",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e17",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e18",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e19",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e20",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e21",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e22",
+        "name": "Pantalon Enfant Bleu",
+        "price": "28",
+        "size": "4 à 10 ans",
+        "couleur": "Bleu",
+        "image": "/pict04.webp",
+        "description": "Pantalon résistant pour enfant, idéal pour le quotidien",
+        "category": "enfant"
+      },
+      {
+        "id": "e23",
+        "name": "Robe Colorée Enfant",
+        "price": "35",
+        "size": "4 à 12 ans",
+        "couleur": "Rose-Blanc",
+        "image": "/pict03.webp",
+        "description": "Robe confortable et colorée pour enfant",
+        "category": "enfant"
+      },
+      {
+        "id": "e24",
         "name": "Pantalon Enfant Bleu",
         "price": "28",
         "size": "4 à 10 ans",

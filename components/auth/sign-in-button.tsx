@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,14 @@ import { authClient } from "@/lib/auth/auth-client";
  */
 export default function SignInButton() {
   const { data: session, isPending } = authClient.useSession();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Affichage du Skeleton pour éviter le saut de contenu au chargement
-  if (isPending) return <Skeleton className="h-10 w-28 rounded-md" />;
+  if (!mounted || isPending) return <Skeleton className="h-10 w-28 rounded-md" />;
 
   // Si l'utilisateur est déjà connecté, ce bouton n'a plus lieu d'être
   if (session) return null;

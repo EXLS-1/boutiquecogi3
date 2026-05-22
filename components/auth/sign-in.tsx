@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,9 +12,20 @@ import { authClient } from "@/lib/auth/auth-client";
  */
 export default function SignInButton() {
   const { data: session, isPending } = authClient.useSession();
+  const [mounted, setMounted] = useState(false);
 
-  // Si l'utilisateur est déjà connecté ou que la session charge, on ne rend rien pour la performance
-  if (session || isPending) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Pendant le chargement ou avant le montage (SSR), on rend null ou un skeleton 
+  // pour correspondre parfaitement au rendu serveur initial.
+  if (!mounted || isPending) {
+    return null;
+  }
+
+  // Si l'utilisateur est déjà connecté, on ne rend rien
+  if (session) return null;
 
   return (
     <Button

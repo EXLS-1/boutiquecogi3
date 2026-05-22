@@ -1,4 +1,4 @@
-// components/product-catalog.tsx
+// components/product/product-catalog.tsx
 "use client";
 
 import { useSearchParams } from "next/navigation";
