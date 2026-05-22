@@ -99,7 +99,8 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
           </li>
         ))}
       </ol>
-
+      
+      <div></div>
       {pageCount > 1 && (
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center justify-center gap-2">
@@ -108,12 +109,12 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
               size="sm"
               onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
               disabled={!canPrevious}
-              className="gap-2"
+              className="gap-2 text-cyan-400"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 bg-cyan-200" />
             </Button>
 
-            <div className="flex flex-wrap items-center justify-center gap-1 px-2">
+            <div className="flex flex-wrap items-center justify-center gap-1 px-2 ">
               {pageButtons.map((button, index) => (
                 button === "ellipsis" ? (
                   <span key={`ellipsis-${index}`} className="px-2 text-sm text-slate-500">
@@ -125,7 +126,7 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
                     variant={button === page ? "secondary" : "outline"}
                     size="sm"
                     onClick={() => setPage(button)}
-                    className={button === page ? "gap-0 bg-slate-900 text-white" : "gap-0"}
+                    className={button === page ? "gap-0 bg-cyan-200 text-cyan-500" : "gap-0"}
                   >
                     {button + 1}
                   </Button>
@@ -138,9 +139,9 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
               size="sm"
               onClick={() => setPage((prev) => Math.min(prev + 1, pageCount - 1))}
               disabled={!canNext}
-              className="gap-2"
+              className="gap-2 text-cyan-400"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 bg-cyan-200" />
             </Button>
           </div>
         </div>
