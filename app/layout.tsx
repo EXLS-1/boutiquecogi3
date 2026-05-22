@@ -8,6 +8,7 @@ import { Navbar } from "@/components/navbar";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 import { Footer } from "@/components/footer";
+import VideosCart from "@/components/video-show/videos-cart";
 import { RootProviders } from "@/components/theme/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               { /* pt-14 correspond à la hauteur de ta navbar */ }
             <main className="min-h-screen pt-14">
               { children }
+              <VideosCart />
               {/* Chargez vos scripts ici de manière optimisée */}
                 
             </main>

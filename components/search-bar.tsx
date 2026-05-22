@@ -30,7 +30,7 @@ export function SearchBar() {
         placeholder="Rechercher..."
         defaultValue={searchParams.get("q")?.toString()}
         onChange={(e) => handleSearch(e.target.value)}
-        className="w-full border-b border-gray-200 py-2 focus:border-black outline-none transition-all"
+        className="border-b border-cyan-200 text-cyan-700 placeholder:text-cyan-400 px-4 py-2 focus:border-cyan-500 outline-none transition-all"
       />
     </div>
   );
