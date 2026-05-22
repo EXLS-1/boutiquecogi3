@@ -16,6 +16,31 @@ interface ProductListProps {
   activeCurrency: CurrencyCode;
 }
 
+function getPageButtons(page: number, pageCount: number): Array<number | "ellipsis"> {
+  if (pageCount <= 4) {
+    return Array.from({ length: pageCount }, (_, i) => i);
+  }
+
+  const buttons: Array<number | "ellipsis"> = [0];
+  const left = Math.max(1, page - 1);
+  const right = Math.min(pageCount - 2, page + 1);
+
+  if (left > 1) {
+    buttons.push("ellipsis");
+  }
+
+  for (let index = left; index <= right; index += 1) {
+    buttons.push(index);
+  }
+
+  if (right < pageCount - 2) {
+    buttons.push("ellipsis");
+  }
+
+  buttons.push(pageCount - 1);
+  return buttons;
+}
+
 export const ProductList = ({ products, isLoading, activeCurrency }: ProductListProps) => {
   const [page, setPage] = useState(0);
 
@@ -23,6 +48,8 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
     () => Math.max(1, Math.ceil(products.length / PAGE_SIZE)),
     [products.length]
   );
+
+  const pageButtons = useMemo(() => getPageButtons(page, pageCount), [page, pageCount]);
 
   const visibleProducts = useMemo(
     () => products.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
@@ -74,12 +101,8 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
       </ol>
 
       {pageCount > 1 && (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-500">
-            Page {page + 1} sur {pageCount} ({products.length} articles)
-          </p>
-
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center justify-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -88,8 +111,27 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
               className="gap-2"
             >
               <ChevronLeft className="h-4 w-4" />
-              Précédent
             </Button>
+
+            <div className="flex flex-wrap items-center justify-center gap-1 px-2">
+              {pageButtons.map((button, index) => (
+                button === "ellipsis" ? (
+                  <span key={`ellipsis-${index}`} className="px-2 text-sm text-slate-500">
+                    …
+                  </span>
+                ) : (
+                  <Button
+                    key={button}
+                    variant={button === page ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setPage(button)}
+                    className={button === page ? "gap-0 bg-slate-900 text-white" : "gap-0"}
+                  >
+                    {button + 1}
+                  </Button>
+                )
+              ))}
+            </div>
 
             <Button
               variant="outline"
@@ -98,7 +140,6 @@ export const ProductList = ({ products, isLoading, activeCurrency }: ProductList
               disabled={!canNext}
               className="gap-2"
             >
-              Suivant
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
