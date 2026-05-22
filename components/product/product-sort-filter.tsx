@@ -1,4 +1,4 @@
-// components/sort-filter.tsx
+// components/product/product-sort-filter.tsx
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createUrl } from "@/lib/utils";
@@ -12,7 +12,7 @@ const SORT_OPTIONS = [
   { label: "Prix : Décroissant", value: "price-desc" },
 ];
 
-export function SortFilter() {
+export function ProductSortFilter() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

@@ -5,6 +5,7 @@ import React from "react";
 import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import { Navbar } from "@/components/navbar";
+import { NavbarSecondary } from "@/components/navbar/navbar-secondary";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
 import { Footer } from "@/components/footer";
@@ -12,8 +13,6 @@ import VideosCart from "@/components/video-show/videos-cart";
 import { RootProviders } from "@/components/theme/root-providers";
 import { UIWrapper } from "@/components/ui-wrapper";
 import { cn } from "@/lib/utils";
-import { cookies } from "next/headers";
-import { CurrencyProvider } from "../components/theme/theme-provider";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -27,23 +26,20 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  
-  const cookieStore = await cookies();
-  const currencyCookie = cookieStore.get("displayCurrency")?.value as "USD" | "CDF" | undefined;
-  const initialCurrency = currencyCookie || "USD";
-  
   return (
     <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>  
       <body className="antialiased">
         <RootProviders>
           <CurrencySwitcher />
           <Navbar />
+          <NavbarSecondary />
+          
           <LeftSidebar />
           <RightSidebar />
          
           <UIWrapper>
-              { /* pt-14 correspond à la hauteur de ta navbar */ }
-            <main className="min-h-screen pt-14">
+              { /* pt-28 correspond à la hauteur de navbar (14) + navbar-secondary (14) */ }
+            <main className="min-h-screen pt-28">
               { children }
               <VideosCart />
               {/* Chargez vos scripts ici de manière optimisée */}

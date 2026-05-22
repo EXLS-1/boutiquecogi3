@@ -5,9 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { Product } from "@/types/products";
 import { ProductList } from "@/components/product/product-list";
-import { SearchBar } from "@/components/search-bar";
+import { ProductSortFilter } from "@/components/product/product-sort-filter";
 import { CategoryFilter } from "@/components/category/category-filter";
-import { SortFilter } from "@/components/sort-filter";
 import { CurrencyCode } from "@/lib/format-currency";
 
 export default function ProductCatalog({ products, title, activeCurrency }: { 
@@ -56,12 +55,12 @@ export default function ProductCatalog({ products, title, activeCurrency }: {
         <header className="space-y-8 mb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <h2 className="text-3xl font-playfair font-bold uppercase">{title}</h2>
-            <SearchBar />
           </div>
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-y border-gray-100 py-4">
             <CategoryFilter categories={categories} />
-            <SortFilter />
+            <ProductSortFilter />
+
           </div>
         </header>
 
