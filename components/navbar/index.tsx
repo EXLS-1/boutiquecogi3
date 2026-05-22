@@ -21,7 +21,7 @@ export function Navbar({
         <NavbarBrand logo={logo} />
       </div>
 
-      <div className="flex flex-1 justify-center px-4">
+      <div className="flex justify-center px-4 w-xl mx-auto border-cyan-700">
         <NavbarSearch />
       </div>
 

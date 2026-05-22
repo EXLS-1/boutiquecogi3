@@ -3,6 +3,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
+import { Search } from "lucide-react";
 import { createUrl } from "@/lib/utils";
 
 export function NavbarSearch() {
@@ -25,12 +26,15 @@ export function NavbarSearch() {
 
   return (
     <div className="relative w-full">
+      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-cyan-400">
+        <Search className="h-4 w-4" />
+      </div>
       <input
         type="text"
         placeholder="Rechercher..."
         defaultValue={searchParams.get("q")?.toString()}
         onChange={(e) => handleSearch(e.target.value)}
-        className="border-b border-cyan-200 text-cyan-700 placeholder:text-cyan-400 px-4 py-2 focus:border-cyan-500 outline-none transition-all"
+        className="w-full rounded-full border border-slate-300 bg-white/90 py-2 pl-11 pr-4 text-cyan-700 placeholder:text-cyan-400 shadow-sm outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
       />
     </div>
   );

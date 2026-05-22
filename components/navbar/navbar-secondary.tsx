@@ -36,7 +36,7 @@ export function NavbarSecondary({
   return (
     <nav
       className={cn(
-        "fixed top-14 left-0 right-0 z-40 border-b border-slate-800 bg-slate-950 shadow-md",
+        "fixed top-14 left-0 right-0 z-40 border-b border-cyan-700 bg-cyan-100 shadow-md",
         className
       )}
     >

@@ -18,7 +18,7 @@ import { HeroSlide } from "./hero-slide";
 export function Hero() {
   const autoplay = useRef(
     Autoplay({
-      delay: 5000,
+      delay: 10000,
       stopOnInteraction: false,
       stopOnMouseEnter: true,
     })
@@ -31,6 +31,8 @@ export function Hero() {
         opts={{
           loop: true,
           align: "start",
+          speed: 4,
+          dragFree: true,
         }}
         className="w-full"
       >
@@ -59,9 +61,9 @@ export function Hero() {
           </p>
         </div>
 
-        <CarouselPrevious className="absolute left-4 z-30 hidden border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white md:flex" />
+        <CarouselPrevious className="absolute left-4 z-30 flex border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white" />
 
-        <CarouselNext className="absolute right-4 z-30 hidden border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white md:flex" />
+        <CarouselNext className="absolute right-4 z-30 flex border-sky-400 text-sky-400 hover:bg-sky-500 hover:text-white" />
       </Carousel>
     </section>
   );
