@@ -1,8 +1,7 @@
 // /components/social/social-networks.tsx
 
-import SocialButton from "@/components/social/social-button";
-
-import { socialNetworks } from "@/data/social-networks";
+import SocialButton from "./social-button";
+import { socialNetworks } from "@/data/social-network";
 
 export default function SocialNetworks() {
   if (socialNetworks.length === 0) {
