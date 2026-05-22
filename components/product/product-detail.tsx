@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Product } from "../types/products";
 import useCart from "@/store/use-cart";
 import toast from "react-hot-toast";
-import { formatCurrency } from "@/lib/format-currency";
+import { formatCurrency } from "@/lib/currency/format-currency";
 interface Props {
   product: Product;
 }

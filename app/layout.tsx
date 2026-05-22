@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 import React from "react";
 import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
-import { CurrencySwitcher } from "@/components/currency-switcher";
+
 import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
-import SocialButton from "@/components/Social/social-button";
+import SocialNetworks from "@/components/social/social-network";
 import { Footer } from "@/components/footer";
 import VideosCart from "@/components/video-show/videos-cart";
 import { RootProviders } from "@/components/theme/root-providers";
@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>  
       <body className="antialiased">
         <RootProviders>
-          <CurrencySwitcher />
+          
           <Navbar />
           <NavbarSecondary />
           
@@ -44,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               { children }
               <VideosCart />
               {/* Chargez vos scripts ici de manière optimisée */}
-                <SocialButton />
+                <SocialNetworks />
             </main>
           </UIWrapper>
 

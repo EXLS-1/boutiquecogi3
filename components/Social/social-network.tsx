@@ -1,6 +1,6 @@
-// /components/social/social-networks.tsx
+// components/social/social-network.tsx
 
-import SocialButton from "./social-button";
+import SocialButton from "@/components/social/social-button";
 import { socialNetworks } from "@/data/social-network";
 
 export default function SocialNetworks() {

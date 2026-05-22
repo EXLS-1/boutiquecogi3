@@ -1,27 +1,51 @@
-/* Styles personnalisés pour SocialButton compatible Tailwind v4 */
+/* /components/social/social-button.css */
+
 .social-button {
-  /* @apply relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition-all duration-300 group overflow-hidden border border-white/10; */
-  position: relative; /* relative */
-  display: flex; /* flex */
-  flex-direction: column; /* flex-col */
-  align-items: center; /* items-center */
-  justify-content: center; /* justify-center */
-  gap: 0.375rem; /* gap-1.5 */
-  padding: 0.75rem; /* p-3 */
-  border-radius: 1rem; /* rounded-2xl */
-  transition-property: all; /* transition-all */
-  transition-duration: 300ms; /* duration-300 */
-  overflow: hidden; /* overflow-hidden */
-  border: 1px solid rgba(255, 255, 255, 0.1); /* border border-white/10 */
-  cursor: pointer; /* Ajout du curseur pointer pour indiquer la cliquabilité */
-  width: 75px;
-  height: 75px;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.375rem;
+
+  width: clamp(72px, 8vw, 88px);
+  height: clamp(72px, 8vw, 88px);
+
+  padding: 0.75rem;
+
+  overflow: hidden;
+
+  border-radius: 1rem;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
   color: white;
   text-decoration: none;
+
+  cursor: pointer;
+
+  backface-visibility: hidden;
+
+  transform: translateZ(0);
+
+  will-change: transform;
+
+  transition-property:
+    transform,
+    box-shadow,
+    border-color,
+    opacity;
+
+  transition-duration: 300ms;
+
+  transition-timing-function: ease;
 }
 
 .social-button--solid {
-  background-color: var(--social-bg);
+  background: var(--social-bg);
 }
 
 .social-button--gradient {
@@ -29,27 +53,89 @@
 }
 
 .social-button:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  transform: translateY(-0.25rem);
+  transform:
+    translateY(-4px)
+    scale(1.03);
+
   border-color: rgba(255, 255, 255, 0.2);
-  /* @apply shadow-xl -translate-y-1 border-white/20; */
-  filter: brightness(1.1);
+
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.16),
+    0 10px 10px -5px rgba(0, 0, 0, 0.08);
 }
 
-.social-button span.inset-0 {
+.social-button:focus-visible {
+  outline: none;
+
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px rgba(0, 0, 0, 0.85);
+}
+
+.social-button__overlay {
+  position: absolute;
+  inset: 0;
+
+  opacity: 0;
+
   pointer-events: none;
+
+  transition: opacity 300ms ease;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.18),
+      transparent
+    );
 }
 
-/* Optimisation pour les périphériques tactiles */
+.social-button:hover .social-button__overlay {
+  opacity: 1;
+}
+
+.social-button__icon {
+  position: relative;
+  z-index: 10;
+
+  width: 1.75rem;
+  height: 1.75rem;
+
+  transition:
+    transform 300ms ease;
+}
+
+.social-button:hover .social-button__icon {
+  transform: scale(1.08);
+}
+
+.social-button__label {
+  position: relative;
+  z-index: 10;
+
+  font-size: 0.6875rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  line-height: 1;
+}
+
 @media (hover: none) {
   .social-button:active {
-    transform: scale(0.95);
-    /* @apply scale-95; */
-    filter: brightness(0.9);
+    transform: scale(0.96);
   }
 }
 
-/* Accessibilité : réduction de mouvement si l'utilisateur le préfère */
 @media (prefers-reduced-motion: reduce) {
-  .social-button { transition: none; transform: translateY(0); /* @apply transition-none translate-y-0; */ }
+  .social-button,
+  .social-button__icon,
+  .social-button__overlay {
+    transition: none !important;
+  }
+
+  .social-button:hover {
+    transform: none;
+  }
 }

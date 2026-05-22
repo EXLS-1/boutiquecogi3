@@ -7,7 +7,7 @@ import { Product } from "@/types/products";
 import { ProductList } from "@/components/product/product-list";
 import { ProductSortFilter } from "@/components/product/product-sort-filter";
 import { CategoryFilter } from "@/components/category/category-filter";
-import { CurrencyCode } from "@/lib/format-currency";
+import { CurrencyCode } from "@/lib/currency/format-currency";
 
 export default function ProductCatalog({ products, title, activeCurrency }: { 
   products: Product[],

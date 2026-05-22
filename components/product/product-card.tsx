@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
 import { Product } from "@/types/products";
-import { formatCurrency, CurrencyCode } from '@/lib/format-currency';
+import { formatCurrency, CurrencyCode } from '@/lib/currency/format-currency';
 
 interface ProductCardProps {
   product: { 

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "./product-card";
 import { Button } from "@/components/ui/button";
-import { CurrencyCode } from "@/lib/format-currency";
+import { CurrencyCode } from "@/lib/currency/format-currency";
 import { Product } from "@/types/products";
 
 const PAGE_SIZE = 12;

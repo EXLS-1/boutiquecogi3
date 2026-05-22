@@ -1,42 +1,120 @@
 // /data/social-networks.ts
+
 import type { LucideIcon } from "lucide-react";
+
 import {
   Facebook,
   Instagram,
   Linkedin,
-  Twitter,
   Youtube,
   MessageCircle,
 } from "lucide-react";
+
+import { SiTiktok, SiX } from "react-icons/si";
+
+import type { IconType } from "react-icons";
+
 import {
   socialNetworkSchema,
   type SocialNetworkSchema,
-} from "@/lib/social.schema";
+} from "@/lib/social/social.schema";
 
-type SocialNetwork = SocialNetworkSchema & {
-  icon: LucideIcon;
+type SocialIcon = LucideIcon | IconType;
+
+export type SocialNetwork = SocialNetworkSchema & {
+  icon: SocialIcon;
 };
 
 const rawSocialNetworks: SocialNetwork[] = [
-  // ... (Garde ton tableau rawSocialNetworks tel quel)
+  {
+    id: "facebook",
+    name: "Facebook",
+    url: "https://www.facebook.com/boutiquecogi",
+    brandColor: "#1877F2",
+    ariaLabel: "Visitez notre page Facebook",
+    icon: Facebook,
+  },
+
+  {
+    id: "instagram",
+    name: "Instagram",
+    url: "https://www.instagram.com/boutiquecogi",
+    brandColor:
+      "linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%)",
+    ariaLabel: "Suivez-nous sur Instagram",
+    icon: Instagram,
+  },
+
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    url: "https://www.linkedin.com/company/boutiquecogi",
+    brandColor: "#0A66C2",
+    ariaLabel: "Connectez-vous avec nous sur LinkedIn",
+    icon: Linkedin,
+  },
+
+  {
+    id: "x",
+    name: "X",
+    url: "https://x.com/boutiquecogi",
+    brandColor: "#111111",
+    ariaLabel: "Suivez-nous sur X",
+    icon: SiX,
+  },
+
+  {
+    id: "youtube",
+    name: "YouTube",
+    url: "https://www.youtube.com/@boutiquecogi",
+    brandColor: "#FF0000",
+    ariaLabel: "Regardez nos vidéos sur YouTube",
+    icon: Youtube,
+  },
+
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    url: "https://wa.me/243000000000",
+    brandColor: "#25D366",
+    ariaLabel: "Contactez-nous sur WhatsApp",
+    icon: MessageCircle,
+  },
+
+  {
+    id: "tiktok",
+    name: "TikTok",
+    url: "https://www.tiktok.com/@boutiquecogi",
+    brandColor:
+      "linear-gradient(135deg, #000000 0%, #25F4EE 50%, #FE2C55 100%)",
+    ariaLabel: "Suivez-nous sur TikTok",
+    icon: SiTiktok,
+  },
 ];
 
-// Validation robuste : on filtre les erreurs au lieu de crasher l'application
-export const socialNetworks = rawSocialNetworks.filter((network) => {
-  const result = socialNetworkSchema.safeParse({
-    id: network.id,
-    name: network.name,
-    url: network.url,
-    brandColor: network.brandColor,
-    ariaLabel: network.ariaLabel,
-  });
+/**
+ * Validation robuste:
+ * - Ne crash jamais l'application
+ * - Ignore les entrées invalides
+ * - Log uniquement en développement
+ */
+export const socialNetworks: SocialNetwork[] = rawSocialNetworks.filter(
+  (network) => {
+    const { icon, ...serializableData } = network;
 
-  if (!result.success) {
-    console.error(
-      `[SocialNetworks] Configuration invalide pour le réseau: ${network.name}`,
-      result.error.format(),
-    );
-    return false;
-  }
-  return true;
-});
+    const result = socialNetworkSchema.safeParse(serializableData);
+
+    if (!result.success) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          `[SocialNetworks] Réseau social invalide: ${network.name}`,
+          result.error.flatten(),
+        );
+      }
+
+      return false;
+    }
+
+    return true;
+  },
+);

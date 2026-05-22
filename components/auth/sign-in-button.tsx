@@ -33,7 +33,7 @@ export default function SignInButton() {
     >
       <Link href="/auth/sign-in" className="flex items-center gap-2">
         <LogIn className="w-4 h-4" />
-        <span className="font-medium">Connexion</span>
+        <span className="font-medium">Se connecter</span>
       </Link>
     </Button>
   );

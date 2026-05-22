@@ -5,7 +5,7 @@ import { Hero } from "@/components/hero/hero";
 import Boutique from "@/components/category/boutique";
 import ProductCatalog from "@/components/product/product-catalog";
 import { getAllProducts } from "@/lib/products";
-import { CurrencyCode } from "@/lib/format-currency";
+import { CurrencyCode } from "@/lib/currency/format-currency";
 
 export default async function Home() {
   const cookieStore = await cookies();

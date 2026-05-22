@@ -1,4 +1,4 @@
-// /components/currency-selector.tsx
+// /components/currency-switcher.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -22,27 +22,26 @@ export function CurrencySwitcher() {
   if (!mounted) return null;
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="text-sm text-gray-600">Devise</div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant={currency === "USD" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setCurrency("USD")}
-        >
-          USD
-        </Button>
+    <div className="flex items-center text-cyan-400 font-lato">
+    
         <Button
           variant={currency === "CDF" ? "default" : "ghost"}
           size="sm"
+          className="hover:text-rose-400 transition-colors"
           onClick={() => setCurrency("CDF")}
         >
           CDF
         </Button>
-      </div>
-      <div className="text-xs text-gray-500">
-        {rate ? `1 USD ≈ ${rate.toLocaleString()} CDF` : "Taux indisponible"}
-      </div>
+        <div className="text-sm">/</div>
+        <Button
+          variant={currency === "USD" ? "default" : "ghost"}
+          size="sm"
+          className="hover:text-rose-400 transition-colors"
+          onClick={() => setCurrency("USD")}
+        >
+          USD
+        </Button>
+      
     </div>
   );
 }
