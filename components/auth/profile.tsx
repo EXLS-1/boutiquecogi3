@@ -5,6 +5,19 @@ import Link from "next/link";
 import { auth } from "@/lib/auth"; // Ton instance BetterAuth configurée
 import { getUserOrders } from "@/app/actions/order.actions";
 import { formatDateFR, formatPriceUSD } from "@/lib/currency/format-currency";
+import { AlertCircle, ShoppingBag } from "lucide-react";
+
+// Définition d'un type local pour la clarté, à synchroniser avec Prisma à terme
+interface OrderWithItems {
+  id: string;
+  createdAt: Date | string;
+  totalAmount: number;
+  isPaid: boolean;
+  address?: string;
+  city?: string;
+  country?: string;
+  orderItems: any[]; 
+}
 
 export default async function Profile() {
   // 1. Session BetterAuth (Server-side)
@@ -20,13 +33,19 @@ export default async function Profile() {
   const { user } = session;
 
   // 2. Récupération des données avec isolation d'erreur
-  let orders = [];
+  let orders: OrderWithItems[] = [];
+  let errorMessage: string | null = null;
+
   try {
-    // BetterAuth fournit un ID utilisateur stable et typé
-    orders = await getUserOrders(user.id);
+    const response = await getUserOrders(user.id);
+    if (response.success && response.data) {
+      orders = response.data;
+    } else if (!response.success) {
+      errorMessage = response.error || "Impossible de charger vos commandes.";
+    }
   } catch (error) {
     console.error("[PROFILE_ERROR]: Failed to fetch orders", error);
-    // On ne laisse pas l'application planter, on retourne un état vide ou une erreur contrôlée
+    errorMessage = "Une erreur technique est survenue.";
   }
 
   return (
@@ -57,8 +76,18 @@ export default async function Profile() {
 
       {/* Orders Section */}
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">Historique des commandes</h2>
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5 text-slate-400" />
+          <h2 className="text-xl font-bold text-slate-900">Historique des commandes</h2>
+        </div>
         
+        {errorMessage && (
+          <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5" />
+            <p className="text-sm font-medium">{errorMessage}</p>
+          </div>
+        )}
+
         {orders.length === 0 ? (
           <div className="bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 p-12 text-center">
             <p className="text-slate-600 mb-6">Votre historique est vide.</p>
@@ -90,9 +119,8 @@ export default async function Profile() {
   );
 }
 
-// 3. Composant Interne Typé
-// À terme, remplace 'any' par l'interface générée par ton schéma de base de données
-function OrderCard({ order }: { order: any }) {
+// 3. Composant Interne Typé avec UUID v7 friendly display
+function OrderCard({ order }: { order: OrderWithItems }) {
   return (
     <article className="group bg-white border border-slate-200 rounded-xl p-5 hover:border-turquoise-400 transition-all shadow-sm">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
