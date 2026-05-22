@@ -21,14 +21,16 @@ export function NavbarBrand({
 }: NavbarBrandProps) {
   return (
     <div className={cn("flex items-center gap-4", className)}>
-      <button
-        type="button"
-        onClick={onMenuClick}
-        className="rounded-md p-2 text-cyan-400 transition-colors hover:text-pink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
-        aria-label="Ouvrir le menu de navigation"
-      >
-        <Menu className="h-6 w-6" />
-      </button>
+      {onMenuClick ? (
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="rounded-md p-2 text-cyan-400 transition-colors hover:text-pink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+          aria-label="Ouvrir le menu de navigation"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      ) : null}
 
       <Link
         href={href}

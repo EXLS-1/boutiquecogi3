@@ -31,7 +31,7 @@ export function NavbarSecondary({
   items = DEFAULT_ITEMS,
   className,
 }: NavbarSecondaryProps) {
-  const { toggleRightSidebar } = useUIStore();
+  const { toggleLeftSidebar, toggleRightSidebar } = useUIStore();
 
   return (
     <nav
@@ -40,9 +40,19 @@ export function NavbarSecondary({
         className
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        {/* Category Links */}
-        <div className="hidden items-center gap-1 lg:flex">
+      <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-start">
+          <button
+            type="button"
+            onClick={toggleLeftSidebar}
+            className="rounded-md p-2 text-cyan-400 transition-colors hover:text-pink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+            aria-label="Ouvrir le menu de navigation"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center gap-1">
           {items.map((item) => (
             <Button
               key={item.href}
@@ -57,8 +67,7 @@ export function NavbarSecondary({
           ))}
         </div>
 
-        {/* Right Actions */}
-        <div className="ml-auto flex items-center gap-4">
+        <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={toggleRightSidebar}
