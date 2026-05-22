@@ -1,34 +1,78 @@
-// components/Social/social-network.tsx
-import socialData from "@/data/social-data.json";
-import SocialButton from "./social/social-button";
+// /components/social/social-networks.tsx
+
+import SocialButton from "@/components/social/social-button";
+
+import { socialNetworks } from "@/data/social-networks";
 
 export default function SocialNetworks() {
-  const networks = socialData?.social || [];
-
-  if (networks.length === 0) {
-    return null; // Évite de rendre une section vide si le JSON plante
+  if (socialNetworks.length === 0) {
+    return null;
   }
 
   return (
-    <section className="py-20 bg-gray-50 border-t border-gray-200" id="reseaux">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <section
+      id="reseaux"
+      aria-labelledby="social-networks-title"
+      className="
+        border-t
+        border-neutral-200
+        bg-neutral-50
+        py-20
+      "
+    >
+      <div
+        className="
+          mx-auto
+          max-w-7xl
+          px-4
+          text-center
+          sm:px-6
+          lg:px-8
+        "
+      >
         <div className="mb-12">
-          <h2 className="font-playfair text-3xl md:text-5xl font-bold text-gray-900 uppercase tracking-wider mb-4">
+          <h2
+            id="social-networks-title"
+            className="
+              text-3xl
+              font-bold
+              uppercase
+              tracking-wider
+              text-neutral-900
+              md:text-5xl
+            "
+          >
             SUIVEZ-NOUS
           </h2>
-          <p className="font-lato text-gray-500 text-lg">
+
+          <p
+            className="
+              mt-4
+              text-lg
+              text-neutral-500
+            "
+          >
             Restez connecté avec notre communauté
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-6">
-          {networks.map((network) => (
+        <div
+          className="
+            flex
+            flex-wrap
+            items-center
+            justify-center
+            gap-6
+          "
+        >
+          {socialNetworks.map((network) => (
             <SocialButton
               key={network.id}
               url={network.url}
               name={network.name}
               icon={network.icon}
               brandColor={network.brandColor}
+              ariaLabel={network.ariaLabel}
             />
           ))}
         </div>
