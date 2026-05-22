@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth"; // Ton instance BetterAuth configurée
 import { getUserOrders } from "@/app/actions/order.actions";
 import { formatDateFR, formatPriceUSD } from "@/lib/currency/format-currency";
 
-export default async function ProfilePage() {
+export default async function Profile() {
   // 1. Session BetterAuth (Server-side)
   // Utilisation des headers pour valider la session de manière sécurisée
   const session = await auth.api.getSession({

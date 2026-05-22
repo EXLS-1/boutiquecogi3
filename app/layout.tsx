@@ -6,13 +6,13 @@ import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/goo
 
 import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
-import { LeftSidebar } from "@/components/left-sidebar";
-import { RightSidebar } from "@/components/right-sidebar";
+import { LeftSidebar } from "@/components/toggle/left-sidebar";
+import { RightSidebar } from "@/components/toggle/right-sidebar";
 import SocialNetworks from "@/components/social/social-network";
 import { Footer } from "@/components/footer";
 import VideosCart from "@/components/video-show/videos-cart";
 import { RootProviders } from "@/components/theme/root-providers";
-import { UIWrapper } from "@/components/ui-wrapper";
+import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });

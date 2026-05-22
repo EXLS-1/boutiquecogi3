@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Profile } from "@/components/profile";
+import { Profile } from "@/components/auth/profile";
 
 // Optimisation SEO : Métadonnées injectées directement par le serveur
 export const metadata: Metadata = {
@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-cyan-100 text-cyan-500 p-4">
-            <SignInForm />
-        </main>
+        <div className="flex min-h-screen items-center justify-center bg-cyan-100 text-cyan-500 p-4">
+            <Profile />
+        </div>
     );
 }
