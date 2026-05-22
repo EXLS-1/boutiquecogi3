@@ -8,6 +8,7 @@ import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { RightSidebar } from "@/components/right-sidebar";
+import SocialButton from "@/components/Social/social-button";
 import { Footer } from "@/components/footer";
 import VideosCart from "@/components/video-show/videos-cart";
 import { RootProviders } from "@/components/theme/root-providers";
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               { children }
               <VideosCart />
               {/* Chargez vos scripts ici de manière optimisée */}
-                
+                <SocialButton />
             </main>
           </UIWrapper>
 
