@@ -3,10 +3,10 @@
 
 import React from "react";
 
-import { NavbarRole } from "@/components/navbar/navbar-role";
-import { NavbarSearch } from "@/components/navbar/navbar-search";
-import { NavbarShell } from "@/components/navbar/navbar-shell";
-import { NavbarBrand } from "@/components/navbar/navbar-brand";
+import { NavbarRole } from "@/components/navbar-primo/navbar-role";
+import { NavbarSearch } from "@/components/navbar-primo/navbar-search";
+import { NavbarShell } from "@/components/navbar-primo/navbar-shell";
+import { NavbarBrand } from "@/components/Navbar-secundo/navbar-brand";
 
 type NavbarProps = {
   logo?: string;
