@@ -1,15 +1,14 @@
-// components/auth/profile.tsx
 import { Metadata } from "next";
 import Link from "next/link";
 import type { OrderCardData } from "@/types/order";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { formatPriceUSD } from "@/lib/currency/format-currency";
 import { auth } from "@/lib/auth";
 import { getUserOrders } from "@/app/actions/order.actions";
 import { AccountSection } from "@/components/auth/account-section";
 import { OrdersList } from "@/components/auth/order-list";
 import { ProfileHeader } from "@/components/auth/profile-header";
+import { UserProfile } from "@/components/auth/user-profile";
 
 export const metadata: Metadata = {
     title: "Profile | Boutique COGI",
@@ -22,7 +21,7 @@ export default async function Profile() {
   });
 
   if (!session) {
-    redirect("/auth/login?callbackUrl=/profile");
+    redirect("/auth/sign-in");
   }
 
   const { user } = session;
@@ -42,11 +41,9 @@ export default async function Profile() {
         "Impossible de charger vos commandes.";
     }
   } catch (error) {
-    console.error(
       "[PROFILE_ORDERS_FETCH_ERROR]",
       error,
-    );
-
+    console.error("[PROFILE_ORDERS_FETCH_ERROR]", error);
     errorMessage =
       "Une erreur technique est survenue lors du chargement des commandes.";
   }
@@ -56,6 +53,8 @@ export default async function Profile() {
       <ProfileHeader
         userName={user.name}
       />
+
+      <UserProfile user={user} />
 
       <AccountSection
         name={user.name}
