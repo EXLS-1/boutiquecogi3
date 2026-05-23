@@ -1,10 +1,21 @@
-import type { Order, OrderItem, Product, ProductVariant, User } from "@prisma/client";
+// types/order.ts
 
-export type OrderWithItems = Order & {
-  items: (OrderItem & {
-    variant: ProductVariant & {
-      product: Product;
-    };
-  })[];
-  user?: Pick<User, "id" | "name" | "email"> | null;
-};
+export interface OrderCardItem {
+  id: string;
+}
+
+export interface OrderCardData {
+  id: string;
+
+  createdAt: Date | string;
+
+  totalAmount: number;
+
+  isPaid: boolean;
+
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+
+  orderItems: OrderCardItem[];
+}

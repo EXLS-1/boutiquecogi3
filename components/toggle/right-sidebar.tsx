@@ -19,7 +19,7 @@ export const RightSidebar = () => {
 
         <nav className="flex-1 space-y-6">
           <Link
-            href="/profile"
+            href="/profile" // Changed from "./app/profile" to "/profile"
             onClick={() => setRightSidebar(false)}
             className="flex items-center gap-4 group"
           >
@@ -30,7 +30,7 @@ export const RightSidebar = () => {
           </Link>
 
           <Link
-            href="/favorites"
+            href="/favorites" // Changed from "/app/favorites" to "/favorites"
             onClick={() => setRightSidebar(false)}
             className="flex items-center gap-4 group"
           >

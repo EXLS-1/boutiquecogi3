@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
 import { Product } from "@/types/products";
-import { formatCurrency, CurrencyCode } from '@/lib/currency/format-currency';
+import { formatPriceUSD, CurrencyCode } from '@/lib/currency/format-currency';
 
 interface ProductCardProps {
   product: { 
@@ -22,7 +22,7 @@ export default function ProductCard({ product, activeCurrency }: ProductCardProp
   const rawPrice = activeCurrency === 'CDF' ? product.priceCDF : product.priceUSD;
   
   // Formatage strict
-  const displayPrice = formatCurrency(rawPrice, activeCurrency);
+  const displayPrice = formatPriceUSD(rawPrice);
     return (
     <div className="surface group flex flex-col h-full overflow-hidden">
       {/* Container Image avec Ratio fixe pour éviter le Layout Shift */}
