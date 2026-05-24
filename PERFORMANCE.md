@@ -139,15 +139,17 @@ function CartBadge() {
 }
 ```
 
-### 6. CSS Optimization (Tailwind v4)
+### 6. Tailwind CSS v4 Optimizations
 
 ```css
-/* ✅ Good: PostCSS v4 optimizations */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 utilise un moteur Engine-first ultra rapide */
+@import "tailwindcss";
+```
+**Avantages v4:**
+- Build times divisés par 5.
+- Zero-config pour la plupart des projets.
+- Meilleure gestion des variables CSS natives.
 
-/* Production: ~15-25KB minified + gzipped */
 ```
 
 ```bash

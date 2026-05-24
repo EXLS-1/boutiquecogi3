@@ -1,24 +1,21 @@
 <h1 align="center">Boutique Cogi3</h1>
 
-<p align="center">
-  Bienvenue sur Boutique Cogi3, votre destination en ligne pour des produits de qualité.
-</p>
-
 ## Description du Projet
 
 Boutique Cogi3 est une plateforme e-commerce moderne construite avec les dernières technologies. Elle vise à offrir une expérience d'achat fluide et intuitive pour les utilisateurs, tout en fournissant une gestion robuste pour les administrateurs.
 
-## Technologies Utilisées
+## 🚀 Stack Technique
 
-- **Next.js**: Framework React pour le rendu côté serveur et la génération de sites statiques.
-- **React**: Bibliothèque JavaScript pour la construction d'interfaces utilisateur interactives.
-- **TypeScript**: Langage de programmation qui ajoute le typage statique à JavaScript.
-- **Tailwind CSS**: Framework CSS utilitaire pour un stylisme rapide et personnalisable.
-- **Better-Auth**: Solution d'authentification personnalisée.
-- **Prisma**: ORM (Object-Relational Mapper) pour Node.js et TypeScript.
+- **Next.js 16.2.6**: Framework React avec App Router et Server Components.
+- **React 19**: Bibliothèque UI avec support des Actions et des Transitions.
+- **TypeScript**: Typage statique strict pour une robustesse maximale.
+- **Tailwind CSS v4**: Moteur de style ultra-rapide et optimisé.
+- **Better-Auth**: Gestion complète des sessions et RBAC (sans Next-Auth).
+- **Prisma 7.8.0**: ORM type-safe pour PostgreSQL.
 - **Zod**: Bibliothèque de validation de schémas.
+- **UUID v7**: Identifiants uniques triables par timestamp pour de meilleures performances d'indexation.
 - **PostgreSQL**: Système de gestion de base de données relationnelle open source.
-- **Supabase**: Plateforme de développement backend open source.
+- **Supabase Storage**: Stockage de fichiers et médias (S3 compatible).
 - **CinetPay**: Solution de paiement en ligne.
 - **Zustand**: Bibliothèque de gestion d'état.
 

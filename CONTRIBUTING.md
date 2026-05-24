@@ -157,7 +157,7 @@ npm run lint:fix
 
 - ✅ Toujours typer les params et retours
 - ✅ Utiliser `unknown` plutôt que `any`
-- ✅ Activer `strict: true` dans `tsconfig.json`
+- ✅ Utiliser UUID v7 pour tous les nouveaux identifiants
 
 **Exemple Correct:**
 
@@ -188,6 +188,7 @@ interface ProductCardProps {
 export function ProductCard({ product, onSelect }: ProductCardProps) {
   return (
     <div onClick={() => onSelect(product)}>
+      <ShoppingBag size={16} />
       {product.name}
     </div>
   );

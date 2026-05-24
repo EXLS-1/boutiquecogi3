@@ -32,9 +32,9 @@
 
 **Boutique COGI3** est une plateforme e-commerce de mode (vêtements, accessoires, chaussures, sacs) orientée vers le marché congolais (RDC), avec support **USD** et **CDF**, paiement mobile via **CinetPay**, et back-office administrateur.
 
-Le projet repose sur **Next.js 16** (App Router), **React 19**, **TypeScript**, **Prisma** + **PostgreSQL**, **Better Auth** pour l’authentification, **Supabase** pour le stockage média, et **Zustand** pour l’état client (panier, devise, wishlist).
+Le projet repose sur **Next.js 16.2.6** (App Router), **React 19**, **TypeScript**, **Prisma 7.8.0** + **PostgreSQL**, **Better Auth** pour l’authentification (sans Supabase Auth), **Supabase Storage** pour le stockage média, et **Zustand** pour l’état client.
 
-**Situation actuelle :** la vitrine (accueil, catégories, catalogue JSON, panier local, auth de base) est en place. La couche « production » (catalogue Prisma, commandes complètes, CinetPay fiable, admin, notifications) est partiellement implémentée ou en cours d’alignement avec le schéma Prisma cible.
+**Situation actuelle :** L'architecture robuste est en place. L'implémentation des UUID v7 est généralisée. Le flux CinetPay est en cours de finalisation avec une logique d'idempotence stricte.
 
 ---
 
@@ -129,11 +129,12 @@ Admin    → Login → Dashboard → Produits / Commandes / Clients → Mise à 
 
 | Technologie | Version (package.json) | Usage |
 |-------------|------------------------|--------|
-| Next.js | ^16.2 | App Router, SSR/RSC, API Routes |
-| React | ^19.2 | UI composants |
+| Next.js | 16.2.6 | App Router, SSR/RSC, API Routes |
+| React | 19.0.0 | UI composants |
 | TypeScript | ^5 | Typage statique |
-| Tailwind CSS | ^4.2 | Styles utilitaires |
+| Tailwind CSS | v4.0.0 | Moteur de style haute performance |
 | shadcn/ui (Radix) | divers | Composants UI (`components/ui`) |
+| Lucide React | ^0.400 | Iconographie |
 | Zustand | ^5.0 | Panier, devise, wishlist, UI |
 | react-hook-form + Zod | ^7 / ^4 | Formulaires et validation |
 | Embla Carousel | ^8.6 | Carrousels hero / produits |
