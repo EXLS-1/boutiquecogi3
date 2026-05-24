@@ -1,4 +1,4 @@
-import SignUpSuccess from "@/components/auth/sign-up-success";
+import SignUpSuccess from "@/components/auth/signed-up";
 
 interface SignedUpPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

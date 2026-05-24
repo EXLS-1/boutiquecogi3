@@ -1,4 +1,5 @@
 // components/auth/role-guard.tsx
+// Ce composant protège les routes en fonction du rôle de l'utilisateur (admin ou user).
 "use client";
 
 import { useSession } from "@/lib/auth/auth-client"; // Ton client Better-Auth

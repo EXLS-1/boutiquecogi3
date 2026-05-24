@@ -1,4 +1,6 @@
 // components/auth/user-profile.tsx
+// Ce composant affiche les informations de l'utilisateur connecté,
+// y compris son nom, son email et son avatar. Il inclut également un bouton de déconnexion.
 "use client";
 
 import { SignOutButton } from "./sign-out-button";
@@ -29,7 +31,7 @@ export function UserProfile({ user }: UserProfileProps) {
     .toUpperCase();
 
   return (
-    <Card className="w-full max-w-md border-none shadow-lg">
+    <Card className="w-full max-w-md border-none shadow-lg bg-white">
       <CardHeader className="flex flex-row items-center gap-4 space-y-0">
         <Avatar className="h-16 w-16 border-2 border-cyan-500">
           <AvatarImage src={user.image || ""} alt={user.name} />
@@ -52,7 +54,7 @@ export function UserProfile({ user }: UserProfileProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="px-6 pb-6 pt-0 flex justify-center">
         <SignOutButton className="w-full" variant="destructive" />
       </CardFooter>
     </Card>

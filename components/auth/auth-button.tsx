@@ -1,4 +1,10 @@
 // components/auth/auth-button.tsx
+// This component is responsible for rendering the authentication button in the navbar.
+// It checks if the user is authenticated
+// and displays the appropriate options based on their session state.
+// If the user is authenticated, it shows a dropdown menu with profile and logout options.
+// If the user is not authenticated, it does not render anything,
+// allowing the SignInButton and SignUpButton components to take precedence in the navbar.
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";
@@ -81,7 +87,7 @@ export function AuthButton() {
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-rose-600 cursor-pointer focus:bg-rose-50 focus:text-rose-700 flex items-center gap-2">
-          <LogOut className="h-4 w-4" /> Déconnexion
+          <LogOut className="h-4 w-4" /> Se Déconnecter
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

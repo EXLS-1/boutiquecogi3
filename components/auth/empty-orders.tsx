@@ -1,5 +1,7 @@
 // components/auth/empty-orders.tsx
-
+// This component is displayed when the user has no orders in their history.
+// It provides a message indicating that the order history is empty
+// and includes a link to discover products.
 import Link from "next/link";
 
 export function EmptyOrders() {
@@ -13,7 +15,7 @@ export function EmptyOrders() {
         href="/products"
         className="inline-flex items-center rounded-lg bg-rose-500 px-4 py-2 font-medium text-white transition-colors hover:bg-rose-600"
       >
-        Découvrir nos produits
+        Découvrir tous nos produits.
       </Link>
     </div>
   );
