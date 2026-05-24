@@ -244,10 +244,10 @@ Voir `structure.md` pour l’arborescence complète. Organisation logique :
 | `/checkout` | ⚠️ | Protégé Better Auth ; client checkout partiel |
 | `/profile` | ✅ | Profil utilisateur |
 | `/dashboard` | ⚠️ | Tableau de bord basique |
-| `/auth/login`, sign-up, forgot-password, etc. | ✅ | Flux Better Auth |
+| `/auth/sign-in`, sign-up, forgot-password, etc. | ✅ | Flux Better Auth |
 | `/buy-product-success` | ✅ | Page succès |
 | `/403` | ✅ | Accès refusé |
-| `app/(protected)/layout.tsx` | ⚠️ | Redirige vers `/login` (incohérence avec `/auth/login`) |
+| `app/(protected)/layout.tsx` | ⚠️ | Redirige vers `/auth/sign-in` (incohérence avec `/auth/sign-in`) |
 | Admin (`app/admin/*`) | ❌ | Non créé (cible dans structure.md) |
 | `/account/orders` | ❌ | Prévu, non implémenté |
 
@@ -304,7 +304,7 @@ Voir `structure.md` pour l’arborescence complète. Organisation logique :
 | Relations Order ↔ Shipment | `Shipment.order` sans champ inverse complet | Compléter schéma |
 | Webhook CinetPay | URL, signature, statuts incorrects | Refonte module `lib/cinetpay` |
 | Checkout import `better-auth` direct | Incohérent avec `lib/auth` | Unifier instance auth |
-| Redirections `/login` vs `/auth/login` | UX cassée | Harmoniser routes + middleware |
+| Redirections `/auth/sign-in` | UX cassée | Harmoniser routes + middleware |
 
 ### 8.3 Dette technique prioritaire
 
@@ -458,7 +458,7 @@ Client → create payment (API CinetPay) → redirect payment_url
 **Tâches**
 
 - [ ] `middleware.ts` : session Better Auth, routes publiques/privées.
-- [ ] Unifier redirects (`/auth/login?callbackUrl=...`).
+- [ ] Unifier redirects (`/auth/sign-in?callbackUrl=...`).
 - [ ] Page compte : `/account`, `/account/orders`, `/account/settings`.
 - [ ] Script `scripts/set-admin.ts` pour promouvoir un ADMIN.
 
@@ -694,7 +694,7 @@ npx prisma studio
 | 0.1 | Compléter `schema.prisma` (Cart, Review, Wishlist, fix Shipment) | P0 |
 | 0.2 | Réécrire `prisma/seed.ts` aligné sur nouveau schéma | P0 |
 | 0.3 | Créer `middleware.ts` (auth + routes protégées) | P0 |
-| 0.4 | Harmoniser `/auth/login` et redirects checkout | P0 |
+| 0.4 | Harmoniser `/auth/sign-in` et redirects checkout | P0 |
 | 0.5 | Mettre à jour `docs/AUTH_SETUP.md` → Better Auth | P1 |
 | 0.6 | Corriger typo `whebhook` → `webhook` | P0 |
 | 0.7 | Unifier instance auth dans `checkout-action.tsx` | P0 |

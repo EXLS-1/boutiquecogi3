@@ -6,6 +6,8 @@ import Boutique from "@/components/category/boutique";
 import ProductCatalog from "@/components/product/product-catalog";
 import { getAllProducts } from "@/lib/products";
 import { CurrencyCode } from "@/lib/currency/format-currency";
+import VideosCart from '@/components/video-show/videos-cart';
+import SocialNetworks from '@/components/social/social-network';
 
 export default async function Home() {
   const cookieStore = await cookies();
@@ -25,7 +27,8 @@ export default async function Home() {
         products={products}
         activeCurrency={preferredCurrency}
       />
-     
+      <VideosCart />
+      <SocialNetworks />
     </>
   );
 }

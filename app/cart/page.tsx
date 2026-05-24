@@ -39,20 +39,23 @@ export default function CartPage() {
   if (!cart.items || cart.items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center">
-        <h1 className="font-playfair text-3xl font-bold mb-6 tracking-widest uppercase text-sky-500">
-          Mon Panier
+        <h1 className="font-playfair text-3xl font-bold mb-6 tracking-widest uppercase text-cyan-400">
+          Votre Panier
         </h1>
-        <p className="font-lato text-slate-500 text-lg">
+        <p className="font-lato text-cyan-400 text-lg">
           Votre panier est actuellement vide.
         </p>
+        <a href="/" className="mt-6 inline-block bg-cyan-400 border-round-md text-white font-bold py-2 px-4 rounded hover:bg-cyan-600 transition-colors">
+          Retour à la boutique
+        </a>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="font-playfair text-3xl font-bold mb-8 tracking-widest uppercase text-sky-500 border-b border-slate-200 pb-4">
-        Mon Panier
+      <h1 className="font-playfair text-3xl font-bold mb-8 tracking-widest uppercase text-cyan-400 border-b border-slate-200 pb-4">
+        Votre Panier
       </h1>
 
       <div className="space-y-6">
@@ -76,7 +79,7 @@ export default function CartPage() {
                 <h2 className="font-playfair text-xl font-bold text-slate-950">
                   {item.name}
                 </h2>
-                <p className="font-lato font-bold text-sky-500 mt-1">
+                <p className="font-lato font-bold text-cyan-400 mt-1">
                   {formatPrice(item.price)}
                 </p>
               </div>
@@ -125,7 +128,7 @@ export default function CartPage() {
           <Button
             variant="outline"
             onClick={cart.removeAll}
-            className="border-sky-500 text-sky-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white font-bold tracking-widest uppercase transition-all w-full sm:w-auto"
+            className="border-cyan-400 text-cyan-400 hover:bg-rose-500 hover:border-rose-500 hover:text-white font-bold tracking-widest uppercase transition-all w-full sm:w-auto"
           >
             Vider le panier
           </Button>
@@ -134,7 +137,7 @@ export default function CartPage() {
             <span className="font-lato text-slate-500 uppercase tracking-wider text-sm font-bold">
               Total estimé
             </span>
-            <span className="font-playfair text-2xl font-bold text-sky-500">
+            <span className="font-playfair text-2xl font-bold text-cyan-400">
               {formatPrice(cartTotal)}
             </span>
           </div>

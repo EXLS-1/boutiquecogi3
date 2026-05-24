@@ -59,7 +59,7 @@ export function SignInForm() {
         onSuccess: () => {
           toast.success("Connexion réussie !");
           router.push("/");
-          router.refresh(); 
+          router.refresh();
         },
         onError: (ctx) => {
           setIsPending(false);
@@ -72,7 +72,7 @@ export function SignInForm() {
   return (
     <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
       <CardHeader>
-        <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
+        <CardTitle className="text-2xl text-cyan-700">Se connecter</CardTitle>
         <CardDescription>
           Entrez vos identifiants pour accéder à votre compte.
         </CardDescription>
@@ -82,7 +82,7 @@ export function SignInForm() {
           <div className="grid bg-cyan-100 gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
-              id="email"
+              id="email-signin"
               type="email"
               placeholder="votre_email@example.com"
               {...register("email")}
@@ -96,7 +96,7 @@ export function SignInForm() {
 
           <div className="grid gap-2 bg-cyan-100">
             <div className="flex items-center bg-cyan-100 justify-between">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password-signin">Mot de passe</Label>
               <Link
                 href="/auth/forgot-password"
                 className="text-sm text-cyan-400 underline-offset-4 hover:underline"
@@ -105,7 +105,7 @@ export function SignInForm() {
               </Link>
             </div>
             <Input
-              id="password"
+              id="password-signin"
               type={showPassword ? "text" : "password"}
               {...register("password")}
               disabled={isPending}
@@ -133,7 +133,7 @@ export function SignInForm() {
           <div className="text-center text-sm text-cyan-400">
             Pas encore de compte ?{" "}
             <Link
-              href="/auth/sign-up"
+              href="/auth/sign-up" // Assurez-vous que cette route est correcte
               className="text-cyan-500 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
               S'inscrire

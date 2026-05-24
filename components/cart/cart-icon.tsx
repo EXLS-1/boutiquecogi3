@@ -1,26 +1,21 @@
+// components/cart/cart-icon.tsx
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { getCart } from "@/lib/commerce/actions";
-import { Suspense } from "react";
+import { CartBadge } from "./cart-badge";
 
-export default async function CartIcon() {
+/**
+ * CartIcon reste un Server Component pour garantir que le lien 
+ * vers le panier est immédiatement disponible et crawlable.
+ */
+export default function CartIcon() {
   return (
-    <Suspense fallback={<ShoppingCart />}>
-      <CartIconContent />
-    </Suspense>
-  );
-}
-
-async function CartIconContent() {
-  const cart = await getCart();
-  return (
-    <Link href="/cart" aria-label="Cart" className="relative">
-      <ShoppingCart />
-      {cart?.totalQuantity ? (
-        <div className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[11px] font-medium text-white">
-          {cart.totalQuantity}
-        </div>
-      ) : null}
+    <Link 
+      href="/cart" 
+      aria-label="Cart" 
+      className="relative flex items-center transition-colors hover:text-rose-400"
+    >
+      <ShoppingCart className="h-6 w-6 text-cyan-400" />
+      <CartBadge />
     </Link>
   );
 }

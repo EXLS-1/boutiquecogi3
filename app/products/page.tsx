@@ -1,8 +1,5 @@
 // app/products/page.tsx
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { ProductList } from "@/components/product/product-list";
-import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { ProductSchema } from "@/lib/validators/product.schema";
 import { unstable_cache } from "next/cache";
@@ -64,7 +61,7 @@ export default async function ProductsPage() {
       ) : (
         <ProductList 
         title="Catalogue"
-        products={products}
+        product={products}
         activeCurrency="USD"
         showCurrencySelector={true}
         showPrice={true}

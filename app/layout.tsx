@@ -8,12 +8,10 @@ import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
 import { LeftSidebar } from "@/components/toggle/left-sidebar";
 import { RightSidebar } from "@/components/toggle/right-sidebar";
-import SocialNetworks from "@/components/social/social-network";
 import { Footer } from "@/components/footer";
-import VideosCart from "@/components/video-show/videos-cart";
 import { RootProviders } from "@/components/theme/root-providers";
 import { UIWrapper } from "@/components/toggle/ui-wrapper";
-import { cn } from "@/lib/utils";
+import { CartSyncManager } from "@/components/cart/cart-sync-manager";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -31,7 +29,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>  
       <body className="antialiased">
         <RootProviders>
-          
+          <CartSyncManager />
           <Navbar />
           <NavbarSecondary />
           
@@ -42,9 +40,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               { /* pt-28 correspond à la hauteur de navbar (14) + navbar-secondary (14) */ }
             <main className="min-h-screen pt-28">
               { children }
-              <VideosCart />
+            
               {/* Chargez vos scripts ici de manière optimisée */}
-                <SocialNetworks />
+               
             </main>
           </UIWrapper>
 

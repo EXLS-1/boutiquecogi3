@@ -22,7 +22,7 @@ export function SignOutButton({ className, variant = "outline" }: SignOutButtonP
       await authClient.signOut({
         fetchOptions: {
           onSuccess: () => {
-            toast.success("Déconnexion réussie.");
+            toast.success("Déconnexion réussie."); //
             router.push("/auth/Sign-in"); // Redirection immédiate
             router.refresh(); // Force la purge du cache Next.js
           },
