@@ -1,3 +1,6 @@
+// app/buy-product-success/page.tsx
+// This page is displayed after a successful payment. It clears the cart and shows a success message to the user.
+// This is a client component because it uses hooks and interacts with the browser (e.g., showing toast notifications).
 "use client";
 
 import useCart from "@/store/use-cart";
@@ -5,7 +8,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
-export default function SuccessPage() {
+export default function BuyProductSuccessPage() {
   const { removeAll } = useCart();
   useEffect(() => {
     removeAll();

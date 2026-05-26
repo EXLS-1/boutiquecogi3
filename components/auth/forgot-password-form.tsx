@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import { authClient } from "@/lib/auth/auth-client"; // Ajuste le chemin selon ton architecture
+import { authClient } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-// Schéma de validation strict
 const forgotPasswordSchema = z.object({
   email: z.string().email("Veuillez entrer une adresse email valide."),
 });
@@ -35,7 +34,6 @@ export function ForgotPasswordForm({
     e.preventDefault();
     setError(null);
 
-    // Validation Zod avant l'appel réseau (Optimisation)
     const validation = forgotPasswordSchema.safeParse({ email });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
@@ -44,20 +42,26 @@ export function ForgotPasswordForm({
 
     setIsLoading(true);
 
-    // Better-Auth retourne un objet avec data et error, il ne throw pas par défaut
-    const { error: authError } = await authClient.forgetPassword({
-      email: validation.data.email,
-      redirectTo: `${window.location.origin}/auth/update-password`,
-    });
+    try {
+      const { error: authError } = await authClient.forgetPassword({
+        email: validation.data.email,
+        // Construction dynamique et robuste de l'URL de retour
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
 
-    setIsLoading(false);
+      if (authError) {
+        // Ne jamais donner d'indication si l'email existe ou non en production (Sécurité anti-énumération)
+        console.error("[AUTH_FORGET_PWD_ERROR]", authError);
+        throw new Error(authError.message);
+      }
 
-    if (authError) {
-      setError(authError.message || "Une erreur est survenue lors de la demande.");
-      return;
+      setSuccess(true);
+    } catch (err: any) {
+      // Message générique pour éviter le fuzzing
+      setError("Une erreur est survenue lors de la demande. Veuillez réessayer plus tard.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setSuccess(true);
   };
 
   return (
@@ -65,50 +69,53 @@ export function ForgotPasswordForm({
       {success ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Vérifiez votre boîte mail</CardTitle>
-            <CardDescription>Les instructions ont été envoyées.</CardDescription>
+            <CardTitle className="text-2xl">Vérifiez votre boîte de réception</CardTitle>
+            <CardDescription>
+              Un lien sécurisé a été généré.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Si un compte est associé à cette adresse, vous recevrez un lien pour réinitialiser votre mot de passe.
+            <p className="text-sm text-slate-600">
+              Si un compte est associé à <strong>{email}</strong>, vous recevrez les instructions pour réinitialiser votre mot de passe d'ici quelques minutes. Pensez à vérifier vos spams.
             </p>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Réinitialiser le mot de passe</CardTitle>
+            <CardTitle className="text-2xl">Mot de passe oublié</CardTitle>
             <CardDescription>
-              Entrez votre email pour recevoir un lien de réinitialisation.
+              Entrez l'adresse email associée à votre compte.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleForgotPassword}>
               <div className="flex flex-col gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Adresse Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="exemple@domaine.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading} // Verrouillage d'état
+                    disabled={isLoading}
+                    className={error ? "border-red-500 focus-visible:ring-red-500" : ""}
                   />
+                  {error && <p className="text-sm font-medium text-red-500">{error}</p>}
                 </div>
-                {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+                
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Envoi en cours..." : "Envoyer le lien"}
+                  {isLoading ? "Traitement en cours..." : "Recevoir le lien de réinitialisation"}
                 </Button>
               </div>
               <div className="mt-4 text-center text-sm">
-                Vous avez déjà un compte ?{" "}
                 <Link
                   href="/auth/sign-in"
-                  className="underline underline-offset-4"
+                  className="text-cyan-600 hover:text-cyan-800 hover:underline underline-offset-4"
                 >
-                  Se connecter
+                  Retour à la connexion
                 </Link>
               </div>
             </form>

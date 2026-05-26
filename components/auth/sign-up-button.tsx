@@ -23,7 +23,7 @@ export default function SignUpButton() {
   return (
     <Button
       asChild
-      className="bg-cyan-700 hover:bg-rose-700 text-white shadow-sm transition-all duration-300 active:scale-95"
+      className="bg-cyan-400 hover:bg-rose-500 text-white shadow-sm transition-all duration-300 active:scale-95"
     >
       <Link href="/auth/sign-up" className="flex items-center gap-2">
         <UserPlus className="w-4 h-4" />

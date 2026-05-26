@@ -1,3 +1,6 @@
+// app/api/products/route.ts
+// Ce fichier gère les routes API pour les produits. Il permet de récupérer la liste des produits avec des filtres et de créer de nouveaux produits.
+// La route GET /api/products supporte la pagination, les filtres par catégorie, recherche textuelle, produits en vedette et filtrage par prix.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils/slug";
@@ -57,15 +60,17 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(
       MAX_LIMIT,
-      Math.max(1, parseInt(searchParams.get("limit") || String(DEFAULT_LIMIT), 10))
+      Math.max(
+        1,
+        parseInt(searchParams.get("limit") || String(DEFAULT_LIMIT), 10),
+      ),
     );
     const skip = (page - 1) * limit;
 
     const filters: ProductFilters = {
       category: searchParams.get("category") || undefined,
       search: searchParams.get("search") || undefined,
-      isFeatured:
-        searchParams.get("isFeatured") === "true" ? true : undefined,
+      isFeatured: searchParams.get("isFeatured") === "true" ? true : undefined,
       minPrice: searchParams.get("minPrice")
         ? parseFloat(searchParams.get("minPrice")!)
         : undefined,
@@ -125,7 +130,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to fetch products" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -138,7 +143,7 @@ export async function POST(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json(
         { status: "error", message: "Name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -171,12 +176,15 @@ export async function POST(request: NextRequest) {
       include: { category: true, variants: true },
     });
 
-    return NextResponse.json({ status: "success", data: product }, { status: 201 });
+    return NextResponse.json(
+      { status: "success", data: product },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Error creating product:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to create product" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,5 +1,5 @@
 // app/(protected)/layout.tsx
-import { auth } from "@/lib/auth"; // BetterAuth
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -8,21 +8,24 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let isAuthorized = false;
+  // Dans Next.js 16, headers() doit être "await"
+  const headersList = await headers();
+  
+  // Requête directe, sans try/catch inutile. Better-Auth renvoie null si aucune session.
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
 
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers()
-    });
-    isAuthorized = !!session?.user;
-  } catch (error) {
-    isAuthorized = false;
+  if (!session?.user) {
+    redirect("/auth/sign-in");
   }
 
-  // Redirection propre, libérée du try...catch
-  if (!isAuthorized) {
-    redirect("/auth/login");
-  }
-
-  return <>{children}</>;
+  // Bonus d'architecture : Tu pourras utiliser ce layout pour injecter 
+  // les données de 'session.user' dans un Provider React si nécessaire.
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      {/* Ton header/sidebar protégé ira ici */}
+      {children}
+    </div>
+  );
 }

@@ -1,9 +1,13 @@
+// app/auditlog/page.tsx
 // Ce fichier représente la page d'administration pour visualiser les journaux d'audit.
-
+// Il utilise Next.js 16 avec le système de fichiers pour les routes et Prisma pour accéder à la base de données.
+// La page affiche les 100 derniers journaux d'audit, avec des informations sur l'utilisateur qui a effectué l'action, le type d'action, et la date.
+// Note: Pour des volumes plus importants de journaux d'audit, une pagination ou un système de filtrage devrait être implémenté pour améliorer les performances et l'expérience utilisateur.
+// Importations nécessaires pour la page
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { AuditLogViewer } from "@/app/auditlog/audit-log-viewer";
+import { AuditLogViewer } from "@/components/admin/audit-log-viewer";
 import { History } from "lucide-react";
 
 export const dynamic = "force-dynamic"; // Assure que les données sont toujours fraîches

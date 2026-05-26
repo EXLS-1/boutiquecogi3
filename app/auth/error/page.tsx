@@ -15,15 +15,15 @@ async function ErrorContent({
           Code error: {params.error}
         </p>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          An unspecified error occurred.
+        <p className="text-sm text-muted-foreground text-center">
+          Une erreur inattendue est survenue. Veuillez réessayer plutard ou contacter le support technique si le problème persiste.
         </p>
       )}
     </>
   );
 }
 
-export default function Page({
+export default function ErrorPage({
   searchParams,
 }: {
   searchParams: Promise<{ error: string }>;
@@ -35,7 +35,7 @@ export default function Page({
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">
-                Sorry, something went wrong.
+                Désolé, une erreur est survenue.
               </CardTitle>
             </CardHeader>
             <CardContent>

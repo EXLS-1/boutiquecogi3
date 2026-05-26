@@ -1,4 +1,5 @@
-import SignUpSuccess from "@/components/auth/signed-up";
+// app/auth/signed-up/page.tsx
+import SignedUp from "@/components/auth/signed-up";
 
 interface SignedUpPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -11,7 +12,7 @@ export default async function SignedUpPage({ searchParams }: SignedUpPageProps) 
 
   return (
     <main>
-      <SignUpSuccess email={email} />
+      <SignedUp email={email} />
     </main>
   );
 }

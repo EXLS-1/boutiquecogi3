@@ -1,3 +1,6 @@
+// app/api/auth/supabase-token/route.ts
+// Ce fichier gère la route GET /api/auth/supabase-token pour générer un jeton JWT compatible Supabase à partir de la session BetterAuth.
+// Il vérifie d'abord l'identité de l'utilisateur via BetterAuth, puis forge un JWT signé avec le secret de Supabase pour permettre l'authentification côté client.
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth"; // Ton instance BetterAuth côté serveur
 import { headers } from "next/headers";

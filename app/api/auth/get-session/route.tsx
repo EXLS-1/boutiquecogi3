@@ -1,3 +1,6 @@
+// /api/auth/get-session/route.tsx
+// Ce fichier gère la route GET /api/auth/get-session pour récupérer les informations de session de l'utilisateur.
+// Il utilise le client Supabase côté serveur pour vérifier la validité du jeton d'authentification et renvoyer les données de session sécurisées.
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";

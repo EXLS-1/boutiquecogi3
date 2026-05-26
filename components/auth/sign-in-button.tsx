@@ -1,3 +1,4 @@
+// components/auth/sign-in-button.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -29,7 +30,7 @@ export default function SignInButton() {
     <Button
       asChild
       variant="ghost"
-      className="text-cyan-700 hover:text-rose-700 hover:bg-cyan-50 transition-colors duration-200"
+      className="bg-cyan-400 hover:bg-rose-500 text-white shadow-sm transition-all duration-300 active:scale-95"
     >
       <Link href="/auth/sign-in" className="flex items-center gap-2">
         <LogIn className="w-4 h-4" />

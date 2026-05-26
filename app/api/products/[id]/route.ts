@@ -1,3 +1,7 @@
+// app/api/products/[id]/route.ts
+// Ce fichier gère les routes API pour un produit spécifique identifié par son ID, slug ou SKU.
+// Il permet de récupérer les détails d'un produit (GET), de mettre à jour un produit (PUT) et de supprimer un produit (DELETE).
+// La route GET supporte la recherche par ID, slug ou SKU pour plus de flexibilité dans l'accès aux produits. Les mises à jour et suppressions sont basées sur l'ID du produit trouvé.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -16,7 +20,7 @@ async function findProduct(id: string) {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -25,7 +29,7 @@ export async function GET(
     if (!product) {
       return NextResponse.json(
         { status: "error", message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -47,14 +51,14 @@ export async function GET(
     console.error("Error fetching product:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to fetch product" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -63,7 +67,7 @@ export async function PUT(
     if (!existing) {
       return NextResponse.json(
         { status: "error", message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -78,11 +82,15 @@ export async function PUT(
     } = {};
 
     if (body.name) data.name = String(body.name).trim();
-    if (body.description !== undefined) data.description = String(body.description);
-    if (body.price !== undefined) data.basePrice = Math.round(parseFloat(body.price) * 100);
+    if (body.description !== undefined)
+      data.description = String(body.description);
+    if (body.price !== undefined)
+      data.basePrice = Math.round(parseFloat(body.price) * 100);
     if (Array.isArray(body.images)) data.images = body.images;
-    if (body.isFeatured !== undefined) data.isFeatured = Boolean(body.isFeatured);
-    if (body.isArchived !== undefined) data.isArchived = Boolean(body.isArchived);
+    if (body.isFeatured !== undefined)
+      data.isFeatured = Boolean(body.isFeatured);
+    if (body.isArchived !== undefined)
+      data.isArchived = Boolean(body.isArchived);
 
     const product = await prisma.product.update({
       where: { id: existing.id },
@@ -95,14 +103,14 @@ export async function PUT(
     console.error("Error updating product:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to update product" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -111,7 +119,7 @@ export async function DELETE(
     if (!existing) {
       return NextResponse.json(
         { status: "error", message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -125,7 +133,7 @@ export async function DELETE(
     console.error("Error deleting product:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to delete product" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

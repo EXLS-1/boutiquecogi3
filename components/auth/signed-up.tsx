@@ -20,7 +20,7 @@ interface SignUpSuccessProps {
   email?: string; // Optionnel : à extraire dynamiquement d'un état ou d'une query string
 }
 
-export default function SignUpSuccess({ email = "votre boîte mail" }: SignUpSuccessProps) {
+export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessProps) {
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 

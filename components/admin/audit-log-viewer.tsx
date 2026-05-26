@@ -1,4 +1,8 @@
-// app/auditlog/audit-log-viewer.tsx
+// components/admin/audit-log-viewer.tsx
+// Ce composant est responsable de l'affichage des journaux d'audit dans un format de table.
+// Il reçoit une liste d'entrées de journaux d'audit en tant que prop et les affiche dans une table avec des colonnes pour la date, l'utilisateur, l'action, l'entité, etc.
+// Le composant utilise des composants de table personnalisés pour un style cohérent avec le reste de l'application.
+// Note: Ce composant est conçu pour être utilisé dans la page d'administration des journaux d'audit, mais il peut être réutilisé ailleurs si nécessaire.
 "use client";
 
 import {

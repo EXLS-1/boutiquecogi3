@@ -1,8 +1,11 @@
+// app/actions/order.actions.ts
+//  This file contains server-side actions related to order management, such as fetching user orders, retrieving specific order details, and updating order statuses. These actions are designed to be used in Next.js server components or API routes, ensuring secure and efficient data handling with Prisma ORM.
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { OrderWithItems } from "@/types/order";
+import { OrderCardData, OrderWithItems } from "@/types/order";
 import type { OrderStatus } from "@prisma/client";
+import { getServerSession } from "@/lib/auth/server";
 
 export type ActionResponse<T> =
   | { success: true; data: T }
@@ -22,7 +25,7 @@ const orderInclude = {
 } as const;
 
 export async function getUserOrders(
-  userId: string
+  userId: string,
 ): Promise<ActionResponse<OrderWithItems[]>> {
   try {
     if (!userId) {
@@ -46,8 +49,41 @@ export async function getUserOrders(
   }
 }
 
+/**
+ * Récupère les commandes de l'utilisateur connecté de manière paginée.
+ */
+export async function getPaginatedOrders(
+  skip: number,
+  take: number,
+): Promise<ActionResponse<OrderCardData[]>> {
+  try {
+    const session = await getServerSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Non autorisé", code: "UNAUTHORIZED" };
+    }
+
+    const orders = await prisma.order.findMany({
+      where: { userId: session.user.id },
+      include: { orderItems: true },
+      orderBy: { createdAt: "desc" },
+      skip: skip,
+      take: take,
+    });
+
+    return { success: true, data: orders as unknown as OrderCardData[] };
+  } catch (error) {
+    console.error("[getPaginatedOrders]", error);
+    return {
+      success: false,
+      error: "Erreur lors de la récupération des commandes",
+      code: "PAGINATED_ORDERS_ERROR",
+    };
+  }
+}
+
 export async function getOrderById(
-  orderId: string
+  orderId: string,
 ): Promise<ActionResponse<OrderWithItems | null>> {
   try {
     if (!orderId) {
@@ -71,7 +107,7 @@ export async function getOrderById(
 }
 
 export async function getRecentOrders(
-  limit = 10
+  limit = 10,
 ): Promise<ActionResponse<OrderWithItems[]>> {
   try {
     const safeLimit = Math.min(Math.max(limit, 1), 50);
@@ -95,7 +131,7 @@ export async function getRecentOrders(
 
 export async function updateOrderStatus(
   orderId: string,
-  status: OrderStatus
+  status: OrderStatus,
 ): Promise<ActionResponse<OrderWithItems | null>> {
   try {
     if (!orderId) {

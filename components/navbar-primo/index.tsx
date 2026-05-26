@@ -4,12 +4,12 @@
 // Il utilise des Server Actions pour récupérer les données du panier de manière efficace,
 // tout en offrant une expérience utilisateur fluide grâce à Suspense pour le chargement du panier.
 import React, { Suspense } from "react";
-import { NavbarRole } from "@/components/navbar-primo/navbar-role";
 import { NavbarSearch } from "@/components/navbar-primo/navbar-search";
 import { NavbarShell } from "@/components/navbar-primo/navbar-shell";
 import { NavbarBrand } from "@/components/Navbar-secundo/navbar-brand";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import CartIcon from "../cart/cart-icon";
+import { NavbarProfileButton } from "./navbar-profile-button";
 
 type NavbarProps = {
   logo?: string;
@@ -33,7 +33,7 @@ export function Navbar({
       </div>
 
       <div className="flex items-center gap-4">
-        <NavbarRole />
+        <NavbarProfileButton />
       </div>
     </NavbarShell>
   );

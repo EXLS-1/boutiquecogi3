@@ -1,3 +1,7 @@
+// hooks/use-is-admin.ts
+// This hook provides a reusable and typed way to check if the current user has an admin role.
+// It centralizes the normalization logic (case-insensitive) to ensure consistency across the app.
+// This allows components like RoleGuard and AuthButton to rely on a single source of truth for admin checks.
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";
