@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import useCart from "@/store/use-cart";
-import { setDisplayCurrency } from "@/app/actions/setcurrency";
+import { setDisplayCurrency } from "@/app/actions/currency.actions";
 import { convertFromUSDCents, type DisplayCurrency } from "@/lib/currency/currency";
 import { processCinetPayCheckout } from "../checkout-action";
 
