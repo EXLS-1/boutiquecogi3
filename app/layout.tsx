@@ -1,8 +1,10 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import React from "react";
+import React, { Suspense } from "react";
 import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 
 import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
@@ -25,13 +27,22 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Récupération de la session côté serveur pour éviter le flash du skeleton (FOUC)
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
     <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>  
       <body className="antialiased">
-        <RootProviders>
+        <RootProviders session={session}>
           <CartSyncManager />
           <Navbar />
-          <NavbarSecondary />
+          
+          {/* Suspense est crucial ici car NavbarSecondary utilise useSearchParams */}
+          <Suspense fallback={<div className="h-14 w-full bg-cyan-100 animate-pulse border-b border-cyan-700" />}>
+            <NavbarSecondary />
+          </Suspense>
           
           <LeftSidebar />
           <RightSidebar />

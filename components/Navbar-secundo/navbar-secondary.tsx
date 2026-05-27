@@ -1,12 +1,13 @@
 // components/navbar/navbar-secondary.tsx
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/use-ui-store";
+import { useSearchParams } from "next/navigation";
 
 export type NavbarSecondaryItem = {
   label: string;
@@ -19,12 +20,12 @@ type NavbarSecondaryProps = {
 };
 
 const DEFAULT_ITEMS: NavbarSecondaryItem[] = [
-  { label: "Femme", href: "/category/femme" },
-  { label: "Homme", href: "/category/homme" },
-  { label: "Enfant", href: "/category/enfant" },
-  { label: "Sac", href: "/category/sac" },
-  { label: "Chaussure", href: "/category/chaussure" },
-  { label: "Accessoire", href: "/category/accessoire" },
+  { label: "Femme", href: "/products?category=femme" },
+  { label: "Homme", href: "/products?category=homme" },
+  { label: "Enfant", href: "/products?category=enfant" },
+  { label: "Sacs", href: "/products?category=sac" },
+  { label: "Chaussures", href: "/products?category=chaussure" },
+  { label: "Accessoires", href: "/products?category=accessoire" },
 ];
 
 export function NavbarSecondary({
@@ -32,6 +33,15 @@ export function NavbarSecondary({
   className,
 }: NavbarSecondaryProps) {
   const { toggleLeftSidebar, toggleRightSidebar } = useUIStore();
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get("category");
+
+  // Pattern de robustesse pour éviter les erreurs d'hydratation
+  // liées aux paramètres de recherche ou à l'état global.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <nav
@@ -52,19 +62,46 @@ export function NavbarSecondary({
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-1">
-          {items.map((item) => (
-            <Button
-              key={item.href}
-              variant="ghost"
-              asChild
-              className="px-3 font-lato uppercase tracking-wider text-cyan-400 transition-all hover:bg-pink-400/10 hover:text-pink-400"
-            >
-              <Link href={item.href}>
-                {item.label}
-              </Link>
-            </Button>
-          ))}
+        <div className="flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
+          {/* On ne rend les états "actifs" qu'après montage pour garantir
+              que le HTML initial correspond au serveur (où activeCategory est null). */}
+          {mounted && (
+            <>
+              <Button
+                variant="ghost"
+                asChild
+                className={cn(
+                  "px-3 font-lato uppercase tracking-wider transition-all",
+                  !activeCategory 
+                  ? "text-pink-500 underline" 
+                  : "text-cyan-500 hover:text-cyan-400"
+                )}
+              >
+                <Link href="/category" className="flex items-center gap-2">
+                  <LayoutGrid size={16} />
+                  <span>Tout</span>
+                </Link>
+              </Button>
+
+              {items.map((item) => (
+                <Button
+                  key={item.href}
+                  variant="ghost"
+                  asChild
+                  className={cn(
+                    "px-3 font-lato uppercase tracking-wider transition-all",
+                    item.href.includes(`category=${activeCategory}`) 
+                      ? "text-pink-500 underline hover:text-pink-400" 
+                      : "text-cyan-500 hover:text-cyan-400"
+                  )}
+                >
+                  <Link href={item.href}>
+                    {item.label}
+                  </Link>
+                </Button>
+              ))}
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-end">

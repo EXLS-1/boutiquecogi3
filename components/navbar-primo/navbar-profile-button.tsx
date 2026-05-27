@@ -24,9 +24,13 @@ import SignUpButton from "@/components/auth/sign-up-button";
  * Gère l'affichage du statut d'authentification dans la Navbar.
  */
 export function NavbarProfileButton() {
+  // La session est maintenant injectée via le Provider dans RootLayout.
+  // isPending sera 'false' immédiatement si la session a été passée en initialData.
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
 
+  // Le skeleton ne s'affichera que si la session est réellement en cours de vérification 
+  // (ex: changement de compte), et non au premier chargement.
   if (isPending) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
