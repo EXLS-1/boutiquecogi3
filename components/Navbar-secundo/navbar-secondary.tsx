@@ -80,7 +80,7 @@ export function NavbarSecondary({
             </Link>
           </Button>
 
-          {items.map((item) => {
+          {items.map((item) => {  
             // Vérification robuste du lien actif
             const isActive = mounted && activeCategory && item.href.includes(`category=${activeCategory}`);
             

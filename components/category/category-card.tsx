@@ -1,5 +1,76 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { Metadata } from "next";
+import { CategoryCard, CategoryCardProps } from "@/components/category/category-card";
+import Link from "next/link";
+import { 
+  Shirt, 
+  User, 
+  Baby, 
+  ShoppingBag, 
+  Footprints, 
+  Watch, 
+  ChevronRight,
+  LayoutGrid
+} from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Catégories | Boutique COGI3",
+  description: "Parcourez nos différentes catégories de mode : Femme, Homme, Enfant, Sacs et Accessoires.",
+};
+
+// Données structurées basées sur la documentation technique (section 18.1 du read.md)
+const categories: CategoryCardProps[] = [
+  {
+    slug: "femme",
+    name: "Femme",
+    description: "Prêt-à-porter, robes et tendances féminines.",
+    icon: Shirt,
+    color: "text-rose-600",
+    bg: "bg-rose-50",
+  },
+  {
+    slug: "homme",
+    name: "Homme",
+    description: "Vêtements, costumes et mode masculine.",
+    icon: User,
+    color: "text-cyan-700",
+    bg: "bg-cyan-50",
+  },
+  {
+    slug: "enfant",
+    name: "Enfant",
+    description: "Vêtements confortables et durables pour les petits.",
+    icon: Baby,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+  },
+  {
+    slug: "sac",
+    name: "Sacs",
+    description: "Maroquinerie, sacs à main et sacs de voyage.",
+    icon: ShoppingBag,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+  },
+  {
+    slug: "chaussure",
+    name: "Chaussures",
+    description: "Baskets, escarpins et chaussures de ville.",
+    icon: Footprints,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+  },
+  {
+    slug: "accessoire",
+    name: "Accessoires",
+    description: "Montres, bijoux et compléments de style.",
+    icon: Watch,
+    color: "text-slate-700",
+    bg: "bg-slate-50",
+  },
+];
+
 
 interface CategoryCardProps {
   title: string
@@ -15,26 +86,39 @@ interface CategoryCardProps {
  */
 export function CategoryCard({ title, subtitle, imageSrc, imageAlt, href }: CategoryCardProps) {
   return (
-    <div className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-gray-200 shadow-md">
-      <Image
-        src={imageSrc}
-        alt={imageAlt}
-        fill
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        className="object-cover transition-transform duration-700 group-hover:scale-110"
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
-        <h3 className="font-playfair text-2xl font-bold mb-2 uppercase tracking-wide">
-          {title}
-        </h3>
-        <p className="text-gray-200 mb-6 font-lato">{subtitle}</p>
-        <Link
-          href={href}
-          className="inline-block border border-white px-6 py-2 text-sm font-bold tracking-widest uppercase hover:bg-white hover:text-black transition-colors w-max"
-        >
-          VOIR LA COLLECTION
-        </Link>
+    <div>
+      <div className="flex items-center gap-3 mb-10"> // En-tête de la page avec une icône et un titre
+        <LayoutGrid className="h-8 w-8 text-cyan-700" />
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Nos Catégories</h1>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> // Affichage dynamique des catégories à partir des données structurées
+        {categories.map((cat) => (
+          <Link 
+            key={cat.slug} 
+            href={`/products?category=${cat.slug}`} // Lien vers la page de produits filtrée par catégorie
+            className="group relative flex flex-col p-6 rounded-2xl border border-cyan-200 bg-cyan-100 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-cyan-200 hover:-translate-y-1"
+          >
+            <div className={`w-14 h-14 ${cat.bg} ${cat.color} rounded-xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110`}>
+              <cat.icon size={28} /> // Affiche l'icône spécifique à la catégorie
+            </div>
+            
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">{cat.name}</h2>
+                <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                  {cat.description}
+                </p>
+              </div>
+              <ChevronRight className="text-slate-300 group-hover:text-cyan-500 transition-colors" />
+            </div>
+            
+            <div className="mt-auto pt-4 flex items-center text-sm font-semibold text-cyan-700 opacity-0 group-hover:opacity-100 transition-opacity">
+              Voir la collection
+            </div>
+          </Link>
+        ))}
+      </div>
+      </div>
   )
 }
