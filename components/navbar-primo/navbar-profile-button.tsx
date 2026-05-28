@@ -1,7 +1,7 @@
 // components/navbar-primo/navbar-profile-button.tsx
 "use client";
 
-import { authClient } from "@/lib/auth/auth-client";
+import { authClient, useAuth } from "@/lib/auth/auth-client";
 import Link from "next/link";
 import { LogOut, User, ShieldCheck, LayoutDashboard } from "lucide-react";
 import { 

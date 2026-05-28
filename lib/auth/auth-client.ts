@@ -5,7 +5,7 @@
 
 import { createAuthClient } from "better-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, createContext, useContext } from "react";
 
 export interface SessionUser {
   id: string;
@@ -32,7 +32,16 @@ export const authClient = createAuthClient({
     (typeof window !== "undefined" ? window.location.origin : ""),
 });
 
+// Destructuration sécurisée (sans SessionProvider qui cause l'erreur TS2339)
 export const { signIn, signUp, signOut, useSession, getSession } = authClient;
+
+/**
+ * Contexte pour la session initiale afin d'éviter les erreurs d'hydratation et le skeleton flash.
+ */
+export const BetterAuthContext = createContext<{
+  session: Session | null | undefined;
+}>({ session: undefined });
+export const useSessionContext = () => useContext(BetterAuthContext);
 
 /**
  * Hook 'useAuth' : Abstraction pour les formulaires et la gestion de session.
@@ -44,6 +53,14 @@ export function useAuth() {
   const [isPending, setIsPending] = useState(false);
   const [isRefreshing, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // On récupère la session "live" du client et la session "initiale" du serveur
+  const { data: liveSession, isPending: isClientLoading } = useSession();
+  const { session: initialSession } = useSessionContext();
+
+  // Logique de fusion : on utilise la session initiale pendant que le client vérifie le token
+  const session = isClientLoading ? initialSession || liveSession : liveSession;
+  const isLoading = isClientLoading && !initialSession;
 
   // Récupération dynamique de la destination après auth
   const callbackUrl = searchParams.get("callbackUrl") || "/";
@@ -93,8 +110,9 @@ export function useAuth() {
 
   return {
     isPending: isPending || isRefreshing,
+    isPending: isPending || isRefreshing || isLoading,
     error,
-    session: useSession(),
+    session,
     signIn: (email: string, password: string) =>
       handleAction(authClient.signIn.email({ email, password })),
     signUp: (name: string, email: string, password: string, image?: string) =>

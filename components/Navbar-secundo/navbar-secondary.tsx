@@ -50,7 +50,7 @@ export function NavbarSecondary({
         className
       )}
     >
-      <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-2 sm:px-6 lg:px-8">
         <div className="flex items-center justify-start">
           <button
             type="button"
@@ -63,45 +63,45 @@ export function NavbarSecondary({
         </div>
 
         <div className="flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
-          {/* On ne rend les états "actifs" qu'après montage pour garantir
-              que le HTML initial correspond au serveur (où activeCategory est null). */}
-          {mounted && (
-            <>
+          {/* Bouton "Tout" : Toujours visible, actif par défaut si pas de catégorie */}
+          <Button
+            variant="ghost"
+            asChild
+            className={cn(
+              "px-3 font-lato text-xs sm:text-sm uppercase tracking-wider transition-all",
+              mounted && !activeCategory 
+                ? "text-pink-500 underline decoration-2 underline-offset-4" 
+                : "text-cyan-600 hover:text-pink-400"
+            )}
+          >
+            <Link href="/category" className="flex items-center gap-2">
+              <LayoutGrid size={14} className="hidden sm:block" />
+              <span>Tout</span>
+            </Link>
+          </Button>
+
+          {items.map((item) => {
+            // Vérification robuste du lien actif
+            const isActive = mounted && activeCategory && item.href.includes(`category=${activeCategory}`);
+            
+            return (
               <Button
+                key={item.href}
                 variant="ghost"
                 asChild
                 className={cn(
-                  "px-3 font-lato uppercase tracking-wider transition-all",
-                  !activeCategory 
-                  ? "text-pink-500 underline" 
-                  : "text-cyan-500 hover:text-cyan-400"
+                  "px-3 font-lato text-xs sm:text-sm uppercase tracking-wider transition-all",
+                  isActive 
+                    ? "text-pink-500 underline decoration-2 underline-offset-4" 
+                    : "text-cyan-600 hover:text-pink-400"
                 )}
               >
-                <Link href="/category" className="flex items-center gap-2">
-                  <LayoutGrid size={16} />
-                  <span>Tout</span>
+                <Link href={item.href}>
+                  {item.label}
                 </Link>
               </Button>
-
-              {items.map((item) => (
-                <Button
-                  key={item.href}
-                  variant="ghost"
-                  asChild
-                  className={cn(
-                    "px-3 font-lato uppercase tracking-wider transition-all",
-                    item.href.includes(`category=${activeCategory}`) 
-                      ? "text-pink-500 underline hover:text-pink-400" 
-                      : "text-cyan-500 hover:text-cyan-400"
-                  )}
-                >
-                  <Link href={item.href}>
-                    {item.label}
-                  </Link>
-                </Button>
-              ))}
-            </>
-          )}
+            );
+          })}
         </div>
 
         <div className="flex items-center justify-end">
