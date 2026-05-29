@@ -7,7 +7,7 @@ export default function BoutiqueChaussure() {
       subtitle="Chaussures indispensables"
       imageSrc="/Media/pict04.webp"
       imageAlt="Chaussure Dame"
-      href="#catalogue-chaussure"
+      href="/products?category=chaussure"
     />
   )
 }

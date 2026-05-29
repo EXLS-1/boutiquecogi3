@@ -7,7 +7,7 @@ export default function BoutiqueAccessoire() {
       subtitle="Accessoires indispensables"
       imageSrc="/Media/pict04.webp"
       imageAlt="Accessoire"
-      href="#catalogue-accessoire"
+      href="/products?category=accessoire"
     />
   )
 }

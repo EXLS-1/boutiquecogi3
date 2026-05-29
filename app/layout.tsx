@@ -28,20 +28,21 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Récupération de la session côté serveur pour éviter le flash du skeleton (FOUC)
-  const session = await auth.api.getSession({
+  const authSession = await auth.api.getSession({
     headers: await headers(),
   });
 
   return (
-    <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>  
-      <body className="antialiased">
-        <RootProviders session={session}>
+    <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body className={`${inter.variable} ${playfair.variable} ${lato.variable} ${cormorant.variable} antialiased font-sans`}>
+        <RootProviders session={authSession}>
           <CartSyncManager />
-          <Navbar />
+          {/* Injection directe de la session pour supprimer le délai d'hydratation */}
+          <Navbar session={authSession} />
           
           {/* Suspense est crucial ici car NavbarSecondary utilise useSearchParams */}
           <Suspense fallback={<div className="h-14 w-full bg-cyan-100 animate-pulse border-b border-cyan-700" />}>
-            <NavbarSecondary />
+            <NavbarSecondary session={authSession} />
           </Suspense>
           
           <LeftSidebar />

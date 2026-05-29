@@ -1,13 +1,13 @@
-// components/boutique.tsx
+// components/category.tsx
 
-import BoutiqueFemme from "./boutique-femme";
-import BoutiqueHomme from './boutique-homme';
-import BoutiqueEnfant from './boutique-enfant';
-import BoutiqueSac from './boutique-sac';
-import BoutiqueChaussure from './boutique-chaussure';
-import BoutiqueAccessoire from './boutique-accessoire';
+import Femme from "./femme";
+import Homme from './homme';
+import Enfant from './enfant';
+import Sac from './sac';
+import Chaussure from './chaussure';
+import Accessoire from './accessoire';
 
-export default function Boutique() {
+export default function Category() {
   return (
     <section className="py-20 bg-gray-50" id="boutique">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,22 +24,22 @@ export default function Boutique() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           
             {/* Catégorie : Femme */}
-          <BoutiqueFemme />
+          <Femme />
           
             {/* Catégorie : Homme */}
-          <BoutiqueHomme />
+          <Homme />
 
             {/* Catégorie : Enfant */}
-          <BoutiqueEnfant />
+          <Enfant />
 
             {/* Catégorie : Sac */}
-          <BoutiqueSac />
+          <Sac />
 
             {/* Catégorie : Chaussure */}
-          <BoutiqueChaussure />
+          <Chaussure />
 
           {/* Catégorie : Accessoire */}
-          <BoutiqueAccessoire />
+          <Accessoire />
 
         </div>
       </div>

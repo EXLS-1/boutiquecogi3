@@ -7,7 +7,7 @@ export default function BoutiqueSac() {
       subtitle="Accessoires indispensables"
       imageSrc="/Media/pict04.webp"
       imageAlt="Sac Dame"
-      href="#catalogue-chaussure"
+      href="/products?category=sac"
     />
   )
 }

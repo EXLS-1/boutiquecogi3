@@ -7,7 +7,7 @@ export default function BoutiqueEnfant() {
       subtitle="Tendresse et qualité"
       imageSrc="/Media/pict03.webp"
       imageAlt="Habit Enfant"
-      href="#catalogue-enfant"
+      href="/products?category=enfant"
     />
   )
 }

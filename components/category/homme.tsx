@@ -7,7 +7,7 @@ export default function BoutiqueHomme() {
       subtitle="Style moderne et raffiné"
       imageSrc="/Media/pict02.webp"
       imageAlt="Habit Homme"
-      href="#catalogue-homme"
+      href="/products?category=homme"
     />
   )
 }
