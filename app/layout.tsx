@@ -38,11 +38,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <RootProviders session={authSession}>
           <CartSyncManager />
           {/* Injection directe de la session pour supprimer le délai d'hydratation */}
-          <Navbar session={authSession} />
+          <Navbar />
           
           {/* Suspense est crucial ici car NavbarSecondary utilise useSearchParams */}
           <Suspense fallback={<div className="h-14 w-full bg-cyan-100 animate-pulse border-b border-cyan-700" />}>
-            <NavbarSecondary session={authSession} />
+            <NavbarSecondary />
           </Suspense>
           
           <LeftSidebar />

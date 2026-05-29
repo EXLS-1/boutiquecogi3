@@ -1,20 +1,25 @@
 "use client";
 
-import { BetterAuthContext, type Session } from "@/lib/auth/auth-client";
-import { auth } from "@/lib/auth"; 
+import { BetterAuthContext } from "@/lib/auth/auth-client";
+import type { auth } from "@/lib/auth";
 
 interface RootProvidersProps {
-  // Utilisez le type de retour de l'API getSession pour une robustesse maximale
-  session: Awaited<ReturnType<typeof auth.api.getSession>>; 
+  /**
+   * Consommation directe du type de retour du serveur.
+   * Garantit une synchronisation stricte entre le backend et le frontend.
+   */
+  session: Awaited<ReturnType<typeof auth.api.getSession>>;
   children: React.ReactNode;
 }
 
 export function RootProviders({ children, session }: RootProvidersProps) {
-  // On extrait l'objet technique session du wrapper { session, user } 
-  // pour correspondre au type attendu par le Provider.
+  // Aucune extraction destructive. L'objet `session` reçu du serveur (qui vaut 
+  // { session, user } ou null) correspond exactement à la signature attendue par le provider.
   return (
-    <BetterAuthContext.Provider value={{ session: session?.session ?? null }}>
+    <BetterAuthContext.Provider value={{ session }}>
       {children}
     </BetterAuthContext.Provider>
   );
 }
+
+export default RootProviders;
