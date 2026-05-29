@@ -6,7 +6,7 @@
 import React, { Suspense } from "react";
 import { NavbarSearch } from "@/components/navbar-primo/navbar-search";
 import { NavbarShell } from "@/components/navbar-primo/navbar-shell";
-import { NavbarBrand } from "@/components/Navbar-secundo/navbar-brand";
+import { NavbarBrand } from "@/components/Navbar-secundo/navbar-secondary-brand";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import CartIcon from "../cart/cart-icon";
 import { NavbarProfileButton } from "./navbar-profile-button";
