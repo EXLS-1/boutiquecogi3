@@ -39,21 +39,6 @@ function NavbarSecondaryLinksContent({ items }: NavbarSecondaryLinksContentProps
 
   return (
     <div className="flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
-      {/* Bouton "Tout" */}
-      <Button
-        variant="ghost"
-        asChild
-        className={cn(
-          "px-3 font-lato text-xs sm:text-sm uppercase tracking-wider transition-all",
-          isToutActive
-            ? "text-pink-500 underline decoration-2 underline-offset-4"
-            : "text-cyan-600 hover:text-pink-400"
-        )}
-      >
-        <Link href="/products" className="flex items-center gap-2"> 
-          <span>Tout</span>
-        </Link>
-      </Button>
 
       {/* Catégories Dynamiques */}
       {items.map((item) => {

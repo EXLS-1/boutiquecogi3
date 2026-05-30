@@ -5,7 +5,7 @@
 "use client";
 
 import { authClient } from "@/lib/auth/auth-client";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 /**
  * Hook useIsAdmin
@@ -13,10 +13,15 @@ import { useMemo } from "react";
  * Centralise la logique de normalisation (case-insensitive).
  */
 export function useIsAdmin() {
+  const [isHydrated, setIsHydrated] = useState(false);
   const { data: session, isPending } = authClient.useSession();
 
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   const isAdmin = useMemo(() => {
-    if (!session?.user) return false;
+    if (!isHydrated || !session?.user) return false;
 
     const rawRole = session.user.role;
     // Normalisation alignée sur RoleGuard et AuthButton
@@ -25,5 +30,10 @@ export function useIsAdmin() {
     );
   }, [session]);
 
-  return { isAdmin, isPending, user: session?.user };
+  return {
+    isAdmin,
+    isPending: isPending || !isHydrated,
+    user: session?.user,
+    isHydrated,
+  };
 }

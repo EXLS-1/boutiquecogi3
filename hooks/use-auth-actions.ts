@@ -24,7 +24,7 @@ export function useAuthActions() {
     }
   };
 
-  const login = (data: { email: string; password: string }) =>
+  const signin = (data: { email: string; password: string }) =>
     safe(async () => {
       await authClient.signIn.email(data);
       toast.success("Connecté");
@@ -36,15 +36,15 @@ export function useAuthActions() {
     safe(async () => {
       await authClient.signUp.email(data);
       toast.success("Compte créé");
-      router.replace("/auth/login");
+      router.replace("/auth/signin");
     });
 
-  const logout = () =>
+  const signout = () =>
     safe(async () => {
       await authClient.signOut();
-      router.replace("/auth/login");
+      router.replace("/auth/signin");
       router.refresh();
     });
 
-  return { login, signup, logout, isPending };
+  return { signin, signup, signout, isPending };
 }
