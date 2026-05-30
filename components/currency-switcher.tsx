@@ -3,7 +3,9 @@
 
 import { useEffect, useState } from "react";
 import { useCurrencyStore } from "@/store/use-currency-store";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * Sélecteur simple pour basculer USD <-> CDF.
@@ -12,32 +14,55 @@ import { Button } from "@/components/ui/button";
 export function CurrencySwitcher() {
   const currency = useCurrencyStore((s) => s.currency);
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
-  const rate = useCurrencyStore((s) => s.rateUsdToCdf);
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  // Empêche le Layout Shift en réservant l'espace exact (h-9 correspond au bouton size="sm")
+  if (!mounted) {
+    return (
+      <div className="flex items-center text-cyan-400/50 font-lato h-9 px-2">
+        <div className="w-8 h-4 bg-cyan-100/20 rounded animate-pulse" />
+        <div className="mx-2 text-sm">/</div>
+        <div className="w-8 h-4 bg-cyan-100/20 rounded animate-pulse" />
+      </div>
+    );
+  }
+
+  const handleCurrencyChange = (newCurrency: "USD" | "CDF") => {
+    if (newCurrency === currency) return;
+    
+    setCurrency(newCurrency);
+    // router.refresh() force Next.js à re-fetch les Server Components (comme page.tsx)
+    // Cela synchronise le cookie mis à jour avec le prop 'activeCurrency' du ProductCatalog
+    router.refresh();
+  };
 
   return (
     <div className="flex items-center text-cyan-400 font-lato">
-    
         <Button
-          variant={currency === "CDF" ? "default" : "ghost"}
+          variant="ghost"
           size="sm"
-          className="hover:text-rose-400 transition-colors"
-          onClick={() => setCurrency("CDF")}
+          className={cn(
+            "hover:text-pink-400 transition-colors px-2",
+            currency === "CDF" && "text-pink-400 underline decoration-2 underline-offset-4 font-bold pointer-events-none"
+          )}
+          onClick={() => handleCurrencyChange("CDF")}
         >
           CDF
         </Button>
         <div className="text-sm">/</div>
         <Button
-          variant={currency === "USD" ? "default" : "ghost"}
+          variant="ghost"
           size="sm"
-          className="hover:text-rose-400 transition-colors"
-          onClick={() => setCurrency("USD")}
+          className={cn(
+            "hover:text-pink-400 transition-colors px-2",
+            currency === "USD" && "text-pink-400 underline decoration-2 underline-offset-4 font-bold pointer-events-none"
+          )}
+          onClick={() => handleCurrencyChange("USD")}
         >
           USD
         </Button>

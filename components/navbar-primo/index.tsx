@@ -27,7 +27,7 @@ export function Navbar({
       <div className="flex justify-center gap-7 px-4 w-xl mx-auto border-cyan-700">
         <NavbarSearch />
         <CurrencySwitcher />
-        <Suspense fallback={<div className="h-6 w-6 rounded-full bg-slate-200 animate-pulse" aria-label="Loading cart" />}>
+        <Suspense fallback={<div className="h-6 w-6 rounded-full bg-cyan-200 animate-pulse" aria-label="Loading cart" />}>
           <CartIcon />
         </Suspense>
       </div>
