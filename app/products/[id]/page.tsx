@@ -1,10 +1,12 @@
+// app/products/[id]/page.tsx
+
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { ProductDetail } from "@/components/product/product-detail";
 import { ProductNotFound } from "./products-not-found";
-import { getProductById, getAllProducts } from "@/lib/products";
+import { prisma } from "@/lib/prisma";
 
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 3600;
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -12,18 +14,37 @@ interface ProductPageProps {
 
 export async function generateStaticParams() {
   try {
-    const products = await getAllProducts();
+    // OPTIMISATION : On ne récupère QUE les IDs, rien d'autre.
+    const products = await prisma.product.findMany({
+      where: { isArchived: false },
+      select: { id: true }, 
+    });
     return products.map((p) => ({ id: p.id }));
-  } catch {
+  } catch (error) {
+    console.error("Erreur generateStaticParams:", error);
     return [];
   }
 }
 
-export async function generateMetadata({
-  params,
-}: ProductPageProps): Promise<Metadata> {
+// Fonction utilitaire mutualisée pour la metadata et le rendu
+async function getProductData(id: string) {
+  const product = await prisma.product.findUnique({
+    where: { id },
+  });
+  
+  if (!product) return null;
+
+  return {
+    ...product,
+    image: product.productImages?.[0]?.url ?? "/placeholder.jpg",
+    PriceUSD: product.basePrice,
+    PriceCDF: product.basePrice * 2800,
+  };
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
-  const product = await getProductById(id);
+  const product = await getProductData(id);
 
   if (!product) {
     return { title: "Produit introuvable | Boutique COGI" };
@@ -44,11 +65,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
 
   try {
-    const product = await getProductById(id);
+    const product = await getProductData(id);
     if (!product) notFound();
 
     return (
-      <main className="min-h-screen pt-20">
+      <main className="min-h-screen pt-20 bg-background">
         <div className="container mx-auto px-4">
           <ProductDetail product={product} />
         </div>

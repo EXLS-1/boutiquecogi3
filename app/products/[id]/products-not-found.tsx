@@ -1,41 +1,47 @@
+// app/products/[id]/products-not-found.tsx
 import Link from "next/link";
-import { SearchX } from "lucide-react";
+import { SearchX, Home, ShoppingBag } from "lucide-react";
 
 export function ProductNotFound() {
   return (
-    <main role="alert" className="min-h-[70vh] flex items-center justify-center px-4">
+    <main role="alert" className="min-h-[70vh] flex items-center justify-center px-4 bg-background">
       <div className="max-w-md w-full text-center space-y-6">
-        <div className="relative flex justify-center">
-          <div className="absolute inset-0 flex items-center justify-center opacity-10">
+        <div className="relative flex justify-center items-center py-10">
+          <div className="absolute inset-0 flex items-center justify-center opacity-5 select-none">
             <span className="text-9xl font-bold tracking-tighter">404</span>
           </div>
-          <i className="fas fa-search-minus text-6xl text-gray-300 relative z-10"></i>
+          {/* Remplacement de FontAwesome par Lucide React */}
+          <SearchX className="h-24 w-24 text-muted-foreground relative z-10" strokeWidth={1.5} />
         </div>
+        
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-playfair font-bold text-gray-900">
+          <h1 className="text-3xl md:text-4xl font-playfair font-bold text-foreground">
             Produit Introuvable
           </h1>
-          <p className="text-gray-500 font-lato leading-relaxed">
+          <p className="text-muted-foreground font-lato leading-relaxed">
             Désolé, l&apos;article que vous recherchez semble être épuisé ou n&apos;est plus disponible.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
           <Link
             href="/"
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-black hover:bg-cyan-400 hover:text-black transition-colors duration-200 shadow-sm"
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 transition-colors duration-200 shadow-sm uppercase tracking-widest gap-2"
           >
-            <i className="fas fa-home mr-2"></i>
-            Retour à l’accueil
+            <Home className="h-4 w-4" />
+            Accueil
           </Link>
           <Link
-            href="/#boutique"
-            className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200"
+            href="/products"
+            className="inline-flex items-center justify-center px-6 py-3 border border-input text-sm font-medium rounded-md text-foreground bg-background hover:bg-accent hover:text-accent-foreground transition-colors duration-200 uppercase tracking-widest gap-2"
           >
+            <ShoppingBag className="h-4 w-4" />
             Voir les collections
           </Link>
         </div>
-        <p className="text-sm text-gray-400 pt-8">
-          Besoin d’aide ? <a href="#contact" className="underline hover:text-cyan-400">Contactez notre support</a>
+        
+        <p className="text-sm text-muted-foreground pt-8">
+          Besoin d’aide ? <Link href="/contact" className="underline hover:text-cyan-600 transition-colors">Contactez notre support</Link>
         </p>
       </div>
     </main>

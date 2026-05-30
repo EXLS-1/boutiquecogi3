@@ -1,101 +1,100 @@
 // app/products/page.tsx
-import { ProductList } from "@/components/product/product-list";
+
+import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { ProductSchema } from "@/lib/validators/product.schema";
-import { unstable_cache } from "next/cache";
+import ProductCatalog from "@/components/product/product-catalog";
+import { CategoryCard } from "@/components/category/category-card";
 
-export const revalidate = 300; // ISR toutes les 5 minutes
+export const metadata: Metadata = {
+  title: "Catalogue | Boutique COGI",
+  description: "Parcourez notre collection complète de produits.",
+};
 
-// Mise en cache manuelle optionnelle (plus robuste)
-const getProducts = unstable_cache(
-  async () => {
-    try {
-      const products = await prisma.product.findMany({
-        where: { isArchived: false },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          images: true,
-          description: true,
-          category: true,
-        },
-      });
+const PAGE_SIZE = 12;
 
-      // Validation et formatage
-      return products.map((p) => {
-        const validated = ProductSchema.parse({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          image: p.images?.[0] ?? "/placeholder.jpg",
-          description: p.description ?? "",
-          category: p.category ?? "general",
-        });
-        return validated;
-      });
-    } catch (error) {
-      console.error("Erreur chargement produits:", error);
-      return []; // fallback silencieux
-    }
-  },
-  ["products-list"],
-  { revalidate: 300 }
-);
+interface ProductsPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
 
-export default async function ProductsPage() {
-  const products = await getProducts();
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  // 1. Extraction sécurisée des paramètres URL
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const sort = (params.sort as string) || "newest";
+  const category = (params.category as string) || "all";
+  const query = (params.q as string) || "";
+
+  // 2. Construction dynamique de la clause WHERE pour Prisma
+  const whereClause: any = { isArchived: false };
+  
+  if (category !== "all") {
+    whereClause.category = category;
+  }
+  
+  if (query) {
+    whereClause.OR = [
+      { name: { contains: query, mode: "insensitive" } },
+      { description: { contains: query, mode: "insensitive" } },
+    ];
+  }
+
+  // 3. Construction dynamique de la clause ORDER BY
+  let orderByClause: any = { createdAt: "desc" }; // "newest" par défaut
+  if (sort === "basePrice-asc") orderByClause = { basePrice: "asc" }; // Ajuste avec ton champ exact (baseprice ou priceUSD)
+  if (sort === "basePrice-desc") orderByClause = { basePrice: "desc" };
+
+  // 4. Exécution parallèle optimisée (Requête des données + Comptage total + Catégories)
+  const [products, totalCount, distinctCategories] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        categoryId
+      },
+      orderBy: orderByClause,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        name: true,
+        basePrice: true, // ou priceUSD / priceCDF selon ton schéma
+        description: true,
+        
+        productImages: {
+        select: { url: true },
+        take: 1, // On ne prend que la première image pour la performance
+      },
+      availabilityProjection: {
+        select: { isAvailable: true }
+      }
+      },
+    }),
+    prisma.product.count({ where: whereClause }),
+    prisma.product.findMany({
+      where: { isArchived: false },
+      select: { category: true },
+      distinct: ['categoryId'],
+    }),
+  ]);
+
+  // Formatage des catégories pour le filtre
+  const categoriesList = ["all", ...distinctCategories.map(c => c.category).filter(Boolean)];
+
+  // Formatage défensif des produits pour le client
+  const formattedProducts = products.map((p) => ({
+    ...p,
+    image: p.productImages?.[0]?.url ?? "/placeholder.webp",
+    basePriceUSD: p.basePrice, // Mapping sécurisé selon l'interface attendue par ProductCard
+    basePriceCDF: p.basePrice * 2800, // À ajuster si tu as déjà le priceCDF en base
+  }));
 
   return (
-    <main className="pb-12">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-center">
-          Tous les produits
-        </h1>
-      </header>
-      {products.length === 0 ? (
-        <p className="text-center text-gray-500">
-          Aucun produit disponible pour le moment.
-        </p>
-      ) : (
-        <ProductList 
-        title="Catalogue"
-        product={products}
-        activeCurrency="USD"
-        showCurrencySelector={true}
-        showPrice={true}
-        showDescription={true}
-        showCategory={true}
-        showImages={true}
-        showName={true}
-        showAddToCartButton={true}
-        showRemoveFromCartButton={true}
-        QuantitySelector={true}
-        showProductLink={true}
-        showRating={true}
-        showStock={true}
-        showReviews={true}
-        showRatings={true}
-        showAvailability={true}
-        showShippingInfo={true}
-        showBrand={true}
-        showBreadcrumbs={true}
-        showSortingOptions={true} 
-        showFilters={true}
-        showSearch={true}
-        showPagination={true} 
-        showWishlistButton={true}
-        showComparisonButton={true}
-        showQuickViewButton={true}
-        showProductBadges={true}
-        showProductTabs={true}
-        showRelatedProducts={true} 
-        showProductCarousel={true} 
-        showProductGallery={true} 
-        showProductReviews={true}
-        />
-      )}
+    <main className="pb-12 bg-background">
+      <CategoryCard className="mb-8" />
+      <ProductCatalog 
+        title="Notre Catalogue"
+        products={formattedProducts}
+        totalCount={totalCount}
+        categories={categoriesList}
+      />
     </main>
   );
 }

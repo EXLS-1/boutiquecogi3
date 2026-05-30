@@ -1,32 +1,58 @@
-// Le fichier app/page.tsx est le point d'entrée de la page d'accueil de l'application Next.js. Il utilise des composants pour afficher le contenu de la page, notamment un composant Hero pour la section principale, un composant Boutique pour les catégories de produits, et un composant ProductCatalog pour afficher les produits récents. Le code récupère également les préférences de devise de l'utilisateur à partir des cookies et les utilise pour afficher les prix dans la devise préférée. Les données des produits sont récupérées côté serveur à l'aide d'une fonction asynchrone getAllProducts.
 // app/page.tsx
-import { cookies } from 'next/headers';
+
 import { Hero } from "@/components/hero/hero";
 import Category from "@/components/category/category";
-import ProductCatalog from "@/components/product/product-catalog";
-import { getAllProducts } from "@/lib/products";
-import { CurrencyCode } from "@/lib/currency/format-currency";
+import { ProductList } from "@/components/product/product-list"; // On utilise directement la liste
 import VideosCart from '@/components/video-show/videos-cart';
 import SocialNetworks from '@/components/social/social-network';
+import { prisma } from "@/lib/prisma";
+
+// Fonction dédiée et ultra-légère
+async function getRecentProducts() {
+  const products = await prisma.product.findMany({
+    where: { isArchived: false },
+    orderBy: { createdAt: "desc" },
+    take: 8, // Seulement les 8 plus récents
+    select: {
+      id: true,
+      name: true,
+      basePrice: true,
+      productImages: {
+        select: { url: true },
+        take: 1, // On ne prend que la première image pour la performance
+      },
+      availabilityProjection: {
+        select: { isAvailable: true }
+    }
+    },
+  });
+
+  return products.map(p => ({
+    ...p,
+    image: p.productImages?.[0]?.url ?? "/placeholder.webp",
+    priceUSD: p.basePrice, // Mapping de basePrice vers priceUSD
+    priceCDF: p.basePrice * 2800, // Calcul pour le CDF
+  }));
+}
 
 export default async function Home() {
-  const cookieStore = await cookies();
-  // On lit la devise depuis les cookies, avec 'USD' en valeur de repli par défaut
-  const preferredCurrency = cookieStore.get('user-currency')?.value as CurrencyCode || 'USD';
-
-  // Fetch de tes produits...
-  // Récupération des données côté serveur
-  const products = await getAllProducts();
+  const recentProducts = await getRecentProducts();
 
   return (
     <>
       <Hero />
       <Category />
-      <ProductCatalog
-        title="Nos récentes nouveautés"
-        products={products}
-        activeCurrency={preferredCurrency}
-      />
+      
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-3xl font-playfair font-bold uppercase mb-10 text-center">
+            ARTICLES DISPONIBLES
+          </h2>
+          {/* On passe directement les produits à la liste, pas besoin du catalogue complet ici */}
+          <ProductList products={recentProducts} totalCount={8} pageSize={8} />
+        </div>
+      </section>
+
       <VideosCart />
       <SocialNetworks />
     </>

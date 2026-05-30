@@ -1,49 +1,30 @@
-"use client";
+// store/use-currency-store.ts
 import { create } from "zustand";
-import {
-  convertFromUSDCents,
-  type DisplayCurrency,
-  USD_TO_CDF_RATE,
-} from "@/lib/currency/currency";
+import { persist } from "zustand/middleware";
+import { type DisplayCurrency, USD_TO_CDF_RATE } from "@/lib/currency/currency";
 
 interface CurrencyState {
-  // État principal
-  displayCurrency: DisplayCurrency;
-
-  // Accesseurs rétro-compatibles
-  currency: DisplayCurrency;
-
-  // Taux de change
-  rateUsdToCdf: number;
-
+  activeCurrency: DisplayCurrency;
+  exchangeRate: number;
+  
   // Actions
-  setDisplayCurrency: (currency: DisplayCurrency) => void;
   setCurrency: (currency: DisplayCurrency) => void;
-
-  /** Convertit un prix en centimes USD pour l'affichage */
-  formatPrice: (cents: number) => string;
+  setExchangeRate: (rate: number) => void;
 }
 
-export const useCurrencyStore = create<CurrencyState>((set, get) => ({
-  displayCurrency: "USD", // sera écrasé au chargement du cookie
-
-  get currency() {
-    return get().displayCurrency;
-  },
-
-  rateUsdToCdf: USD_TO_CDF_RATE,
-
-  setDisplayCurrency: (currency) => set({ displayCurrency: currency }),
-
-  setCurrency: (currency) => set({ displayCurrency: currency }),
-
-  formatPrice: (cents) => {
-    const currency = get().displayCurrency;
-    if (currency === "USD") {
-      return `$${(cents / 100).toFixed(2)}`;
-    } else {
-      const cdf = convertFromUSDCents(cents, "CDF");
-      return `${cdf.toFixed(2)} FC`;
+export const useCurrencyStore = create<CurrencyState>()(
+  persist(
+    (set) => ({
+      activeCurrency: "USD",
+      exchangeRate: USD_TO_CDF_RATE, // Valeur de fallback initiale
+      
+      setCurrency: (currency) => set({ activeCurrency: currency }),
+      setExchangeRate: (rate) => set({ exchangeRate: rate }),
+    }),
+    {
+      name: "boutiquecogi-currency-storage",
+      // Si tu gères déjà l'hydratation via un cookie serveur, 
+      // tu peux ajouter skipHydration: true ici pour éviter les conflits SSR
     }
-  },
-}));
+  )
+);
