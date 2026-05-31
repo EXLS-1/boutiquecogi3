@@ -1,4 +1,5 @@
 // components/product/product-detail.tsx
+
 "use client";
 
 import Image from "next/image";
@@ -6,7 +7,7 @@ import { Product } from "@/types/products";
 import useCart from "@/store/use-cart";
 import { useCurrencyStore } from "@/store/use-currency-store";
 import toast from "react-hot-toast";
-import { formatPriceUSD } from "@/lib/currency/format-currency";
+import { formatPrice } from "@/lib/currency/currency";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 
 interface Props {
@@ -15,12 +16,12 @@ interface Props {
 
 export const ProductDetail = ({ product }: Props) => {
   const { addItem, items, updateQuantity } = useCart();
-  const { activeCurrency } = useCurrencyStore();
+  const currency = useCurrencyStore((s) => s.currency);
   
   const cartItem = items.find((i) => i.id === product.id);
   const quantity = cartItem?.quantity ?? 1;
 
-  const rawPrice = activeCurrency === 'CDF' ? product.priceCDF : product.priceUSD;
+  const rawPrice = currency === "CDF" ? product.priceCDF : product.priceUSD;
 
   const handleAdd = () => {
     addItem({ ...product, quantity });
@@ -46,7 +47,7 @@ export const ProductDetail = ({ product }: Props) => {
             {product.name}
           </h1>
           <p className="text-3xl font-semibold text-rose-500">
-            {formatPriceUSD(rawPrice)} <span className="text-lg text-muted-foreground">{activeCurrency}</span>
+            {formatPrice(rawPrice, currency)}
           </p>
         </div>
 

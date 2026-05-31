@@ -1,142 +1,284 @@
-// app/category/[category]/page.tsx
-
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+import { Prisma } from "@/generated/prisma";
+
 import { prisma } from "@/lib/prisma";
+
 import { ProductList } from "@/components/product/product-list";
 import { CategoryCard } from "@/components/category/category-card";
 
-const PAGE_SIZE = 12;
+import {
+  CATALOG_PAGE_SIZE,
+} from "@/lib/catalog/catalog-constants";
+
+import {
+  mapCatalogProduct,
+} from "@/lib/catalog/catalog-mappers";
+
+export const revalidate = 300;
 
 interface CategoryPageProps {
-  params: Promise<{ category: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  params: Promise<{
+    category: string;
+  }>;
+
+  searchParams: Promise<{
+    page?: string;
+    sort?: string;
+  }>;
 }
 
-// 1. Génération statique des chemins (ISR) pour des performances instantanées
 export async function generateStaticParams() {
   try {
-    const categories = await prisma.product.findMany({
-      where: { isArchived: false },
-      select: { category: true },
-      distinct: ["category"],
-    });
-    
-    return categories
-      .filter((p) => p.category !== null)
-      .map((p) => ({ category: p.category as string }));
+    const categories =
+      await prisma.category.findMany({
+        select: {
+          slug: true,
+        },
+      });
+
+    return categories.map(
+      (category) => ({
+        category:
+          category.slug,
+      }),
+    );
   } catch (error) {
-    console.error("Erreur generateStaticParams [Category]:", error);
+    console.error(
+      "generateStaticParams category error:",
+      error,
+    );
+
     return [];
   }
 }
 
-// 2. Métadonnées dynamiques et optimisées pour le SEO
-export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
-  const { category } = await params;
-  const formattedTitle = category.charAt(0).toUpperCase() + category.slice(1);
+export async function generateMetadata({
+  params,
+}: CategoryPageProps): Promise<Metadata> {
+  const { category } =
+    await params;
+
+  const categoryData =
+    await prisma.category.findUnique({
+      where: {
+        slug: category,
+      },
+
+      select: {
+        name: true,
+      },
+    });
+
+  if (!categoryData) {
+    return {
+      title:
+        "Catégorie introuvable | Boutique COGI",
+    };
+  }
 
   return {
-    title: `${formattedTitle} | Boutique COGI`,
-    description: `Découvrez notre collection exclusive d'articles pour la catégorie ${formattedTitle}.`,
+    title: `${categoryData.name} | Boutique COGI`,
+
+    description: `Découvrez notre collection ${categoryData.name}.`,
   };
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
-  // Résolution des promesses Next.js 15+
-  const { category } = await params;
-  const sParams = await searchParams;
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: CategoryPageProps) {
+  const { category } =
+    await params;
 
-  const decodedCategory = decodeURIComponent(category);
-  const page = Math.max(1, Number(sParams.page) || 1);
-  const sort = (sParams.sort as string) || "newest";
+  const query =
+    await searchParams;
 
-  // Valider l'existence de la catégorie avant de requêter les produits
-  const categoryExists = await prisma.product.findFirst({
-    where: { category: decodedCategory, isArchived: false },
-    select: { id: true },
-  });
+  const page = Math.max(
+    1,
+    Number(query.page ?? "1"),
+  );
 
-  if (!categoryExists) {
-    notFound(); // Déclenche automatiquement le fichier not-found du segment
-  }
+  const sort =
+    query.sort ?? "newest";
 
-  // Construction dynamique de la clause d'ordonnancement (OrderBy)
-  let orderByClause: any = { createdAt: "desc" };
-  if (sort === "price-asc") orderByClause = { price: "asc" };
-  if (sort === "price-desc") orderByClause = { price: "desc" };
-
-  // Exécution des requêtes en parallèle (Pattern Promise.all pour optimiser le TTFB)
-  const [products, totalCount] = await Promise.all([
-    prisma.product.findMany({
+  const categoryData =
+    await prisma.category.findUnique({
       where: {
-        category: decodedCategory,
-        isArchived: false,
+        slug: category,
       },
-      orderBy: orderByClause,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+
       select: {
         id: true,
         name: true,
-        basePrice: true,
-        productImages: {
-        select: { url: true },
-        take: 1, // On ne prend que la première image pour la performance
+        slug: true,
       },
-      availabilityProjection: {
-        select: { isAvailable: true }
-      }
+    });
+
+  if (!categoryData) {
+    notFound();
+  }
+
+  let orderBy:
+    Prisma.ProductOrderByWithRelationInput[] = [
+    {
+      createdAt: "desc",
+    },
+    {
+      id: "desc",
+    },
+  ];
+
+  switch (sort) {
+    case "basePrice-asc":
+      orderBy = [
+        {
+          basePrice: "asc",
+        },
+        {
+          id: "asc",
+        },
+      ];
+      break;
+
+    case "basePrice-desc":
+      orderBy = [
+        {
+          basePrice: "desc",
+        },
+        {
+          id: "desc",
+        },
+      ];
+      break;
+  }
+
+  const where:
+    Prisma.ProductWhereInput = {
+    categoryId:
+      categoryData.id,
+
+    isArchived: false,
+
+    isdeleted: false,
+
+    deletedAt: null,
+  };
+
+  const [
+    products,
+    totalCount,
+  ] = await Promise.all([
+    prisma.product.findMany({
+      where,
+
+      orderBy,
+
+      skip:
+        (page - 1) *
+        CATALOG_PAGE_SIZE,
+
+      take:
+        CATALOG_PAGE_SIZE,
+
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+
+        availabilityProjection: {
+          select: {
+            isAvailable: true,
+          },
+        },
+
+        productImages: {
+          orderBy: {
+            position: "asc",
+          },
+
+          take: 1,
+
+          select: {
+            url: true,
+          },
+        },
       },
     }),
+
     prisma.product.count({
-      where: {
-        category: decodedCategory,
-        isArchived: false,
-      },
+      where,
     }),
   ]);
 
-  // Normalisation stricte des données pour le composant client
-  const formattedProducts = products.map((p) => ({
-    ...p,
-    image: p.productImages?.[0]?.url ?? "/placeholder.jpg",
-    basePriceUSD: p.basePrice,
-    basePriceCDF: p.basePrice * 2800, // Taux de change centralisé, à mettre à jour dynamiquement dans une vraie application
-    isAvailable: p.availabilityProjection?.isAvailable ?? false
-  }));
-
-  const categoryTitle = decodedCategory.charAt(0).toUpperCase() + decodedCategory.slice(1);
+  const formattedProducts =
+    products.map(
+      mapCatalogProduct,
+    );
 
   return (
     <main className="container mx-auto px-4 py-12 bg-background min-h-screen">
-      <CategoryCard className="mb-8" />
-      
+
+      <CategoryCard
+        className="mb-8"
+      />
+
       <section className="mt-12">
+
         <div className="flex flex-col items-center justify-center space-y-4 mb-12">
-          <h1 className="text-3xl md:text-4xl font-playfair font-bold uppercase text-foreground text-center tracking-wide">
-            Collection : {categoryTitle}
+
+          <h1 className="text-3xl md:text-4xl font-playfair font-bold uppercase text-center tracking-wide">
+
+            Collection :{" "}
+            {categoryData.name}
+
           </h1>
-          <div className="w-16 h-0.5 bg-primary"></div>
+
+          <div className="w-16 h-0.5 bg-primary" />
+
           <p className="text-sm text-muted-foreground">
-            {totalCount} {totalCount > 1 ? "articles disponibles" : "article disponible"}
+
+            {totalCount}{" "}
+
+            {totalCount > 1
+              ? "articles disponibles"
+              : "article disponible"}
+
           </p>
+
         </div>
 
         {formattedProducts.length === 0 ? (
           <div className="text-center py-20 border border-dashed rounded-xl bg-muted/30">
-            <p className="text-muted-foreground font-lato">
-              Aucun produit disponible dans cette section pour le moment.
+
+            <p className="text-muted-foreground">
+
+              Aucun produit disponible dans cette catégorie.
+
             </p>
+
           </div>
         ) : (
-          <ProductList 
-            products={formattedProducts} 
-            totalCount={totalCount}
-            pageSize={PAGE_SIZE}
+          <ProductList
+            products={
+              formattedProducts
+            }
+            totalCount={
+              totalCount
+            }
+            pageSize={
+              CATALOG_PAGE_SIZE
+            }
           />
         )}
+
       </section>
+
     </main>
   );
 }

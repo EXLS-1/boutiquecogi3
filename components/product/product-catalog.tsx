@@ -1,4 +1,5 @@
 // components/product/product-catalog.tsx
+
 import { Product } from "@/types/products";
 import { ProductList } from "@/components/product/product-list";
 import { ProductSortFilter } from "@/components/product/product-sort-filter";

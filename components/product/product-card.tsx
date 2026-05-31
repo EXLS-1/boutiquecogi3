@@ -1,11 +1,12 @@
 // components/product/product-card.tsx
+
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
 import { Product } from "@/types/products";
-import { formatPriceUSD } from '@/lib/currency/format-currency';
+import { formatPrice } from '@/lib/currency/currency';
 import { useCurrencyStore } from "@/store/use-currency-store";
 
 interface ProductCardProps {
@@ -13,14 +14,14 @@ interface ProductCardProps {
 }
 
 const ProductCardComponent = ({ product }: ProductCardProps) => {
-  const { activeCurrency } = useCurrencyStore();
+  const currency = useCurrencyStore((s) => s.currency);
   
-  const rawPrice = activeCurrency === 'CDF' ? product.priceCDF : product.priceUSD;
-  const displayPrice = formatPriceUSD(rawPrice);
+  const rawPrice = currency === "CDF" ? product.priceCDF : product.priceUSD;
+  const displayPrice = formatPrice(rawPrice, currency);
 
   return (
     <div className="surface group flex flex-col h-full overflow-hidden border border-border rounded-lg bg-card text-card-foreground shadow-sm">
-      <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
+      <div className="relative aspect-4/5 w-full overflow-hidden bg-muted">
         <Image
           src={product.image}
           alt={`Image de ${product.name}`}
@@ -45,7 +46,7 @@ const ProductCardComponent = ({ product }: ProductCardProps) => {
         
         <div className="flex flex-col gap-1 mt-auto">
           <p className="text-rose-500 font-bold text-xl tracking-tight">
-            {displayPrice} <span className="text-sm font-normal text-muted-foreground">{activeCurrency}</span>
+            {displayPrice}
           </p>
         </div>
 

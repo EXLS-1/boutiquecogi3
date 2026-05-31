@@ -1,21 +1,79 @@
-// Devise d'affichage possible
+// lib/currency/currency.ts
+
 export type DisplayCurrency = "USD" | "CDF";
-// Devise de paiement possible (peut être identique)
-export type PaymentCurrency = "USD" | "CDF";
 
-// Taux USD → CDF (à récupérer idéalement via une API externe)
-export const USD_TO_CDF_RATE = Number(process.env.USD_TO_CDF_RATE || 2750);
+export interface CurrencyMetadata {
+  code: DisplayCurrency;
+  symbol: string;
+  label: string;
+  locale: string;
+  precision: number;
+}
 
-/**
- * Convertit un montant en centimes USD vers la devise cible.
- * - Si la cible est USD, on retourne le montant en centimes (entier).
- * - Si la cible est CDF, on retourne le montant en CDF (float, unités, car pas de centimes).
- */
-export function convertFromUSDCents(
-  amountInCents: number,
-  targetCurrency: DisplayCurrency | PaymentCurrency
-): number {
-  const usd = amountInCents / 100;
-  if (targetCurrency === "USD") return amountInCents;
-  return usd * USD_TO_CDF_RATE; // float en CDF
+export const DEFAULT_USD_TO_CDF_RATE = 2300;
+
+export const CURRENCIES: Record<DisplayCurrency, CurrencyMetadata> = {
+  USD: {
+    code: "USD",
+    symbol: "$",
+    label: "Dollar Américain",
+    locale: "en-US",
+    precision: 2,
+  },
+
+  CDF: {
+    code: "CDF",
+    symbol: "FC",
+    label: "Franc Congolais",
+    locale: "fr-CD",
+    precision: 0,
+  },
+};
+
+export const SUPPORTED_CURRENCY_CODES = Object.keys(
+  CURRENCIES,
+) as DisplayCurrency[];
+
+export function getCurrencyMetadata(
+  currency: DisplayCurrency,
+): CurrencyMetadata {
+  return CURRENCIES[currency] ?? CURRENCIES.USD;
+}
+
+const FORMATTERS = {
+  USD: new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }),
+
+  CDF: new Intl.NumberFormat("fr-CD", {
+    style: "currency",
+    currency: "CDF",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }),
+};
+
+export function formatPrice(amount: number, currency: DisplayCurrency): string {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+
+  return FORMATTERS[currency].format(safeAmount);
+}
+
+export function convertUsdToCdf(amountUsd: number, rate: number): number {
+  if (!Number.isFinite(amountUsd) || !Number.isFinite(rate)) {
+    return 0;
+  }
+
+  return Math.round(amountUsd * rate);
+}
+
+export function convertCdfToUsd(amountCdf: number, rate: number): number {
+  if (!Number.isFinite(amountCdf) || !Number.isFinite(rate) || rate <= 0) {
+    return 0;
+  }
+
+  return amountCdf / rate;
 }

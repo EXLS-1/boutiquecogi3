@@ -21,35 +21,34 @@ export function CurrencySwitcher() {
     setMounted(true);
   }, []);
 
-  // Empêche le Layout Shift en réservant l'espace exact (h-9 correspond au bouton size="sm")
-  if (!mounted) {
-    return (
-      <div className="flex items-center text-cyan-400/50 font-lato h-9 px-2">
-        <div className="w-8 h-4 bg-cyan-100/20 rounded animate-pulse" />
-        <div className="mx-2 text-sm">/</div>
-        <div className="w-8 h-4 bg-cyan-100/20 rounded animate-pulse" />
-      </div>
-    );
-  }
-
   const handleCurrencyChange = (newCurrency: "USD" | "CDF") => {
     if (newCurrency === currency) return;
     
     setCurrency(newCurrency);
-    // router.refresh() force Next.js à re-fetch les Server Components (comme page.tsx)
-    // Cela synchronise le cookie mis à jour avec le prop 'activeCurrency' du ProductCatalog
     router.refresh();
   };
 
   return (
-    <div className="flex items-center text-cyan-400 font-lato">
+    <div 
+      className="flex items-center text-cyan-400 font-lato min-w-[100px] justify-center"
+      suppressHydrationWarning
+    >
+      {!mounted ? (
+        <div className="flex items-center gap-2 px-2 h-9 animate-pulse opacity-50">
+          <div className="w-8 h-4 bg-current/20 rounded" />
+          <span className="text-xs">/</span>
+          <div className="w-8 h-4 bg-current/20 rounded" />
+        </div>
+      ) : (
+        <>
         <Button
           variant="ghost"
           size="sm"
           className={cn(
             "hover:text-pink-400 transition-colors px-2",
-            currency === "CDF" && "text-pink-400 underline decoration-2 underline-offset-4 font-bold pointer-events-none"
+            currency === "CDF" && "text-pink-400 underline decoration-2 underline-offset-4 font-bold"
           )}
+          disabled={currency === "CDF"}
           onClick={() => handleCurrencyChange("CDF")}
         >
           CDF
@@ -60,13 +59,15 @@ export function CurrencySwitcher() {
           size="sm"
           className={cn(
             "hover:text-pink-400 transition-colors px-2",
-            currency === "USD" && "text-pink-400 underline decoration-2 underline-offset-4 font-bold pointer-events-none"
+            currency === "USD" && "text-pink-400 underline decoration-2 underline-offset-4 font-bold"
           )}
+          disabled={currency === "USD"}
           onClick={() => handleCurrencyChange("USD")}
         >
           USD
         </Button>
-      
+        </>
+      )}
     </div>
   );
 }

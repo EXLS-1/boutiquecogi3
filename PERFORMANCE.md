@@ -19,24 +19,9 @@ Ce guide documente les optimisations et best practices appliquées au projet Bou
 
 ### 1. Server Components (Par Défaut)
 
-```tsx
+
 // ✅ Good: Server Component par défaut
 // app/products/page.tsx
-export default async function ProductsPage() {
-  const products = await fetchProducts();
-  return <ProductGrid products={products} />;
-}
-
-// ❌ Bad: Tout en Client Component
-("use client");
-export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
-  useEffect(() => {
-    fetchProducts().then(setProducts);
-  }, []);
-  return <ProductGrid products={products} />;
-}
-```
 
 **Avantages:**
 
@@ -62,10 +47,6 @@ import Image from 'next/image';
   placeholder="blur"
   blurDataURL="data:image/jpeg;base64,..."
 />
-
-// ❌ Bad: HTML img natif
-<img src="/products/item.jpg" alt="Product" />
-```
 
 **Optimisations:**
 
@@ -633,40 +614,14 @@ export async function getProducts() {
 
 ```ts
 // ✅ Good: Stateless API routes pour scale horizontally
-export async function POST(req: NextRequest) {
-  // Ne pas stocker d'état local
-  // Toute session vient de JWT + DB
-
-  const session = await getServerSession();
-  const order = await createOrder(session.user.id);
-
-  return NextResponse.json(order);
-}
-```
+// Ne pas stocker d'état local
+// Toute session vient de JWT + DB
 
 ### 2. Queue Management
 
-```ts
 // ✅ Recommandé: Async jobs via queue
-import Bull from "bull";
-
-const emailQueue = new Bull("send-email", process.env.REDIS_URL);
-
 // Enqueue job
-await emailQueue.add(
-  {
-    to: user.email,
-    subject: "Order Confirmation",
-    template: "order-confirmation",
-  },
-  { attempts: 3, backoff: "exponential" },
-);
-
 // Worker
-emailQueue.process(async (job) => {
-  await sendEmail(job.data);
-});
-```
 
 ### 3. Database Replication
 
@@ -677,13 +632,7 @@ emailQueue.process(async (job) => {
 READ_DATABASE_URL="postgresql://host2:5432/db"
 ```
 
-```ts
 // ✅ Route analytics reads to replica
-const analytics = await prismaReadReplica.order.groupBy({
-  by: ["status"],
-  _count: true,
-});
-```
 
 ---
 
