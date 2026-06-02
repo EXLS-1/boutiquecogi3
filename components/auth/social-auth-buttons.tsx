@@ -48,7 +48,7 @@ export function SocialAuthButtons() {
     // Il gère l'inscription (si nouvel utilisateur) et la connexion simultanément.
     const { error } = await authClient.signIn.social({
       provider,
-      callbackURL: "/protected", // Route cible après succès de l'authentification
+      callbackURL: "/", // Redirection vers la page d'accueil après succès de l'authentification sociale
     });
 
     if (error) {

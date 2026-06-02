@@ -170,7 +170,7 @@ export function SignInForm() {
           <div className="text-center text-sm text-cyan-400">
             Pas encore de compte ?{" "}
             <Link
-              href="/auth/sign-up" // Assurez-vous que cette route est correcte
+              href="/auth/sign-up"
               className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
               S'inscrire

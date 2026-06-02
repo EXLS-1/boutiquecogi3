@@ -52,7 +52,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               { /* pt-28 correspond à la hauteur de navbar (14) + navbar-secondary (14) */ }
             <main className="min-h-screen pt-28">
               { children }
-            
               {/* Chargez vos scripts ici de manière optimisée */}
                
             </main>

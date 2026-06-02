@@ -1,62 +1,365 @@
 "use client";
 
+import React, { useState, useTransition } from "react";
+import { z } from "zod";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
-export const NewsLetter = () => {
+const EmailSchema = z.string().trim().email();
+
+export interface SubscriptionResult {
+  success: boolean;
+  message?: string;
+}
+
+export interface NewsletterProps {
+  /**
+   * Callback de souscription.
+   * Obligatoire.
+   */
+  onSubscribe: (
+    email: string
+  ) => Promise<SubscriptionResult>;
+
+  /**
+   * Contenu optionnel.
+   */
+  title?: string;
+  description?: string;
+
+  /**
+   * Texte du champ email.
+   */
+  placeholder?: string;
+
+  /**
+   * Texte du bouton.
+   */
+  submitLabel?: string;
+
+  /**
+   * Classes personnalisées.
+   */
+  className?: string;
+
+  /**
+   * Désactiver le formulaire.
+   */
+  disabled?: boolean;
+
+  /**
+   * Affichage du feedback.
+   */
+  showFeedback?: boolean;
+
+  /**
+   * Callback succès.
+   */
+  onSuccess?: (email: string) => void;
+
+  /**
+   * Callback erreur.
+   */
+  onError?: (
+    email: string,
+    message: string
+  ) => void;
+
+  /**
+   * Permet d'ajouter du contenu
+   * avant le formulaire.
+   */
+  beforeForm?: React.ReactNode;
+
+  /**
+   * Permet d'ajouter du contenu
+   * après le formulaire.
+   */
+  afterForm?: React.ReactNode;
+}
+
+type FormStatus =
+  | "idle"
+  | "success"
+  | "error";
+
+export function Newsletter({
+  onSubscribe,
+
+  title = "Newsletter",
+
+  description =
+    "Inscrivez-vous pour recevoir nos dernières actualités.",
+
+  placeholder = "Votre adresse e-mail",
+
+  submitLabel = "S'inscrire",
+
+  className = "",
+
+  disabled = false,
+
+  showFeedback = true,
+
+  onSuccess,
+
+  onError,
+
+  beforeForm,
+
+  afterForm,
+}: NewsletterProps) {
+  const [email, setEmail] =
+    useState("");
+
+  const [honeypot, setHoneypot] =
+    useState("");
+
+  const [status, setStatus] =
+    useState<FormStatus>("idle");
+
+  const [message, setMessage] =
+    useState("");
+
+  const [isPending, startTransition] =
+    useTransition();
+
+  const isDisabled =
+    disabled || isPending;
+
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    /**
+     * Honeypot anti-spam.
+     */
+    if (honeypot.trim()) {
+      setStatus("success");
+      return;
+    }
+
+    const parsed =
+      EmailSchema.safeParse(email);
+
+    if (!parsed.success) {
+      const errorMessage =
+        "Veuillez fournir une adresse e-mail valide.";
+
+      setStatus("error");
+      setMessage(errorMessage);
+
+      onError?.(
+        email,
+        errorMessage
+      );
+
+      return;
+    }
+
+    const cleanEmail =
+      parsed.data;
+
+    startTransition(async () => {
+      try {
+        const result =
+          await onSubscribe(
+            cleanEmail
+          );
+
+        if (!result.success) {
+          const errorMessage =
+            result.message ??
+            "Une erreur est survenue.";
+
+          setStatus("error");
+          setMessage(errorMessage);
+
+          onError?.(
+            cleanEmail,
+            errorMessage
+          );
+
+          return;
+        }
+
+        const successMessage =
+          result.message ??
+          "Inscription effectuée avec succès.";
+
+        setStatus("success");
+        setMessage(successMessage);
+
+        setEmail("");
+
+        onSuccess?.(
+          cleanEmail
+        );
+      } catch {
+        const errorMessage =
+          "Erreur réseau. Veuillez réessayer.";
+
+        setStatus("error");
+        setMessage(errorMessage);
+
+        onError?.(
+          cleanEmail,
+          errorMessage
+        );
+      }
+    });
+  }
+
   return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          
-          {/* Marque */}
-          <div>
-            <h3 className="font-playfair text-2xl font-bold tracking-widest uppercase text-sky-100 mb-6">
-              Boutique COGI
-            </h3>
-            <p className="font-lato text-sm leading-relaxed text-sky-100">
-              L'excellence et la robustesse au service de la mode. Une plateforme sécurisée pour toutes vos envies.
-            </p>
+    <section
+      className={`w-full ${className}`}
+      aria-labelledby={
+        title
+          ? "newsletter-title"
+          : undefined
+      }
+    >
+      <div className="space-y-4">
+        {title && (
+          <h2
+            id="newsletter-title"
+            className="text-lg font-semibold"
+          >
+            {title}
+          </h2>
+        )}
+
+        {description && (
+          <p className="text-sm text-muted-foreground">
+            {description}
+          </p>
+        )}
+
+        {beforeForm}
+
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className="space-y-3"
+        >
+          {/* Honeypot */}
+          <div
+            className="hidden"
+            aria-hidden="true"
+          >
+            <input
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(e) =>
+                setHoneypot(
+                  e.target.value
+                )
+              }
+            />
           </div>
 
-          {/* Navigation Rapide */}
-          <div>
-            <h4 className="font-lato font-bold tracking-widest uppercase mb-6 text-white">
-              Boutique
-            </h4>
-            <ul className="space-y-3 font-lato text-sm text-sky-100">
-              {['Femme', 'Homme', 'Enfant', 'Accessoires'].map((item) => (
-                <li key={item}>
-                  <a href={`/category/${item.toLowerCase()}`} className="hover:text-rose-500 transition-colors">
-                    Collection {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              disabled={isDisabled}
+              placeholder={
+                placeholder
+              }
+              aria-label="Adresse e-mail"
+              aria-invalid={
+                status === "error"
+              }
+              onChange={(e) =>
+                setEmail(
+                  e.target.value
+                )
+              }
+              className="
+                flex-1
+                rounded-md
+                border
+                bg-background
+                px-4
+                py-2.5
+                text-sm
+                outline-none
+                transition
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+                focus:ring-2
+              "
+            />
+
+            <Button
+              type="submit"
+              disabled={
+                isDisabled
+              }
+              className="
+                min-w-35
+              "
+            >
+              {isPending ? (
+                <Loader2
+                  className="
+                    h-4
+                    w-4
+                    animate-spin
+                  "
+                />
+              ) : (
+                submitLabel
+              )}
+            </Button>
           </div>
-          {/* Newsletter (Nouveau) */}
-          <div className="lg:col-span-2">
-            <h4 className="font-lato font-bold tracking-widest uppercase mb-6 text-white">
-              Newsletter
-            </h4>
-            <p className="font-lato text-sm text-sky-100 mb-4">
-              Inscrivez-vous pour recevoir nos offres exclusives et les dernières nouveautés.
-            </p>
-            <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="Votre adresse e-mail"
-                required
-                className="flex-1 bg-white/10 border border-white/20 text-white px-4 py-2 rounded-md focus:outline-none focus:border-sky-500 transition-colors font-lato placeholder:text-slate-300"
-              />
-              <Button 
-                type="submit" 
-                className="bg-sky-500 text-black hover:bg-rose-500 hover:text-white font-bold uppercase tracking-wider transition-colors"
+
+          {showFeedback &&
+            status !== "idle" && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className={`
+                  flex
+                  items-center
+                  gap-2
+                  rounded-md
+                  border
+                  px-3
+                  py-3
+                  text-sm
+                  ${
+                    status ===
+                    "success"
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
+                      : "border-red-500/20 bg-red-500/10 text-red-600"
+                  }
+                `}
               >
-                S'inscrire
-              </Button>
-            </form>
-          </div>
-        </div>
+                {status ===
+                "success" ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                )}
 
+                <span>
+                  {message}
+                </span>
+              </div>
+            )}
+        </form>
+
+        {afterForm}
       </div>
+    </section>
   );
-};
+}
+
+export default Newsletter;

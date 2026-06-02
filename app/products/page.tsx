@@ -1,5 +1,7 @@
 // app/products/page.tsx
 
+import { Suspense } from "react";
+import { cache } from "react";
 import { Metadata } from "next";
 import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +16,7 @@ import {
 import {
   mapCatalogProduct,
 } from "@/lib/catalog/catalog-mappers";
+import { z } from "zod";
 
 export const revalidate = 300;
 
@@ -32,41 +35,68 @@ interface ProductsPageProps {
   }>;
 }
 
+// Schéma de validation Zod pour les paramètres de recherche
+const searchParamsSchema = z.object({
+  page: z.string().optional().default("1").transform(Number).pipe(z.number().int().min(1)),
+  sort: z.enum(["newest", "basePrice-asc", "basePrice-desc"]).optional().default("newest"),
+  category: z.string().optional().default("all"),
+  q: z.string().optional().default(""),
+});
+
+// Type pour les paramètres de recherche validés
+type ValidatedSearchParams = z.infer<typeof searchParamsSchema>;
+
+// Fonction pour récupérer les catégories avec mise en cache
+const getCachedCategories = cache(async () => {
+  return prisma.category.findMany({
+    where: {
+      products: {
+        some: {
+          isArchived: false,
+          isdeleted: false,
+          deletedAt: null,
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      name: true,
+      slug: true,
+    },
+  });
+});
+
 export default async function ProductsPage({
   searchParams,
 }: ProductsPageProps) {
-  const params = await searchParams;
+  // Validation des paramètres de recherche
+  const parsedParams = searchParamsSchema.safeParse(await searchParams);
 
-  const page = Math.max(
-    1,
-    Number(params.page ?? "1"),
-  );
+  if (!parsedParams.success) {
+    // Gérer l'erreur de validation, par exemple en redirigeant ou en affichant une erreur
+    // Pour l'instant, on utilise les valeurs par défaut ou on pourrait lancer une erreur
+    console.error("Invalid search parameters:", parsedParams.error);
+    // Ou rediriger vers une page d'erreur ou la page de produits sans paramètres invalides
+    // throw new Error("Paramètres de recherche invalides.");
+  }
 
-  const query =
-    params.q?.trim() ?? "";
+  const { page, sort, category: categorySlug, q: query } = parsedParams.success ? parsedParams.data : searchParamsSchema.parse({}); // Fallback to defaults
 
-  const categorySlug =
-    params.category?.trim() ?? "all";
-
-  const sort =
-    params.sort ?? "newest";
-
-  const where: Prisma.ProductWhereInput = {
+  const where: Prisma.ProductWhereInput = { // Typage strict
     isArchived: false,
     isdeleted: false,
     deletedAt: null,
   };
 
-  if (
-    categorySlug &&
-    categorySlug !== "all"
-  ) {
+  if (categorySlug && categorySlug !== "all") {
     where.category = {
       slug: categorySlug,
     };
   }
 
-  if (query.length > 0) {
+  if (query.length > 0) { // La validation de la longueur max peut être faite via Zod
     where.OR = [
       {
         name: {
@@ -83,7 +113,7 @@ export default async function ProductsPage({
     ];
   }
 
-  let orderBy:
+  let orderBy: // Typage strict
     Prisma.ProductOrderByWithRelationInput[] = [
     {
       createdAt: "desc",
@@ -112,7 +142,7 @@ export default async function ProductsPage({
   const [
     products,
     totalCount,
-    categories,
+    categories, // Utilisation de la fonction cachée
   ] = await Promise.all([
     prisma.product.findMany({
       where,
@@ -155,30 +185,9 @@ export default async function ProductsPage({
       },
     }),
 
-    prisma.product.count({
-      where,
-    }),
+    prisma.product.count({ where }),
 
-    prisma.category.findMany({
-      where: {
-        products: {
-          some: {
-            isArchived: false,
-            isdeleted: false,
-            deletedAt: null,
-          },
-        },
-      },
-
-      orderBy: {
-        name: "asc",
-      },
-
-      select: {
-        name: true,
-        slug: true,
-      },
-    }),
+    getCachedCategories(), // Appel de la fonction de récupération des catégories cachée
   ]);
 
   const formattedProducts =
@@ -186,10 +195,32 @@ export default async function ProductsPage({
 
   const categoriesList = [
     "all",
-    ...categories.map(
-      (category) => category.slug,
-    ),
+    ...categories.map((category) => category.slug),
   ];
+
+  // Calcul pour les balises SEO rel="prev" et rel="next"
+  const totalPages = Math.ceil(totalCount / CATALOG_PAGE_SIZE);
+  const hasPrevPage = page > 1;
+  const hasNextPage = page < totalPages;
+
+  // Mise à jour des métadonnées pour la pagination SEO
+  metadata.alternates = {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/products`,
+    prev: hasPrevPage
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/products?page=${page - 1}${sort !== 'newest' ? `&sort=${sort}` : ''}${categorySlug !== 'all' ? `&category=${categorySlug}` : ''}${query ? `&q=${query}` : ''}` 
+    const metadataAlternates = metadata.alternates as Metadata['alternates'] & {
+    prev?: string;
+    next?: string;
+  };
+
+  if (hasPrevPage) {
+    metadataAlternates.prev = `${process.env.NEXT_PUBLIC_BASE_URL}/products?page=${page - 1}${sort !== 'newest' ? `&sort=${sort}` : ''}${categorySlug !== 'all' ? `&category=${categorySlug}` : ''}${query ? `&q=${query}` : ''}`;
+  }
+  if (hasNextPage) {
+    metadataAlternates.next = `${process.env.NEXT_PUBLIC_BASE_URL}/products?page=${page + 1}${sort !== 'newest' ? `&sort=${sort}` : ''}${categorySlug !== 'all' ? `&category=${categorySlug}` : ''}${query ? `&q=${query}` : ''}`;
+  }
+
+
 
   return (
     <main className="pb-12 bg-background">

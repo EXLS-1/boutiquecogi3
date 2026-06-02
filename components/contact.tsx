@@ -1,14 +1,64 @@
 // components/contact.tsx
-export default function Contact() {
+
+"use client";
+
+import { useState } from "react";
+
+interface ContactProps {
+  title?: string;
+  subtitle?: string;
+  emailLabel?: string;
+  emailValue?: string;
+  whatsappLabel?: string;
+  whatsappValue?: string;
+  buttonText?: string;
+  placeholders?: {
+    name?: string;
+    email?: string;
+    message?: string;
+  };
+  onSubmit?: (data: { name: string; email: string; message: string }) => void;
+}
+
+export default function Contact({
+  title = "CONTACTEZ-NOUS",
+  subtitle = "Nous sommes là pour vous aider",
+  emailLabel = "E-mail",
+  emailValue = "contact@boutiquecogi.com",
+  whatsappLabel = "WhatsApp",
+  whatsappValue = "+243 XX XX XX XX XX",
+  buttonText = "ENVOYER",
+  placeholders = {
+    name: "Votre nom",
+    email: "Votre e-mail",
+    message: "Votre message",
+  },
+  onSubmit,
+}: ContactProps) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onSubmit) {
+      onSubmit(formData);
+      // Optionnel : Réinitialiser le formulaire après soumission
+      setFormData({ name: "", email: "", message: "" });
+    }
+  };
+
   return (
     <section className="py-20 bg-white" id="contact">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="font-playfair text-3xl md:text-5xl font-bold text-gray-900 uppercase tracking-wider mb-4">
-            CONTACTEZ-NOUS
+            {title}
           </h2>
           <p className="font-lato text-gray-500 text-lg">
-            Nous sommes là pour vous aider
+            {subtitle}
           </p>
         </div>
 
@@ -21,9 +71,9 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-bold text-gray-900 mb-1 uppercase tracking-widest">
-                  E-mail
+                  {emailLabel}
                 </h4>
-                <p className="text-gray-600">contact@boutiquecogi.com</p>
+                <p className="text-gray-600">{emailValue}</p>
               </div>
             </div>
             <div className="flex items-start gap-6">
@@ -32,37 +82,43 @@ export default function Contact() {
               </div>
               <div>
                 <h4 className="font-bold text-gray-900 mb-1 uppercase tracking-widest">
-                  WhatsApp
+                  {whatsappLabel}
                 </h4>
-                <p className="text-gray-600">+243 XX XX XX XX XX</p>
+                <p className="text-gray-600">{whatsappValue}</p>
               </div>
             </div>
           </div>
 
           {/* Formulaire */}
           <div className="bg-gray-50 p-8 rounded-2xl">
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <input
                   type="text"
-                  placeholder="Votre nom"
+                  placeholder={placeholders.name}
                   required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
                 />
               </div>
               <div>
                 <input
                   type="email"
-                  placeholder="Votre e-mail"
+                  placeholder={placeholders.email}
                   required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
                 />
               </div>
               <div>
                 <textarea
-                  placeholder="Votre message"
+                  placeholder={placeholders.message}
                   rows={5}
                   required
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white resize-none"
                 ></textarea>
               </div>
@@ -70,7 +126,7 @@ export default function Contact() {
                 type="submit"
                 className="w-full flex items-center justify-center gap-3 bg-black text-white px-8 py-4 rounded-lg font-bold tracking-widest uppercase hover:bg-cyan-400 hover:text-black transition-colors shadow-lg shadow-black/20"
               >
-                <span>ENVOYER</span>
+                <span>{buttonText}</span>
                 <i className="fas fa-paper-plane"></i>
               </button>
             </form>

@@ -1,3 +1,6 @@
+// store/use-currency-store.ts
+// This store manages the selected display currency and the exchange rate from USD to CDF.
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useUIStore } from "@/store/use-ui-store";
+import { subscribeToNewsletter } from "@/app/actions/newsletter.actions";
+import { Newsletter } from "@/components/newsletter";
+import toast from "react-hot-toast";
 
 const MENU_LINKS = [
   { label: "Femme", href: "/category/femme" },
@@ -47,7 +50,12 @@ export const LeftSidebar = () => {
           </div>
 
           <hr className="border-slate-200 my-6" />
-
+          <Newsletter
+            showFeedback={false}
+            onSubscribe={subscribeToNewsletter}
+            onSuccess={() => toast.success("Inscription newsletter réussie !")}
+            onError={(_, message) => toast.error(message)}
+          />
           <div className="space-y-4">
             <Link 
               href="/settings"

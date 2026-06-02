@@ -121,8 +121,8 @@ export function SignUpForm() {
         onRequest: () => setIsPending(true),
         onSuccess: () => {
           toast.success("Inscription réussie ! Redirection...");
-          // Remplace "signed-up-form" : On redirige simplement vers une route protégée ou la connexion
-          router.push("/auth/signed-up-form"); 
+          // Redirection vers la page de connexion ou une page protégée si l'utilisateur est automatiquement connecté
+          router.push("/auth/login"); // Ou "/protected" si l'utilisateur est connecté automatiquement
           router.refresh(); 
         },
         onError: (ctx) => {
