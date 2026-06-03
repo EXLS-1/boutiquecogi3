@@ -1,42 +1,48 @@
 // lib/exchange-rate/exchange-rate-validator.ts
-// Ce module définit un schéma de validation strict pour le taux de change USD/CDF.
-// Il utilise Zod pour s'assurer que les taux extraits sont réalistes et conformes aux attentes du marché.
-// Les protections incluent des limites minimales et maximales pour éviter les valeurs aberrantes (ex: inversion de devises ou erreurs de virgule).
-// En cas d'échec de validation, il logue un avertissement détaillé pour faciliter le debugging.
+// Ce module fournit des fonctions de validation pour les taux de change USD/CDF.
+// Il utilise Zod pour valider les taux individuels et une fonction personnalisée pour vérifier les variations entre deux taux.
+// Les règles de validation sont les suivantes :
+// 1. Le taux doit être un nombre décimal positif.
+// 2. Le taux doit être compris entre 2100 et 3500 pour éviter les valeurs anormales.
+// 3. La variation entre deux taux successifs ne doit pas dépasser 10% pour garantir la cohérence des données.
 
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { ExchangeRate } from "./exchange-rate-types";
 
-/**
- * Schéma de validation strict pour le taux USD/CDF.
- * Protections contre les valeurs aberrantes (ex: inversion de devises ou erreurs de virgule).
- */
 export const exchangeRateSchema = z
   .instanceof(Prisma.Decimal)
   .refine((rate) => rate.greaterThan(0), {
     message: "Le taux de change doit être positif.",
   })
-  .refine((rate) => rate.greaterThanOrEqualTo(2000), {
-    message:
-      "Le taux USD/CDF est anormalement bas pour le marché actuel (min 2000).",
+  .refine((rate) => rate.greaterThanOrEqualTo(2100), {
+    message: "Le taux USD/CDF est anormalement bas (min 2100).",
   })
-  .refine((rate) => rate.lessThanOrEqualTo(4000), {
-    message:
-      "Le taux USD/CDF est anormalement haut pour le marché actuel (max 4000).",
+  // Cohérence : Le max doit obligatoirement être supérieur ou égal au FALLBACK_RATE (2850)
+  .refine((rate) => rate.lessThanOrEqualTo(3500), {
+    message: "Le taux USD/CDF est anormalement haut (max 3500).",
   });
 
-/**
- * Type guard pour valider la conformité d'un taux de change.
- */
 export function validateRate(rate: unknown): rate is ExchangeRate {
   const result = exchangeRateSchema.safeParse(rate);
   if (!result.success) {
     console.warn(
-      "[EXCHANGE_RATE_VALIDATOR] Échec de validation du taux :",
+      "[EXCHANGE_RATE_VALIDATOR] Échec de validation :",
       result.error.format(),
     );
     return false;
   }
   return true;
+}
+
+export function validateRateVariation(
+  previous: ExchangeRate,
+  current: ExchangeRate,
+): boolean {
+  try {
+    const variation = current.minus(previous).abs().div(previous);
+    return variation.lessThanOrEqualTo(new Prisma.Decimal("0.1")); // Max 10% de fluctuation
+  } catch {
+    return false;
+  }
 }

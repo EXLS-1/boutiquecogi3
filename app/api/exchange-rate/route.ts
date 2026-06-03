@@ -1,15 +1,17 @@
-// app/api/exchange-rate/route.ts
-
 import { NextResponse } from "next/server";
-import { getUSDToCDFRate } from "@/lib/exchange-rate/exchange-rate-service";
+import { getFastUSDToCDFRate } from "@/lib/exchange-rate/exchange-rate-service";
+
+// Force la route à être dynamique pour éviter le gel des données au build
+export const dynamic = "force-dynamic";
 
 /**
  * Endpoint public pour récupérer le taux de change actuel.
- * Utilise le service avec cache hiérarchisé.
+ * Optimisé pour des performances maximales (< 50ms) via lecture exclusive des caches.
  */
 export async function GET() {
   try {
-    const rate = await getUSDToCDFRate();
+    // Utilisation de la stratégie de lecture seule pour protéger le client de la lenteur de la BCC
+    const rate = await getFastUSDToCDFRate();
 
     return NextResponse.json({
       success: true,

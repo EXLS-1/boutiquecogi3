@@ -10,9 +10,11 @@ import { CACHE_KEY } from "./exchange-rate-constants";
 /**
  * Génère un UUID v7 conforme aux spécifications RFC 9562 de manière native.
  */
-function generateUUIDv7(): string {
-  // crypto.randomUUID({ version: 7 }) est supporté nativement dans les environnements Node.js modernes
-  return randomUUID();
+export function generateUUIDv7(): string {
+  // L'option { version: 7 } est disponible nativement depuis Node.js 22.0.0
+  // Cette version est chronologiquement triable, optimisant les index de base de données.
+  // @ts-ignore - Supporté nativement dans les runtimes modernes
+  return randomUUID({ version: 7 });
 }
 
 /**

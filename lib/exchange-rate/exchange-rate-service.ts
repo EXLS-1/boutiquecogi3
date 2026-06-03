@@ -1,7 +1,10 @@
-// exchange-rate-service.ts
+// lib/exchange-rate/exchange-rate-service.ts
+// Ce module centralise la logique de récupération et de validation du taux de change USD/CDF.
+// Il implémente une stratégie de résilience à 4 niveaux : Cache mémoire, Scraper officiel, Cache DB, Fallback d'urgence.
+// La fonction convertUSDToCDF utilise le taux récupéré pour convertir un montant USD en CDF avec un arrondi intelligent.
 
 import { Prisma } from "@prisma/client";
-import { fetchRate } from "./bcc-client";
+import { fetchRate } from "./bcc-client"; // CORRECTION : Importation du vrai client de scraping
 import { saveLastValidRate, getLastValidRate } from "./exchange-rate-cache";
 import { validateRate } from "./exchange-rate-validator";
 import { ExchangeRate } from "./exchange-rate-types";
@@ -11,72 +14,62 @@ const FALLBACK_RATE: ExchangeRate = new Prisma.Decimal(
   process.env.FALLBACK_EXCHANGE_RATE || "2850",
 );
 
-/**
- * Cache interne en mémoire pour limiter les accès I/O.
- */
 let memoryCache: { rate: ExchangeRate; timestamp: number } | null = null;
 
 /**
- * Récupère le taux de change USD vers CDF selon la stratégie de repli à 4 niveaux.
- * Architecture : Mémoire (L1) ➔ BCC Actuel (L2) ➔ Cache DB (L3) ➔ Fallback .env (L4)
+ * Récupère le taux selon la stratégie de résilience à 4 niveaux.
+ * L1 (Mémoire) -> L2 (Scraper BCC Actuel) -> L3 (Cache DB) -> L4 (Fallback Configuration)
  */
 export async function getUSDToCDFRate(): Promise<ExchangeRate> {
   const now = Date.now();
 
-  // Étape 0 : Vérification du cache en mémoire (Performance maximale)
+  // Étape 0 : Cache mémoire (L1)
   if (memoryCache && now - memoryCache.timestamp < MEMORY_CACHE_TTL_MS) {
     return memoryCache.rate;
   }
 
-  // Étape 1 : Tentative via la source officielle (BCC)
+  // Étape 1 : Appel du Scraper Officiel (L2)
   const officialRate = await fetchRate();
 
   if (officialRate) {
     try {
-      // Persistance obligatoire pour le prochain mode dégradé
       await saveLastValidRate(officialRate);
       console.log(
-        `[EXCHANGE_SERVICE] Taux mis à jour depuis la BCC : ${officialRate} CDF`,
+        `[EXCHANGE_SERVICE] Taux mis à jour depuis la BCC : ${officialRate.toFixed()} CDF`,
       );
-
-      // Mise à jour du cache mémoire
-      memoryCache = { rate: officialRate, timestamp: now };
-      return officialRate;
-    } catch {
-      // Mise à jour du cache mémoire même si l'écriture en DB échoue
-      memoryCache = { rate: officialRate, timestamp: now };
-      return officialRate;
+    } catch (error) {
+      console.error(
+        "[EXCHANGE_SERVICE] Échec d'écriture du cache DB, poursuite sur mémoire.",
+        error,
+      );
     }
+    memoryCache = { rate: officialRate, timestamp: now };
+    return officialRate;
   }
 
   console.warn(
-    "[EXCHANGE_SERVICE] Source BCC indisponible ou invalide. Passage au cache base de données...",
+    "[EXCHANGE_SERVICE] Source BCC indisponible. Rabattement sur le cache DB...",
   );
 
-  // Étape 2 : Repli sur le dernier taux valide stocké en Base de données
+  // Étape 2 : Cache Base de données (L3)
   const cachedRate = await getLastValidRate();
   if (cachedRate && validateRate(cachedRate)) {
     console.log(
-      `[EXCHANGE_SERVICE] Mode dégradé : Taux récupéré du cache DB : ${cachedRate} CDF`,
+      `[EXCHANGE_SERVICE] Mode dégradé (L3 DB utilisé) : ${cachedRate.toFixed()} CDF`,
     );
-
-    // On met en cache mémoire même le taux DB pour soulager la base
     memoryCache = { rate: cachedRate, timestamp: now };
     return cachedRate;
   }
 
-  // Étape 3 : Fallback ultime si la base est vide ou inaccessible
+  // Étape 3 : Fallback d'urgence environnement (L4)
   console.error(
-    `[EXCHANGE_SERVICE] CRITIQUE : Cache indisponible. Application du fallback ENV : ${FALLBACK_RATE} CDF`,
+    `[EXCHANGE_SERVICE] ALERTE CRITIQUE : Panne système globale. Application du Fallback : ${FALLBACK_RATE.toFixed()} CDF`,
   );
-
-  // Note : On ne met pas forcément en cache mémoire le fallback pour forcer une nouvelle tentative au prochain appel
   return FALLBACK_RATE;
 }
 
 /**
- * Convertit de manière sécurisée et arrondie un montant USD en Francs Congolais (CDF).
- * @param amountInUSD Montant unitaire ou total en dollars.
+ * Convertit et arrondit un montant USD en Francs Congolais (CDF).
  */
 export async function convertUSDToCDF(
   amountInUSD: number,
@@ -85,5 +78,55 @@ export async function convertUSDToCDF(
   const rate = await getUSDToCDFRate();
   return rate
     .times(amountInUSD)
-    .toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP); // Arrondi à l'entier le plus proche
+    .toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP);
+}
+/**
+ * Force le rafraîchissement du taux depuis la BCC et met à jour les caches (DB et Mémoire).
+ * Conçu spécifiquement pour être invoqué par le job CRON.
+ */
+export async function forceRefreshExchangeRate(): Promise<ExchangeRate | null> {
+  const now = Date.now();
+  const officialRate = await fetchRate();
+
+  if (officialRate) {
+    try {
+      await saveLastValidRate(officialRate);
+      memoryCache = { rate: officialRate, timestamp: now };
+      return officialRate;
+    } catch (error) {
+      console.error(
+        "[EXCHANGE_SERVICE] Échec d'écriture DB lors du rafraîchissement forcé",
+        error,
+      );
+      // On met quand même à jour la mémoire locale au cas où
+      memoryCache = { rate: officialRate, timestamp: now };
+      return officialRate;
+    }
+  }
+  return null;
+}
+
+/**
+ * Récupération ultra-rapide du taux pour les requêtes publiques.
+ * Parcourt uniquement les caches sans jamais initier de scraping synchrone.
+ * Architecture de lecture seule : Mémoire (L1) ➔ Cache DB (L3) ➔ Fallback .env (L4)
+ */
+export async function getFastUSDToCDFRate(): Promise<ExchangeRate> {
+  const now = Date.now();
+
+  // 1. Vérification de la mémoire locale (L1)
+  if (memoryCache && now - memoryCache.timestamp < MEMORY_CACHE_TTL_MS) {
+    return memoryCache.rate;
+  }
+
+  // 2. Repli immédiat sur la Base de données (L3) - Pas d'appel BCC ici !
+  const cachedRate = await getLastValidRate();
+  if (cachedRate && validateRate(cachedRate)) {
+    // Réapprovisionnement de la mémoire locale pour les requêtes suivantes
+    memoryCache = { rate: cachedRate, timestamp: now };
+    return cachedRate;
+  }
+
+  // 3. Fallback ultime si la DB est inaccessible ou vide (L4)
+  return FALLBACK_RATE;
 }

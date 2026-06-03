@@ -5,3 +5,4 @@ export * from "./exchange-rate-service";
 export * from "./exchange-rate-types";
 export * from "./exchange-rate-constants";
 export * from "./exchange-rate-validator";
+export * from "./exchange-rate-cache";
