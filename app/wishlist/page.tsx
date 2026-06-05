@@ -1,3 +1,6 @@
+// app/wishlist/page.tsx
+// This is a client component for the Wishlist page. It displays the user's saved products and allows them to add all items to the cart or clear the wishlist. It also handles the case when the wishlist is empty, showing a friendly message and a link to the products page.
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -42,7 +45,7 @@ export default function WishlistPage() {
         <h1 className="text-2xl font-semibold text-slate-700">Votre liste est vide</h1>
         <p className="text-slate-500">Vous n'avez pas encore ajouté de coups de cœur.</p>
         <Button asChild className="bg-cyan-600 hover:bg-cyan-700">
-          <Link href="/products">Parcourir la boutique</Link>
+          <Link href="/products">Visitez la boutique</Link>
         </Button>
       </div>
     );
