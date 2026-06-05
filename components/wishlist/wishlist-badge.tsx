@@ -1,6 +1,9 @@
-// 
-// This file defines a React component called `WishlistBadge` that displays a badge with the total number of items in the user's wishlist. The badge is styled using Tailwind CSS classes and includes an icon from the `lucide-react` library. The component uses the `useWishlist` hook to access the total number of items in the wishlist and updates the badge accordingly. The badge is only rendered on the client side to avoid hydration issues with server-side rendering.
-// This component displays a badge with the total number of items in the wishlist. It uses the `useWishlist` hook to get the total number of items and updates the badge accordingly. The badge is only rendered on the client side to avoid hydration issues with server-side rendering.
+// components/wishlist/wishlist-badge.tsx
+// Ce composant React, `WishlistBadge`, affiche un badge avec le nombre total d'articles dans la liste de souhaits de l'utilisateur.
+// Le badge est stylisé avec Tailwind CSS et inclut une icône de `lucide-react`.
+// Il utilise le hook `useWishlist` pour accéder au nombre total d'articles et met à jour le badge en conséquence.
+// Le composant est rendu uniquement côté client pour éviter les problèmes d'hydratation avec le rendu côté serveur.
+// Il est conçu pour être réutilisable dans toute l'application, offrant un moyen cohérent d'afficher le compte de la liste de souhaits.
 
 "use client";
 

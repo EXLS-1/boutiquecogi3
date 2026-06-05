@@ -1,3 +1,7 @@
+// store/use-wishlist.ts
+// This store manages the wishlist items using Zustand with persistence in localStorage. It provides functions to add, remove, toggle items in the wishlist, and to check if an item is already in the wishlist. The store also keeps track of the total number of items for easy access in the UI.
+// The `useWishlist` hook is designed to be used throughout the application to interact with the wishlist state.
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 

@@ -1,3 +1,8 @@
+// components/wishlist/wishlist-button.tsx
+// Ce composant gère l'affichage et l'interaction du bouton de favoris pour chaque produit.
+// Il utilise le store de la wishlist pour vérifier si le produit est déjà dans les favoris et pour basculer son état lors du clic. Le bouton change de style en fonction de son état (actif ou non) et affiche une notification lors de l'ajout d'un produit aux favoris.
+// Le composant est conçu pour être réutilisable dans différentes parties de l'application, comme les pages de produits ou les listes de produits, en acceptant des props pour personnaliser son apparence et son comportement.
+
 "use client";
 
 import React, { useEffect, useState } from "react";
