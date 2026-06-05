@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useMemo } from "react";
@@ -28,7 +30,9 @@ export function Price({
   originalAmount,
   size = "md",
 }: PriceProps) {
-  const { currency: storeCurrency, exchangeRate } = useCurrencyStore();
+  const currencyStore = useCurrencyStore();
+  const storeCurrency = currencyStore.currency;
+  const exchangeRate = (currencyStore as any).exchangeRate ?? 1;
   const activeCurrency = forcedCurrency || storeCurrency;
 
   const formattedPrice = useMemo(() => {
