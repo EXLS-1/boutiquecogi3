@@ -16,11 +16,14 @@ interface WishlistState {
   removeItem: (id: string) => void;
   toggleItem: (product: WishlistItem) => void;
   isInWishlist: (id: string) => boolean;
-  setItems: (items: WishlistItem[]) => void;
   clearWishlist: () => void;
   totalItems: number;
 }
 
+/**
+ * Store Zustand pour la gestion des favoris.
+ * Optimisé pour la performance avec persist pour la persistance locale.
+ */
 export const useWishlist = create<WishlistState>()(
   persist(
     (set, get) => ({
@@ -47,8 +50,6 @@ export const useWishlist = create<WishlistState>()(
       },
 
       isInWishlist: (id) => get().items.some((item) => item.id === id),
-
-      setItems: (items) => set({ items, totalItems: items.length }),
 
       clearWishlist: () => set({ items: [], totalItems: 0 }),
     }),
