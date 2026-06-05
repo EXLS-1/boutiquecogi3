@@ -1,11 +1,14 @@
-
+// components/price/purchase-zone.tsx
+// Ce composant gère la logique de sélection de variantes (taille/couleur) et les actions d'achat pour un produit.
+// Il centralise la gestion du prix final en fonction de la variante sélectionnée, et intègre les interactions d'ajout au panier et d'achat immédiat.
+// La structure est conçue pour être claire et maintenable, avec une séparation nette entre la logique de sélection et les actions d'achat.
 
 "use client";
 
 import React, { useState } from "react";
 import { ShoppingBag, CreditCard, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Price } from "@/components/ui/price";
+import { Price } from "@/components/price/price";
 import useCart from "@/store/use-cart";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";

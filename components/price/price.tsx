@@ -1,4 +1,5 @@
-
+// components/price/price.tsx
+// ce composant gère l'affichage du prix en fonction de la devise active (USD ou CDF) et du taux de change. Il utilise Intl.NumberFormat pour un formatage robuste et localisé, et prend en charge les prix originaux pour les promotions. La conversion est effectuée en fonction de la devise active, avec une logique claire pour passer des cents aux unités de base et vice versa.
 
 "use client";
 
