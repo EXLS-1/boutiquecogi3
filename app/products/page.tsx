@@ -202,23 +202,26 @@ export default async function ProductsPage({
   const totalPages = Math.ceil(totalCount / CATALOG_PAGE_SIZE);
   const hasPrevPage = page > 1;
   const hasNextPage = page < totalPages;
-
-  // Mise à jour des métadonnées pour la pagination SEO
-  metadata.alternates = {
-    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/products`,
-    prev: hasPrevPage
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/products?page=${page - 1}${sort !== 'newest' ? `&sort=${sort}` : ''}${categorySlug !== 'all' ? `&category=${categorySlug}` : ''}${query ? `&q=${query}` : ''}` 
-    const metadataAlternates = metadata.alternates as Metadata['alternates'] & {
-    prev?: string;
-    next?: string;
+  
+  // Construction robuste des URLs de pagination
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+  const createPaginationUrl = (p: number) => {
+    const params = new URLSearchParams();
+    params.set("page", p.toString());
+    if (sort !== "newest") params.set("sort", sort);
+    if (categorySlug !== "all") params.set("category", categorySlug);
+    if (query) params.set("q", query);
+    return `${baseUrl}/products?${params.toString()}`;
   };
 
-  if (hasPrevPage) {
-    metadataAlternates.prev = `${process.env.NEXT_PUBLIC_BASE_URL}/products?page=${page - 1}${sort !== 'newest' ? `&sort=${sort}` : ''}${categorySlug !== 'all' ? `&category=${categorySlug}` : ''}${query ? `&q=${query}` : ''}`;
-  }
-  if (hasNextPage) {
-    metadataAlternates.next = `${process.env.NEXT_PUBLIC_BASE_URL}/products?page=${page + 1}${sort !== 'newest' ? `&sort=${sort}` : ''}${categorySlug !== 'all' ? `&category=${categorySlug}` : ''}${query ? `&q=${query}` : ''}`;
-  }
+  // Note: Dans Next.js App Router, il est préférable d'utiliser generateMetadata 
+  // pour les données dynamiques au lieu de muter l'objet statique exporté.
+  metadata.alternates = {
+    canonical: `${baseUrl}/products`,
+    // Injection sécurisée des balises prev/next
+    ...(hasPrevPage && { prev: createPaginationUrl(page - 1) }),
+    ...(hasNextPage && { next: createPaginationUrl(page + 1) }),
+  } as any;
 
 
 
