@@ -30,8 +30,8 @@ export function Navbar({
         <CurrencySwitcher />
         <Suspense fallback={<div className="h-6 w-6 rounded-full bg-cyan-200 animate-pulse" aria-label="Loading cart" />}>
           <CartIcon />
-          <WishlistBadge />
         </Suspense>
+        <WishlistBadge />
       </div>
 
       <div className="flex items-center gap-4">
