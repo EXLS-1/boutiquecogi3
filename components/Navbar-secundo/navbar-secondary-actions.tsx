@@ -6,6 +6,9 @@
 
 import React from "react";
 import { cn } from "@/lib/utils/utils";
+import { CartBadge } from "@/components/cart/cart-badge";
+import { Price } from "@/components/ui/price";
+import useCart from "@/store/use-cart";
 
 type NavbarActionsProps = {
   children: React.ReactNode;
@@ -17,8 +20,17 @@ type NavbarActionsProps = {
  * Ne contient plus de logique ni d'icône figée.
  */
 export function NavbarActions({ children, className }: NavbarActionsProps) {
+  const items = useCart((state) => state.items);
+  const totalPrice = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
   return (
     <div className={cn("flex items-center gap-4", className)}>
+      {items.length > 0 && (
+        <div className="hidden md:flex flex-col items-end mr-2">
+          <span className="text-[10px] uppercase text-cyan-600 font-bold">Total Panier</span>
+          <Price amount={totalPrice} size="sm" />
+        </div>
+      )}
       {children}
     </div>
   );
