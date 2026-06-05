@@ -22,7 +22,10 @@ export function WishlistButton({ product, showLabel = false, className }: Wishli
   const [mounted, setMounted] = useState(false);
   const { toggleItem, isInWishlist } = useWishlist();
   
-  const active = mounted ? isInWishlist(product.id) : false;
+  // Sécurité : Vérifie l'existence de product avant d'accéder à .id
+  const active = (mounted && product?.id) ? isInWishlist(product.id) : false;
+
+  if (!product) return null; // Un bouton de toggle sans produit n'a pas de sens visuel
 
   useEffect(() => {
     setMounted(true);

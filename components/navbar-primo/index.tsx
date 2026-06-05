@@ -10,6 +10,7 @@ import { NavbarBrand } from "@/components/Navbar-secundo/navbar-secondary-brand"
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import CartIcon from "../cart/cart-icon";
 import { NavbarProfileButton } from "./navbar-profile-button";
+import { WishlistBadge } from "../wishlist/wishlist-badge";
 
 type NavbarProps = {
   logo?: string;
@@ -29,6 +30,7 @@ export function Navbar({
         <CurrencySwitcher />
         <Suspense fallback={<div className="h-6 w-6 rounded-full bg-cyan-200 animate-pulse" aria-label="Loading cart" />}>
           <CartIcon />
+          <WishlistBadge />
         </Suspense>
       </div>
 
