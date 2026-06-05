@@ -4,7 +4,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 import { Search } from "lucide-react";
-import { createUrl } from "@/lib/utils";
+import { createUrl } from "@/lib/utils/utils";
 
 export function NavbarSearch() {
   const searchParams = useSearchParams();

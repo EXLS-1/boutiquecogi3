@@ -1,7 +1,7 @@
 "use client";
 
 import { useUIStore } from "@/store/use-ui-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 export const UIWrapper = ({ children }: { children: React.ReactNode }) => {
   const { isLeftSidebarOpen, isRightSidebarOpen, closeAll } = useUIStore();

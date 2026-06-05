@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import { authClient } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

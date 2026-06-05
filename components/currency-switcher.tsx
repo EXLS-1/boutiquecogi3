@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useCurrencyStore } from "@/store/use-currency-store";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 /**
  * Sélecteur simple pour basculer USD <-> CDF.

@@ -5,7 +5,7 @@ import React, { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import type { NavItem } from "@/types/navbar-secondary";
 
 interface NavbarSecondaryLinksContentProps {

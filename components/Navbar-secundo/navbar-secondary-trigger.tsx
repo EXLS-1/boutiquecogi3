@@ -7,7 +7,7 @@
 
 import React from "react";
 import { Settings, type LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 interface NavbarSecondaryTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /**

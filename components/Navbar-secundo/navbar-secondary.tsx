@@ -6,7 +6,7 @@
 
 import React from "react";
 import { Settings, LayoutGrid } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import { useUIStore } from "@/store/use-ui-store";
 import { NavbarSecondaryTrigger } from "./navbar-secondary-trigger";
 import { NavbarSecondaryLinks } from "./navbar-secondary-links";

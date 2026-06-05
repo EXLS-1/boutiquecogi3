@@ -52,7 +52,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import toast from "react-hot-toast";
 import { zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core";
 import * as commonTransitions from "@zxcvbn-ts/language-common";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 
 import { Button } from "@/components/ui/button";
