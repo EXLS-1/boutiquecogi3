@@ -9,6 +9,7 @@ import VideosCart from "@/components/video-show/videos-cart";
 import SocialNetworks from "@/components/social/social-network";
 import Newsletter from "@/components/newsletter";
 import { prisma } from "@/lib/prisma";
+import { productData } from "@/data/product-data";
 import { generateUUIDv7 } from "@/lib/exchange-rate/exchange-rate-cache";
 import { Product } from "@/types/products";
 
@@ -34,6 +35,26 @@ export default async function Home() {
     recentProducts = products.map(mapCatalogProduct);
   } catch (error) {
     console.error("Erreur lors de la récupération des produits récents:", error);
+    
+    // Fallback : Utilisation des données statiques si la DB est inaccessible
+    const allStaticProducts = Object.values(productData.products).flat();
+    
+    recentProducts = allStaticProducts.slice(0, HOME_PRODUCTS_LIMIT).map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.id, // Utilisation de l'ID comme slug de secours
+      description: p.description,
+      priceUSD: p.price,
+      priceCDF: p.price * 2800, // Taux de conversion statique pour le fallback
+      image: p.image, 
+      imageUrl: p.image,
+      mediaUrls: [p.image],
+      stock: 10,
+      isAvailable: true,
+      category: p.category as any, // Cast local pour compatibilité avec le type global
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })) as unknown as Product[];
   }
 
   /**
