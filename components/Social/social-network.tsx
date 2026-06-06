@@ -14,8 +14,8 @@ export default function SocialNetworks() {
       aria-labelledby="social-networks-title"
       className="
         border-t
-        border-neutral-200
-        bg-neutral-50
+        border-cyan-200
+        bg-cyan-50
         py-20
       "
     >
@@ -37,7 +37,7 @@ export default function SocialNetworks() {
               font-bold
               uppercase
               tracking-wider
-              text-neutral-900
+              text-cyan-400
               md:text-5xl
             "
           >
@@ -48,7 +48,7 @@ export default function SocialNetworks() {
             className="
               mt-4
               text-lg
-              text-neutral-500
+              text-cyan-400
             "
           >
             Restez connecté avec notre communauté

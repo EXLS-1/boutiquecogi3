@@ -1,12 +1,15 @@
 // app/page.tsx
 import { Suspense } from "react";
-
+import { z } from "zod";
 import { Hero } from "@/components/hero/hero";
 import Category from "@/components/category/category";
 import { ProductList } from "@/components/product/product-list";
 import VideosCart from "@/components/video-show/videos-cart";
 import SocialNetworks from "@/components/social/social-network";
-import Contact from "@/components/contact";
+import Newsletter from "@/components/newsletter";
+import { prisma } from "@/lib/prisma";
+import { generateUUIDv7 } from "@/lib/exchange-rate/exchange-rate-cache";
+import { Product } from "@/types/products";
 
 import {
   HOME_PRODUCTS_LIMIT,
@@ -36,14 +39,37 @@ export default async function Home() {
   let recentProducts: Product[] = [];
   
   try {
-    const products = await getRecentProducts(
-      HOME_PRODUCTS_LIMIT
-    );
+    const products = await getRecentProducts(HOME_PRODUCTS_LIMIT);
     recentProducts = products.map(mapCatalogProduct);
   } catch (error) {
     console.error("Erreur lors de la récupération des produits récents:", error);
-    // Optionnel: Redirection vers une page d'erreur ou affichage d'un message vide
   }
+
+  /**
+   * Server Action pour la gestion de la newsletter.
+   * Assure la sécurité et la performance côté serveur.
+   */
+  const handleSubscribe = async (email: string) => {
+    "use server";
+    try {
+      z.string().email().parse(email);
+      
+      // Utilisation d'upsert pour éviter les erreurs si l'email existe déjà
+      // tout en mettant à jour si nécessaire (ou simplement ne rien faire)
+      await (prisma as any).newsletterSubscriber.upsert({
+        where: { email },
+        update: {}, 
+        create: {
+          id: generateUUIDv7(),
+          email,
+        },
+      });
+      
+      return { success: true, message: "Merci de nous avoir rejoints !" };
+    } catch {
+      return { success: false, message: "L'adresse e-mail est invalide." };
+    }
+  };
 
   return (
     <>
@@ -51,7 +77,7 @@ export default async function Home() {
 
       <Category />
 
-      <section className="py-16 bg-white min-h-[300px]"> {/* Ajout d'une hauteur minimale pour le loader */}
+      <section className="py-16 bg-white min-h-75"> {/* Ajout d'une hauteur minimale pour le loader */}
         <div className="max-w-7xl mx-auto px-4">
 
           <h2 className="text-3xl font-playfair font-bold uppercase mb-10 text-center">
@@ -60,7 +86,7 @@ export default async function Home() {
 
           <Suspense fallback={<ProductListLoading />}>
             {recentProducts.length === 0 ? (
-              <p className="text-center text-gray-500 text-lg">Aucun produit disponible pour le moment.</p>
+              <p className="text-center text-cyan-400 text-lg">Aucun produit disponible pour le moment.</p>
             ) : (
               <ProductList
                 products={recentProducts}
@@ -76,7 +102,20 @@ export default async function Home() {
       <VideosCart />
 
       <SocialNetworks />
-      <Contact />
+
+      {/* Section Newsletter adaptée au design system */}
+      <section className="bg-cyan-50 text-cyan-400 border-t border-cyan-200 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <Newsletter 
+              onSubscribe={handleSubscribe}
+              title="NEWSLETTER"
+              description="Recevez nos offres exclusives et soyez informé de nos nouvelles collections avant tout le monde."
+              className="text-center"
+            />
+          </div>
+        </div>
+      </section>
     </>
   );
 }

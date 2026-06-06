@@ -1,3 +1,7 @@
+// copmponents/Newsletter.tsx
+// Newsletter component for newsletter subscription with validation, feedback, and loading state management.
+// composant Newsletter pour l'inscription à une newsletter avec validation, feedback et gestion des états de chargement.
+
 "use client";
 
 import React, { useState, useTransition } from "react";
@@ -222,6 +226,28 @@ export function Newsletter({
       }
     >
       <div className="space-y-4">
+        {status === "success" ? (
+          <div 
+            className="flex flex-col items-center justify-center py-10 px-4 text-center animate-in fade-in zoom-in duration-500 ease-out"
+            role="alert"
+          >
+            <div className="mb-4 rounded-full bg-emerald-100 p-4">
+              <CheckCircle2 className="h-12 w-12 text-emerald-600 animate-bounce" />
+            </div>
+            <h3 className="text-2xl font-bold text-neutral-900 font-playfair">BIENVENUE DANS LE CLUB</h3>
+            <p className="text-neutral-500 mt-2 max-w-sm">
+              {message} Vous recevrez bientôt nos meilleures offres.
+            </p>
+            <Button 
+              variant="link" 
+              onClick={() => setStatus("idle")}
+              className="mt-6 text-neutral-400 hover:text-black transition-colors"
+            >
+              S'inscrire avec une autre adresse
+            </Button>
+          </div>
+        ) : (
+          <>
         {title && (
           <h2
             id="newsletter-title"
@@ -321,7 +347,7 @@ export function Newsletter({
           </div>
 
           {showFeedback &&
-            status !== "idle" && (
+            status === "error" && (
               <div
                 role="alert"
                 aria-live="polite"
@@ -334,27 +360,18 @@ export function Newsletter({
                   px-3
                   py-3
                   text-sm
-                  ${
-                    status ===
-                    "success"
-                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
-                      : "border-red-500/20 bg-red-500/10 text-red-600"
-                  }
+                  border-red-500/20 bg-red-500/10 text-red-600 animate-in slide-in-from-top-2
                 `}
               >
-                {status ===
-                "success" ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                )}
-
+                <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>
                   {message}
                 </span>
               </div>
             )}
         </form>
+          </>
+        )}
 
         {afterForm}
       </div>
