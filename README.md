@@ -1,136 +1,99 @@
-<h1 align="center">Boutique Cogi3</h1>
+# Boutique COGI
 
-## Description du Projet
+Bienvenue sur **Boutique COGI**, une plateforme e-commerce moderne et performante, conçue pour offrir une expérience utilisateur fluide et sécurisée. Ce projet utilise les dernières technologies pour garantir robustesse, scalabilité et facilité de maintenance.
 
-Boutique Cogi3 est une plateforme e-commerce moderne construite avec les dernières technologies. Elle vise à offrir une expérience d'achat fluide et intuitive pour les utilisateurs, tout en fournissant une gestion robuste pour les administrateurs.
+## Fonctionnalités Clés
 
-## 🚀 Stack Technique
+*   **Gestion des Produits :** Catalogue de produits structuré par catégories (femme, homme, enfant, chaussures, sacs, accessoires).
+*   **Authentification Sécurisée :** Système d'authentification robuste basé sur Better-Auth, incluant la gestion des mots de passe oubliés.
+*   **Panier d'Achat :** Fonctionnalité de panier pour une expérience d'achat complète.
+*   **Gestion des Favoris :** Les utilisateurs peuvent sauvegarder leurs produits préférés.
+*   **Journal d'Audit :** Suivi détaillé des actions administrateur pour une meilleure traçabilité et sécurité.
+*   **Upload d'Images Sécurisé :** Gestion des images produits via Supabase Storage avec validation stricte.
+*   **Interface Utilisateur Réactive :** Design moderne et adaptatif grâce à Tailwind CSS v4.
 
-- **Next.js 16.2.6**: Framework React avec App Router et Server Components.
-- **React 19**: Bibliothèque UI avec support des Actions et des Transitions.
-- **TypeScript**: Typage statique strict pour une robustesse maximale.
-- **Tailwind CSS v4**: Moteur de style ultra-rapide et optimisé.
-- **Better-Auth**: Gestion complète des sessions et RBAC (sans Next-Auth).
-- **Prisma 7.8.0**: ORM type-safe pour PostgreSQL.
-- **Zod**: Bibliothèque de validation de schémas.
-- **UUID v7**: Identifiants uniques triables par timestamp pour de meilleures performances d'indexation.
-- **PostgreSQL**: Système de gestion de base de données relationnelle open source.
-- **Supabase Storage**: Stockage de fichiers et médias (S3 compatible).
-- **CinetPay**: Solution de paiement en ligne.
-- **Zustand**: Bibliothèque de gestion d'état.
+## Technologies Utilisées
 
-## 🌟 Fonctionnalités Principales
+*   **Framework :** Next.js 16.2.6 (React)
+*   **Styling :** Tailwind CSS v4
+*   **Authentification :** Better-Auth
+*   **Base de Données :** PostgreSQL (via Prisma ORM)
+*   **ORM :** Prisma 7.8.0
+*   **Stockage Fichiers :** Supabase Storage
+*   **Validation de Schéma :** Zod
+*   **Gestion d'État :** Zustand
+*   **Paiement :** CinetPay
+*   **UUID :** UUID v7 pour des identifiants uniques et ordonnables.
 
-### Pour les Clients
+## Installation et Démarrage
 
-- ✅ **Authentification Sécurisée** - Inscription, connexion, réinitialisation de mot de passe
-- ✅ **Catalogue Produits** - Navigation, filtrage avancé, recherche, recommandations
-- ✅ **Variantes Produits** - Sélection d'attributs (taille, couleur, etc.)
-- ✅ **Panier Persistant** - Synchronisation cross-device via sessions
-- ✅ **Processus de Checkout** - Multi-étapes sécurisé avec validation
-- ✅ **Paiement CinetPay** - Intégration directe et webhooks validés
-- ✅ **Historique Commandes** - Suivi des commandes et détails
-- ✅ **Profil Utilisateur** - Gestion d'adresses, préférences
-- ✅ **Notifications** - Confirmations de commande, suivi d'expédition
-- ✅ **Wishlist** - Sauvegarde de favoris produits
-- ✅ **Avis Produits** - Notes et commentaires vérifiés
+Suivez ces étapes pour configurer et exécuter le projet en local.
 
-### Pour les Administrateurs
+### Prérequis
 
-- ✅ **Dashboard Analytics** - Ventes, revenus, tendances temps réel
-- ✅ **Gestion Catalogue** - CRUD produits, variantes, images
-- ✅ **Gestion Inventaire** - Stock, réservations, transactions
-- ✅ **Gestion Commandes** - Statuts, expéditions, retours
-- ✅ **Gestion Clients** - Listes, segmentation, historiques
-- ✅ **Gestion Paiements** - Transactions, remboursements, litiges
-- ✅ **Audit Logging** - Traçabilité complète des actions
-- ✅ **Gestion Coupon** - Création et suivi des promotions
-- ✅ **Gestion Taxes** - Configuration par région/pays
-- ✅ **Rapports Exportables** - CSV, PDF pour BI
+*   Node.js (version 18 ou supérieure recommandée)
+*   npm ou Yarn
+*   Une instance PostgreSQL
+*   Un compte Supabase pour le stockage des images
 
----
+### 1. Cloner le dépôt
 
-## 🔍 Caractéristiques Techniques
-
-### Performance & Scalabilité
-
-- **Server Components** - Rendu côté serveur par défaut pour réduire JS client
-- **Image Optimization** - Compression, lazy loading via Next.js Image
-- **Edge Caching** - Revalidation intelligente avec revalidatePath()
-- **Database Indexing** - Index stratégiques sur clés fréquemment interrogées
-- **Connection Pooling** - Prisma avec PgBouncer
-- **Zod Parsing** - Validation ultra-rapide côté serveur
-
-### Sécurité
-
-- **HTTPS/TLS** - En production obligatoire
-- **CSRF Protection** - Tokens générés par Better-Auth
-- **XSS Prevention** - Sanitization React + CSP headers
-- **SQL Injection** - Requêtes paramétrées Prisma
-- **Rate Limiting** - À implémenter sur routes sensibles
-- **Secrets Management** - Variables sécurisées en .env.local
-- **Webhook Signature Validation** - CinetPay + timestamp check
-
-### Observabilité
-
-- **Audit Logs** - Toutes actions sensibles tracées
-- **Error Boundaries** - Gestion gracieuse des erreurs UI
-- **Structured Logging** - Format JSON pour stacktraces
-- **Health Check** - Endpoint `/api/health` pour monitoring
-
----
-
-## 💾 Architecture des Données
-
-### Domaines Métier
-
-1. **Authentication** : User, Session, TwoFactor, VerificationToken
-2. **Catalog** : Product, ProductVariant, Category, Review, Tag
-3. **Commerce** : Cart, CartItem, Order, OrderItem, Payment
-4. **Inventory** : InventorySnapshot, InventoryTransaction, StockReservation
-5. **Fulfillment** : Shipment, ShippingMethod, Carrier, Return, Refund
-6. **Business** : Coupon, GiftCard, TaxRate, AuditLog
-
-### Stratégies d'Indexing
-
-```prisma
-// Clés étrangères (automatique)
-@@index([userId, createdAt])
-
-// Requêtes fréquentes
-@@index([categoryId, isArchived, basePrice])
-
-// Recherche par slug
-@@index([slug])
-
-// Composites pour IN/WHERE complexes
-@@index([productId, variantId, createdAt])
+```bash
+git clone https://github.com/votre-utilisateur/boutiquecogi3.git
+cd boutiquecogi3
 ```
 
----
+### 2. Installer les dépendances
 
-## 🧪 Validation des Données
-
-### Zod Schemas
-
-Tous les inputs (formulaires, API) sont validés avec Zod :
-
-```ts
-// lib/validators/product.schema.ts
-export const ProductSchema = z.object({
-  name: z.string().min(3).max(255),
-  description: z.string().min(10),
-  basePrice: z.number().int().positive(),
-  categoryId: z.string().uuid().optional(),
-});
-
-// Usage: await ProductSchema.parseAsync(req.body)
+```bash
+npm install
+# ou
+yarn install
 ```
 
----
+### 3. Configuration des variables d'environnement
 
-## 📝 Contribution
+Créez un fichier `.env` à la racine du projet et configurez les variables suivantes :
+
+```env
+# Base de données PostgreSQL
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+
+# Supabase Storage
+NEXT_PUBLIC_SUPABASE_URL="YOUR_SUPABASE_URL"
+SUPABASE_SERVICE_ROLE_KEY="YOUR_SUPABASE_SERVICE_ROLE_KEY" # Clé de rôle de service pour l'upload côté serveur
+
+# Better-Auth (exemple, ajustez selon votre configuration)
+AUTH_SECRET="YOUR_AUTH_SECRET_VERY_LONG_AND_RANDOM"
+AUTH_URL="http://localhost:3000" # Ou l'URL de déploiement
+```
+
+### 4. Initialisation de la base de données
+
+Appliquez les migrations Prisma et générez le client Prisma :
+
+```bash
+npx prisma migrate dev --name init
+npx prisma generate
+```
+
+### 5. Lancer le serveur de développement
+
+```bash
+npm run dev
 
 ```
 
-```
+Le projet sera accessible à l'adresse `http://localhost:3000`.
+
+## Structure du Projet
+
+Pour une description détaillée de la structure des dossiers et des fichiers, veuillez consulter le fichier `structure.md`. Pour les optimisations de performance, référez-vous à `PERFORMANCE.md`.
+
+## Contribution
+
+Les contributions sont les bienvenues ! Veuillez consulter les directives de contribution (à venir) pour plus d'informations.
+
+## Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
