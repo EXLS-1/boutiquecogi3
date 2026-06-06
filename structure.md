@@ -23,10 +23,22 @@ boutiquecogi3/
 │   └── layout.tsx                   # Layout racine de l'application.
 ├── components/
 │   ├── auth/
+│   │   ├── admin.tsx                # Composant d'administration. 
+│   │   ├── empty-orders.tsx         # Composant affiché lorsqu'il n'y a pas de commandes.
 │   │   ├── forgot-password-form.tsx # Formulaire de mot de passe oublié.
+│   │   ├── order-card.tsx           # Carte d'une commande.
+│   │   ├── order-list.tsx           # Liste des commandes.
+│   │   ├── order-container.tsx      # Conteneur pour les commandes (peut inclure order-list et order-card).
 │   │   ├── profile.tsx              # Composant d'affichage du profil utilisateur.
+│   │   ├── role-guard.tsx           # Composant de garde de rôle (pour la gestion des permissions).
+│   │   ├── sign-in-button.tsx       # Bouton de connexion.
+│   │   ├── sign-in-form.tsx         # Formulaire de connexion.
 │   │   ├── sign-out-button.tsx      # Bouton de déconnexion.
-│   │   └── ...                      # Autres composants liés à l'authentification.
+│   │   ├── sign-up-button.tsx       # Bouton d'inscription.
+│   │   ├── sign-up-form.tsx         # Formulaire d'inscription.
+│   │   ├── signed-up-message.tsx    # Message de reussite d'inscription affiché après l'inscription.
+│   │   ├── social-auth-buttons.tsx  # Boutons d'authentification sociale (Google, Facebook, etc.).
+│   │   └── update-password-form.tsx  # Formulaire de mise à jour de mot de passe.
 │   ├── admin/
 │   │   └── audit-log-viewer.tsx     # Composant pour afficher les journaux d'audit.
 │   ├── ui/                          # Composants UI génériques (shadcn/ui ou personnalisés).
