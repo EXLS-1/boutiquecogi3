@@ -1,4 +1,5 @@
 // app/page.tsx
+
 import { Suspense } from "react";
 import { z } from "zod";
 import { Hero } from "@/components/hero/hero";
@@ -23,16 +24,6 @@ import {
   mapCatalogProduct,
 } from "@/lib/catalog/catalog-mappers";
 
-// Définition de l'interface pour un produit, basée sur le mappage
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  imageUrl: string;
-  isAvailable: boolean;
-}
-
 export const revalidate = 300;
 
 export default async function Home() {
@@ -52,7 +43,7 @@ export default async function Home() {
   const handleSubscribe = async (email: string) => {
     "use server";
     try {
-      z.string().email().parse(email);
+      z.email().parse(email);
       
       // Utilisation d'upsert pour éviter les erreurs si l'email existe déjà
       // tout en mettant à jour si nécessaire (ou simplement ne rien faire)
