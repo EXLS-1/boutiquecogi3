@@ -1,7 +1,7 @@
 import { auth } from "./auth";
 import { headers } from "next/headers";
 
-export type Role = "admin" | "user" | "guest";
+export type Role = "super-admin" | "admin" | "user" | "guest";
 
 /**
  * Récupère le rôle de l'utilisateur actuel
@@ -21,11 +21,11 @@ export async function getCurrentRole(): Promise<Role> {
  */
 export async function validateRole(requiredRole: Role) {
   const role = await getCurrentRole();
-  
-  if (requiredRole === "admin" && role !== "admin") {
+
+  if (requiredRole === "admin" && role !== "admin" && role !== "super-admin") {
     return false;
   }
-  
+
   if (requiredRole === "user" && role === "guest") {
     return false;
   }

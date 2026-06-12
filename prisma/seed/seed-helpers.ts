@@ -1,4 +1,5 @@
 // prisma/seed/seed-helpers.ts
+
 import { generateUUIDv7 } from "../../lib/uuid";
 
 /**
@@ -22,5 +23,3 @@ export function normalizeImage(path: string): string {
   if (path.startsWith("/media/")) return path;
   return `/media${path.startsWith("/") ? path : `/${path}`}`;
 }
-
-export { generateUUIDv7 };

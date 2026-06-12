@@ -9,13 +9,13 @@ export async function seedUsers(prisma: PrismaClient) {
   // On utilise upsert pour éviter les doublons sur l'email
   const admin = await prisma.user.upsert({
     where: { email: "admin@boutiquecogi.com" },
-    update: { role: "admin" },
+    update: { role: "super-admin" },
     create: {
       id: generateUUIDv7(),
       name: "Admin Cogi",
       email: "admin@boutiquecogi.com",
       emailVerified: new Date(),
-      role: "admin",
+      role: "super-admin",
       createdAt: new Date(),
       updatedAt: new Date(),
     },
