@@ -1,10 +1,11 @@
 // prisma/seed/index.ts
+
 import { PrismaClient } from "@prisma/client";
-import productData from "../../data/product-data.json";
 import { seedCategories } from "./categories.seed";
 import { seedRoles } from "./roles.seed";
 import { seedModules } from "./modules.seed";
 import { seedUsers } from "./users.seed";
+import { productData } from "@/data/product-data";
 import { slugify, generateUUIDv7, normalizeImage } from "./seed-helpers";
 
 const prisma = new PrismaClient();
@@ -40,7 +41,7 @@ async function main() {
         name,
         description: String(raw.description || ""),
         basePrice,
-        images: [image],
+        images: image ? [image] : [], // Ensure images is an array of strings
         categoryId,
       },
       create: {
@@ -49,8 +50,8 @@ async function main() {
         slug,
         description: String(raw.description || ""),
         basePrice,
-        currency: "USD",
-        images: [image],
+        currency: "USD", // Default currency
+        images: image ? [image] : [],
         categoryId,
         isFeatured: false,
         isArchived: false,

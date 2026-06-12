@@ -1,4 +1,5 @@
 // prisma/seed/users.seed.ts
+
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "./seed-helpers";
 
@@ -13,7 +14,7 @@ export async function seedUsers(prisma: PrismaClient) {
       id: generateUUIDv7(),
       name: "Admin Cogi",
       email: "admin@boutiquecogi.com",
-      emailVerified: true,
+      emailVerified: new Date(),
       role: "admin",
       createdAt: new Date(),
       updatedAt: new Date(),
