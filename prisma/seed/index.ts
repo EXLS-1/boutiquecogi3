@@ -1,4 +1,5 @@
 // prisma/seed/index.ts
+//
 
 import { PrismaClient } from "@prisma/client";
 import { seedCategories } from "./categories.seed";
@@ -6,7 +7,8 @@ import { seedRoles } from "./roles.seed";
 import { seedModules } from "./modules.seed";
 import { seedUsers } from "./users.seed";
 import { productData } from "@/data/product-data";
-import { slugify, generateUUIDv7, normalizeImage } from "./seed-helpers";
+import { slugify, normalizeImage } from "./seed-helpers";
+import { generateUUIDv7 } from "@/lib/uuid";
 
 const prisma = new PrismaClient();
 
@@ -14,9 +16,10 @@ async function main() {
   console.log("🚀 Démarrage du seed Boutique COGI...");
 
   // 1. Indépendants
-  await seedRoles(prisma);
+  const roleMap = await seedRoles(prisma);
+  const role = roleMap[0] ?? "";
   await seedModules(prisma);
-  await seedUsers(prisma);
+  await seedUsers(prisma, role);
 
   // 2. Catégories (nécessaire pour les produits)
   const categoryMap = await seedCategories(prisma);

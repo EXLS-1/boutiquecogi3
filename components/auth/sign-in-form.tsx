@@ -28,7 +28,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -61,6 +61,30 @@ type SignInFormValues = z.infer<typeof signinSchema>;
 export function SignInForm() {
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // État pour le rate limiting
+  const [attempts, setAttempts] = useState(0);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Gestion du compte à rebours pour le cooldown
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          setAttempts(0); // Réinitialise les tentatives après le délai
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const isLocked = cooldown > 0;
+
   const router = useRouter();
 
   // 2. Initialisation de React Hook Form pour la performance et la validation
@@ -75,26 +99,45 @@ export function SignInForm() {
 
   // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
   const onSubmit = async (data: SignInFormValues) => {
-    await authClient.signIn.email(
-      {
-        email: data.email,
-        password: data.password,
-      },
-      {
-        onRequest: () => {
-          setIsPending(true);
+    if (isLocked) return;
+
+    setIsPending(true);
+    try {
+      await authClient.signIn.email(
+        {
+          email: data.email,
+          password: data.password,
         },
-        onSuccess: () => {
-          toast.success("Connexion réussie !");
-          router.push("/");
-          router.refresh();
-        },
-        onError: (ctx) => {
-          setIsPending(false);
-          toast.error(ctx.error.message || "Identifiants incorrects.");
-        },
-      }
-    );
+        {
+          onSuccess: () => {
+            toast.success("Connexion réussie !");
+            router.push("/");
+            router.refresh();
+          },
+          onError: (ctx) => {
+            setIsPending(false);
+            
+            // Incrémentation des tentatives en cas d'erreur
+            const newAttempts = attempts + 1;
+            setAttempts(newAttempts);
+            
+            if (newAttempts >= 3) {
+              setCooldown(30); // Verrouille pendant 30 secondes après 3 échecs
+              toast.error("Trop de tentatives. Veuillez patienter 30 secondes.");
+            } else {
+            toast.error(ctx.error.message || "Identifiants incorrects.");
+            }
+          },
+        }
+      );
+    } catch (error) {
+      // Capture les exceptions réseau critiques (ex: Failed to fetch, DNS, Timeout)
+      setIsPending(false);
+      console.error("[AUTH_SIGNIN_NETWORK_ERROR]", error);
+      toast.error(
+        "Le serveur est injoignable. Veuillez vérifier votre connexion réseau."
+      );
+    }
   };
 
   return (
@@ -123,7 +166,7 @@ export function SignInForm() {
               type="email"
               placeholder="votre_email@example.com"
               {...register("email")}
-              disabled={isPending} // Désactivation pendant le chargement
+              disabled={isPending || isLocked}
               className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
             {errors.email && (
@@ -145,7 +188,7 @@ export function SignInForm() {
               id="password-signin"
               type={showPassword ? "text" : "password"}
               {...register("password")}
-              disabled={isPending}
+              disabled={isPending || isLocked}
               className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
             {errors.password && (
@@ -156,6 +199,7 @@ export function SignInForm() {
                 id="show-password"
                 checked={showPassword}
                 onCheckedChange={(checked) => setShowPassword(!!checked)}
+                disabled={isLocked}
               />
               <Label htmlFor="show-password" className="text-sm font-normal cursor-pointer text-cyan-700">
                 Afficher le mot de passe
@@ -163,8 +207,12 @@ export function SignInForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full bg-cyan-400 text-white hover:bg-rose-500" disabled={isPending}>
-            {isPending ? "La connexion est en cours..." : "Se connecter"}
+          <Button 
+            type="submit" 
+            className="w-full bg-cyan-400 text-white hover:bg-rose-500" 
+            disabled={isPending || isLocked}
+          >
+            {isPending ? "Connexion..." : isLocked ? `Réessayer dans ${cooldown}s` : "Se connecter"}
           </Button>
 
           <div className="text-center text-sm text-cyan-400">

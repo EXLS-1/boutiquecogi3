@@ -9,8 +9,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion, Transition, useMotionValue } from "motion/react";
-import { cn } from "@/lib/utils";
+import { motion, type Transition, useMotionValue } from "framer-motion";
+import { cn } from "@/lib/utils/utils";
+import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type CarouselContextType = {
@@ -80,6 +81,8 @@ export type CarouselProps = {
   index?: number;
   onIndexChange?: (newIndex: number) => void;
   disableDrag?: boolean;
+  plugins?: any[];
+  opts?: any;
 };
 
 function Carousel({
@@ -89,6 +92,8 @@ function Carousel({
   index: externalIndex,
   onIndexChange,
   disableDrag = false,
+  plugins: _plugins, // Accepté pour compatibilité mais ignoré par Framer
+  opts: _opts,       // Accepté pour compatibilité mais ignoré par Framer
 }: CarouselProps) {
   const [internalIndex, setInternalIndex] = useState<number>(initialIndex);
   const isControlled = externalIndex !== undefined;
@@ -120,13 +125,57 @@ export type CarouselNavigationProps = {
   alwaysShow?: boolean;
 };
 
+function CarouselPrevious({
+  className,
+  variant = "outline",
+  size = "icon",
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  const { index, setIndex } = useCarousel();
+
+  return (
+    <Button
+      variant={variant}
+      size={size}
+      className={cn("pointer-events-auto rounded-full", className)}
+      disabled={index === 0}
+      onClick={() => index > 0 && setIndex(index - 1)}
+      {...props}
+    >
+      <ChevronLeft className="size-4" />
+      <span className="sr-only">Previous slide</span>
+    </Button>
+  );
+}
+
+function CarouselNext({
+  className,
+  variant = "outline",
+  size = "icon",
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  const { index, setIndex, itemsCount } = useCarousel();
+
+  return (
+    <Button
+      variant={variant}
+      size={size}
+      className={cn("pointer-events-auto rounded-full", className)}
+      disabled={index + 1 === itemsCount}
+      onClick={() => index < itemsCount - 1 && setIndex(index + 1)}
+      {...props}
+    >
+      <ChevronRight className="size-4" />
+      <span className="sr-only">Next slide</span>
+    </Button>
+  );
+}
+
 function CarouselNavigation({
   className,
   classNameButton,
   alwaysShow,
 }: CarouselNavigationProps) {
-  const { index, setIndex, itemsCount } = useCarousel();
-
   return (
     <div
       className={cn(
@@ -134,56 +183,8 @@ function CarouselNavigation({
         className
       )}
     >
-      <button
-        type="button"
-        aria-label="Previous slide"
-        className={cn(
-          "pointer-events-auto h-fit w-fit rounded-full bg-zinc-50 p-2 shadow-sm transition-opacity duration-300 dark:bg-zinc-950",
-          alwaysShow
-            ? "opacity-100"
-            : "opacity-0 group-hover/hover:opacity-100",
-          alwaysShow
-            ? "disabled:opacity-40"
-            : "group-hover/hover:disabled:opacity-40",
-          classNameButton
-        )}
-        disabled={index === 0}
-        onClick={() => {
-          if (index > 0) {
-            setIndex(index - 1);
-          }
-        }}
-      >
-        <ChevronLeft
-          className="stroke-zinc-600 dark:stroke-zinc-50"
-          size={16}
-        />
-      </button>
-      <button
-        type="button"
-        className={cn(
-          "pointer-events-auto h-fit w-fit rounded-full bg-zinc-50 p-2 shadow-sm transition-opacity duration-300 dark:bg-zinc-950",
-          alwaysShow
-            ? "opacity-100"
-            : "opacity-0 group-hover/hover:opacity-100",
-          alwaysShow
-            ? "disabled:opacity-40"
-            : "group-hover/hover:disabled:opacity-40",
-          classNameButton
-        )}
-        aria-label="Next slide"
-        disabled={index + 1 === itemsCount}
-        onClick={() => {
-          if (index < itemsCount - 1) {
-            setIndex(index + 1);
-          }
-        }}
-      >
-        <ChevronRight
-          className="stroke-zinc-600 dark:stroke-zinc-50"
-          size={16}
-        />
-      </button>
+      <CarouselPrevious className={classNameButton} />
+      <CarouselNext className={classNameButton} />
     </div>
   );
 }
@@ -312,6 +313,8 @@ export {
   CarouselContent,
   CarouselNavigation,
   CarouselIndicator,
+  CarouselNext,
+  CarouselPrevious,
   CarouselItem,
   useCarousel,
 };
