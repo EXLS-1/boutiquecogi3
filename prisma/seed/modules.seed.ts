@@ -9,14 +9,14 @@ export async function seedModules(prisma: PrismaClient) {
     where: { id: "00000000-0000-4000-8000-000000000001" }, // UUID v4/v7 statique pour le seed
     update: {
       isActive: true,
-      // Le champ est 'price' et de type Int dans schema.prisma
-      price: 500,
+      // Assurez-vous que basePrice est de type Decimal dans votre schema.prisma
+      basePrice: new Prisma.Decimal(500),
     },
     create: {
       id: "00000000-0000-4000-8000-000000000001",
       name: "Livraison standard Kinshasa",
       description: "Livraison sécurisée en 2 à 5 jours ouvrés",
-      price: 500, // Cohérence avec l'objet update
+      basePrice: new Prisma.Decimal(500), // Cohérence avec l'objet update
       isActive: true,
     },
   });

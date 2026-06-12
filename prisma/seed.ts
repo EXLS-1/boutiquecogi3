@@ -1,4 +1,5 @@
 // prisma/seed.ts
+
 import { PrismaClient } from "@prisma/client";
 import { main as runSeed } from "./seed/index";
 
