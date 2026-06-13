@@ -1,3 +1,4 @@
+// components/hero/hero-media.ts
 import { HeroMedia, HeroSlide } from "./hero-types";
 
 const MEDIA_ITEMS: HeroMedia[] = [
@@ -14,7 +15,7 @@ const MEDIA_ITEMS: HeroMedia[] = [
 
 const images = MEDIA_ITEMS.filter(
   (item): item is Extract<HeroMedia, { type: "image" }> =>
-    item.type === "image"
+    item.type === "image",
 );
 
 function createSlidingImageGroups() {

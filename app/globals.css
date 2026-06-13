@@ -1,3 +1,5 @@
+/** app/globals.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700&display=swap');
 
@@ -89,6 +91,7 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
 

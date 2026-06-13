@@ -1,3 +1,4 @@
+// components/category/sac.tsx
 import { CategoryCard } from './category-card'
 
 export default function BoutiqueSac() {

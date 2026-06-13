@@ -1,4 +1,4 @@
-// components/auth/profile.tsx
+// components/navbar-primo/profile.tsx
 // Composant de profil utilisateur,
 // affichant les informations de l'utilisateur connecté.
 "use client";
@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { SignOutButton } from "./sign-out-button";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Mail, User, ShieldCheck } from "lucide-react";
 
 export function Profile() {

@@ -1,4 +1,4 @@
-// /components/currency-switcher.tsx
+// /components/price/currency-switcher.tsx
 "use client";
 
 import { useEffect, useState } from "react";

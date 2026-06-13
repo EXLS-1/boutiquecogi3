@@ -1,3 +1,5 @@
+// components/hero/hero.tsx
+
 "use client";
 
 import { useRef } from "react";

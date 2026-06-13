@@ -1,3 +1,4 @@
+// components/hero/hero-video-slide.tsx
 "use client";
 
 import { HeroVideo } from "./hero-types";

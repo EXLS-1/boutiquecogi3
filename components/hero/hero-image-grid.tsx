@@ -1,3 +1,4 @@
+// components/hero/hero-image-grid.tsx
 "use client";
 
 import Image from "next/image";

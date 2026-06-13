@@ -1,3 +1,5 @@
+// components/video-show/video-player-clientt.tsx
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";

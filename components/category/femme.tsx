@@ -1,3 +1,4 @@
+// components/category/femme.tsx
 import { CategoryCard } from './category-card'
 
 export default function BoutiqueFemme() {
