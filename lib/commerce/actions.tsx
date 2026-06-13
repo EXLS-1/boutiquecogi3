@@ -1,4 +1,4 @@
-//  lib/shopify/actions.tsx
+//  lib/commerce/actions.tsx
 // Ce fichier contient des Server Actions pour les opérations liées au commerce, comme la récupération du panier, des produits et des catégories.
 import { getActiveProducts, getProductCategories } from "@/app/actions/product.actions";
 

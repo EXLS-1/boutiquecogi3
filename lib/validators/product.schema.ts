@@ -1,3 +1,4 @@
+// lib/validators/product.schema.ts
 import { z } from "zod";
 
 export const ProductSchema = z.object({
@@ -12,4 +13,3 @@ export const ProductSchema = z.object({
 });
 
 export type ProductSchemaType = z.infer<typeof ProductSchema>;
-
