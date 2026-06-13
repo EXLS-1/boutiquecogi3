@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { initCinetPayPayment } from "@/lib/cinetpay/client";
-import { createOrderFromCart } from "@/lib/services/order.service";
+import { createOrderFromCart } from "@/lib/orders/services.order";
 
 export async function processCinetPayCheckout(formData: FormData) {
   const session = await auth.api.getSession({
