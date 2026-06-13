@@ -1,6 +1,7 @@
 // lib/mail.ts
 
 import "server-only";
+// @ts-ignore: Missing type declarations for 'resend' package
 import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;

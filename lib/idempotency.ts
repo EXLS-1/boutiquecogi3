@@ -5,7 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { v7 as uuidv7 } from "uuid";
+import { generateUUIDv7 } from "@/lib/uuid";
 
 /**
  * Exécute une logique métier de manière idempotente au sein d'une transaction.
@@ -37,7 +37,7 @@ export async function executeIdempotent<T>(
       // 3. Marquer comme traité
       await tx.idempotencyKey.create({
         data: {
-          id: uuidv7(),
+          id: generateUUIDv7(),
           key: config.key,
           // 'scope' field removed: ensure the IdempotencyKey model does not define a 'scope' property
           route: config.route,

@@ -1,3 +1,4 @@
+// lib/permissions.ts
 import { auth } from "./auth";
 import { headers } from "next/headers";
 

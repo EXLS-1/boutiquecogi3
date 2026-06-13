@@ -1,4 +1,4 @@
-import rawData from "@/data/product-data.json";
+import productData from "@/data/product-data";
 import { Product } from "@/types/products";
 import { prisma } from "@/lib/prisma";
 import { cache } from "react";
@@ -25,17 +25,15 @@ function mapJsonProduct(p: Record<string, unknown>): Product {
   };
 }
 
-function mapDbProduct(
-  p: {
-    id: string;
-    name: string;
-    description: string;
-    basePrice: number;
-    images: string[];
-    category: { slug: string } | null;
-    variants: { sku: string }[];
-  }
-): Product {
+function mapDbProduct(p: {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  images: string[];
+  category: { slug: string } | null;
+  variants: { sku: string }[];
+}): Product {
   const priceUSD = Math.round(p.basePrice / 100);
   const image = p.images[0] ?? "/media/placeholder.webp";
 
