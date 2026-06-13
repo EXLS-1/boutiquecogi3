@@ -1,3 +1,4 @@
+// app/auth/supabase-token/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth"; // Ton instance BetterAuth côté serveur
 import { headers } from "next/headers";

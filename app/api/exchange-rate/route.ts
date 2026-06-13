@@ -1,3 +1,5 @@
+// app/api/exchange-rate/route.ts
+
 import { NextResponse } from "next/server";
 import { getFastUSDToCDFRate } from "@/lib/exchange-rate/exchange-rate-service";
 
