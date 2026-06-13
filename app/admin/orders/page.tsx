@@ -1,3 +1,8 @@
+// app/admin/orders/page.tsx
+
+"use server";
+
+import { format } from "date-fns";
 import { getAllOrdersAdmin } from "@/app/actions/admin/order.admin.actions";
 
 export default async function AdminOrdersPage() {
@@ -15,6 +20,7 @@ export default async function AdminOrdersPage() {
               <th className="px-4 py-3">Articles</th>
               <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">Paiement</th>
+              <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Statut</th>
             </tr>
           </thead>
@@ -30,6 +36,9 @@ export default async function AdminOrdersPage() {
                   {(order.totalAmount / 100).toFixed(2)} {order.currency}
                 </td>
                 <td className="px-4 py-3">{order.paymentStatus}</td>
+                <td className="px-4 py-3">
+                  {format(order.createdAt, "dd/MM/yyyy")}
+                </td>
                 <td className="px-4 py-3">{order.status}</td>
               </tr>
             ))}

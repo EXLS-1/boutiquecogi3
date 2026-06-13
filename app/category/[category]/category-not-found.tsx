@@ -1,4 +1,5 @@
-// app/category/[category]/not-found.tsx
+// app/category/[category]/category-not-found.tsx
+
 import Link from "next/link";
 import { FolderX, ArrowLeft, ShoppingBag } from "lucide-react";
 

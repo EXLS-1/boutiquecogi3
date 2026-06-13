@@ -1,6 +1,8 @@
+// app/admin/layout.tsx
+
 "use client";
 
-import { useIsAdmin } from "@/lib/hooks/use-is-admin";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";

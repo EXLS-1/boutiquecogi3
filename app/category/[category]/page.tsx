@@ -1,3 +1,5 @@
+// app/category/[category]/page.tsx
+
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 

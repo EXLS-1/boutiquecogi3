@@ -1,6 +1,16 @@
+// app/admin/orders/page.tsx
+
+import { Suspense } from "react";
+import { getCategories } from "../actions/category.actions";
+import { getProducts } from "../actions/product.actions";
+
 import { getRecentOrders } from "@/app/actions/order.actions";
 
 export default async function AdminDashboardPage() {
+  const productsResult = await getProducts();
+  const products = productsResult.success ? productsResult.data : [];
+  const categoriesResult = await getCategories();
+  const categories = categoriesResult.success ? categoriesResult.data : [];
   const result = await getRecentOrders(5);
   const orders = result.success ? result.data : [];
 
@@ -13,6 +23,14 @@ export default async function AdminDashboardPage() {
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <p className="text-sm text-zinc-500">Commandes récentes</p>
           <p className="mt-2 text-3xl font-bold text-cyan-900">{orders.length}</p>
+        </div>
+        <div className="rounded-lg border bg-white p-6 shadow-sm">
+          <p className="text-sm text-zinc-500">Produits</p>
+          <p className="mt-2 text-3xl font-bold text-cyan-900">{products.length}</p>
+        </div>
+        <div className="rounded-lg border bg-white p-6 shadow-sm">
+          <p className="text-sm text-zinc-500">Catégories</p>
+          <p className="mt-2 text-3xl font-bold text-cyan-900">{categories.length}</p>
         </div>
       </div>
       <section className="mt-8">

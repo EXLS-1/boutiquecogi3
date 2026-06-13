@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import useCart from "@/store/use-cart";
 import { setDisplayCurrency } from "@/app/actions/currency.actions";
 import { convertFromUSDCents, type DisplayCurrency } from "@/lib/currenc/currency";
-import { processCinetPayCheckout } from "../checkout-action";
+import { processCinetPayCheckout } from "../../actions/checkout.action";
 
 export default function CheckoutClient({ user }: { user: any }) {
   // Les hooks sont désormais parfaitement synchrones au premier niveau

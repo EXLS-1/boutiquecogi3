@@ -1,3 +1,5 @@
+// app/dashboard/page.tsx
+
 import { auth } from "@/lib/auth"; // Ton instance de serveur BetterAuth
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";

@@ -1,3 +1,5 @@
+// app/actions.product.actions.ts
+
 "use server";
 
 import { cache } from "react";
@@ -39,20 +41,18 @@ const productSelect = {
   variants: { select: { sku: true }, take: 1 },
 } as const;
 
-function mapProduct(
-  p: {
-    id: string;
-    name: string;
-    description: string;
-    basePrice: number;
-    images: string[];
-    isFeatured: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    category: { slug: string } | null;
-    variants: { sku: string }[];
-  }
-): ProductSummary {
+function mapProduct(p: {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  images: string[];
+  isFeatured: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  category: { slug: string } | null;
+  variants: { sku: string }[];
+}): ProductSummary {
   return {
     id: p.variants[0]?.sku ?? p.id,
     name: p.name,
@@ -69,7 +69,7 @@ function mapProduct(
 
 export const getActiveProducts = cache(
   async (
-    params: GetActiveProductsParams = {}
+    params: GetActiveProductsParams = {},
   ): Promise<ActionResponse<{ products: ProductSummary[]; total: number }>> => {
     try {
       const { category, limit = 20, featured } = params;
@@ -117,7 +117,7 @@ export const getActiveProducts = cache(
         code: "PRODUCT_FETCH_ERROR",
       };
     }
-  }
+  },
 );
 
 export const getProductByIdAction = cache(
@@ -147,7 +147,7 @@ export const getProductByIdAction = cache(
         code: "PRODUCT_FETCH_ERROR",
       };
     }
-  }
+  },
 );
 
 export const getFeaturedProducts = cache(
@@ -169,7 +169,7 @@ export const getFeaturedProducts = cache(
         code: "FEATURED_FETCH_ERROR",
       };
     }
-  }
+  },
 );
 
 export const getProductCategories = cache(
@@ -192,5 +192,5 @@ export const getProductCategories = cache(
         code: "CATEGORIES_FETCH_ERROR",
       };
     }
-  }
+  },
 );
