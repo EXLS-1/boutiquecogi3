@@ -1,7 +1,7 @@
 {
   "name": "boutiquecogi3",
   "version": "1.0.0",
-  "description": "Next.js E-commerce Application",
+  "description": "E-commerce Application",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -28,7 +28,7 @@
     "@radix-ui/react-label": "^2.1.6",
     "@radix-ui/react-slot": "^1.2.2",
     "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
+    "@supabase/supabase-js": "^2.108.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
