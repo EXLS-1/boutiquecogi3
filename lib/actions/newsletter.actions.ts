@@ -3,8 +3,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { SubscriptionResult } from "@/components/newsletter";
+import { SubscriptionResult } from "@/components/newsletter/newsletter-success.client";
 import { generateUUIDv7 } from "@/lib/uuid";
+import { EmailSchema } from "@/components/newsletter/newsletter.schema";
 
 /**
  * Action serveur robuste pour l'inscription à la newsletter.
@@ -13,6 +14,16 @@ import { generateUUIDv7 } from "@/lib/uuid";
 export async function subscribeToNewsletter(
   email: string,
 ): Promise<SubscriptionResult> {
+  const parsed = EmailSchema.safeParse(email);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Veuillez fournir une adresse e-mail valide.",
+    };
+  }
+
+  const cleanEmail = parsed.data;
+
   try {
     // Vérification de l'existence préalable
     const existing = await prisma.newsletterSubscriber.findUnique({

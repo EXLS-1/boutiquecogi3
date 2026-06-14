@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useUIStore } from "@/store/use-ui-store";
 import { subscribeToNewsletter } from "@/lib/actions/actions/newsletter.actions";
-import { Newsletter } from "@/components/newsletter";
+import { Newsletter } from "@/components/newsletter/newsletter-success.client";
 import toast from "react-hot-toast";
 
 const MENU_LINKS = [

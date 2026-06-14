@@ -7,7 +7,7 @@ import Category from "@/components/category/category";
 import { ProductList } from "@/components/product/product-list";
 import VideosCart from "@/components/video-show/videos-cart";
 import SocialNetworks from "@/components/social/social-network";
-import Newsletter from "@/components/newsletter";
+import Newsletter from "@/components/newsletter/newsletter-success.client";
 import { prisma } from "@/lib/prisma";
 import { productData } from "@/data/product-data";
 import { generateUUIDv7 } from "@/lib/exchange-rate/exchange-rate-cache";
