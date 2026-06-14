@@ -1,4 +1,4 @@
-import productData from "@/data/product-data";
+import { productData } from "@/data/product-data";
 import { Product } from "@/types/products";
 import { prisma } from "@/lib/prisma";
 import { cache } from "react";
@@ -51,9 +51,9 @@ function mapDbProduct(p: {
 }
 
 function getProductsFromJson(): Product[] {
-  return Object.values(rawData.products)
+  return Object.values(productData.products)
     .flat()
-    .map((p) => mapJsonProduct(p as Record<string, unknown>));
+    .map((p) => mapJsonProduct(p as unknown as Record<string, unknown>));
 }
 
 export const getAllProducts = cache(async (): Promise<Product[]> => {
@@ -63,6 +63,7 @@ export const getAllProducts = cache(async (): Promise<Product[]> => {
       include: {
         category: { select: { slug: true } },
         variants: { select: { sku: true }, take: 1 },
+        images: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -86,6 +87,7 @@ export async function getProductById(id: string): Promise<Product | null> {
           include: {
             category: { select: { slug: true } },
             variants: { select: { sku: true }, take: 1 },
+            images: true,
           },
         },
       },
@@ -103,6 +105,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       include: {
         category: { select: { slug: true } },
         variants: { select: { sku: true }, take: 1 },
+        images: true,
       },
     });
 

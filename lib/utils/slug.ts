@@ -8,3 +8,7 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 120);
 }
+
+export function generateSlug(value: string): string {
+  return slugify(value);
+}

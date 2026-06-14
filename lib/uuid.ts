@@ -22,9 +22,11 @@ let sequence = 0;
 // Vérifie support natif UUID v7.
 function supportsNativeUUIDv7(): boolean {
   try {
-    return typeof randomUUID({
-      version: "v7" as never,
-    }) === "string";
+    return (
+      typeof randomUUID({
+        version: "v7",
+      } as any) === "string"
+    );
   } catch {
     return false;
   }
@@ -33,26 +35,18 @@ function supportsNativeUUIDv7(): boolean {
 const HAS_NATIVE_UUID_V7 = supportsNativeUUIDv7();
 
 // Génère UUID v7 monotonic.
-export function generateUUIDv7(
-  timestamp: number = Date.now(),
-): string {
+export function generateUUIDv7(timestamp: number = Date.now()): string {
   if (!Number.isFinite(timestamp)) {
-    throw new TypeError(
-      "Invalid timestamp.",
-    );
+    throw new TypeError("Invalid timestamp.");
   }
 
   if (timestamp < 0) {
-    throw new RangeError(
-      "Timestamp cannot be negative.",
-    );
+    throw new RangeError("Timestamp cannot be negative.");
   }
 
   // Implémentation native Node.js.
   if (HAS_NATIVE_UUID_V7) {
-    return randomUUID({
-      version: "v7" as never,
-    });
+    return randomUUID({ version: "v7" } as any);
   }
 
   /**
@@ -71,46 +65,36 @@ export function generateUUIDv7(
 
   const ts = BigInt(timestamp);
 
-  bytes[0] = Number((ts >> 40n) & 0xffn);
-  bytes[1] = Number((ts >> 32n) & 0xffn);
-  bytes[2] = Number((ts >> 24n) & 0xffn);
-  bytes[3] = Number((ts >> 16n) & 0xffn);
-  bytes[4] = Number((ts >> 8n) & 0xffn);
-  bytes[5] = Number(ts & 0xffn);
+  bytes[0] = Number((ts >> BigInt(40)) & BigInt(0xff));
+  bytes[1] = Number((ts >> BigInt(32)) & BigInt(0xff));
+  bytes[2] = Number((ts >> BigInt(24)) & BigInt(0xff));
+  bytes[3] = Number((ts >> BigInt(16)) & BigInt(0xff));
+  bytes[4] = Number((ts >> BigInt(8)) & BigInt(0xff));
+  bytes[5] = Number(ts & BigInt(0xff));
 
   // Version 7.
-  bytes[6] =
-    ((sequence >> 8) & 0x0f) | VERSION;
+  bytes[6] = ((sequence >> 8) & 0x0f) | VERSION;
   bytes[7] = sequence & 0xff;
 
   // Variant RFC.
-  bytes[8] =
-    (bytes[8] & 0x3f) | VARIANT;
+  bytes[8] = (bytes[8] & 0x3f) | VARIANT;
   return stringify(bytes);
 }
 
-export function validateUUIDv7(
-  uuid: string,
-): boolean {
+export function validateUUIDv7(uuid: string): boolean {
   return UUID_V7_REGEX.test(uuid);
 }
 
-export function extractTimestamp(
-  uuid: string,
-): bigint | null {
+export function extractTimestamp(uuid: string): bigint | null {
   if (!validateUUIDv7(uuid)) {
     return null;
   }
 
-  const hex =
-    uuid.slice(0, 8) +
-    uuid.slice(9, 13);
+  const hex = uuid.slice(0, 8) + uuid.slice(9, 13);
   return BigInt(`0x${hex}`);
 }
 
-function stringify(
-  bytes: Uint8Array,
-): string {
+function stringify(bytes: Uint8Array): string {
   return (
     byteToHex[bytes[0]] +
     byteToHex[bytes[1]] +

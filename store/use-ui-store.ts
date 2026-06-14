@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+// store/use-ui-store.ts
+import { create } from "zustand";
 
 interface UIState {
   isLeftSidebarOpen: boolean;
@@ -13,14 +14,16 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   isLeftSidebarOpen: false,
   isRightSidebarOpen: false,
-  toggleLeftSidebar: () => set((state) => ({ 
-    isLeftSidebarOpen: !state.isLeftSidebarOpen, 
-    isRightSidebarOpen: false // Ferme l'autre pour éviter les conflits
-  })),
-  toggleRightSidebar: () => set((state) => ({ 
-    isRightSidebarOpen: !state.isRightSidebarOpen, 
-    isLeftSidebarOpen: false
-  })),
+  toggleLeftSidebar: () =>
+    set((state) => ({
+      isLeftSidebarOpen: !state.isLeftSidebarOpen,
+      isRightSidebarOpen: false, // Ferme l'autre pour éviter les conflits
+    })),
+  toggleRightSidebar: () =>
+    set((state) => ({
+      isRightSidebarOpen: !state.isRightSidebarOpen,
+      isLeftSidebarOpen: false,
+    })),
   setLeftSidebar: (open: boolean) => set({ isLeftSidebarOpen: open }),
   setRightSidebar: (open: boolean) => set({ isRightSidebarOpen: open }),
   closeAll: () => set({ isLeftSidebarOpen: false, isRightSidebarOpen: false }),
