@@ -12,15 +12,32 @@ datasource db {
 // AUTHENTIFICATION & UTILISATEURS (BetterAuth)
 // =============================================
 
+model Permission {
+  id    String           @id @db.Uuid
+  name  String           @unique
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @db.Uuid // Add an ID field for the join table
+  roleId       String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String     @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permission")
+}
+
 model User {
   id               String           @id @unique @db.Uuid
+  role             String           @default("USER")
+  sessions         Session?
   name             String?
   email            String?          @unique
   emailVerified    DateTime?
   password         String?          @db.Text
   image            String?
-  role             String           @default("USER")
-  sessions         Session[]
   accounts         Account[]
   orders           Order[]
   posts            Post[]
@@ -85,16 +102,18 @@ model Post {
 }
 
 model Session {
-  id           String   @id @db.Uuid
-  sessionToken String   @unique
+  id           String @id @db.Uuid
+  role         Role   @default(USER)
   userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role         Role     @default(USER)
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sessionToken String @unique
+
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("session")

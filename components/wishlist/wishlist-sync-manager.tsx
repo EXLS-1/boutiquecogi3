@@ -9,7 +9,7 @@
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useWishlist } from "@/store/use-wishlist";
-import { syncWishlistAction } from "@/app/actions/wishlist.actions";
+import { syncWishlistAction } from "@/lib/actions/actions/wishlist.actions";
 
 export function WishlistSyncManager() {
   const { data: session } = authClient.useSession();

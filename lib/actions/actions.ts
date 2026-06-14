@@ -1,10 +1,15 @@
-//  lib/commerce/actions.tsx
-// Ce fichier contient des Server Actions pour les opérations liées au commerce, comme la récupération du panier, des produits et des catégories.
-import { getActiveProducts, getProductCategories } from "@/app/actions/product.actions";
+// lib/actions/actions.tsx
+// Ce fichier contient des Server Actions pour les opérations liées au commerce,
+// comme la récupération du panier, des produits et des catégories.
+
+"use server";
+
+import { getActiveProducts } from "@/lib/actions/actions/product.actions";
+import { getCategories as getCategoriesAction } from "@/lib/actions/actions/category.actions"; // Alias pour éviter la récursion
 
 /**
  * Récupère le panier actuel.
- * Pour une robustesse maximale avec Better-Auth, cette fonction devrait 
+ * Pour une robustesse maximale avec Better-Auth, cette fonction devrait
  * vérifier la session utilisateur ou un cookie de panier persistant.
  */
 export async function getCart() {
@@ -27,8 +32,9 @@ export async function getProducts() {
 }
 
 export async function getCategories() {
-  // Utilisation de votre Server Action existante
-  const response = await getProductCategories();
+  // Utilisation de l'action serveur avec transformation pour le front-end public
+  const response = await getCategoriesAction();
   if (!response.success) return [];
-  return response.data;
+  // On retourne uniquement les slugs pour la compatibilité avec le reste du site public
+  return response.data.map((cat) => cat.slug);
 }

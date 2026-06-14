@@ -7,19 +7,19 @@ import { createAuthClient } from "better-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition, createContext, useContext } from "react";
 
-export interface SessionUser {
+export interface User {
   id: string;
+  role: string;
   email: string;
   name: string;
   image?: string | null;
-  emailVerified: boolean;
-  role?: string;
+  emailVerified?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Session {
-  user: SessionUser;
+  user: User;
   token: string;
   expiresAt: Date;
 }
@@ -109,7 +109,6 @@ export function useAuth() {
   };
 
   return {
-    isPending: isPending || isRefreshing,
     isPending: isPending || isRefreshing || isLoading,
     error,
     session,

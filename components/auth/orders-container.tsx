@@ -9,7 +9,7 @@ import { useState, useTransition } from "react";
 import { OrderCardData } from "@/types/order";
 import { OrdersList } from "./order-list";
 import { Button } from "@/components/ui/button";
-import { getPaginatedOrders } from "@/app/actions/order.actions";
+import { getPaginatedOrders } from "@/lib/actions/actions/order.actions";
 import { Loader2, PlusCircle } from "lucide-react";
 import toast from "react-hot-toast";
 

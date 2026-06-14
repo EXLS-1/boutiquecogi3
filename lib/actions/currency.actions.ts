@@ -1,4 +1,4 @@
-// app/actions/currency.actions.ts
+// lib/actions/currency.actions.ts
 
 "use server";
 import { cookies } from "next/headers";

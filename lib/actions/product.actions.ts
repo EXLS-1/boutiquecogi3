@@ -1,4 +1,4 @@
-// app/actions.product.actions.ts
+// lib/actions/product.actions.ts
 
 "use server";
 
@@ -9,7 +9,7 @@ export type ActionResponse<T> =
   | { success: true; data: T }
   | { success: false; error: string; code?: string };
 
-interface GetActiveProductsParams {
+interface GetProductsParams {
   category?: string;
   limit?: number;
   featured?: boolean;
@@ -67,9 +67,9 @@ function mapProduct(p: {
   };
 }
 
-export const getActiveProducts = cache(
+export const getProducts = cache(
   async (
-    params: GetActiveProductsParams = {},
+    params: GetProductsParams = {},
   ): Promise<ActionResponse<{ products: ProductSummary[]; total: number }>> => {
     try {
       const { category, limit = 20, featured } = params;
@@ -110,7 +110,7 @@ export const getActiveProducts = cache(
         },
       };
     } catch (error) {
-      console.error("[getActiveProducts]", error);
+      console.error("[getProducts]", error);
       return {
         success: false,
         error: "Impossible de charger le catalogue pour le moment.",
@@ -167,29 +167,6 @@ export const getFeaturedProducts = cache(
         success: false,
         error: "Impossible de charger les produits en vedette",
         code: "FEATURED_FETCH_ERROR",
-      };
-    }
-  },
-);
-
-export const getProductCategories = cache(
-  async (): Promise<ActionResponse<string[]>> => {
-    try {
-      const categories = await prisma.category.findMany({
-        select: { slug: true },
-        orderBy: { name: "asc" },
-      });
-
-      return {
-        success: true,
-        data: categories.map((c) => c.slug),
-      };
-    } catch (error) {
-      console.error("[getProductCategories]", error);
-      return {
-        success: false,
-        error: "Impossible de charger les catégories",
-        code: "CATEGORIES_FETCH_ERROR",
       };
     }
   },

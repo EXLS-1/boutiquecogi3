@@ -1,10 +1,11 @@
-// app/admin/orders/page.tsx
-
+// app/dashboard/admin/page.tsx
+// This is the main admin dashboard page.
+// cette page est
+ 
 import { Suspense } from "react";
-import { getCategories } from "../actions/category.actions";
-import { getProducts } from "../actions/product.actions";
-
-import { getRecentOrders } from "@/app/actions/order.actions";
+import { getCategories } from "@/lib/actions/category.actions";
+import { getProducts } from "@/lib/actions/product.actions";
+import { getRecentOrders } from "@/lib/actions/order.actions";
 
 export default async function AdminDashboardPage() {
   const productsResult = await getProducts();

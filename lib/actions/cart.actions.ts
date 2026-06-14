@@ -1,4 +1,4 @@
-// app/actions/cart.actions.ts
+// lib/actions/cart.actions.ts
 
 "use server";
 

@@ -4,9 +4,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import useCart from "@/store/use-cart";
-import { setDisplayCurrency } from "@/app/actions/currency.actions";
+import { setDisplayCurrency } from "@/lib/actions/actions/currency.actions";
 import { convertFromUSDCents, type DisplayCurrency } from "@/lib/currenc/currency";
-import { processCinetPayCheckout } from "../../actions/checkout.action";
+import { processCinetPayCheckout } from "../../../lib/actions/actions/checkout.action";
 
 export default function CheckoutClient({ user }: { user: any }) {
   // Les hooks sont désormais parfaitement synchrones au premier niveau

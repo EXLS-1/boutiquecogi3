@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateUserRole } from "@/app/actions/admin/user.admin.actions";
+import { updateUserRole } from "@/lib/actions/actions/admin/user.admin.actions";
 import toast from "react-hot-toast";
 import {
   Table,

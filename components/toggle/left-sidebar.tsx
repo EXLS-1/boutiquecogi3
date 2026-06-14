@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useUIStore } from "@/store/use-ui-store";
-import { subscribeToNewsletter } from "@/app/actions/newsletter.actions";
+import { subscribeToNewsletter } from "@/lib/actions/actions/newsletter.actions";
 import { Newsletter } from "@/components/newsletter";
 import toast from "react-hot-toast";
 

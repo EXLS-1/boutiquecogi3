@@ -1,9 +1,10 @@
-// app/actions/order.actions.ts
+// lib/actions/order.actions.ts
 //  This file contains server-side actions related to order management, such as fetching user orders, retrieving specific order details, and updating order statuses. These actions are designed to be used in Next.js server components or API routes, ensuring secure and efficient data handling with Prisma ORM.
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { OrderCardData, OrderWithItems } from "@/types/order";
+import { OrderCardData, OrderCardItem } from "@/types/order";
 import type { OrderStatus } from "@prisma/client";
 import { getServerSession } from "@/lib/auth/server";
 

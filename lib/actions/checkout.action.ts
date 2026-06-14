@@ -1,4 +1,4 @@
-// app/actions/chackout.actions.ts
+// lib/actions/chackout.actions.ts
 
 "use server";
 
@@ -25,7 +25,8 @@ export async function processCinetPayCheckout(formData: FormData) {
     throw new Error("Le numéro Mobile Money est requis");
   }
 
-  let items: { id: string; name: string; price: number; quantity: number }[] = [];
+  let items: { id: string; name: string; price: number; quantity: number }[] =
+    [];
   try {
     items = JSON.parse(String(rawItems || "[]"));
   } catch {
@@ -37,12 +38,11 @@ export async function processCinetPayCheckout(formData: FormData) {
   }
 
   const transactionId = `COGI-${Date.now()}`;
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   const amount = items.reduce(
     (acc, item) => acc + Number(item.price) * Number(item.quantity),
-    0
+    0,
   );
 
   if (amount <= 0) {
@@ -73,5 +73,7 @@ export async function processCinetPayCheckout(formData: FormData) {
     redirect(payment.data.payment_url);
   }
 
-  throw new Error(payment.message || "Impossible d'initialiser le paiement CinetPay");
+  throw new Error(
+    payment.message || "Impossible d'initialiser le paiement CinetPay",
+  );
 }

@@ -5,7 +5,7 @@
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import useCart from "@/store/use-cart";
-import { syncCartAction } from "@/app/actions/cart.actions";
+import { syncCartAction } from "@/lib/actions/actions/cart.actions";
 
 export function CartSyncManager() {
   const { data: session } = authClient.useSession();

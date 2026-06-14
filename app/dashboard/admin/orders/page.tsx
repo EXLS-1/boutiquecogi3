@@ -3,7 +3,7 @@
 "use server";
 
 import { format } from "date-fns";
-import { getAllOrdersAdmin } from "@/app/actions/admin/order.admin.actions";
+import { getAllOrdersAdmin } from "@/lib/actions/actions/admin/order.admin.actions";
 
 export default async function AdminOrdersPage() {
   const orders = await getAllOrdersAdmin();
