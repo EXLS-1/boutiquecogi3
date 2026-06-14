@@ -4,8 +4,8 @@
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useUIStore } from "@/store/use-ui-store";
-import { subscribeToNewsletter } from "@/lib/actions/actions/newsletter.actions";
-import { Newsletter } from "@/components/newsletter/newsletter-success.client";
+import Newsletter from "@/components/newsletter/newsletter";
+import { subscribeToNewsletter } from "@/lib/actions/newsletter.actions";
 import toast from "react-hot-toast";
 
 const MENU_LINKS = [
@@ -25,7 +25,11 @@ const SOCIAL_LINKS = [
 ];
 
 export const LeftSidebar = () => {
+   const onSubscribe = async (email: string) => {
+      return await subscribeToNewsletter(email);
+    };
   const { isLeftSidebarOpen, setLeftSidebar } = useUIStore();
+ 
 
   return (
     <Sheet open={isLeftSidebarOpen} onOpenChange={setLeftSidebar}>
@@ -52,9 +56,10 @@ export const LeftSidebar = () => {
 
           <hr className="border-slate-200 my-6" />
           <Newsletter
-            showFeedback={false}
-            onSubscribe={subscribeToNewsletter}
-            onSuccess={() => toast.success("Inscription newsletter réussie !")}
+            showFeedback={true}
+            submitLabel="S'inscrire"
+            onSubscribe={onSubscribe}
+            onSuccess={() => toast.success("Inscription à la Newsletter réussie !")}
             onError={(_, message) => toast.error(message)}
           />
           <div className="space-y-4">

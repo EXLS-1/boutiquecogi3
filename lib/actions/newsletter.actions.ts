@@ -3,9 +3,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { SubscriptionResult } from "@/components/newsletter/newsletter-success.client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { EmailSchema } from "@/components/newsletter/newsletter.schema";
+
+export interface SubscriptionResult {
+  success: boolean;
+  message: string;
+}
 
 /**
  * Action serveur robuste pour l'inscription à la newsletter.

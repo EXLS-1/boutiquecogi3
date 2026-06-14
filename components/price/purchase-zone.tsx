@@ -58,7 +58,6 @@ export function PurchaseZone({
 
     addItem({
       id: productId,
-      variantId: selectedVariantId,
       name: productName,
       price: finalPrice,
       image: productImage,

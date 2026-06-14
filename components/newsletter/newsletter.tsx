@@ -19,7 +19,7 @@ export interface NewsletterProps {
   afterForm?: React.ReactNode;
 }
 
-export default async function NewsletterServer({
+export default async function Newsletter({
   title = "Newsletter",
   description = "Inscrivez-vous pour recevoir nos dernières actualités.",
   placeholder = "Votre adresse e-mail",

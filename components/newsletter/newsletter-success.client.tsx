@@ -19,8 +19,8 @@ export function NewsletterSuccess({ message, onReset }: NewsletterSuccessProps) 
       <div className="mb-4 rounded-full bg-emerald-100 p-4">
         <CheckCircle2 className="h-12 w-12 text-emerald-600 animate-bounce" />
       </div>
-      <h3 className="text-2xl font-bold text-neutral-900 font-playfair">
-        BIENVENUE DANS LE CLUB
+      <h3 className="text-4xl font-bold text-neutral-900 font-playfair">
+        Inscription à la Newsletter réussie !
       </h3>
       <p className="text-neutral-500 mt-2 max-w-sm">
         {message} Vous recevrez bientôt nos meilleures offres.
