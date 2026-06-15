@@ -167,6 +167,34 @@ export type Restriction = (typeof RESTRICTIONS)[keyof typeof RESTRICTIONS];
 // ───────────────────────────────────────────
 
 /**
+ * Helper pour générer un objet de permissions complet avec des surcharges.
+ */
+function createPermissions(
+  overrides: Partial<Record<Permission, ToggleState>> = {},
+  defaultState: ToggleState = "OFF",
+): Record<Permission, ToggleState> {
+  const base = Object.fromEntries(
+    Object.values(PERMISSIONS).map((p) => [p, defaultState]),
+  ) as Record<Permission, ToggleState>;
+
+  return { ...base, ...overrides };
+}
+
+/**
+ * Helper pour générer un objet de restrictions complet avec des surcharges.
+ */
+function createRestrictions(
+  overrides: Partial<Record<Restriction, string | ToggleState>> = {},
+  defaultState: string | ToggleState = "OFF",
+): Record<Restriction, string | ToggleState> {
+  const base = Object.fromEntries(
+    Object.values(RESTRICTIONS).map((r) => [r, defaultState]),
+  ) as Record<Restriction, string | ToggleState>;
+
+  return { ...base, ...overrides };
+}
+
+/**
  * Configuration immuable des permissions par défaut.
  * Level 1 = TOUT activé, aucune restriction.
  * Chaque niveau inférieur hérite + peut avoir des restrictions.
@@ -181,35 +209,31 @@ const DEFAULT_ROLE_CONFIG: Record<
 > = {
   [ROLES.SUPER_ADMIN]: {
     level: LEVELS.LEVEL_1,
-    permissions: Object.fromEntries(
-      Object.values(PERMISSIONS).map((p) => [p, "ON" as ToggleState]),
-    ) as Record<Permission, ToggleState>,
-    restrictions: Object.fromEntries(
-      Object.values(RESTRICTIONS).map((r) => [r, "OFF" as ToggleState]),
-    ) as Record<Restriction, string | ToggleState>,
+    permissions: createPermissions({}, "ON"),
+    restrictions: createRestrictions({}, "OFF"),
   },
 
   [ROLES.ADMIN]: {
     level: LEVELS.LEVEL_2,
-    permissions: {
-      ...(Object.fromEntries(
-        Object.values(PERMISSIONS).map((p) => [p, "ON" as ToggleState]),
-      ) as Record<Permission, ToggleState>),
-      [PERMISSIONS.SYSTEM_MAINTENANCE]: "OFF",
-      [PERMISSIONS.SYSTEM_BACKUP]: "OFF",
-      [PERMISSIONS.USERS_IMPERSONATE]: "OFF",
-    },
-    restrictions: {
-      ...(Object.fromEntries(
-        Object.values(RESTRICTIONS).map((r) => [r, "OFF" as ToggleState]),
-      ) as Record<Restriction, string | ToggleState>),
-      [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "ON",
-    },
+    permissions: createPermissions(
+      {
+        [PERMISSIONS.SYSTEM_MAINTENANCE]: "OFF",
+        [PERMISSIONS.SYSTEM_BACKUP]: "OFF",
+        [PERMISSIONS.USERS_IMPERSONATE]: "OFF",
+      },
+      "ON",
+    ),
+    restrictions: createRestrictions(
+      {
+        [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "ON",
+      },
+      "OFF",
+    ),
   },
 
   [ROLES.MANAGER]: {
     level: LEVELS.LEVEL_3,
-    permissions: {
+    permissions: createPermissions({
       [PERMISSIONS.USERS_READ]: "ON",
       [PERMISSIONS.USERS_UPDATE]: "ON",
       [PERMISSIONS.USERS_BAN]: "ON",
@@ -238,24 +262,8 @@ const DEFAULT_ROLE_CONFIG: Record<
       [PERMISSIONS.CONTENT_UPDATE]: "ON",
       [PERMISSIONS.CONTENT_PUBLISH]: "ON",
       [PERMISSIONS.CONTENT_MODERATE]: "ON",
-      // OFF par défaut
-      [PERMISSIONS.USERS_CREATE]: "OFF",
-      [PERMISSIONS.USERS_DELETE]: "OFF",
-      [PERMISSIONS.USERS_IMPERSONATE]: "OFF",
-      [PERMISSIONS.PRODUCTS_DELETE]: "OFF",
-      [PERMISSIONS.PRODUCTS_EXPORT]: "OFF",
-      [PERMISSIONS.ORDERS_CREATE]: "OFF",
-      [PERMISSIONS.ORDERS_DELETE]: "OFF",
-      [PERMISSIONS.CATEGORIES_DELETE]: "OFF",
-      [PERMISSIONS.REPORTS_SCHEDULE]: "OFF",
-      [PERMISSIONS.SETTINGS_UPDATE]: "OFF",
-      [PERMISSIONS.SETTINGS_BILLING]: "OFF",
-      [PERMISSIONS.SETTINGS_ROLES_MANAGE]: "OFF",
-      [PERMISSIONS.SYSTEM_MAINTENANCE]: "OFF",
-      [PERMISSIONS.SYSTEM_BACKUP]: "OFF",
-      [PERMISSIONS.CONTENT_DELETE]: "OFF",
-    },
-    restrictions: {
+    }),
+    restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "100",
       [RESTRICTIONS.MAX_PRODUCTS_PER_USER]: "500",
       [RESTRICTIONS.MAX_STORAGE_MB]: "2048",
@@ -265,18 +273,14 @@ const DEFAULT_ROLE_CONFIG: Record<
       [RESTRICTIONS.CAN_ACCESS_ADVANCED_ANALYTICS]: "ON",
       [RESTRICTIONS.CAN_EXPORT_DATA]: "ON",
       [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "ON",
-      [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "OFF",
-      [RESTRICTIONS.RESTRICTED_TO_DEPARTMENT]: "OFF",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "120",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "12",
-      [RESTRICTIONS.REQUIRE_2FA]: "OFF",
-      [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "ON",
-    },
+    }),
   },
 
   [ROLES.EDITOR]: {
     level: LEVELS.LEVEL_4,
-    permissions: {
+    permissions: createPermissions({
       [PERMISSIONS.PRODUCTS_READ]: "ON",
       [PERMISSIONS.PRODUCTS_UPDATE]: "ON",
       [PERMISSIONS.CATEGORIES_READ]: "ON",
@@ -287,49 +291,22 @@ const DEFAULT_ROLE_CONFIG: Record<
       [PERMISSIONS.CONTENT_CREATE]: "ON",
       [PERMISSIONS.CONTENT_UPDATE]: "ON",
       [PERMISSIONS.CONTENT_PUBLISH]: "ON",
-      // Tout le reste OFF
-      ...Object.fromEntries(
-        Object.values(PERMISSIONS)
-          .filter(
-            (p) =>
-              ![
-                PERMISSIONS.PRODUCTS_READ,
-                PERMISSIONS.PRODUCTS_UPDATE,
-                PERMISSIONS.CATEGORIES_READ,
-                PERMISSIONS.ANALYTICS_READ,
-                PERMISSIONS.MEDIA_UPLOAD,
-                PERMISSIONS.MEDIA_READ,
-                PERMISSIONS.CONTENT_READ,
-                PERMISSIONS.CONTENT_CREATE,
-                PERMISSIONS.CONTENT_UPDATE,
-                PERMISSIONS.CONTENT_PUBLISH,
-              ].includes(p),
-          )
-          .map((p) => [p, "OFF" as ToggleState]),
-      ),
-    } as Record<Permission, ToggleState>,
-    restrictions: {
+    }),
+    restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "20",
-      [RESTMISSIONS.MAX_PRODUCTS_PER_USER]: "100",
+      [RESTRICTIONS.MAX_PRODUCTS_PER_USER]: "100",
       [RESTRICTIONS.MAX_STORAGE_MB]: "512",
       [RESTRICTIONS.MAX_TEAM_MEMBERS]: "5",
       [RESTRICTIONS.CAN_ACCESS_API]: "ON",
-      [RESTRICTIONS.CAN_ACCESS_WEBHOOKS]: "OFF",
-      [RESTRICTIONS.CAN_ACCESS_ADVANCED_ANALYTICS]: "OFF",
-      [RESTRICTIONS.CAN_EXPORT_DATA]: "OFF",
-      [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "OFF",
       [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
-      [RESTRICTIONS.RESTRICTED_TO_DEPARTMENT]: "OFF",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "60",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "8",
-      [RESTRICTIONS.REQUIRE_2FA]: "OFF",
-      [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "OFF",
-    },
+    }),
   },
 
   [ROLES.SUPERVISOR]: {
     level: LEVELS.LEVEL_5,
-    permissions: {
+    permissions: createPermissions({
       [PERMISSIONS.ORDERS_READ]: "ON",
       [PERMISSIONS.ORDERS_UPDATE]: "ON",
       [PERMISSIONS.ORDERS_CANCEL]: "ON",
@@ -339,47 +316,23 @@ const DEFAULT_ROLE_CONFIG: Record<
       [PERMISSIONS.MEDIA_READ]: "ON",
       [PERMISSIONS.CONTENT_READ]: "ON",
       [PERMISSIONS.CONTENT_MODERATE]: "ON",
-      ...Object.fromEntries(
-        Object.values(PERMISSIONS)
-          .filter(
-            (p) =>
-              ![
-                PERMISSIONS.ORDERS_READ,
-                PERMISSIONS.ORDERS_UPDATE,
-                PERMISSIONS.ORDERS_CANCEL,
-                PERMISSIONS.PRODUCTS_READ,
-                PERMISSIONS.ANALYTICS_READ,
-                PERMISSIONS.REPORTS_GENERATE,
-                PERMISSIONS.MEDIA_READ,
-                PERMISSIONS.CONTENT_READ,
-                PERMISSIONS.CONTENT_MODERATE,
-              ].includes(p),
-          )
-          .map((p) => [p, "OFF" as ToggleState]),
-      ),
-    } as Record<Permission, ToggleState>,
-    restrictions: {
+    }),
+    restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "50",
       [RESTRICTIONS.MAX_PRODUCTS_PER_USER]: "50",
       [RESTRICTIONS.MAX_STORAGE_MB]: "256",
-      [RESTRICTIONS.MAX_TEAM_MEMBERS]: "3",
       [RESTRICTIONS.CAN_ACCESS_API]: "ON",
-      [RESTRICTIONS.CAN_ACCESS_WEBHOOKS]: "OFF",
-      [RESTRICTIONS.CAN_ACCESS_ADVANCED_ANALYTICS]: "OFF",
       [RESTRICTIONS.CAN_EXPORT_DATA]: "ON",
-      [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "OFF",
       [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
       [RESTRICTIONS.RESTRICTED_TO_DEPARTMENT]: "ON",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "45",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "8",
-      [RESTRICTIONS.REQUIRE_2FA]: "OFF",
-      [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "OFF",
-    },
+    }),
   },
 
   [ROLES.USER]: {
     level: LEVELS.LEVEL_6,
-    permissions: {
+    permissions: createPermissions({
       [PERMISSIONS.PRODUCTS_READ]: "ON",
       [PERMISSIONS.ORDERS_READ]: "ON",
       [PERMISSIONS.ORDERS_CREATE]: "ON",
@@ -387,40 +340,16 @@ const DEFAULT_ROLE_CONFIG: Record<
       [PERMISSIONS.MEDIA_READ]: "ON",
       [PERMISSIONS.CONTENT_READ]: "ON",
       [PERMISSIONS.SETTINGS_READ]: "ON",
-      ...Object.fromEntries(
-        Object.values(PERMISSIONS)
-          .filter(
-            (p) =>
-              ![
-                PERMISSIONS.PRODUCTS_READ,
-                PERMISSIONS.ORDERS_READ,
-                PERMISSIONS.ORDERS_CREATE,
-                PERMISSIONS.CATEGORIES_READ,
-                PERMISSIONS.MEDIA_READ,
-                PERMISSIONS.CONTENT_READ,
-                PERMISSIONS.SETTINGS_READ,
-              ].includes(p),
-          )
-          .map((p) => [p, "OFF" as ToggleState]),
-      ),
-    } as Record<Permission, ToggleState>,
-    restrictions: {
+    }),
+    restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "5",
       [RESTRICTIONS.MAX_PRODUCTS_PER_USER]: "0",
       [RESTRICTIONS.MAX_STORAGE_MB]: "50",
       [RESTRICTIONS.MAX_TEAM_MEMBERS]: "1",
-      [RESTRICTIONS.CAN_ACCESS_API]: "OFF",
-      [RESTRICTIONS.CAN_ACCESS_WEBHOOKS]: "OFF",
-      [RESTRICTIONS.CAN_ACCESS_ADVANCED_ANALYTICS]: "OFF",
-      [RESTRICTIONS.CAN_EXPORT_DATA]: "OFF",
-      [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "OFF",
       [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
-      [RESTRICTIONS.RESTRICTED_TO_DEPARTMENT]: "OFF",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "20",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "4",
-      [RESTRICTIONS.REQUIRE_2FA]: "OFF",
-      [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "OFF",
-    },
+    }),
   },
 };
 
@@ -643,11 +572,16 @@ export async function getCurrentUserRole(): Promise<Role> {
   });
 
   if (!session?.user) {
-    return ROLES.USER;
+    return ROLES.USER; // Fallback to USER if no session or user
   }
 
-  // Le rôle est stocké dans les métadonnées user de Better-Auth
-  return normalizeRole(session.user.role as string);
+  // Le rôle peut être directement sur user ou dans des métadonnées ; fallback to USER
+  const roleStr =
+    (session.user as any).role ??
+    (session.user as any).metadata?.role ??
+    ROLES.USER;
+
+  return normalizeRole(roleStr as string);
 }
 
 /**
@@ -664,10 +598,14 @@ export async function getCurrentUserWithRole() {
   });
 
   if (!session?.user) {
-    return null;
+    return null; // Return null if no session or user
   }
 
-  const role = normalizeRole(session.user.role as string);
+  const roleStr =
+    (session.user as any).role ??
+    (session.user as any).metadata?.role ??
+    ROLES.USER;
+  const role = normalizeRole(roleStr as string);
 
   return {
     user: session.user,
@@ -804,7 +742,10 @@ export async function getClientRestrictions(
   role: Role,
 ): Promise<Record<Restriction, string | ToggleState>> {
   const restrictions = await resolveEffectiveRestrictions(role);
-  return Object.fromEntries(restrictions);
+  return Object.fromEntries(restrictions) as Record<
+    Restriction,
+    string | ToggleState
+  >;
 }
 
 // ============================================
@@ -852,6 +793,9 @@ export async function getSessionWithUser() {
     session,
     user: session.user,
     userId: session.user.id,
-    role: normalizeRole(session.user.role as string),
+    role: normalizeRole(
+      ((session.user as any).role ??
+        (session.user as any).metadata?.role) as string,
+    ),
   };
 }
