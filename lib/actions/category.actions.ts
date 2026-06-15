@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/server";
-import { PERMISSIONS } from "@/lib/auth/rbac";
+import { PERMISSIONS } from "@/lib/auth/rbac/constants";
 
 export type ActionResponse<T> =
   | { success: true; data: T }

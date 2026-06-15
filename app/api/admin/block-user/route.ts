@@ -5,7 +5,7 @@ import {
   canBlockUser,
   canBlockAdmin,
   canBlockSuperAdmin,
-} from "@/lib/auth/rbac";
+} from "@/lib/auth/rbac/constants";
 
 function getUserRoleFromRequest(req: NextRequest): Role | null {
   // Idem : adapte avec ta logique réelle (JWT, session, etc.)

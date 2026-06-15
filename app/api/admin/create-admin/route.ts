@@ -1,7 +1,7 @@
 // app/api/admin/create-admin/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { canCreateAdmin, Role } from "@/lib/auth/rbac";
+import { canCreateAdmin, Role } from "@/lib/auth/rbac/constants";
 
 // Quant à l'authentification, supposons que tu as un helper :
 // - getUserRoleFromRequest(req): Role | null

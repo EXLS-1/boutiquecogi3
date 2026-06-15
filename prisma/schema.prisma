@@ -18,10 +18,28 @@ model Permission {
   roles RolePermission[]
 }
 
+model RoleConfig {
+  id           String   @id @db.Uuid
+  role         String   @unique // SUPER_ADMIN, ADMIN, etc.
+  level        Int // 1-6
+  // permissions Json     // { "users:read": "ON", "users:delete": "OFF" }
+  description  String?
+  permissions  Json // { "users:read": "ON", "users:delete": "OFF" }
+  permissionId String   @db.Uuid
+  restrictions Json // { "max_daily_orders": "50", "can_access_analytics": "OFF" }
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("role_config")
+}
+
 model RolePermission {
   id           String     @id @db.Uuid // Add an ID field for the join table
   roleId       String     @db.Uuid
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleconfig   RoleConfig @relation(fields: [roleconfigId], references: [id], onDelete: Cascade)
+  roleconfigId String     @db.Uuid
   permissionId String     @db.Uuid
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
@@ -141,10 +159,12 @@ model Account {
 }
 
 enum Role {
-  USER
-  EDITOR
-  ADMIN
   SUPER_ADMIN
+  ADMIN
+  MANAGER
+  EDITOR
+  SUPERVISOR
+  USER
 }
 
 model VerificationToken {

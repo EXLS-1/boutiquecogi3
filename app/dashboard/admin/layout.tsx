@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/auth/server";
-import { PERMISSIONS } from "@/lib/auth/rbac";
+import { PERMISSIONS } from "@/lib/auth/rbac/constants";
 
 export default async function AdminLayout({
   children,

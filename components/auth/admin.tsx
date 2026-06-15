@@ -4,7 +4,7 @@
 // and displays the appropriate content based on their role.
 import Link from "next/link";
 import { getServerSession } from "@/lib/auth/server";
-import { hasPermission } from "@/lib/auth/rbac";
+import { hasPermission } from "@/lib/auth/rbac/constants";
 
 export default async function AdminDashboard() {
   const session = await getServerSession();

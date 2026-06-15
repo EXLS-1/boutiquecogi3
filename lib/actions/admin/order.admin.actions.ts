@@ -4,7 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/server";
-import { PERMISSIONS } from "@/lib/auth/rbac";
+import { PERMISSIONS } from "@/lib/auth/rbac/constants";
 
 export async function getAllOrdersAdmin() {
   await requirePermission(PERMISSIONS.ADMIN_DASHBOARD);

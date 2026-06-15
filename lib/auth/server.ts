@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth"; // Ton instance configurée de Better-Auth
-import { ROLES, Role, Permission, hasPermission } from "./rbac";
+import { ROLES, Role, Permission, hasPermission } from "./rbac/constants";
 
 export async function getServerSession() {
   return await auth.api.getSession({
