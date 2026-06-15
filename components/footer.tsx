@@ -1,14 +1,15 @@
 // components/footer.tsx
+import SocialIcons from "./social/social-icon";
 
 "use client";
 
-import { Button } from "@/components/ui/button";
-
-export const Footer = () => {
+export default function Footer() {
   return (
     <footer className="bg-white text-cyan-500 pt-6 pb-6 border-t border-cyan-500">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+        <div className="flex justify-center mb-4">
+          <SocialIcons />
+        </div>
         <div className="text-center flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-cyan-500 text-lg font-lato">
             &copy; {new Date().getFullYear()} Boutique COGI. Tous droits réservés.

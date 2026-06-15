@@ -17,9 +17,15 @@ export interface NewsletterProps {
   onError?: (email: string, message: string) => void;
   beforeForm?: React.ReactNode;
   afterForm?: React.ReactNode;
+  /** Action d'inscription (Server Action par défaut) */
+  onSubscribe?: (email: string) => Promise<{ success: boolean; message?: string }>;
 }
 
-export default async function Newsletter({
+/**
+ * Composant Newsletter Wrapper.
+ * Peut être utilisé côté serveur ou client.
+ */
+export default function Newsletter({
   title = "Newsletter",
   description = "Inscrivez-vous pour recevoir nos dernières actualités.",
   placeholder = "Votre adresse e-mail",
@@ -31,11 +37,10 @@ export default async function Newsletter({
   onError,
   beforeForm,
   afterForm,
+  onSubscribe: onSubscribeProp,
 }: NewsletterProps) {
-  // On crée une action locale qui appelle subscribeToNewsletter
-  const onSubscribe = async (email: string) => {
-    return await subscribeToNewsletter(email);
-  };
+  // Utilise l'action passée en prop ou l'action par défaut (Server Action)
+  const onSubscribe = onSubscribeProp || subscribeToNewsletter;
 
   return (
     <section

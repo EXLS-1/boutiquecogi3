@@ -1,4 +1,5 @@
 // components/toggle/left-sidebar.tsx
+
 "use client";
 
 import Link from "next/link";
@@ -7,21 +8,15 @@ import { useUIStore } from "@/store/use-ui-store";
 import Newsletter from "@/components/newsletter/newsletter";
 import { subscribeToNewsletter } from "@/lib/actions/newsletter.actions";
 import toast from "react-hot-toast";
+import SocialIcons from "@/components/social/social-icon";
 
 const MENU_LINKS = [
-  { label: "Femme", href: "/category/femme" },
-  { label: "Homme", href: "/category/homme" },
-  { label: "Enfant", href: "/category/enfant" },
+  { label: "Femme", href: "/categories/femme" },
+  { label: "Homme", href: "/categories/homme" },
+  { label: "Enfant", href: "/categories/enfant" },
   { label: "Sac", href: "/category/sac" },
   { label: "Chaussure", href: "/category/chaussure" },
   { label: "Accessoire", href: "/category/accessoire" },
-];
-
-const SOCIAL_LINKS = [
-  { label: "WhatsApp", icon: "fab fa-whatsapp", href: "#" },
-  { label: "Facebook", icon: "fab fa-facebook", href: "#" },
-  { label: "Instagram", icon: "fab fa-instagram", href: "#" },
-  { label: "TikTok", icon: "fab fa-tiktok", href: "#" },
 ];
 
 export const LeftSidebar = () => {
@@ -56,6 +51,8 @@ export const LeftSidebar = () => {
 
           <hr className="border-slate-200 my-6" />
           <Newsletter
+            title="Newsletter Boutiquecogi3"
+            description="Inscrivez-vous pour recevoir nos promotions et actualités."
             showFeedback={true}
             submitLabel="S'inscrire"
             onSubscribe={onSubscribe}
@@ -64,29 +61,45 @@ export const LeftSidebar = () => {
           />
           <div className="space-y-4">
             <Link 
-              href="/settings"
+              href="/account/settings"
               onClick={() => setLeftSidebar(false)}
               className="block font-lato text-sm uppercase tracking-widest text-slate-500 hover:text-rose-500 transition-colors"
             >
               Paramètres
             </Link>
+            <Link 
+              href="/contact"
+              onClick={() => setLeftSidebar(false)}
+              className="block font-lato text-sm uppercase tracking-widest text-slate-500 hover:text-rose-500 transition-colors"
+            >
+              Contact
+            </Link>
+
+            <Link 
+              href="/about"
+              onClick={() => setLeftSidebar(false)}
+              className="block font-lato text-sm uppercase tracking-widest text-slate-500 hover:text-rose-500 transition-colors"
+            >
+              À propos
+            </Link>
+
+            <Link 
+              href="/faq"
+              onClick={() => setLeftSidebar(false)}
+              className="block font-lato text-sm uppercase tracking-widest text-slate-500 hover:text-rose-500 transition-colors"
+            >
+              FAQ
+            </Link>
+
+
           </div>
         </nav>
 
         <footer className="mt-auto">
-          <div className="flex gap-4 mb-6">
-            {SOCIAL_LINKS.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                aria-label={social.label}
-                className="text-sky-500 hover:text-rose-500 transition-colors text-xl"
-              >
-                <i className={social.icon}></i>
-              </a>
-            ))}
+          <div className="flex justify-center gap-4 mb-6">
+            <SocialIcons />
           </div>
-          <p className="text-xs text-slate-400 font-lato">
+          <p className="text-xs text-slate-400 font-lato text-center">
             &copy; {new Date().getFullYear()} Boutique COGI
           </p>
         </footer>
