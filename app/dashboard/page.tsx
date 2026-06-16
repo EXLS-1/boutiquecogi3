@@ -1,206 +1,277 @@
 // app/dashboard/page.tsx
+// Page d'accueil du dashboard - affiche les widgets selon le niveau RBAC
+// HIÉRARCHIE DESCENDANTE : Level 1 = SUPER_ADMIN → Level 6 = CLIENT
 
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import {
-  getCurrentUserWithRole,
-  getClientPermissions,
-  hasPermission,
-  PERMISSIONS,
-} from "@/lib/auth/rbac";
+import { getServerRBACSession } from "@/lib/rbac/server";
+import { prisma } from "@/lib/prisma";
 
-type DashboardPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
-};
+// Widgets par domaine
+import { OverviewStats } from "@/components/dashboard/widgets/overview-stats";
+import { RevenueChart } from "@/components/dashboard/widgets/revenue-chart";
+import { RecentOrders } from "@/components/dashboard/widgets/recent-orders";
+import { TopProducts } from "@/components/dashboard/widgets/top-products";
+import { CategoryBreakdown } from "@/components/dashboard/widgets/category-breakdown";
+import { AuditLogPreview } from "@/components/dashboard/widgets/audit-log-preview";
+import { TreasurySummary } from "@/components/dashboard/widgets/treasury-summary";
+import { MediaStorageStats } from "@/components/dashboard/widgets/media-storage-stats";
+import { WishlistActivity } from "@/components/dashboard/widgets/wishlist-activity";
+import { VideoAnalytics } from "@/components/dashboard/widgets/video-analytics";
+import { PaymentMethodDistribution } from "@/components/dashboard/widgets/payment-method-distribution";
+import { UserActivityHeatmap } from "@/components/dashboard/widgets/user-activity-heatmap";
+import { QuickActions } from "@/components/dashboard/widgets/quick-actions";
 
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const userData = await getCurrentUserWithRole();
-  if (!userData) redirect("/login");
+import { Skeleton } from "@/components/ui/skeleton";
 
-  const permissions = await getClientPermissions(userData.role);
-  const period = normalizeParam(searchParams?.period, "month");
+// =============================================================================
+// FETCHERS DE DONNÉES (Server-Side)
+// =============================================================================
 
-  const [category, order, checkout, wishlist, product, audit, tresory, media, video] =
-    await Promise.all([
-      permissions.includes("categories:read")
-        ? fetchCategoryData(userData.role, period)
-        : null,
-      permissions.includes("orders:read") ? fetchOrderData(userData.role, period) : null,
-      permissions.includes("checkout:read") ? fetchCheckoutData(userData.role, period) : null,
-      permissions.includes("wishlist:read") ? fetchWishlistData(userData.role, period) : null,
-      permissions.includes("products:read") ? fetchProductData(userData.role, period) : null,
-      permissions.includes("system:logs") ? fetchAuditData(userData.role, period) : null,
-      permissions.includes("analytics:read") ? fetchTresoryData(userData.role, period) : null,
-      permissions.includes("media:read") ? fetchMediaData(userData.role, period) : null,
-      permissions.includes("content:read") ? fetchVideoData(userData.role, period) : null,
-    ]);
+async function getOverviewStats() {
+  const [totalOrders, totalRevenue, totalUsers, totalProducts] = await Promise.all([
+    prisma.order.count(),
+    prisma.order.aggregate({ _sum: { totalAmount: true } }),
+    prisma.user.count(),
+    prisma.product.count(),
+  ]);
 
-  const tiles = [
-    makeTile("Category", category),
-    makeTile("Order", order),
-    makeTile("Checkout", checkout),
-    makeTile("Wishlist", wishlist),
-    makeTile("Product", product),
-    makeTile("Audit", audit),
-    makeTile("Tresory", tresory),
-    makeTile("Media", media),
-    makeTile("Video", video),
-  ].filter((tile): tile is NonNullable<typeof tile> => Boolean(tile));
+  return {
+    totalOrders,
+    totalRevenue: totalRevenue._sum.totalAmount || 0,
+    totalUsers,
+    totalProducts,
+    growthRate: 12.5,
+  };
+}
+
+async function getRecentOrders(limit: number = 10) {
+  return prisma.order.findMany({
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: { select: { id: true, email: true, name: true } },
+      items: { include: { product: { select: { name: true, images: true } } } },
+    },
+  });
+}
+
+async function getTopProducts(limit: number = 5) {
+  return prisma.product.findMany({
+    take: limit,
+    orderBy: { soldCount: "desc" },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      soldCount: true,
+      images: true,
+      category: { select: { name: true } },
+    },
+  });
+}
+
+async function getCategoryBreakdown() {
+  return prisma.category.findMany({
+    include: { _count: { select: { products: true } } },
+    orderBy: { products: { _count: "desc" } },
+    take: 8,
+  });
+}
+
+async function getAuditLogs(limit: number = 5) {
+  return prisma.auditLog.findMany({
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { email: true, name: true } } },
+  });
+}
+
+async function getTreasurySummary() {
+  const [pendingRevenue, refundedTotal, todayRevenue] = await Promise.all([
+    prisma.order.aggregate({ where: { status: "pending" }, _sum: { totalAmount: true } }),
+    prisma.order.aggregate({ where: { status: "refunded" }, _sum: { totalAmount: true } }),
+    prisma.order.aggregate({
+      where: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+      _sum: { totalAmount: true },
+    }),
+  ]);
+
+  return {
+    pendingRevenue: pendingRevenue._sum.totalAmount || 0,
+    refundedTotal: refundedTotal._sum.totalAmount || 0,
+    todayRevenue: todayRevenue._sum.totalAmount || 0,
+  };
+}
+
+async function getMediaStats() {
+  const [totalFiles, totalSize, byType] = await Promise.all([
+    prisma.media.count(),
+    prisma.media.aggregate({ _sum: { size: true } }),
+    prisma.media.groupBy({ by: ["type"], _count: { id: true }, _sum: { size: true } }),
+  ]);
+
+  return { totalFiles, totalSize: totalSize._sum.size || 0, byType };
+}
+
+async function getWishlistStats() {
+  const [totalWishlists, totalItems, mostWished] = await Promise.all([
+    prisma.wishlist.count(),
+    prisma.wishlistItem.count(),
+    prisma.product.findMany({
+      take: 5,
+      orderBy: { wishlistCount: "desc" },
+      select: { id: true, name: true, wishlistCount: true, images: true },
+    }),
+  ]);
+
+  return { totalWishlists, totalItems, mostWished };
+}
+
+async function getVideoStats() {
+  return prisma.video.findMany({
+    take: 5,
+    orderBy: { views: "desc" },
+    select: { id: true, title: true, views: true, duration: true, type: true, thumbnail: true },
+  });
+}
+
+async function getPaymentDistribution() {
+  return prisma.order.groupBy({
+    by: ["paymentMethod"],
+    _count: { id: true },
+    _sum: { totalAmount: true },
+  });
+}
+
+// =============================================================================
+// PAGE PRINCIPALE
+// =============================================================================
+
+export default async function DashboardPage() {
+  const session = await getServerRBACSession();
+  if (!session) return null;
+
+  const { level, effectivePermissions } = session;
+  const hasPermission = (p: string) => effectivePermissions.has(p as any);
+
+  // =============================================================================
+  // HIÉRARCHIE DESCENDANTE : Level 1 = SUPER_ADMIN → Level 6 = CLIENT
+  // =============================================================================
+  // Plus le niveau est petit, plus l'utilisateur est haut dans la hiérarchie
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Rôle" value={userData.role} />
-        <StatCard label="Niveau" value={`Level ${userData.level}`} />
-        <StatCard label="Permissions" value={String(permissions.length)} />
-        <StatCard label="Période" value={period} />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-2">
-        {tiles.map((tile) => (
-          <DashboardBlock key={tile.title} title={tile.title} subtitle={tile.subtitle}>
-            {tile.content}
-          </DashboardBlock>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function normalizeParam(value: string | string[] | undefined, fallback: string) {
-  if (Array.isArray(value)) return value[0] ?? fallback;
-  return value ?? fallback;
-}
-
-function makeTile(title: string, data: any) {
-  if (!data) return null;
-  return {
-    title,
-    subtitle: data.subtitle ?? "Données détaillées",
-    content: <pre className="overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">{JSON.stringify(data, null, 2)}</pre>,
-  };
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-semibold">{value}</div>
-    </div>
-  );
-}
-
-function DashboardBlock({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="mb-4">
-        <h3 className="text-base font-semibold">{title}</h3>
-        {subtitle ? <p className="text-sm text-slate-500">{subtitle}</p> : null}
+      {/* En-tête avec info rôle */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Niveau d&apos;accès :{" "}
+            <span className="font-semibold" style={{ color: session.role.color }}>
+              {session.role.name} (Level {level})
+            </span>
+          </p>
+        </div>
+        <QuickActions level={level} permissions={Array.from(effectivePermissions)} />
       </div>
-      {children}
+
+      {/* ================================================================ */}
+      {/* LEVEL 6 : CLIENT - Vue basique (commandes, wishlist) */}
+      {/* ================================================================ */}
+      {level >= 6 && (
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <OverviewStats data={getOverviewStats()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* ================================================================ */}
+      {/* LEVEL 5 : VENDEUR - Vue commerciale (produits, médias) */}
+      {/* ================================================================ */}
+      {level <= 5 && (
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <RevenueChart />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <TopProducts data={getTopProducts()} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <WishlistActivity data={getWishlistStats()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* ================================================================ */}
+      {/* LEVEL 4 : MODÉRATEUR - Gestion contenu & commandes */}
+      {/* ================================================================ */}
+      {level <= 4 && (
+        <section className="grid gap-4 md:grid-cols-2">
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <RecentOrders data={getRecentOrders()} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <CategoryBreakdown data={getCategoryBreakdown()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* ================================================================ */}
+      {/* LEVEL 3 : MANAGER - Analytics avancées & médias */}
+      {/* ================================================================ */}
+      {level <= 3 && (
+        <>
+          <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <MediaStorageStats data={getMediaStats()} />
+            </Suspense>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <VideoAnalytics data={getVideoStats()} />
+            </Suspense>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <PaymentMethodDistribution data={getPaymentDistribution()} />
+            </Suspense>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2">
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <UserActivityHeatmap />
+            </Suspense>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <TreasurySummary data={getTreasurySummary()} />
+            </Suspense>
+          </section>
+        </>
+      )}
+
+      {/* ================================================================ */}
+      {/* LEVEL 2 : ADMIN - Audit & configuration système */}
+      {/* ================================================================ */}
+      {level <= 2 && (
+        <section className="grid gap-4">
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <AuditLogPreview data={getAuditLogs()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* ================================================================ */}
+      {/* LEVEL 1 : SUPER ADMIN - Tout + outils système */}
+      {/* ================================================================ */}
+      {level <= 1 && (
+        <section className="grid gap-4">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
+            <h3 className="text-lg font-semibold text-destructive">
+              Zone Super Admin
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Accès aux outils système, configuration globale et gestion des rôles.
+            </p>
+          </div>
+        </section>
+      )}
     </div>
   );
-}
-
-async function fetchCategoryData(role: string, period: string) {
-  return {
-    subtitle: "Catégories, hiérarchie, taux d’activité, visibilité",
-    role,
-    period,
-    total: 24,
-    active: 19,
-    inactive: 5,
-    topCategories: [],
-  };
-}
-
-async function fetchOrderData(role: string, period: string) {
-  return {
-    subtitle: "Commandes, statuts, montants, anomalies",
-    role,
-    period,
-    total: 312,
-    pending: 41,
-    paid: 238,
-    cancelled: 33,
-  };
-}
-
-async function fetchCheckoutData(role: string, period: string) {
-  return {
-    subtitle: "Panier, conversion, abandons, succès paiement",
-    role,
-    period,
-    conversionRate: "3.8%",
-    abandonmentRate: "41%",
-  };
-}
-
-async function fetchWishlistData(role: string, period: string) {
-  return {
-    subtitle: "Produits favoris, tendances, intentions d'achat",
-    role,
-    period,
-    totalUsers: 88,
-    totalItems: 421,
-  };
-}
-
-async function fetchProductData(role: string, period: string) {
-  return {
-    subtitle: "Catalogue, stock, variantes, prix",
-    role,
-    period,
-    total: 948,
-    lowStock: 27,
-    draft: 12,
-  };
-}
-
-async function fetchAuditData(role: string, period: string) {
-  return {
-    subtitle: "Logs sensibles, actions, traçabilité",
-    role,
-    period,
-    events: 1204,
-    riskSignals: 8,
-  };
-}
-
-async function fetchTresoryData(role: string, period: string) {
-  return {
-    subtitle: "Trésorerie, flux, marges, soldes",
-    role,
-    period,
-    revenue: 182000,
-    expenses: 94000,
-    balance: 88000,
-  };
-}
-
-async function fetchMediaData(role: string, period: string) {
-  return {
-    subtitle: "Images, fichiers, uploads, stockage",
-    role,
-    period,
-    items: 530,
-    storageMb: 18420,
-  };
-}
-
-async function fetchVideoData(role: string, period: string) {
-  return {
-    subtitle: "Vidéos, publications, engagement",
-    role,
-    period,
-    items: 74,
-    published: 61,
-  };
 }
