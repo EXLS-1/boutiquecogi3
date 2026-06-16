@@ -20,8 +20,7 @@ model Permission {
 
 model RoleConfig {
   id       String       @id @db.Uuid
-  role     String       @unique // SUPER_ADMIN, ADMIN, etc.
-  roleRef  Role         @relation(fields: [role], references: [name])
+  role     Role         @unique // SUPER_ADMIN, ADMIN, etc.
   level    Int // 1-6
   // permissions Json     // { "users:read": "ON", "users:delete": "OFF" }
   users    User[]
@@ -57,8 +56,7 @@ model RolePermission {
 
 model User {
   id               String           @id @unique @db.Uuid
-  role             String           @default("USER")
-  roleRef          Role             @relation(fields: [role], references: [name])
+  role             Role             @default(USER)
   roleConfigId     String?          @db.Uuid
   sessions         Session[]
   name             String?
@@ -88,7 +86,6 @@ model User {
   productViews ProductView[]
   auditLogs    AuditLog[]
   roleConfig   RoleConfig?   @relation(fields: [roleConfigId], references: [id])
-  roleConfigId String?       @db.Uuid
 
   @@index([email])
   @@map("user")
@@ -270,16 +267,27 @@ model Address {
 // ==========================================
 
 model Category {
-  id             String    @id @db.Uuid
-  name           String    @unique
-  slug           String    @unique
-  description    String?   @db.Text
+  id          String  @id @db.Uuid
+  name        String  @unique
+  slug        String  @unique
+  description String? @db.Text
+
+  isNavigable        Boolean  @default(true) // true = visible dans le menu
+  managedByRoles     String[] @default([]) // Rôles autorisés à modifier
+  requiredPermission String   @default("products:read")
+  minRoleLevel       Int      @default(6) // Niveau minimum pour admin
+  displayOrder       Int      @default(0)
+
+  products Product[]
+  parentId String?    @db.Uuid
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
   seoTitle       String?
   seoDescription String?
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  products       Product[]
 
   @@index([slug])
   @@map("category")
@@ -464,6 +472,205 @@ model ProductPrice {
   @@map("product_price")
 }
 
+model ProductTypeConfig {
+  id                       String   @id @default(uuid()) @db.Uuid
+  type                     String   @unique
+  label                    String
+  description              String?
+  whoCanCreate             String[]
+  whoCanEdit               String[]
+  whoCanDelete             String[]
+  requiredPermissionCreate String
+  requiredPermissionEdit   String
+  requiredPermissionDelete String
+  minRoleLevelCreate       Int
+  minRoleLevelEdit         Int
+  minRoleLevelDelete       Int
+  maxVariants              Int
+  requiresApproval         Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([type])
+  @@map("product_type_config")
+}
+
+model VariantAttributeConfig {
+  id              String   @id @default(uuid()) @db.Uuid
+  attribute       String   @unique
+  label           String
+  type            String
+  isRequired      Boolean  @default(false)
+  whoCanConfigure String[]
+  minRoleLevel    Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([attribute])
+  @@map("variant_attribute_config")
+}
+
+model AuditEventType {
+  id                       String   @id @default(uuid()) @db.Uuid
+  event                    String   @unique
+  label                    String
+  description              String?
+  severity                 String
+  whoCanView               String[]
+  whoCanDelete             String[]
+  requiredPermissionView   String
+  requiredPermissionDelete String
+  minRoleLevelView         Int
+  minRoleLevelDelete       Int
+  retentionDays            Int
+  isImmutable              Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([event, severity, createdAt])
+  @@map("audit_event_type")
+}
+
+model RetentionPolicy {
+  id              String   @id @default(uuid()) @db.Uuid
+  policyName      String   @unique
+  label           String
+  description     String?
+  retentionDays   Int
+  whoCanConfigure String[]
+  minRoleLevel    Int
+  autoArchive     Boolean  @default(true)
+  autoDelete      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("retention_policy")
+}
+
+model PaymentMethodConfig {
+  id                          String   @id @default(uuid()) @db.Uuid
+  method                      String   @unique
+  label                       String
+  description                 String?
+  provider                    String
+  isActive                    Boolean  @default(true)
+  whoCanConfigure             String[]
+  whoCanViewTransactions      String[]
+  requiredPermissionConfigure String
+  requiredPermissionView      String
+  minRoleLevelConfigure       Int
+  minRoleLevelView            Int
+  requiresApproval            Boolean  @default(false)
+  maxTransactionAmount        Int
+  currency                    String   @default("USD")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("payment_method_config")
+}
+
+model FinancialThreshold {
+  id                         String   @id @default(uuid()) @db.Uuid
+  thresholdName              String   @unique
+  label                      String
+  description                String?
+  amount                     Int
+  currency                   String   @default("USD")
+  whoCanOverride             String[]
+  requiredPermissionOverride String
+  minRoleLevelOverride       Int
+  triggersAlert              Boolean  @default(true)
+  alertRecipients            String[]
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("financial_threshold")
+}
+
+model MediaTypeConfig {
+  id                       String   @id @default(uuid()) @db.Uuid
+  mediaType                String   @unique
+  label                    String
+  description              String?
+  allowedExtensions        String[]
+  maxFileSize              Int
+  maxDimensions            Json?
+  whoCanUpload             String[]
+  whoCanDelete             String[]
+  requiredPermissionUpload String
+  requiredPermissionDelete String
+  minRoleLevelUpload       Int
+  minRoleLevelDelete       Int
+  storageBucket            String
+  isPublic                 Boolean  @default(true)
+  requiresCompression      Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@map("media_type_config")
+}
+
+model StorageQuota {
+  id                    String   @id @default(uuid()) @db.Uuid
+  quotaName             String   @unique
+  label                 String
+  description           String?
+  maxStorageMB          Int
+  maxFiles              Int
+  whoCanConfigure       String[]
+  minRoleLevelConfigure Int
+  appliesToRoles        String[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("storage_quota")
+}
+
+model VideoTypeConfig {
+  id                         String   @id @default(uuid()) @db.Uuid
+  videoType                  String   @unique
+  label                      String
+  description                String?
+  allowedFormats             String[]
+  maxDuration                Int
+  maxFileSize                Int
+  maxResolution              String
+  whoCanUpload               String[]
+  whoCanModerate             String[]
+  whoCanDelete               String[]
+  requiredPermissionUpload   String
+  requiredPermissionModerate String
+  requiredPermissionDelete   String
+  minRoleLevelUpload         Int
+  minRoleLevelModerate       Int
+  minRoleLevelDelete         Int
+  autoTranscode              Boolean  @default(true)
+  generateThumbnails         Boolean  @default(true)
+  isPublicByDefault          Boolean  @default(true)
+  requiresApproval           Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("video_type_config")
+}
+
+model StreamingConfig {
+  id                 String   @id @default(uuid()) @db.Uuid
+  configName         String   @unique
+  label              String
+  description        String?
+  provider           String
+  whoCanConfigure    String[]
+  requiredPermission String
+  minRoleLevel       Int
+  isActive           Boolean  @default(false)
+  settings           Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("streaming_config")
+}
+
 // ==========================================
 // TAXES
 // ==========================================
@@ -594,18 +801,18 @@ model AbandonedCart {
 // ==========================================
 
 model Order {
-  id             String      @id @db.Uuid
-  orderNumber    String      @unique
-  userId         String?     @db.Uuid
-  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status         OrderStatus @default(PENDING)
+  id             String          @id @db.Uuid
+  orderNumber    String          @unique
+  userId         String?         @db.Uuid
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status         OrderStatusEnum @default(PENDING)
   subtotalAmount Int
   taxAmount      Int
   discountAmount Int
   grandTotal     Int
-  shippingCost   Int         @default(0)
+  shippingCost   Int             @default(0)
   totalAmount    Int // (subtotal + shipping + tax - discount) – redondant mais pratique
-  currency       String      @default("USD") @db.VarChar(3)
+  currency       String          @default("USD") @db.VarChar(3)
 
   billingMethodId  String?         @db.Uuid
   billingMethod    BillingMethod?  @relation(fields: [billingMethodId], references: [id])
@@ -661,12 +868,13 @@ model OrderItem {
 }
 
 model OrderStatusHistory {
-  id        String      @id @db.Uuid
-  orderId   String
-  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status    OrderStatus
-  note      String?     @db.Text
-  createdAt DateTime    @default(now())
+  id            String      @id @db.Uuid
+  orderId       String
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status        OrderStatus @relation(fields: [orderStatusId], references: [id])
+  note          String?     @db.Text
+  createdAt     DateTime    @default(now())
+  orderStatusId String      @db.Uuid
 
   @@index([orderId, createdAt])
   @@map("order_status_history")
@@ -687,7 +895,25 @@ model OrderAddress {
   @@map("order_address")
 }
 
-enum OrderStatus {
+model OrderStatus {
+  id                   String               @id @default(uuid()) @db.Uuid
+  status               String               @unique
+  label                String
+  description          String?
+  color                String
+  whoCanSet            String[]
+  requiredPermission   String
+  minRoleLevel         Int
+  isTerminal           Boolean              @default(false)
+  triggersNotification Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  histories            OrderStatusHistory[]
+
+  @@map("order_status")
+}
+
+enum OrderStatusEnum {
   PENDING
   CONFIRMED
   PROCESSING
@@ -709,6 +935,23 @@ model StockReservation {
 
   @@index([expiresAt])
   @@map("stock_reservation")
+}
+
+model CheckoutStep {
+  id                 String   @id @default(uuid()) @db.Uuid
+  step               String   @unique
+  label              String
+  description        String?
+  requiredPermission String
+  minRoleLevel       Int
+  isGuestAllowed     Boolean  @default(false)
+  requiresAuth       Boolean  @default(true)
+  displayOrder       Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([displayOrder])
+  @@map("checkout_step")
 }
 
 // ==========================================
@@ -1072,6 +1315,28 @@ model WishlistItem {
 
   @@unique([wishlistId, productId])
   @@map("wishlist_item")
+}
+
+model WishlistConfig {
+  id                 String   @id @default(uuid()) @db.Uuid
+  feature            String   @unique
+  label              String
+  description        String?
+  requiredPermission String
+  minRoleLevel       Int
+  maxItems           Int
+  isSharedAllowed    Boolean  @default(false)
+  requiresAuth       Boolean  @default(true)
+  managedByRoles     String[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([feature])
+  @@index([requiredPermission, minRoleLevel]) // For efficient permission checks
+  @@index([isSharedAllowed]) // For filtering wishlists that can be shared
+  @@index([requiresAuth]) // For filtering wishlists that require authentication
+  @@index([maxItems]) // For filtering wishlists based on item capacity
+  @@map("wishlist_config")
 }
 
 // ==========================================

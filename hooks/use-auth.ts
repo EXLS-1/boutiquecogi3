@@ -1,14 +1,16 @@
-// /hooks/use-auth.ts
+// hooks/use-auth.ts
 "use client";
 
-import { authClient } from "@/lib/auth/client";
+import { useRBAC } from "@/hooks/rbac/use-rbac";
 
 export function useAuth() {
-  const session = authClient.useSession();
+  const { isLoading, isAuthenticated, role, level } = useRBAC();
 
   return {
-    user: session.data?.user ?? null,
-    isLoading: session.isPending,
-    isAuthenticated: !!session.data?.user,
+    user: null, // Récupéré via Better-Auth direct si besoin
+    isLoading,
+    isAuthenticated,
+    role,
+    level,
   };
 }
