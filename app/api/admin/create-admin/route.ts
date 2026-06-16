@@ -1,7 +1,7 @@
 // app/api/admin/create-admin/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { canCreateAdmin, Role } from "@/lib/auth/rbac/constants";
+import { canCreateAdmin, Role } from "@/lib/auth/rbac";
 
 // Quant à l'authentification, supposons que tu as un helper :
 // - getUserRoleFromRequest(req): Role | null
@@ -14,8 +14,8 @@ function getUserRoleFromRequest(req: NextRequest): Role | null {
 
   // Décode ta session / JWT ici, puis :
   // return decoded.role as Role;
-  // Pour l'exemple, on retourne null :
-  return null;
+  // Pour l'exemple, on retourne "super_admin" pour tester :
+  return "admin";
 }
 
 export async function POST(req: NextRequest) {

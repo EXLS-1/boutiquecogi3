@@ -2,32 +2,31 @@
 // ============================================
 // Layout protégé — Server Component
 // ============================================
-import { headers } from "next/headers";
-import * as auth from "@/lib/auth";
 
-import { getCurrentUserWithRole, requireMinLevel, ROLES } from "@/lib/auth/rbac";
+import { getCurrentUserWithRole, requireMinLevel, getRoleLevel, ROLES } from "@/lib/auth/rbac";
 import { redirect } from "next/navigation";
-import AdminSidebar from "./_components/admin-sidebar";
+import { RightSidebar } from "@/components/toggle/right-sidebar";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUserWithRole();
   
-  const headersList = headers();
-  const session = await auth.api.getSession({ 
-      headers: headersList,
-    });
-    // Redirige si niveau > 2 (seuls Super Admin et Admin)
-
-  if (!session?.user) {
+  // Redirect if user is not authenticated
+  if (!user) {
     redirect("/auth/sign-in");
   }
-  await requireMinLevel(ROLES.ADMIN.level, session.user.role);
+  
+  // Vérifie si le niveau de l'utilisateur actuel satisfait l'exigence minimale pour ADMIN.
+  // Passe le rôle de l'utilisateur déjà obtenu pour éviter de refetch la session dans requireMinLevel.
+  await requireMinLevel(getRoleLevel(ROLES.ADMIN), "/unauthorized", user.role);
   return (
     <div className="admin-layout">
-      <AdminSidebar />
+      {/* RightSidebar component, assuming it's a client component or handles its own state */}
+      <RightSidebar />
+      {/* Main content area for the dashboard */}
       <main>{children}</main>
     </div>
   );

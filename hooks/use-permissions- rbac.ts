@@ -1,4 +1,4 @@
-// /hooks/usePermissions.ts
+// /hooks/use-permissions-rbac.ts
 "use client";
 
 import { useCallback } from "react";

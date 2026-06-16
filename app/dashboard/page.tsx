@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"; // Ton instance de serveur BetterAuth
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { UserProfile } from "@/components/auth/user-profile";
+import { Profile } from "@/components/auth/profile";
 
 export default async function DashboardPage() {
   // 1. Vérification de la session côté serveur (Ultra performant)
@@ -13,7 +13,7 @@ export default async function DashboardPage() {
 
   // 2. Redirection stricte si non authentifié
   if (!session) {
-    redirect("/auth/login");
+    redirect("/app/auth/sign-in");
   }
 
   return (
@@ -21,10 +21,10 @@ export default async function DashboardPage() {
       <h1 className="mb-8 text-3xl font-bold text-Cyan-900">Votre Tableau de Bord</h1>
       
       {/* 3. Injection des données utilisateur dans le composant client */}
-      <UserProfile user={session.user} />
+      <Profile user={session.user} />
       
       <div className="mt-8 text-sm text-muted-foreground">
-        Dernière connexion : {new Date(session.session.createdAt).toLocaleDateString()}
+        Dernière connexion : {new Date(session.session.createdAt).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "medium" })}
       </div>
     </div>
   );

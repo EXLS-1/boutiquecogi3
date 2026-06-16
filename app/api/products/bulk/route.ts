@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Permission check par action ──
-    const permissionMap: Record<string, string> = {
+    const permissionMap: Record<string, typeof PERMISSIONS[keyof typeof PERMISSIONS]> = {
       delete: PERMISSIONS.PRODUCTS_DELETE,
       activate: PERMISSIONS.PRODUCTS_UPDATE,
       deactivate: PERMISSIONS.PRODUCTS_UPDATE,
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       export: PERMISSIONS.PRODUCTS_EXPORT,
     };
 
-    if (!(await hasPermission(role, permissionMap[action]))) {
+    if (!(await hasPermission(role, permissionMap[action] as any))) {
       return NextResponse.json(
         { error: "Forbidden", code: "INSUFFICIENT_PERMISSIONS" },
         { status: 403 },

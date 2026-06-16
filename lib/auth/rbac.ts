@@ -5,12 +5,14 @@
 // Ce fichier est PUREMENT server-side. Aucun 'use client'.
 // Il est importé uniquement dans : Server Components, Server Actions, Route Handlers, Middleware.
 
+"use server";
+
 import { betterAuth } from "better-auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth"; // ton instance Better-Auth
+import { auth } from "@/lib/auth";
 
 // ───────────────────────────────────────────
 // 1. TYPES & CONSTANTS
@@ -654,13 +656,17 @@ export async function requireAllPermissions(
 /**
  * Guard pour Server Component : redirige si niveau trop bas.
  */
-export async function requireMinLevel(
+export async function requireMinLevel( // Ajout de currentRole comme paramètre optionnel
   minLevel: number,
   redirectTo: string = "/unauthorized",
+  currentRole?: Role,
 ): Promise<Role> {
-  const role = await getCurrentUserRole();
+  // Utilise le rôle fourni ou le récupère si non spécifié
+  const role = currentRole || (await getCurrentUserRole());
 
-  if (getRoleLevel(role) > minLevel) {
+  const actualLevel = getRoleLevel(role);
+
+  if (actualLevel > minLevel) {
     redirect(redirectTo);
   }
 
