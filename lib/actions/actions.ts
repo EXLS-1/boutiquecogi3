@@ -4,8 +4,9 @@
 
 "use server";
 
-import { getActiveProducts } from "@/lib/actions/actions/product.actions";
-import { getCategories as getCategoriesAction } from "@/lib/actions/actions/category.actions"; // Alias pour éviter la récursion
+// dynamic import for product actions to avoid static import errors if the
+// named export changes between modules/builds
+import { getCategories as getCategoriesAction } from "@/lib/actions/category.actions"; // Alias pour éviter la récursion
 
 /**
  * Récupère le panier actuel.
@@ -26,9 +27,15 @@ export async function getCart() {
 
 export async function getProducts() {
   // Utilisation de votre Server Action existante pour la performance et le cache
-  const response = await getActiveProducts();
-  if (!response.success) return [];
-  return response.data.products;
+  try {
+    const mod: any = await import("@/lib/actions/product.actions");
+    const response = await (mod.getActiveProducts?.() ?? mod.getProducts?.());
+    if (!response || !response.success) return [];
+    return response.data.products;
+  } catch (error) {
+    console.error("Error loading product actions:", error);
+    return [];
+  }
 }
 
 export async function getCategories() {

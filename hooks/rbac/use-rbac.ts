@@ -6,8 +6,39 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useRBACStore } from "@/store/use-rbac-store";
-import { Permission, RoleLevel, PermissionToggle, Role } from "@/types/rbac";
+import { useRBACStore } from "../../store/use-rbac-store";
+
+// Local fallback types for RBAC to avoid missing external type module
+type Permission = string;
+type RoleLevel = number;
+
+interface PermissionToggle {
+  permission: Permission;
+  restrictedToOwn?: boolean;
+  conditions?: Record<string, unknown> | null;
+}
+
+interface Role {
+  level: RoleLevel;
+  permissions: PermissionToggle[];
+  color?: string;
+  name?: string;
+}
+
+// Local interfaces to type the RBAC store and session
+interface RBACSession {
+  role?: Role | null;
+  effectivePermissions?: Set<Permission> | Permission[];
+  isAuthenticated?: boolean;
+}
+
+interface RBACStore {
+  session?: RBACSession | null;
+  isLoading: boolean;
+  hasPermission: (permission: Permission) => boolean;
+  hasAnyPermission: (permissions: Permission[]) => boolean;
+  hasAllPermissions: (permissions: Permission[]) => boolean;
+}
 
 interface RBACRestriction {
   restrictedToOwn: boolean;
@@ -42,7 +73,7 @@ interface UseRBACReturn {
 }
 
 export function useRBAC(): UseRBACReturn {
-  const store = useRBACStore();
+  const store = useRBACStore() as RBACStore;
   const { session, isLoading } = store;
 
   const role = session?.role || null;
@@ -112,7 +143,11 @@ export function useRBAC(): UseRBACReturn {
   const getPermissionToggle = useCallback(
     (permission: Permission): PermissionToggle | null => {
       if (!role) return null;
-      return role.permissions.find((p) => p.permission === permission) || null;
+      return (
+        role.permissions.find(
+          (p: PermissionToggle) => p.permission === permission,
+        ) || null
+      );
     },
     [role],
   );

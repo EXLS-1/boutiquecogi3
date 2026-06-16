@@ -4,10 +4,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/server";
-import { PERMISSIONS } from "@/lib/auth/rbac/constants";
+import { PERMISSIONS } from "@/lib/auth/rbac";
 
 export async function getAllOrdersAdmin() {
-  await requirePermission(PERMISSIONS.ADMIN_DASHBOARD);
+  await requirePermission(PERMISSIONS.ORDERS_READ);
 
   return prisma.order.findMany({
     include: {
