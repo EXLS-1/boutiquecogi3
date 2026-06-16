@@ -6,7 +6,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useRBACStore } from "@/stores/rbac-store";
+import { useRBACStore } from "@/store/use-rbac-store";
 import { Permission, RoleLevel, PermissionToggle, Role } from "@/types/rbac";
 
 interface RBACRestriction {
@@ -46,7 +46,7 @@ export function useRBAC(): UseRBACReturn {
   const { session, isLoading } = store;
 
   const role = session?.role || null;
-  const level = session?.level || null;
+  const level = session?.role?.level || null;
   const permissions = useMemo(
     () => Array.from(session?.effectivePermissions || []),
     [session?.effectivePermissions],
