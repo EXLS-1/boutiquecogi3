@@ -1,14 +1,82 @@
 // prisma/seed/roles.seed.ts
-
 import { PrismaClient } from "@prisma/client";
+import { generateUUIDv7 } from "@/lib/uuid";
 
+// ───────────────────────────────────────────
+// CONFIGURATION CANONIQUE RBAC — 6 NIVEAUX
+// ───────────────────────────────────────────
+
+export const ROLE_DEFINITIONS = [
+  {
+    name: "SUPER_ADMIN",
+    level: 1,
+    description: "Contrôle total sans restriction. Peut tout voir, tout modifier, tout supprimer.",
+    isSystem: true,
+  },
+  {
+    name: "ADMIN",
+    level: 2,
+    description: "Administration globale sauf maintenance système et impersonation.",
+    isSystem: true,
+  },
+  {
+    name: "MANAGER",
+    level: 3,
+    description: "Gestion opérationnelle : produits, commandes, équipe, analytics.",
+    isSystem: true,
+  },
+  {
+    name: "EDITOR",
+    level: 4,
+    description: "Création et modification de contenu, médias, catalogue lecture seule.",
+    isSystem: true,
+  },
+  {
+    name: "SUPERVISOR",
+    level: 5,
+    description: "Supervision des commandes, modération, rapports opérationnels.",
+    isSystem: true,
+  },
+  {
+    name: "USER",
+    level: 6,
+    description: "Client standard. Achats, consultation, gestion de son profil.",
+    isSystem: true,
+  },
+] as const;
+
+export type RoleName = (typeof ROLE_DEFINITIONS)[number]["name"];
+
+/**
+ * Seed atomique des rôles avec upsert.
+ * Retourne une Map<<RoleName, RoleId> pour les dépendances.
+ */
 export async function seedRoles(prisma: PrismaClient) {
-  console.log("👥 Configuration des rôles...");
+  console.log("👥 [RBAC] Configuration des 6 rôles hiérarchiques...");
 
-  const roles = ["super-admin", "admin", "manager", "user"];
+  const roleMap = new Map<string, string>();
 
-  // Note: Si votre schéma ne possède pas de table Role,
-  // ce script peut servir à valider des permissions ou être omis.
-  // Ici, nous supposons une approche extensible.
-  return roles;
+  for (const roleDef of ROLE_DEFINITIONS) {
+    const role = await prisma.role.upsert({
+      where: { name: roleDef.name },
+      update: {
+        level: roleDef.level,
+        description: roleDef.description,
+        isSystem: roleDef.isSystem,
+      },
+      create: {
+        id: generateUUIDv7(),
+        name: roleDef.name,
+        level: roleDef.level,
+        description: roleDef.description,
+        isSystem: roleDef.isSystem,
+      },
+    });
+
+    roleMap.set(roleDef.name, role.id);
+    console.log(`   ✓ ${roleDef.name} (Level ${roleDef.level}) → ${role.id}`);
+  }
+
+  console.log(`👥 [RBAC] ${roleMap.size} rôles synchronisés.`);
+  return roleMap as Map<<RoleName, string>;
 }

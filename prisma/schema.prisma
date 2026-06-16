@@ -19,18 +19,26 @@ model Permission {
 }
 
 model RoleConfig {
-  id              String           @id @db.Uuid
-  role            String           @unique // SUPER_ADMIN, ADMIN, etc.
-  level           Int // 1-6
+  id       String       @id @db.Uuid
+  role     String       @unique // SUPER_ADMIN, ADMIN, etc.
+  roleRef  Role         @relation(fields: [role], references: [name])
+  level    Int // 1-6
   // permissions Json     // { "users:read": "ON", "users:delete": "OFF" }
+  users    User[]
+  parentId String?      @db.Uuid
+  parent   RoleConfig?  @relation("RoleConfigHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children RoleConfig[] @relation("RoleConfigHierarchy")
+
   description     String?
   permissions     Json // { "users:read": "ON", "users:delete": "OFF" }
   permissionId    String           @db.Uuid
   rolePermissions RolePermission[]
   restrictions    Json // { "max_daily_orders": "50", "can_access_analytics": "OFF" }
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("role_config")
 }
@@ -50,9 +58,11 @@ model RolePermission {
 model User {
   id               String           @id @unique @db.Uuid
   role             String           @default("USER")
+  roleRef          Role             @relation(fields: [role], references: [name])
+  roleConfigId     String?          @db.Uuid
   sessions         Session[]
   name             String?
-  email            String?          @unique
+  email            String           @unique
   emailVerified    DateTime?
   password         String?          @db.Text
   image            String?
@@ -77,6 +87,8 @@ model User {
   updatedAt    DateTime      @updatedAt
   productViews ProductView[]
   auditLogs    AuditLog[]
+  roleConfig   RoleConfig?   @relation(fields: [roleConfigId], references: [id])
+  roleConfigId String?       @db.Uuid
 
   @@index([email])
   @@map("user")
@@ -709,9 +721,12 @@ model ShippingMethod {
   description   String?
   price         Int
   freeShipping  Boolean    @default(false)
+  metadata      Json? // RBAC metadata
   minAmount     Int?
   carrier       String?
   estimatedDays String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   isActive      Boolean    @default(true)
   orders        Order[]
   shipments     Shipment[]

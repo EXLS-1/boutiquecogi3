@@ -1,36 +1,59 @@
 // prisma/seed/users.seed.ts
-//
-
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { hash } from "bcryptjs";
+import { ROLES, type Role } from "@/lib/auth/rbac";
 
+interface SeedUserOptions {
+  email: string;
+  password: string;
+  name: string;
+  role: Role;
+}
+
+const DEFAULT_SUPER_ADMIN: SeedUserOptions = {
+  email: "excellentservice1exls@gmail.com",
+  password: "@@@123Exls",
+  name: "SuperAdmin Cogi",
+  role: ROLES.SUPER_ADMIN,
+};
+
+/**
+ * Crée ou met à jour l'administrateur par défaut.
+ * Le rôle est strictement typé et validé contre le RBAC.
+ */
 export async function seedUsers(
   prisma: PrismaClient,
-  defaultAdminEmail: string,
+  options: Partial<<SeedUserOptions> = {}
 ) {
-  console.log("👤 Création de l'administrateur par défaut...");
+  const config = { ...DEFAULT_SUPER_ADMIN, ...options };
 
-  // On utilise upsert pour éviter les doublons sur l'email
+  console.log(`👤 [RBAC] Création de l'administrateur (${config.role})...`);
+
+  // Validation stricte : le rôle doit exister dans le RBAC
+  if (!Object.values(ROLES).includes(config.role)) {
+    throw new Error(`[RBAC] Rôle invalide: ${config.role}. Attendu: ${Object.values(ROLES).join(", ")}`);
+  }
+
   const superadmin = await prisma.user.upsert({
-    where: { email: defaultAdminEmail },
+    where: { email: config.email },
     update: {
-      role: "SUPER_ADMIN",
+      role: config.role,
       emailVerified: new Date(),
-      name: "SuperAdmin Cogi",
+      name: config.name,
     },
     create: {
       id: generateUUIDv7(),
-      name: "SuperAdmin Cogi",
-      password: await hash("@@@123Exls", 10),
-      email: "excellentservice1exls@gmail.com",
+      name: config.name,
+      password: await hash(config.password, 10),
+      email: config.email,
       emailVerified: new Date(),
-      role: "SUPER_ADMIN",
+      role: config.role,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
   });
 
-  console.log("👤 Super Administrateur par défaut créé ou mis à jour.");
+  console.log(`   ✓ Super Admin créé: ${superadmin.email} [${superadmin.role}]`);
   return superadmin;
 }
