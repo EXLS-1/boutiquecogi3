@@ -1,4 +1,5 @@
 // app/dashboard/layout.tsx
+
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import {
@@ -7,21 +8,33 @@ import {
   getClientPermissions,
   getClientRestrictions,
   getRoleLevel,
-  ROLES,
 } from "@/lib/auth/rbac";
 
 type DashboardLayoutProps = {
   children: ReactNode;
 };
 
-const DASHBOARD_MIN_LEVEL = 6;
+// =============================================================================
+// BLOCAGE LEVEL 6 (USER/CLIENT)
+// =============================================================================
+// Le dashboard est STRICTEMENT réservé au staff (niveaux 1-5)
+// Level 6 = CLIENT = aucun accès, même en lecture seule
+
+const DASHBOARD_MAX_ALLOWED_LEVEL = 5;
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const role = await requireAuth("/login");
   const userData = await getCurrentUserWithRole();
 
   if (!userData) redirect("/login");
-  if (getRoleLevel(role) > DASHBOARD_MIN_LEVEL) redirect("/unauthorized");
+
+  const userLevel = getRoleLevel(role);
+
+  // ❌ Level 6 (USER) et supérieur = redirection vers page d'erreur
+  // ✅ Level 1-5 = accès autorisé
+  if (userLevel > DASHBOARD_MAX_ALLOWED_LEVEL) {
+    redirect("/unauthorized");
+  }
 
   const permissions = await getClientPermissions(role);
   const restrictions = await getClientRestrictions(role);
@@ -30,6 +43,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Sidebar */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white">
         <div className="border-b border-slate-200 p-4">
           <p className="text-sm text-slate-500">Dashboard</p>
@@ -72,6 +86,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         </div>
       </aside>
 
+      {/* Main content */}
       <div className="lg:pl-72">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="flex items-center justify-between px-4 py-3 lg:px-6">
@@ -125,6 +140,13 @@ function buildDashboardNav(permissions: string[]) {
       items: [can("analytics:read") && { href: "/dashboard/tresory", label: "Tresory" }].filter(
         Boolean,
       ) as { href: string; label: string }[],
+    },
+    {
+      title: "Administration",
+      items: [
+        can("users:read") && { href: "/dashboard/users", label: "Users" },
+        can("roles:read") && { href: "/dashboard/roles", label: "Roles" },
+      ].filter(Boolean) as { href: string; label: string }[],
     },
   ];
 }

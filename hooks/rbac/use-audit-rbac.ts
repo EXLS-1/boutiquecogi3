@@ -2,7 +2,7 @@
 // 9. useAuditRBAC - Événement audit
 // ============================================================
 // hooks/rbac/use-audit-rbac.ts
-"use client";
+("use client");
 
 import { useMemo } from "react";
 import { useRBAC } from "./use-rbac";
@@ -27,7 +27,7 @@ interface AuditMetadata {
   retentionDays: number;
   isImmutable: boolean;
   allowedActions: AuditAction[];
-  minRoleLevel: number;
+  minRoleLevel: number; // Plus petit = plus haut
   requiresJustification: boolean;
   realTimeAlert: boolean;
 }
@@ -46,7 +46,7 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 90,
     isImmutable: true,
     allowedActions: ["view", "export"],
-    minRoleLevel: 3,
+    minRoleLevel: 3, // Manager+
     requiresJustification: false,
     realTimeAlert: false,
   },
@@ -64,7 +64,7 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 365,
     isImmutable: true,
     allowedActions: ["view", "export", "alert"],
-    minRoleLevel: 4,
+    minRoleLevel: 2, // Admin+
     requiresJustification: false,
     realTimeAlert: true,
   },
@@ -73,7 +73,7 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 730,
     isImmutable: true,
     allowedActions: ["view", "export", "alert"],
-    minRoleLevel: 5,
+    minRoleLevel: 1, // Super Admin uniquement
     requiresJustification: true,
     realTimeAlert: true,
   },
@@ -82,7 +82,7 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 730,
     isImmutable: true,
     allowedActions: ["view", "export", "alert"],
-    minRoleLevel: 5,
+    minRoleLevel: 1,
     requiresJustification: true,
     realTimeAlert: true,
   },
@@ -91,7 +91,7 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 365,
     isImmutable: true,
     allowedActions: ["view", "export"],
-    minRoleLevel: 4,
+    minRoleLevel: 2,
     requiresJustification: true,
     realTimeAlert: false,
   },
@@ -100,16 +100,16 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 730,
     isImmutable: true,
     allowedActions: ["view", "export", "alert"],
-    minRoleLevel: 5,
+    minRoleLevel: 1,
     requiresJustification: true,
     realTimeAlert: true,
   },
   payment_processed: {
     severity: "medium",
-    retentionDays: 2555, // 7 ans (obligation légale)
+    retentionDays: 2555,
     isImmutable: true,
     allowedActions: ["view", "export"],
-    minRoleLevel: 4,
+    minRoleLevel: 2,
     requiresJustification: false,
     realTimeAlert: false,
   },
@@ -118,7 +118,7 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 2555,
     isImmutable: true,
     allowedActions: ["view", "export", "alert"],
-    minRoleLevel: 5,
+    minRoleLevel: 2,
     requiresJustification: true,
     realTimeAlert: true,
   },
@@ -127,16 +127,16 @@ const AUDIT_EVENT_CONFIG: Record<AuditEvent, AuditMetadata> = {
     retentionDays: 365,
     isImmutable: true,
     allowedActions: ["view", "export"],
-    minRoleLevel: 4,
+    minRoleLevel: 2,
     requiresJustification: false,
     realTimeAlert: false,
   },
   bulk_operation: {
     severity: "critical",
-    retentionDays: 1095, // 3 ans
+    retentionDays: 1095,
     isImmutable: true,
     allowedActions: ["view", "export", "alert", "configure"],
-    minRoleLevel: 6,
+    minRoleLevel: 1,
     requiresJustification: true,
     realTimeAlert: true,
   },
@@ -159,7 +159,7 @@ export function useAuditRBAC(
 
   const allowed = useMemo(() => {
     if (!level) return false;
-    const meetsLevel = level >= config.minRoleLevel;
+    const meetsLevel = level <= config.minRoleLevel;
     const hasAuditPermission =
       hasPermission("analytics:read") ||
       hasPermission("settings:system_config");
@@ -171,7 +171,7 @@ export function useAuditRBAC(
     return (targetAction: AuditAction): boolean => {
       if (!level) return false;
       return (
-        level >= config.minRoleLevel &&
+        level <= config.minRoleLevel &&
         config.allowedActions.includes(targetAction)
       );
     };
@@ -180,10 +180,10 @@ export function useAuditRBAC(
   const canViewSeverity = useMemo(() => {
     return (targetSeverity: AuditMetadata["severity"]): boolean => {
       if (!level) return false;
-      // Niveau 6 = tout voir, niveau 5 = high et below, etc.
+      // Level 1 = tout voir, Level 2 = high et below, etc.
       const requiredLevel =
         config.minRoleLevel + (SEVERITY_LEVELS[targetSeverity] - 1);
-      return level >= Math.min(requiredLevel, 6);
+      return level <= Math.min(requiredLevel, 6);
     };
   }, [level, config]);
 

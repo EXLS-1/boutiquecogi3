@@ -1,8 +1,7 @@
-// hooks/rbac/use-product-type-rbac.ts
 // ============================================================
 // 3. useProductTypeRBAC - Type produit
 // ============================================================
-
+// hooks/rbac/use-product-type-rbac.ts
 "use client";
 
 import { useMemo } from "react";
@@ -28,7 +27,7 @@ interface ProductTypeMetadata {
   maxVariants: number;
   requiresApproval: boolean;
   allowedActions: ProductAction[];
-  minRoleLevel: number;
+  minRoleLevel: number; // Plus petit = plus haut (1 = Super Admin)
   restrictions: {
     maxImages: number;
     allowReviews: boolean;
@@ -55,21 +54,21 @@ const PRODUCT_TYPE_CONFIG: Record<ProductType, ProductTypeMetadata> = {
       "duplicate",
       "import",
     ],
-    minRoleLevel: 3,
+    minRoleLevel: 5, // Seller et au-dessus (5, 4, 3, 2, 1)
     restrictions: { maxImages: 10, allowReviews: true, allowDiscounts: true },
   },
   digital: {
     maxVariants: 1,
     requiresApproval: false,
     allowedActions: ["create", "update", "delete", "publish", "duplicate"],
-    minRoleLevel: 3,
+    minRoleLevel: 5,
     restrictions: { maxImages: 5, allowReviews: true, allowDiscounts: true },
   },
   subscription: {
     maxVariants: 5,
     requiresApproval: true,
     allowedActions: ["create", "update", "delete", "publish"],
-    minRoleLevel: 4,
+    minRoleLevel: 4, // Moderator et au-dessus (4, 3, 2, 1)
     restrictions: { maxImages: 3, allowReviews: false, allowDiscounts: false },
   },
   bundle: {
@@ -90,7 +89,7 @@ const PRODUCT_TYPE_CONFIG: Record<ProductType, ProductTypeMetadata> = {
     maxVariants: 20,
     requiresApproval: true,
     allowedActions: ["create", "update", "delete"],
-    minRoleLevel: 5,
+    minRoleLevel: 2, // Admin et au-dessus (2, 1)
     restrictions: { maxImages: 15, allowReviews: true, allowDiscounts: true },
   },
 };
@@ -105,7 +104,8 @@ export function useProductTypeRBAC(
 
   const allowed = useMemo(() => {
     if (!level) return false;
-    const meetsLevel = level >= config.minRoleLevel;
+    // Level doit être <= minRoleLevel (plus petit = plus haut)
+    const meetsLevel = level <= config.minRoleLevel;
     const hasProductPermission =
       hasPermission("products:create") || hasPermission("products:update");
     const actionAllowed = config.allowedActions.includes(action);
@@ -116,7 +116,7 @@ export function useProductTypeRBAC(
     return (targetAction: ProductAction): boolean => {
       if (!level) return false;
       return (
-        level >= config.minRoleLevel &&
+        level <= config.minRoleLevel &&
         config.allowedActions.includes(targetAction) &&
         hasPermission("products:update")
       );

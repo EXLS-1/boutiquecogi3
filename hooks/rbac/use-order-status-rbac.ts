@@ -1,7 +1,7 @@
-// hooks/rbac/use-order-status-rbac.ts
 // ============================================================
 // 2. useOrderStatusRBAC - Statut commande spécifique
 // ============================================================
+// hooks/rbac/use-order-status-rbac.ts
 
 "use client";
 
@@ -23,7 +23,7 @@ interface OrderStatusMetadata {
   isTerminal: boolean;
   allowedTransitions: OrderStatus[];
   requiresApproval: boolean;
-  editableBy: number[]; // RoleLevel[]
+  editableBy: number[]; // RoleLevel[] - plus petit = plus haut
 }
 
 interface UseOrderStatusRBACReturn {
@@ -41,7 +41,7 @@ const STATUS_METADATA: Record<OrderStatus, OrderStatusMetadata> = {
     isTerminal: false,
     allowedTransitions: ["confirmed", "cancelled"],
     requiresApproval: false,
-    editableBy: [3, 4, 5, 6],
+    editableBy: [3, 4, 5, 6], // Manager, Moderator, Seller, Client
   },
   confirmed: {
     color: "#3b82f6",
@@ -55,42 +55,42 @@ const STATUS_METADATA: Record<OrderStatus, OrderStatusMetadata> = {
     isTerminal: false,
     allowedTransitions: ["shipped", "cancelled"],
     requiresApproval: true,
-    editableBy: [4, 5, 6],
+    editableBy: [3, 4], // Manager, Moderator (pas Seller ni Client)
   },
   shipped: {
     color: "#06b6d4",
     isTerminal: false,
     allowedTransitions: ["delivered", "disputed"],
     requiresApproval: false,
-    editableBy: [4, 5, 6],
+    editableBy: [3, 4],
   },
   delivered: {
     color: "#10b981",
     isTerminal: true,
     allowedTransitions: ["disputed"],
     requiresApproval: false,
-    editableBy: [5, 6],
+    editableBy: [3, 4], // Manager, Moderator
   },
   cancelled: {
     color: "#ef4444",
     isTerminal: true,
     allowedTransitions: [],
     requiresApproval: false,
-    editableBy: [4, 5, 6],
+    editableBy: [3, 4],
   },
   refunded: {
     color: "#f97316",
     isTerminal: true,
     allowedTransitions: [],
     requiresApproval: true,
-    editableBy: [5, 6],
+    editableBy: [3], // Manager uniquement
   },
   disputed: {
     color: "#dc2626",
     isTerminal: false,
     allowedTransitions: ["refunded", "delivered"],
     requiresApproval: true,
-    editableBy: [5, 6],
+    editableBy: [3], // Manager uniquement
   },
 };
 
@@ -103,9 +103,8 @@ export function useOrderStatusRBAC(
 
   const allowed = useMemo(() => {
     if (!level) return false;
-    // Vérifier si le niveau actuel peut éditer ce statut
+    // Level doit être dans la liste (plus petit = plus haut)
     const canEditByLevel = metadata.editableBy.includes(level);
-    // Vérifier permission spécifique
     const hasOrderPermission = hasPermission("orders:update");
     return canEditByLevel && hasOrderPermission;
   }, [level, metadata, hasPermission]);

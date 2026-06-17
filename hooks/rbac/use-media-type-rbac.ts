@@ -1,7 +1,7 @@
-// hooks/rbac/use-media-type-rbac.ts
 // ============================================================
 // 4. useMediaTypeRBAC - Type média
 // ============================================================
+// hooks/rbac/use-media-type-rbac.ts
 
 "use client";
 
@@ -24,12 +24,12 @@ export type MediaAction =
   | "replace";
 
 interface MediaTypeMetadata {
-  maxFileSize: number; // en bytes
+  maxFileSize: number;
   allowedExtensions: string[];
   bucket: string;
   requiresCompression: boolean;
   allowedActions: MediaAction[];
-  minRoleLevel: number;
+  minRoleLevel: number; // Plus petit = plus haut
 }
 
 interface UseMediaTypeRBACReturn {
@@ -48,7 +48,7 @@ const MEDIA_TYPE_CONFIG: Record<MediaType, MediaTypeMetadata> = {
     bucket: "product-images",
     requiresCompression: true,
     allowedActions: ["upload", "delete", "organize", "download", "replace"],
-    minRoleLevel: 2,
+    minRoleLevel: 5, // Seller+
   },
   document: {
     maxFileSize: 50 * BYTES_PER_MB,
@@ -56,7 +56,7 @@ const MEDIA_TYPE_CONFIG: Record<MediaType, MediaTypeMetadata> = {
     bucket: "documents",
     requiresCompression: false,
     allowedActions: ["upload", "delete", "download"],
-    minRoleLevel: 3,
+    minRoleLevel: 5,
   },
   audio: {
     maxFileSize: 100 * BYTES_PER_MB,
@@ -64,7 +64,7 @@ const MEDIA_TYPE_CONFIG: Record<MediaType, MediaTypeMetadata> = {
     bucket: "audio-files",
     requiresCompression: true,
     allowedActions: ["upload", "delete", "download"],
-    minRoleLevel: 4,
+    minRoleLevel: 4, // Moderator+
   },
   video: {
     maxFileSize: 500 * BYTES_PER_MB,
@@ -80,7 +80,7 @@ const MEDIA_TYPE_CONFIG: Record<MediaType, MediaTypeMetadata> = {
     bucket: "archives",
     requiresCompression: false,
     allowedActions: ["upload", "delete", "download"],
-    minRoleLevel: 5,
+    minRoleLevel: 3, // Manager+
   },
   "3d_model": {
     maxFileSize: 100 * BYTES_PER_MB,
@@ -88,7 +88,7 @@ const MEDIA_TYPE_CONFIG: Record<MediaType, MediaTypeMetadata> = {
     bucket: "3d-models",
     requiresCompression: true,
     allowedActions: ["upload", "delete", "download", "replace"],
-    minRoleLevel: 5,
+    minRoleLevel: 3,
   },
 };
 
@@ -102,7 +102,7 @@ export function useMediaTypeRBAC(
 
   const allowed = useMemo(() => {
     if (!level) return false;
-    const meetsLevel = level >= config.minRoleLevel;
+    const meetsLevel = level <= config.minRoleLevel;
     const hasMediaPermission =
       hasPermission("media:upload") || hasPermission("media:delete");
     const actionAllowed = config.allowedActions.includes(action);
@@ -113,7 +113,7 @@ export function useMediaTypeRBAC(
     return (targetAction: MediaAction): boolean => {
       if (!level) return false;
       return (
-        level >= config.minRoleLevel &&
+        level <= config.minRoleLevel &&
         config.allowedActions.includes(targetAction)
       );
     };

@@ -1,9 +1,8 @@
-// hooks/rbac/use-payment-method-rbac.ts
 // ============================================================
 // 7. usePaymentMethodRBAC - Méthode paiement
 // ============================================================
-
-"use client";
+// hooks/rbac/use-payment-method-rbac.ts
+("use client");
 
 import { useMemo } from "react";
 import { useRBAC } from "./use-rbac";
@@ -26,11 +25,11 @@ export type PaymentAction =
 interface PaymentMethodMetadata {
   maxTransactionAmount: number;
   allowedActions: PaymentAction[];
-  minRoleLevel: number;
+  minRoleLevel: number; // Plus petit = plus haut
   requires2FA: boolean;
   isEnabled: boolean;
   currencySupport: string[];
-  processingFee: number; // en pourcentage
+  processingFee: number;
 }
 
 interface UsePaymentMethodRBACReturn {
@@ -43,7 +42,7 @@ interface UsePaymentMethodRBACReturn {
 
 const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
   cinetpay_card: {
-    maxTransactionAmount: 1000000, // 1M FCFA
+    maxTransactionAmount: 1000000,
     allowedActions: [
       "process",
       "refund",
@@ -51,23 +50,23 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
       "view_analytics",
       "disable",
     ],
-    minRoleLevel: 2,
+    minRoleLevel: 6, // Tous (Client+)
     requires2FA: false,
     isEnabled: true,
     currencySupport: ["XOF", "XAF", "EUR"],
     processingFee: 2.5,
   },
   cinetpay_mobile: {
-    maxTransactionAmount: 500000, // 500K FCFA
+    maxTransactionAmount: 500000,
     allowedActions: ["process", "refund", "configure", "view_analytics"],
-    minRoleLevel: 2,
+    minRoleLevel: 6,
     requires2FA: false,
     isEnabled: true,
     currencySupport: ["XOF", "XAF"],
     processingFee: 1.5,
   },
   cinetpay_bank: {
-    maxTransactionAmount: 5000000, // 5M FCFA
+    maxTransactionAmount: 5000000,
     allowedActions: [
       "process",
       "refund",
@@ -75,34 +74,34 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
       "view_analytics",
       "disable",
     ],
-    minRoleLevel: 4,
+    minRoleLevel: 3, // Manager+
     requires2FA: true,
     isEnabled: true,
     currencySupport: ["XOF", "XAF", "EUR", "USD"],
     processingFee: 1.0,
   },
   cash_on_delivery: {
-    maxTransactionAmount: 200000, // 200K FCFA
+    maxTransactionAmount: 200000,
     allowedActions: ["process", "disable"],
-    minRoleLevel: 3,
+    minRoleLevel: 4, // Moderator+
     requires2FA: false,
     isEnabled: true,
     currencySupport: ["XOF"],
     processingFee: 0,
   },
   bank_transfer: {
-    maxTransactionAmount: 10000000, // 10M FCFA
+    maxTransactionAmount: 10000000,
     allowedActions: ["process", "refund", "configure", "view_analytics"],
-    minRoleLevel: 5,
+    minRoleLevel: 3, // Manager+
     requires2FA: true,
-    isEnabled: false, // Désactivé par défaut
+    isEnabled: false,
     currencySupport: ["XOF", "EUR", "USD"],
     processingFee: 0.5,
   },
   crypto: {
     maxTransactionAmount: 5000000,
     allowedActions: ["process", "view_analytics"],
-    minRoleLevel: 6,
+    minRoleLevel: 2, // Admin+
     requires2FA: true,
     isEnabled: false,
     currencySupport: ["BTC", "ETH", "USDT"],
@@ -120,7 +119,7 @@ export function usePaymentMethodRBAC(
 
   const allowed = useMemo(() => {
     if (!level) return false;
-    const meetsLevel = level >= config.minRoleLevel;
+    const meetsLevel = level <= config.minRoleLevel;
     const hasPaymentPermission =
       hasPermission("payments:read") || hasPermission("payments:configure");
     const actionAllowed = config.allowedActions.includes(action);
@@ -133,7 +132,7 @@ export function usePaymentMethodRBAC(
     return (targetAction: PaymentAction): boolean => {
       if (!level) return false;
       return (
-        level >= config.minRoleLevel &&
+        level <= config.minRoleLevel &&
         config.allowedActions.includes(targetAction) &&
         config.isEnabled
       );
@@ -147,7 +146,7 @@ export function usePaymentMethodRBAC(
   }, [config]);
 
   const isAvailable = useMemo(() => {
-    return config.isEnabled && !!level && level >= config.minRoleLevel;
+    return config.isEnabled && !!level && level <= config.minRoleLevel;
   }, [config, level]);
 
   return useMemo(

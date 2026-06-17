@@ -1,9 +1,8 @@
-// hooks/rbac/use-wishlist-rbac.ts
 // ============================================================
 // 8. useWishlistRBAC - Type wishlist
 // ============================================================
-
-"use client";
+// hooks/rbac/use-wishlist-rbac.ts
+("use client");
 
 import { useMemo } from "react";
 import { useRBAC } from "./use-rbac";
@@ -22,7 +21,7 @@ interface WishlistMetadata {
   maxItems: number;
   isSharedAllowed: boolean;
   allowedFeatures: WishlistFeature[];
-  minRoleLevel: number;
+  minRoleLevel: number; // Plus petit = plus haut
   maxLists: number;
   maxCollaborators: number;
   retentionDays: number;
@@ -46,7 +45,7 @@ const WISHLIST_CONFIG: Record<string, WishlistMetadata> = {
       "remove_item",
       "notify_price_drop",
     ],
-    minRoleLevel: 1,
+    minRoleLevel: 6, // Client (tous)
     maxLists: 3,
     maxCollaborators: 0,
     retentionDays: 365,
@@ -64,7 +63,7 @@ const WISHLIST_CONFIG: Record<string, WishlistMetadata> = {
       "notify_price_drop",
       "import_products",
     ],
-    minRoleLevel: 2,
+    minRoleLevel: 5, // Seller+
     maxLists: 20,
     maxCollaborators: 10,
     retentionDays: 730,
@@ -82,7 +81,7 @@ const WISHLIST_CONFIG: Record<string, WishlistMetadata> = {
       "notify_price_drop",
       "import_products",
     ],
-    minRoleLevel: 3,
+    minRoleLevel: 4, // Moderator+
     maxLists: 100,
     maxCollaborators: 50,
     retentionDays: 1095,
@@ -94,12 +93,11 @@ export function useWishlistRBAC(
 ): UseWishlistRBACReturn {
   const { level } = useRBAC();
 
-  // Déterminer le tier en fonction du niveau
   const tier = useMemo(() => {
     if (!level) return null;
-    if (level >= 3) return "business";
-    if (level >= 2) return "premium";
-    return "default";
+    if (level <= 4) return "business"; // Moderator+
+    if (level <= 5) return "premium"; // Seller+
+    return "default"; // Client
   }, [level]);
 
   const config = useMemo(() => {
@@ -110,7 +108,7 @@ export function useWishlistRBAC(
   const allowed = useMemo(() => {
     if (!level) return false;
     return (
-      level >= config.minRoleLevel && config.allowedFeatures.includes(feature)
+      level <= config.minRoleLevel && config.allowedFeatures.includes(feature)
     );
   }, [level, config, feature]);
 
@@ -118,7 +116,7 @@ export function useWishlistRBAC(
     return (targetFeature: WishlistFeature): boolean => {
       if (!level) return false;
       return (
-        level >= config.minRoleLevel &&
+        level <= config.minRoleLevel &&
         config.allowedFeatures.includes(targetFeature)
       );
     };

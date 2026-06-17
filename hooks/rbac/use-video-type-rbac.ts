@@ -2,6 +2,7 @@
 // 5. useVideoTypeRBAC - Type vidéo
 // ============================================================
 // hooks/rbac/use-video-type-rbac.ts
+
 "use client";
 
 import { useMemo } from "react";
@@ -18,7 +19,7 @@ export type VideoType =
 export type VideoAction = "upload" | "edit" | "delete" | "publish" | "stream";
 
 interface VideoTypeMetadata {
-  maxDuration: number; // en secondes
+  maxDuration: number;
   maxResolution: string;
   allowedFormats: string[];
   requiresTranscoding: boolean;
@@ -37,48 +38,48 @@ interface UseVideoTypeRBACReturn {
 
 const VIDEO_TYPE_CONFIG: Record<VideoType, VideoTypeMetadata> = {
   product_demo: {
-    maxDuration: 300, // 5 min
+    maxDuration: 300,
     maxResolution: "1080p",
     allowedFormats: ["mp4", "mov"],
     requiresTranscoding: true,
     allowedActions: ["upload", "edit", "delete", "publish"],
-    minRoleLevel: 3,
+    minRoleLevel: 5, // Seller+
     maxDailyUploads: 10,
   },
   tutorial: {
-    maxDuration: 1800, // 30 min
+    maxDuration: 1800,
     maxResolution: "1080p",
     allowedFormats: ["mp4", "mov", "mkv"],
     requiresTranscoding: true,
     allowedActions: ["upload", "edit", "delete", "publish"],
-    minRoleLevel: 4,
+    minRoleLevel: 4, // Moderator+
     maxDailyUploads: 5,
   },
   review: {
-    maxDuration: 600, // 10 min
+    maxDuration: 600,
     maxResolution: "4K",
     allowedFormats: ["mp4", "mov", "avi"],
     requiresTranscoding: true,
     allowedActions: ["upload", "edit", "delete", "publish"],
-    minRoleLevel: 3,
+    minRoleLevel: 5,
     maxDailyUploads: 20,
   },
   advertisement: {
-    maxDuration: 60, // 1 min
+    maxDuration: 60,
     maxResolution: "4K",
     allowedFormats: ["mp4", "mov"],
     requiresTranscoding: true,
     allowedActions: ["upload", "edit", "delete", "publish"],
-    minRoleLevel: 5,
+    minRoleLevel: 3, // Manager+
     maxDailyUploads: 3,
   },
   live_stream: {
-    maxDuration: 7200, // 2h
+    maxDuration: 7200,
     maxResolution: "1080p",
     allowedFormats: ["rtmp", "hls"],
     requiresTranscoding: true,
     allowedActions: ["stream", "delete"],
-    minRoleLevel: 5,
+    minRoleLevel: 3, // Manager+
     maxDailyUploads: 1,
   },
   background: {
@@ -87,7 +88,7 @@ const VIDEO_TYPE_CONFIG: Record<VideoType, VideoTypeMetadata> = {
     allowedFormats: ["mp4", "webm"],
     requiresTranscoding: false,
     allowedActions: ["upload", "delete"],
-    minRoleLevel: 3,
+    minRoleLevel: 5,
     maxDailyUploads: 50,
   },
 };
@@ -108,7 +109,7 @@ export function useVideoTypeRBAC(
 
   const allowed = useMemo(() => {
     if (!level) return false;
-    const meetsLevel = level >= config.minRoleLevel;
+    const meetsLevel = level <= config.minRoleLevel;
     const hasVideoPermission = hasPermission("media:upload");
     const actionAllowed = config.allowedActions.includes(action);
     return meetsLevel && hasVideoPermission && actionAllowed;
@@ -118,7 +119,7 @@ export function useVideoTypeRBAC(
     return (targetAction: VideoAction): boolean => {
       if (!level) return false;
       return (
-        level >= config.minRoleLevel &&
+        level <= config.minRoleLevel &&
         config.allowedActions.includes(targetAction)
       );
     };

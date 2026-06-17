@@ -1,4 +1,5 @@
 // components/auth/rbac-sync-manager.tsx
+
 "use client";
 
 import { useEffect } from "react";

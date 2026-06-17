@@ -1,15 +1,12 @@
 // components/auth/role-guard.tsx
 // Composant de protection des routes basé sur le système RBAC hiérarchique (Level 1-6)
-// Remplace l'ancienne logique binaire "admin/user" par une hiérarchie stricte
-
+// HIÉRARCHIE DESCENDANTE : Level 1 = SUPER_ADMIN → Level 6 = CLIENT
 "use client";
 
-import { ReactNode, memo } from "react";
+import React, { ReactNode, memo } from "react";
 import { useRBAC } from "@/hooks/rbac/use-rbac";
-import { Permission } from "@/lib/auth/rbac";
+import { Permission, RoleLevel } from "@/types/rbac";
 import { Skeleton } from "@/components/ui/skeleton";
-
-type RoleLevel = number;
 
 // =============================================================================
 // TYPES
@@ -21,9 +18,19 @@ interface BaseGuardProps {
   loadingComponent?: ReactNode;
 }
 
-/** Protection par niveau hiérarchique minimum (Level 1-6) */
-interface LevelGuardProps extends BaseGuardProps {
-  minLevel: RoleLevel;
+/** Protection par niveau hiérarchique maximum (Level 1 = plus haut) */
+interface MaxLevelGuardProps extends BaseGuardProps {
+  maxLevel: RoleLevel;      // Niveau MAXIMUM autorisé (1 = Super Admin)
+  minLevel?: never;
+  exactLevel?: never;
+  permissions?: never;
+  requireAll?: never;
+}
+
+/** Protection par niveau hiérarchique minimum (Level 6 = plus bas) */
+interface MinLevelGuardProps extends BaseGuardProps {
+  minLevel: RoleLevel;      // Niveau MINIMUM autorisé (6 = Client)
+  maxLevel?: never;
   exactLevel?: never;
   permissions?: never;
   requireAll?: never;
@@ -33,6 +40,7 @@ interface LevelGuardProps extends BaseGuardProps {
 interface ExactLevelGuardProps extends BaseGuardProps {
   exactLevel: RoleLevel;
   minLevel?: never;
+  maxLevel?: never;
   permissions?: never;
   requireAll?: never;
 }
@@ -42,21 +50,23 @@ interface PermissionGuardProps extends BaseGuardProps {
   permissions: Permission[];
   requireAll?: boolean;
   minLevel?: never;
+  maxLevel?: never;
   exactLevel?: never;
 }
 
 /** Protection combinée (niveau ET permissions) */
 interface CombinedGuardProps extends BaseGuardProps {
-  minLevel: RoleLevel;
+  maxLevel: RoleLevel;      // Plus petit = plus haut dans la hiérarchie
   permissions: Permission[];
   requireAll?: boolean;
+  minLevel?: never;
   exactLevel?: never;
 }
 
 /** Protection par plage de niveaux */
 interface LevelRangeGuardProps extends BaseGuardProps {
-  minLevel: RoleLevel;
-  maxLevel: RoleLevel;
+  maxLevel: RoleLevel;      // Plus petit = plus haut
+  minLevel: RoleLevel;      // Plus grand = plus bas
   permissions?: never;
   requireAll?: never;
   exactLevel?: never;
@@ -64,55 +74,45 @@ interface LevelRangeGuardProps extends BaseGuardProps {
 
 /** Props unifiées avec discriminant */
 type RoleGuardProps =
-  | LevelGuardProps
+  | MaxLevelGuardProps        // maxLevel=1 → Super Admin uniquement
+  | MinLevelGuardProps        // minLevel=6 → Client uniquement
   | ExactLevelGuardProps
   | PermissionGuardProps
   | CombinedGuardProps
   | LevelRangeGuardProps;
 
 // =============================================================================
-// COMPOSANT PRINCIPAL (backward-compatible avec l'ancien RoleGuard)
+// COMPOSANT PRINCIPAL
 // =============================================================================
 
 /**
  * RoleGuard - Composant de protection RBAC unifié
  *
- * Usage par niveau (recommandé):
- *   <RoleGuard minLevel={4}>
- *     <AdminPanel />
- *   </RoleGuard>
+ * HIÉRARCHIE DESCENDANTE :
+ *   Level 1 = SUPER_ADMIN (plus haut)
+ *   Level 2 = ADMIN
+ *   Level 3 = MANAGER
+ *   Level 4 = MODERATOR
+ *   Level 5 = SELLER
+ *   Level 6 = CUSTOMER (plus bas)
  *
- * Usage par permissions:
+ * Usage par niveau maximum (recommandé) :
+ *   <RoleGuard maxLevel={3}>     → Manager, Admin, Super Admin
+ *   <RoleGuard maxLevel={1}>     → Super Admin uniquement
+ *
+ * Usage par niveau minimum :
+ *   <RoleGuard minLevel={5}>     → Seller, Customer
+ *
+ * Usage par permissions :
  *   <RoleGuard permissions={["products:create", "products:update"]} requireAll={false}>
- *     <ProductManager />
- *   </RoleGuard>
  *
- * Usage combiné:
- *   <RoleGuard minLevel={4} permissions={["orders:process_refund"]}>
- *     <RefundPanel />
- *   </RoleGuard>
- *
- * Usage par plage:
- *   <RoleGuard minLevel={2} maxLevel={4}>
- *     <ModeratorPanel />
- *   </RoleGuard>
- *
- * Legacy (backward-compatible):
- *   <RoleGuard allowedRoles={["admin"]}>  → mappé sur minLevel={5}
+ * Usage combiné :
+ *   <RoleGuard maxLevel={3} permissions={["orders:process_refund"]}>
+ *     → Manager+ ET permission remboursement
  */
 export const RoleGuard = memo(function RoleGuard(props: RoleGuardProps) {
   const { children, fallback = null, loadingComponent } = props;
-  const {
-    isLoading,
-    isAuthenticated,
-    isAtLeastLevel,
-    hasAnyPermission,
-    hasAllPermissions,
-    isExactlyLevel,
-  } = useRBAC();
-
-  const canAccess = (permissions: Permission[], requireAll: boolean) =>
-    requireAll ? hasAllPermissions(permissions) : hasAnyPermission(permissions);
+  const { isLoading, isAuthenticated, level } = useRBAC();
 
   // État de chargement
   if (isLoading) {
@@ -129,41 +129,48 @@ export const RoleGuard = memo(function RoleGuard(props: RoleGuardProps) {
   }
 
   // Non authentifié = toujours refusé
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !level) {
     return <>{fallback}</>;
   }
 
   let hasAccessRight = false;
 
-  // --- Protection par niveau minimum ---
-  if ("minLevel" in props && !("maxLevel" in props) && !("permissions" in props)) {
-    // 'in' check ensures property exists but it may be undefined, so assert number
-    hasAccessRight = isAtLeastLevel(props.minLevel as number);
+  // --- Protection par niveau MAXIMUM (1 = Super Admin) ---
+  if ("maxLevel" in props && !("minLevel" in props) && !("permissions" in props)) {
+    // userLevel doit être <= maxLevel (plus petit = plus haut)
+    hasAccessRight = level <= props.maxLevel;
   }
 
-  // --- Protection par niveau exact ---
+  // --- Protection par niveau MINIMUM (6 = Client) ---
+  else if ("minLevel" in props && !("maxLevel" in props) && !("permissions" in props)) {
+    // userLevel doit être >= minLevel (plus grand = plus bas)
+    hasAccessRight = level >= props.minLevel;
+  }
+
+  // --- Protection par niveau EXACT ---
   else if ("exactLevel" in props) {
-    hasAccessRight = isExactlyLevel(props.exactLevel as number);
+    hasAccessRight = level === props.exactLevel;
   }
 
   // --- Protection par permissions ---
-  else if ("permissions" in props && !("minLevel" in props)) {
+  else if ("permissions" in props && !("maxLevel" in props) && !("minLevel" in props)) {
+    const { canAccess } = useRBAC();
     const requireAll = props.requireAll ?? true;
     hasAccessRight = canAccess(props.permissions, requireAll);
   }
 
-  // --- Protection combinée (niveau + permissions) ---
-  else if ("minLevel" in props && "permissions" in props) {
-    const meetsLevel = isAtLeastLevel(props.minLevel as number);
+  // --- Protection combinée (maxLevel + permissions) ---
+  else if ("maxLevel" in props && "permissions" in props) {
+    const { canAccess } = useRBAC();
+    const meetsLevel = level <= props.maxLevel;
     const requireAll = props.requireAll ?? true;
-    const meetsPermissions = canAccess(props.permissions as Permission[], requireAll);
+    const meetsPermissions = canAccess(props.permissions, requireAll);
     hasAccessRight = meetsLevel && meetsPermissions;
   }
 
   // --- Protection par plage de niveaux ---
-  else if ("minLevel" in props && "maxLevel" in props) {
-    const { level } = useRBAC();
-    hasAccessRight = !!level && level >= props.minLevel && level <= props.maxLevel;
+  else if ("maxLevel" in props && "minLevel" in props) {
+    hasAccessRight = level >= props.maxLevel && level <= props.minLevel;
   }
 
   if (!hasAccessRight) {
@@ -174,147 +181,64 @@ export const RoleGuard = memo(function RoleGuard(props: RoleGuardProps) {
 });
 
 // =============================================================================
-// COMPOSANTS SPÉCIALISÉS (exports nommés pour usage direct)
+// COMPOSANTS SPÉCIALISÉS (exports nommés)
 // =============================================================================
 
-/** Protection par niveau minimum uniquement */
-export const LevelGuard = memo(function LevelGuard({
-  minLevel,
-  children,
-  fallback = null,
-  loadingComponent,
-}: LevelGuardProps) {
-  const { isLoading, isAuthenticated, isAtLeastLevel } = useRBAC();
-
-  if (isLoading) {
-    return <>{loadingComponent ?? <Skeleton className="h-8 w-32" />}</>;
-  }
-  if (!isAuthenticated || !isAtLeastLevel(minLevel)) {
-    return <>{fallback}</>;
-  }
-  return <>{children}</>;
-});
-
-/** Protection par permissions uniquement */
-export const PermissionGuard = memo(function PermissionGuard({
-  permissions,
-  requireAll = true,
-  children,
-  fallback = null,
-  loadingComponent,
-}: PermissionGuardProps) {
-  const { isLoading, isAuthenticated, hasAnyPermission, hasAllPermissions } = useRBAC();
-  const canAccess = (permissionsList: Permission[], requireAllFlag: boolean) =>
-    requireAllFlag ? hasAllPermissions(permissionsList) : hasAnyPermission(permissionsList);
-
-  if (isLoading) {
-    return <>{loadingComponent ?? <Skeleton className="h-8 w-32" />}</>;
-  }
-  if (!isAuthenticated || !canAccess(permissions, requireAll)) {
-    return <>{fallback}</>;
-  }
-  return <>{children}</>;
-});
-
-/** Protection combinée niveau + permissions */
-export const CombinedGuard = memo(function CombinedGuard({
-  minLevel,
-  permissions,
-  requireAll = true,
-  children,
-  fallback = null,
-  loadingComponent,
-}: CombinedGuardProps) {
-  const { isLoading, isAuthenticated, isAtLeastLevel, hasAnyPermission, hasAllPermissions } = useRBAC();
-  const canAccess = (permissionsList: Permission[], requireAllFlag: boolean) =>
-    requireAllFlag ? hasAllPermissions(permissionsList) : hasAnyPermission(permissionsList);
-
-  if (isLoading) {
-    return <>{loadingComponent ?? <Skeleton className="h-8 w-32" />}</>;
-  }
-
-  const meetsLevel = isAtLeastLevel(minLevel);
-  const meetsPermissions = canAccess(permissions, requireAll);
-
-  if (!isAuthenticated || !meetsLevel || !meetsPermissions) {
-    return <>{fallback}</>;
-  }
-  return <>{children}</>;
-});
-
-/** Protection par plage de niveaux (inclusif) */
-export const LevelRangeGuard = memo(function LevelRangeGuard({
-  minLevel,
-  maxLevel,
-  children,
-  fallback = null,
-  loadingComponent,
-}: LevelRangeGuardProps) {
-  const { isLoading, isAuthenticated, level } = useRBAC();
-
-  if (isLoading) {
-    return <>{loadingComponent ?? <Skeleton className="h-8 w-32" />}</>;
-  }
-
-  const inRange = !!level && level >= minLevel && level <= maxLevel;
-
-  if (!isAuthenticated || !inRange) {
-    return <>{fallback}</>;
-  }
-  return <>{children}</>;
-});
-
-// =============================================================================
-// COMPOSANTS PRÉ-DÉFINIS (niveaux courants)
-// =============================================================================
-
-/** Level 6 - Super Admin (accès total) */
+/** Level 1 - Super Admin uniquement */
 export const SuperAdminGuard = memo(function SuperAdminGuard(
-  props: Omit<LevelGuardProps, "minLevel">
+  props: Omit<BaseGuardProps, never>
 ) {
-  return <LevelGuard minLevel={6} {...props} />;
+  return <RoleGuard maxLevel={1} {...props} />;
 });
 
-/** Level 5+ - Admin */
+/** Level 1-2 - Admin et Super Admin */
 export const AdminGuard = memo(function AdminGuard(
-  props: Omit<LevelGuardProps, "minLevel">
+  props: Omit<BaseGuardProps, never>
 ) {
-  return <LevelGuard minLevel={5} {...props} />;
+  return <RoleGuard maxLevel={2} {...props} />;
 });
 
-/** Level 4+ - Manager */
+/** Level 1-3 - Manager, Admin, Super Admin */
 export const ManagerGuard = memo(function ManagerGuard(
-  props: Omit<LevelGuardProps, "minLevel">
+  props: Omit<BaseGuardProps, never>
 ) {
-  return <LevelGuard minLevel={4} {...props} />;
+  return <RoleGuard maxLevel={3} {...props} />;
 });
 
-/** Level 3+ - Modérateur */
+/** Level 1-4 - Modérateur et au-dessus */
 export const ModeratorGuard = memo(function ModeratorGuard(
-  props: Omit<LevelGuardProps, "minLevel">
+  props: Omit<BaseGuardProps, never>
 ) {
-  return <LevelGuard minLevel={3} {...props} />;
+  return <RoleGuard maxLevel={4} {...props} />;
 });
 
-/** Level 2+ - Vendeur/Affilié */
+/** Level 1-5 - Vendeur et au-dessus */
 export const SellerGuard = memo(function SellerGuard(
-  props: Omit<LevelGuardProps, "minLevel">
+  props: Omit<BaseGuardProps, never>
 ) {
-  return <LevelGuard minLevel={2} {...props} />;
+  return <RoleGuard maxLevel={5} {...props} />;
 });
 
-/** Level 1+ - Client authentifié */
+/** Level 6 - Client uniquement */
 export const CustomerGuard = memo(function CustomerGuard(
-  props: Omit<LevelGuardProps, "minLevel">
+  props: Omit<BaseGuardProps, never>
 ) {
-  return <LevelGuard minLevel={1} {...props} />;
+  return <RoleGuard minLevel={6} {...props} />;
+});
+
+/** Level 1-6 - Tous les utilisateurs authentifiés */
+export const AuthenticatedGuard = memo(function AuthenticatedGuard(
+  props: Omit<BaseGuardProps, never>
+) {
+  return <RoleGuard maxLevel={6} {...props} />;
 });
 
 // =============================================================================
-// HOC (Higher-Order Component) pour protection de pages/composants entiers
+// HOC (Higher-Order Component)
 // =============================================================================
 
 interface WithRBACOptions {
+  maxLevel?: RoleLevel;
   minLevel?: RoleLevel;
   exactLevel?: RoleLevel;
   permissions?: Permission[];
@@ -328,10 +252,8 @@ export function withRBAC<P extends object>(
   options: WithRBACOptions = {}
 ) {
   return function WithRBACWrapper(props: P) {
-    const { isLoading, isAuthenticated, isAtLeastLevel, hasAnyPermission, hasAllPermissions } = useRBAC();
+    const { isLoading, isAuthenticated, level, canAccess } = useRBAC();
     const router = require("next/navigation").useRouter();
-    const canAccess = (permissions: Permission[], requireAll: boolean) =>
-      requireAll ? hasAllPermissions(permissions) : hasAnyPermission(permissions);
 
     if (isLoading) {
       return (
@@ -341,7 +263,7 @@ export function withRBAC<P extends object>(
       );
     }
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !level) {
       if (options.redirectTo) {
         router.push(options.redirectTo);
         return null;
@@ -351,8 +273,26 @@ export function withRBAC<P extends object>(
       );
     }
 
-    // Vérification niveau
-    if (options.minLevel !== undefined && !isAtLeastLevel(options.minLevel)) {
+    // Vérification niveau maximum
+    if (options.maxLevel !== undefined && level > options.maxLevel) {
+      if (options.redirectTo) {
+        router.push(options.redirectTo);
+        return null;
+      }
+      return <>{options.fallback ?? <div className="p-8 text-center">Accès refusé</div>}</>;
+    }
+
+    // Vérification niveau minimum
+    if (options.minLevel !== undefined && level < options.minLevel) {
+      if (options.redirectTo) {
+        router.push(options.redirectTo);
+        return null;
+      }
+      return <>{options.fallback ?? <div className="p-8 text-center">Accès refusé</div>}</>;
+    }
+
+    // Vérification niveau exact
+    if (options.exactLevel !== undefined && level !== options.exactLevel) {
       if (options.redirectTo) {
         router.push(options.redirectTo);
         return null;

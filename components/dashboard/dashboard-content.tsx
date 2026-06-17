@@ -1,0 +1,127 @@
+// components/dashboard/dashboard-content.tsx
+// Contenu du dashboard — reçoit la session déjà validée
+
+import { Suspense } from "react";
+import { prisma } from "@/lib/prisma";
+import { OverviewStats } from "@/components/dashboard/widgets/overview-stats";
+import { RevenueChart } from "@/components/dashboard/widgets/revenue-chart";
+import { RecentOrders } from "@/components/dashboard/widgets/recent-orders";
+import { TopProducts } from "@/components/dashboard/widgets/top-products";
+import { CategoryBreakdown } from "@/components/dashboard/widgets/category-breakdown";
+import { AuditLogPreview } from "@/components/dashboard/widgets/audit-log-preview";
+import { TreasurySummary } from "@/components/dashboard/widgets/treasury-summary";
+import { MediaStorageStats } from "@/components/dashboard/widgets/media-storage-stats";
+import { WishlistActivity } from "@/components/dashboard/widgets/wishlist-activity";
+import { VideoAnalytics } from "@/components/dashboard/widgets/video-analytics";
+import { PaymentMethodDistribution } from "@/components/dashboard/widgets/payment-method-distribution";
+import { UserActivityHeatmap } from "@/components/dashboard/widgets/user-activity-heatmap";
+import { QuickActions } from "@/components/dashboard/widgets/quick-actions";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// ... (tous les fetchers getOverviewStats, getRecentOrders, etc. identiques)
+
+interface DashboardContentProps {
+  session: {
+    level: number;
+    role: { name: string; color: string };
+    effectivePermissions: Set<string>;
+  };
+}
+
+export async function DashboardContent({ session }: DashboardContentProps) {
+  const { level, effectivePermissions } = session;
+  const hasPermission = (p: string) => effectivePermissions.has(p as any);
+
+  return (
+    <div className="space-y-6">
+      {/* En-tête */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Niveau d&apos;accès :{" "}
+            <span className="font-semibold" style={{ "--role-color": session.role.color } as any}>
+              {session.role.name} (Level {level})
+            </span>
+          </p>
+        </div>
+        <QuickActions level={level} permissions={Array.from(effectivePermissions)} />
+      </div>
+
+      {/* LEVEL 5 */}
+      {level <= 5 && (
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <RevenueChart />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <TopProducts data={getTopProducts()} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-64" />}>
+            <WishlistActivity data={getWishlistStats()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* LEVEL 4 */}
+      {level <= 4 && (
+        <section className="grid gap-4 md:grid-cols-2">
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <RecentOrders data={getRecentOrders()} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <CategoryBreakdown data={getCategoryBreakdown()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* LEVEL 3 */}
+      {level <= 3 && (
+        <>
+          <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <MediaStorageStats data={getMediaStats()} />
+            </Suspense>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <VideoAnalytics data={getVideoStats()} />
+            </Suspense>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <PaymentMethodDistribution data={getPaymentDistribution()} />
+            </Suspense>
+          </section>
+          <section className="grid gap-4 md:grid-cols-2">
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <UserActivityHeatmap />
+            </Suspense>
+            <Suspense fallback={<Skeleton className="h-64" />}>
+              <TreasurySummary data={getTreasurySummary()} />
+            </Suspense>
+          </section>
+        </>
+      )}
+
+      {/* LEVEL 2 */}
+      {level <= 2 && (
+        <section className="grid gap-4">
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <AuditLogPreview data={getAuditLogs()} />
+          </Suspense>
+        </section>
+      )}
+
+      {/* LEVEL 1 */}
+      {level <= 1 && (
+        <section className="grid gap-4">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
+            <h3 className="text-lg font-semibold text-destructive">
+              Zone Super Admin
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Accès aux outils système, configuration globale et gestion des rôles.
+            </p>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
