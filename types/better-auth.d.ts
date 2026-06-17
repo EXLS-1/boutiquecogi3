@@ -8,4 +8,8 @@ declare module "better-auth" {
   interface Session {
     user: User;
   }
+
+  interface BetterAuthAdvancedOptions {
+    generateId?: boolean | ((options: { modelName: string }) => string);
+  }
 }

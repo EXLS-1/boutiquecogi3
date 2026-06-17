@@ -11,9 +11,7 @@ function requiredEnv(name: string): string {
   const value = process.env[name];
 
   if (!value || value.trim().length === 0) {
-    throw new Error(
-      `[AUTH ENV ERROR] Missing environment variable: ${name}`,
-    );
+    throw new Error(`[AUTH ENV ERROR] Missing environment variable: ${name}`);
   }
 
   return value;
@@ -26,13 +24,8 @@ const baseURL =
   "http://localhost:3000";
 
 // Validation stricte production.
-if (
-  process.env.NODE_ENV === "production" &&
-  baseURL.includes("localhost")
-) {
-  throw new Error(
-    "[AUTH ERROR] Invalid production baseURL.",
-  );
+if (process.env.NODE_ENV === "production" && baseURL.includes("localhost")) {
+  throw new Error("[AUTH ERROR] Invalid production baseURL.");
 }
 
 // Configuration Better Auth.
@@ -42,15 +35,14 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   // Secret JWT/session obligatoire.
-  secret: requiredEnv(
-    "BETTER_AUTH_SECRET",
-  ),
+  secret: requiredEnv("BETTER_AUTH_SECRET"),
   // URL publique application.
   baseURL,
   // Configuration avancée.
   advanced: {
     // UUID v7 monotonic.
-    generateId: generateUUIDv7,
+    // On enveloppe pour ignorer l'objet 'options' passé par Better-Auth et éviter un TypeError de validation.
+    useSecureCookies: true,
   },
   // Auth email/password.
   emailAndPassword: {
@@ -69,9 +61,11 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: "string",
-        required: false,
-        defaultValue: "user",
-         // Empêche injection client
+        //
+        required: true,
+        // Valeur par défaut.
+        defaultValue: "USER",
+        // Empêche injection client
         input: false,
       },
     },
@@ -81,38 +75,31 @@ export const auth = betterAuth({
   socialProviders: {
     google: {
       enabled:
-        !!process.env.GOOGLE_CLIENT_ID &&
-        !!process.env.GOOGLE_CLIENT_SECRET,
-      clientId:
-        process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret:
-        process.env.GOOGLE_CLIENT_SECRET ?? "",
+        !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     },
 
     facebook: {
       enabled:
         !!process.env.FACEBOOK_CLIENT_ID &&
         !!process.env.FACEBOOK_CLIENT_SECRET,
-      clientId:
-        process.env.FACEBOOK_CLIENT_ID ?? "",
-      clientSecret:
-        process.env.FACEBOOK_CLIENT_SECRET ?? "",
+      clientId: process.env.FACEBOOK_CLIENT_ID ?? "",
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? "",
     },
   },
-  
+
   // Next.js cookies integration.
   plugins: [nextCookies()],
-  
+
   // Session configuration.
   session: {
-  // Expiration 30 jours.
+    // Expiration 30 jours.
     expiresIn: 60 * 60 * 24 * 30,
-  // Rotation session.
+    // Rotation session.
     updateAge: 60 * 60 * 24,
   },
-  
+
   // Trusted origins production.
-  trustedOrigins: [
-    baseURL,
-  ],
+  trustedOrigins: [baseURL],
 });
