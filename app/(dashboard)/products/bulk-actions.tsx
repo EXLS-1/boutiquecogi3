@@ -1,12 +1,7 @@
 // /app/(dashboard)/products/BulkActions.tsx
-// ============================================
-// Client Component — Actions groupées sur les produits
-// ============================================
-
 "use client";
 
 import { useState, useCallback } from "react";
-import { usePermissions } from "@/hooks/usePermissions";
 import { PERMISSIONS, type Permission } from "@/lib/auth/rbac";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +22,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
-  SelectAll,
+  CheckSquare,
   Trash2,
   Package,
   Tag,
@@ -36,32 +31,18 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// ───────────────────────────────────────────
-// TYPES
-// ───────────────────────────────────────────
+import { cn } from "@/lib/utils/cn";
+import { bulkProductsAction } from "./actions"; // Importation directe de la Server Action
 
 interface BulkActionsProps {
-  /** Permissions pré-récupérées par le Server Component parent */
   permissions: Permission[];
-  /** IDs des produits actuellement sélectionnés */
   selectedIds: string[];
-  /** Callback quand la sélection change */
-  onSelectionChange?: (ids: string[]) => void;
-  /** Callback après action réussie (pour revalidation) */
-  onActionComplete?: () => void;
-  /** Nombre total de produits (pour "Sélectionner tout") */
-  totalCount?: number;
+  onSelectionChange: (ids: string[]) => void;
+  onActionComplete: () => void;
+  totalCount: number;
 }
 
-type BulkActionType =
-  | "delete"
-  | "activate"
-  | "deactivate"
-  | "archive"
-  | "change-category"
-  | "export";
+type BulkActionType = "delete" | "activate" | "deactivate" | "archive";
 
 interface BulkActionConfig {
   id: BulkActionType;
@@ -74,41 +55,10 @@ interface BulkActionConfig {
   confirmationDescription?: string;
 }
 
-// ───────────────────────────────────────────
-// CONFIGURATION DES ACTIONS
-// ───────────────────────────────────────────
-
 const BULK_ACTIONS: BulkActionConfig[] = [
-  {
-    id: "activate",
-    label: "Activer",
-    icon: <Package className="h-4 w-4" />,
-    permission: PERMISSIONS.PRODUCTS_UPDATE,
-  },
-  {
-    id: "deactivate",
-    label: "Désactiver",
-    icon: <Archive className="h-4 w-4" />,
-    permission: PERMISSIONS.PRODUCTS_UPDATE,
-  },
-  {
-    id: "change-category",
-    label: "Changer de catégorie",
-    icon: <Tag className="h-4 w-4" />,
-    permission: PERMISSIONS.PRODUCTS_UPDATE,
-  },
-  {
-    id: "archive",
-    label: "Archiver",
-    icon: <Archive className="h-4 w-4" />,
-    permission: PERMISSIONS.PRODUCTS_BULK_EDIT,
-  },
-  {
-    id: "export",
-    label: "Exporter la sélection",
-    icon: <SelectAll className="h-4 w-4" />,
-    permission: PERMISSIONS.PRODUCTS_EXPORT,
-  },
+  { id: "activate", label: "Activer", icon: <Package className="h-4 w-4" />, permission: PERMISSIONS.PRODUCTS_UPDATE },
+  { id: "deactivate", label: "Désactiver", icon: <Archive className="h-4 w-4" />, permission: PERMISSIONS.PRODUCTS_UPDATE },
+  { id: "archive", label: "Archiver", icon: <Archive className="h-4 w-4" />, permission: PERMISSIONS.PRODUCTS_BULK_EDIT },
   {
     id: "delete",
     label: "Supprimer",
@@ -117,46 +67,63 @@ const BULK_ACTIONS: BulkActionConfig[] = [
     variant: "destructive",
     requiresConfirmation: true,
     confirmationTitle: "Supprimer les produits sélectionnés",
-    confirmationDescription:
-      "Cette action est irréversible. Les produits sélectionnés seront définitivement supprimés.",
+    confirmationDescription: "Cette action est irréversible. Les produits sélectionnés seront définitivement supprimés.",
   },
 ];
-
-// ───────────────────────────────────────────
-// COMPOSANT
-// ───────────────────────────────────────────
 
 export function BulkActions({
   permissions,
   selectedIds,
   onSelectionChange,
   onActionComplete,
-  totalCount = 0,
+  totalCount,
 }: BulkActionsProps) {
-  const { can } = usePermissions(permissions);
+  const can = (permission: Permission) => permissions.includes(permission);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<BulkActionConfig | null>(
-    null
-  );
+  const [pendingAction, setPendingAction] = useState<BulkActionConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectAllChecked, setSelectAllChecked] = useState<"indeterminate" | boolean>(false);
 
-  // ── Filtre les actions selon les permissions ──
-  const availableActions = BULK_ACTIONS.filter((action) =>
-    can(action.permission)
-  );
+  const availableActions = BULK_ACTIONS.filter((action) => can(action.permission));
+  const hasSelection = selectedIds.length > 0;
+  const isAllSelected = hasSelection && selectedIds.length === totalCount;
 
-  // ── Handlers ──
   const handleSelectAll = useCallback(
     (checked: boolean) => {
-      setSelectAllChecked(checked);
-      if (onSelectionChange) {
-        // Si "tout sélectionner", tu passerais tous les IDs
-        // Ici simplifié — à adapter selon ta logique de pagination
-        onSelectionChange(checked ? [] /* tous les IDs */ : []);
+      if (!checked) {
+        onSelectionChange([]);
       }
+      // La logique exacte de remplissage de tous les IDs dépend de la structure de votre ProductTable
     },
     [onSelectionChange]
+  );
+
+  const executeAction = useCallback(
+    async (action: BulkActionConfig) => {
+      if (selectedIds.length === 0) return;
+      setIsLoading(true);
+
+      try {
+        // Exécution native de la Server Action au lieu du Fetch REST API
+        const response = await bulkProductsAction({
+          action: action.id,
+          ids: selectedIds,
+        });
+
+        if (!response.success) {
+          throw new Error(response.error);
+        }
+
+        onActionComplete();
+      } catch (err) {
+        console.error("Bulk action failed:", err);
+        // Intégrer votre système de Toast d'erreur ici (ex: toast.error(...))
+      } finally {
+        setIsLoading(false);
+        setIsDialogOpen(false);
+        setPendingAction(null);
+      }
+    },
+    [selectedIds, onActionComplete]
   );
 
   const handleActionClick = useCallback((action: BulkActionConfig) => {
@@ -166,119 +133,30 @@ export function BulkActions({
     } else {
       executeAction(action);
     }
-  }, []);
+  }, [executeAction]);
 
-  const executeAction = useCallback(
-    async (action: BulkActionConfig) => {
-      if (selectedIds.length === 0) return;
-
-      setIsLoading(true);
-
-      try {
-        const response = await fetch(`/api/products/bulk`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: action.id,
-            ids: selectedIds,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Action échouée");
-        }
-
-        // Reset sélection
-        if (onSelectionChange) {
-          onSelectionChange([]);
-        }
-        setSelectAllChecked(false);
-
-        // Callback de complétion
-        onActionComplete?.();
-      } catch (err) {
-        console.error("Bulk action failed:", err);
-        // Tu peux intégrer un toast ici (sonner, react-hot-toast, etc.)
-      } finally {
-        setIsLoading(false);
-        setIsDialogOpen(false);
-        setPendingAction(null);
-      }
-    },
-    [selectedIds, onSelectionChange, onActionComplete]
-  );
-
-  const handleConfirm = useCallback(() => {
-    if (pendingAction) {
-      executeAction(pendingAction);
-    }
-  }, [pendingAction, executeAction]);
-
-  // ── Renders ──
-  if (availableActions.length === 0) {
-    return null;
-  }
-
-  const hasSelection = selectedIds.length > 0;
+  if (availableActions.length === 0) return null;
 
   return (
     <div className="flex items-center gap-3">
-      {/* Checkbox "Sélectionner tout" */}
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="select-all"
-          checked={selectAllChecked}
-          onCheckedChange={handleSelectAll}
-          aria-label="Sélectionner tout"
-        />
-        <label
-          htmlFor="select-all"
-          className="text-sm text-muted-foreground cursor-pointer"
-        >
-          {hasSelection ? `${selectedIds.length} sélectionné(s)` : "Tout sélectionner"}
-        </label>
-      </div>
-
-      {/* Badge de compteur */}
+      {/* Compteur et statut */}
       {hasSelection && (
-        <Badge variant="secondary" className="font-mono">
-          {selectedIds.length}
+        <Badge variant="secondary" className="font-mono px-2.5 py-1 text-xs">
+          {selectedIds.length} sélectionné(s)
         </Badge>
       )}
 
-      {/* Dropdown des actions bulk */}
+      {/* Trigger du menu d'actions groupées */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!hasSelection || isLoading}
-            className={cn(
-              "gap-2",
-              !hasSelection && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <SelectAll className="h-4 w-4" />
-            )}
+          <Button variant="outline" size="sm" disabled={!hasSelection || isLoading} className="gap-2">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckSquare className="h-4 w-4" />}
             Actions groupées
             <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem
-            disabled
-            className="text-xs text-muted-foreground"
-          >
-            {selectedIds.length} produit(s) sélectionné(s)
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
           {availableActions.map((action) => (
             <DropdownMenuItem
               key={action.id}
@@ -286,8 +164,7 @@ export function BulkActions({
               disabled={isLoading}
               className={cn(
                 "gap-2 cursor-pointer",
-                action.variant === "destructive" &&
-                  "text-destructive focus:text-destructive focus:bg-destructive/10"
+                action.variant === "destructive" && "text-destructive focus:text-destructive focus:bg-destructive/10"
               )}
             >
               {action.icon}
@@ -297,7 +174,7 @@ export function BulkActions({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Dialog de confirmation */}
+      {/* Confirmation Dialog sécurisé */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -305,38 +182,22 @@ export function BulkActions({
               <AlertTriangle className="h-5 w-5" />
               {pendingAction?.confirmationTitle}
             </DialogTitle>
-            <DialogDescription>
-              {pendingAction?.confirmationDescription}
-            </DialogDescription>
+            <DialogDescription>{pendingAction?.confirmationDescription}</DialogDescription>
           </DialogHeader>
 
           <div className="bg-muted p-3 rounded-md">
-            <p className="text-sm font-medium">
-              {selectedIds.length} produit(s) concerné(s)
+            <p className="text-sm font-medium text-muted-foreground">
+              Nombre de produits impactés : <span className="font-bold text-foreground">{selectedIds.length}</span>
             </p>
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isLoading}
-            >
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isLoading}>
               Annuler
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirm}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Suppression...
-                </>
-              ) : (
-                "Confirmer la suppression"
-              )}
+            <Button variant="destructive" onClick={() => pendingAction && executeAction(pendingAction)} disabled={isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirmer
             </Button>
           </DialogFooter>
         </DialogContent>

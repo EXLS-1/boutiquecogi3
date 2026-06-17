@@ -1,43 +1,60 @@
 // app/dashboard/products/page.tsx
-// Gestion des produits avec RBAC
-// Level 5+ (Seller+) : CRUD produits | Level 3+ (Manager+) : import/export
-
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getServerRBACSession } from "@/lib/rbac/server";
+import { getServerRBACSession } from "@/lib/rbac/server"; 
 import { prisma } from "@/lib/prisma";
 
-import { ProductsTable } from "@/components/dashboard/products/products-table";
 import { ProductFilters } from "@/components/dashboard/products/product-filters";
 import { ProductActionBar } from "@/components/dashboard/products/product-action-bar";
+import { ProductSelectionWrapper } from "@/components/dashboard/products/product-selection-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getClientPermissions } from "@/lib/auth/rbac";
 
 interface ProductsPageProps {
   searchParams: Promise<{
-    type?: string; category?: string; status?: string; search?: string; page?: string;
+    type?: string;
+    category?: string;
+    status?: string;
+    search?: string;
+    page?: string;
   }>;
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  // 1. Récupération de la session RBAC Server-Side
   const session = await getServerRBACSession();
   if (!session) redirect("/auth/signin");
 
-  const { level, effectivePermissions } = session;
+  const { level, effectivePermissions, role } = session;
   const params = await searchParams;
 
-  // Level minimum 5 (Seller)
-  if (level > 5) redirect("/unauthorized");
+  /**
+   * SÉCURITÉ CONSOLIDÉE SUR LA HIÉRARCHIE INVERSÉE :
+   * Level 1 = SUPER_ADMIN (Pouvoir max) -> Level 6 = USER (Pouvoir min)
+   * Si level > 5 (ex: Level 6 USER), l'accès est strictement refusé.
+   */
+  if (level > 5) {
+    redirect("/unauthorized");
+  }
 
+  // 2. Évaluation des droits fins basée sur vos permissions effectives
   const canCreate = effectivePermissions.has("products:create");
   const canDelete = effectivePermissions.has("products:delete");
+  
+  // Seuls les rôles de niveau 1, 2 ou 3 ont accès à l'import/export
   const canImport = level <= 3 && effectivePermissions.has("products:import");
   const canExport = level <= 3 && effectivePermissions.has("products:export");
+  
   const canManageVariants = effectivePermissions.has("products:manage_variants");
   const canManageReviews = effectivePermissions.has("products:manage_reviews");
+
+  // Transformation du Set de permissions en Array pour le passage sécurisé aux Client Components
+  const clientPermissionsArray = await getClientPermissions(role);
 
   const page = parseInt(params.page || "1");
   const limit = 20;
 
+  // 3. Clause WHERE sécurisée avec typage de recherche insensible à la casse
   const where = {
     ...(params.type && { type: params.type }),
     ...(params.category && { categoryId: params.category }),
@@ -50,6 +67,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     }),
   };
 
+  // 4. Extraction de données optimisée (requêtes parallèles)
   const [products, total, categories] = await Promise.all([
     prisma.product.findMany({
       where,
@@ -72,7 +90,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Produits</h1>
           <p className="text-muted-foreground mt-1">
-            {total} produit{total > 1 ? "s" : ""} · Level {level}
+            {total} produit{total > 1 ? "s" : ""} · Niveau {level} ({role})
           </p>
         </div>
         <ProductActionBar canCreate={canCreate} canImport={canImport} canExport={canExport} />
@@ -82,17 +100,18 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <ProductFilters categories={categories} />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-96" />}>
-        <ProductsTable
-          products={products}
-          total={total}
-          page={page}
-          limit={limit}
-          canDelete={canDelete}
-          canManageVariants={canManageVariants}
-          canManageReviews={canManageReviews}
-        />
-      </Suspense>
+      {/* Orchestrateur client de l'état partagé (selectedIds) */}
+      <ProductSelectionWrapper
+        products={products}
+        total={total}
+        page={page}
+        limit={limit}
+        canDelete={canDelete}
+        canManageVariants={canManageVariants}
+        canManageReviews={canManageReviews}
+        clientPermissions={clientPermissionsArray}
+        userLevel={level}
+      />
     </div>
   );
 }
