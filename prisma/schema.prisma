@@ -81,12 +81,14 @@ model User {
   searchAnalytics  SearchAnalytics?
   deletedAt        DateTime?
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  productViews ProductView[]
-  productCount Int           @default(0)
-  auditLogs    AuditLog[]
-  roleConfig   RoleConfig?   @relation(fields: [roleConfigId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  productViews    ProductView[]
+  createdProducts Product[]     @relation("ProductCreator")
+  editedProducts  Product[]     @relation("ProductEditor")
+  productCount    Int           @default(0)
+  auditLogs       AuditLog[]
+  roleConfig      RoleConfig?   @relation(fields: [roleConfigId], references: [id])
 
   @@index([email])
   @@map("user")
@@ -302,6 +304,8 @@ model Product {
   basePrice   Int // en centimes
   currency    String @default("USD") @db.VarChar(3)
 
+  userId String? @map("user_id") @db.Uuid // user id who created the product (deprecated, use createdBy)
+
   isFeatured     Boolean       @default(false)
   isArchived     Boolean       @default(false)
   isdeleted      Boolean       @default(false)
@@ -319,6 +323,10 @@ model Product {
   saleStart DateTime?
   saleEnd   DateTime?
 
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+  creator   User?    @relation("ProductCreator", fields: [createdBy], references: [id])
+  editor    User?    @relation("ProductEditor", fields: [updatedBy], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -335,6 +343,8 @@ model Product {
   productPrices          ProductPrice[]
   productViews           ProductView[]
 
+  @@index([createdBy])
+  @@index([updatedBy])
   @@index([categoryId, isArchived, basePrice])
   @@index([slug])
   @@map("product")

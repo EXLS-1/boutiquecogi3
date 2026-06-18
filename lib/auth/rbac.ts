@@ -12,7 +12,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
 // ───────────────────────────────────────────
 // 1. TYPES & CONSTANTS
@@ -565,7 +564,7 @@ export async function getNumericRestriction(
 export async function getCurrentUserRole(): Promise<Role> {
   // Better-Auth : récupère la session depuis les headers
   const headersList = await headers();
-  const auth = Auth({
+  const auth = auth({
     // ta config better-auth existante
   });
 
@@ -591,7 +590,7 @@ export async function getCurrentUserRole(): Promise<Role> {
  */
 export async function getCurrentUserWithRole() {
   const headersList = await headers();
-  const auth = Auth({
+  const auth = auth({
     // ta config
   });
 
