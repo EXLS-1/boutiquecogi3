@@ -7,7 +7,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { AuditLogViewer } from "@/components/admin/audit-log-viewer";
+import { AuditLogViewer } from "@/components/auditlog/audit-log-viewer";
 import { History } from "lucide-react";
 
 export const dynamic = "force-dynamic"; // Assure que les données sont toujours fraîches

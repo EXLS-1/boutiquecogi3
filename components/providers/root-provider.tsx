@@ -3,6 +3,9 @@
 
 import { BetterAuthContext } from "@/lib/auth/auth-client";
 import type { auth } from "@/lib/auth";
+import authClient from "@/lib/auth/auth-client";
+import React from "react";
+import { ThemeProvider } from "./theme-provider";
 
 interface RootProvidersProps {
   /**
@@ -13,14 +16,19 @@ interface RootProvidersProps {
   children: React.ReactNode;
 }
 
-export function RootProvider({ children, session }: RootProvidersProps) {
+export default function RootProvider({ children, session }: RootProvidersProps) {
   // Aucune extraction destructive. L'objet `session` reçu du serveur (qui vaut 
   // { session, user } ou null) correspond exactement à la signature attendue par le provider.
   return (
     <BetterAuthContext.Provider value={{ session }}>
-      {children}
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        {children}
+      </ThemeProvider>
     </BetterAuthContext.Provider>
   );
 }
 
-export default RootProvider;
+export function UserAvatar() {
+  const { data: session } = authClient.useSession();
+  return <span>{session?.user.name}</span>;
+}
