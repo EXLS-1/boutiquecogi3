@@ -7,7 +7,7 @@
 
 "use server";
 
-import { betterAuth } from "better-auth";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -565,7 +565,7 @@ export async function getNumericRestriction(
 export async function getCurrentUserRole(): Promise<Role> {
   // Better-Auth : récupère la session depuis les headers
   const headersList = await headers();
-  const auth = betterAuth({
+  const auth = Auth({
     // ta config better-auth existante
   });
 
@@ -591,7 +591,7 @@ export async function getCurrentUserRole(): Promise<Role> {
  */
 export async function getCurrentUserWithRole() {
   const headersList = await headers();
-  const auth = betterAuth({
+  const auth = Auth({
     // ta config
   });
 
