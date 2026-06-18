@@ -1,14 +1,15 @@
 // app/dashboard/products/page.tsx
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getServerRBACSession } from "@/lib/rbac/server"; 
+import { getServerRBACSession } from "@/lib/auth/server"; 
 import { prisma } from "@/lib/prisma";
 
-import { ProductFilters } from "@/components/dashboard/products/product-filters";
-import { ProductActionBar } from "@/components/dashboard/products/product-action-bar";
-import { ProductSelectionWrapper } from "@/components/dashboard/products/product-selection-wrapper";
+import { ProductFilters } from "@/components/dashboard/product/product-filters";
+import { ProductActionBar } from "@/components/dashboard/product/product-action-bar";
+import { ProductSelectionWrapper } from "@/components/dashboard/product/product-selection-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClientPermissions } from "@/lib/auth/rbac";
+import { dashboardProductArgs } from "@/types/prisma";
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -16,7 +17,7 @@ interface ProductsPageProps {
     category?: string;
     status?: string;
     search?: string;
-    page?: string;
+    page?: number;
   }>;
 }
 
@@ -74,11 +75,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: "desc" },
-      include: {
-        category: { select: { id: true, name: true } },
-        variants: { select: { id: true } },
-        _count: { select: { reviews: true, orderItems: true } },
-      },
+      ...dashboardProductArgs,
     }),
     prisma.product.count({ where }),
     prisma.category.findMany({ select: { id: true, name: true } }),

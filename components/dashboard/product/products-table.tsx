@@ -29,22 +29,12 @@ import {
   ChevronRight, 
   Eye 
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/cn";
-
-// Interface stricte alignée sur vos requêtes Prisma et vos filtres
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  status: string; // "ACTIVE" | "DRAFT" | "ARCHIVED"
-  category?: { id: string; name: string } | null;
-  variants?: { id: string }[];
-  _count?: { reviews: number; orderItems: number } | null;
-  createdAt: any;
-}
+import type { DashboardProductWithRelations } from "@/types/prisma";
 
 interface ProductsTableProps {
-  products: Product[];
+  products: DashboardProductWithRelations[];
   total: number;
   page: number;
   limit: number;
@@ -138,8 +128,8 @@ export function ProductsTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="w-[50px] text-center">
-                <input
+              <TableHead className="w-12.5 text-center">
+                <Input
                   type="checkbox"
                   ref={masterCheckboxRef}
                   checked={isAllSelectedOnPage}
@@ -153,7 +143,7 @@ export function ProductsTable({
               <TableHead className="font-semibold text-foreground text-right">Prix</TableHead>
               <TableHead className="font-semibold text-foreground text-center">Variantes</TableHead>
               <TableHead className="font-semibold text-foreground text-center">Avis</TableHead>
-              <TableHead className="w-[80px] text-center font-semibold text-foreground">Actions</TableHead>
+              <TableHead className="w-20 text-center font-semibold text-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -177,7 +167,7 @@ export function ProductsTable({
                   >
                     {/* Logique d'intégration exacte de votre case à cocher unitaire */}
                     <TableCell className="text-center">
-                      <input
+                      <Input
                         type="checkbox"
                         checked={isSelected}
                         onChange={(e) => {
@@ -191,7 +181,7 @@ export function ProductsTable({
                       />
                     </TableCell>
                     
-                    <TableCell className="font-medium max-w-[260px] truncate">
+                    <TableCell className="font-medium max-w-65 truncate">
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-foreground">{product.name}</span>
                         <span className="text-xs text-muted-foreground font-mono truncate">{product.id}</span>
