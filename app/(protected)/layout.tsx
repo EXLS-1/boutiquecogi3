@@ -1,31 +1,45 @@
-// app/(protected)/layout.tsx
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { 
+  getCurrentUserWithRole, 
+  getClientPermissions, 
+  getClientRestrictions 
+} from "@/lib/auth/rbac";
+import { RBACProvider } from "@/components/providers/rbac-provider";
 
 export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Dans Next.js 16, headers() doit être "await"
-  const headersList = await headers();
-  
-  // Requête directe, sans try/catch inutile. Better-Auth renvoie null si aucune session.
-  const session = await auth.api.getSession({
-    headers: headersList,
-  });
+  // 1. Récupération centralisée et normalisée de la session et du rôle
+  const authContext = await getCurrentUserWithRole();
 
-  if (!session?.user) {
+  // Guard de premier niveau : Si non authentifié, redirection immédiate
+  if (!authContext || !authContext.isAuthenticated) {
     redirect("/auth/sign-in");
   }
 
-  // Bonus d'architecture : Tu pourras utiliser ce layout pour injecter 
-  // les données de 'session.user' dans un Provider React si nécessaire.
+  const { user, role, level } = authContext;
+
+  // 2. Résolution parallèle des permissions et restrictions pour le Client Downstream
+  // Optimisation de la performance (évite le waterfall séquentiel)
+  const [permissions, restrictions] = await Promise.all([
+    getClientPermissions(role),
+    getClientRestrictions(role),
+  ]);
+
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      {/* Ton header/sidebar protégé ira ici */}
-      {children}
-    </div>
+    <RBACProvider 
+      user={user} 
+      role={role} 
+      level={level} 
+      permissions={permissions} 
+      restrictions={restrictions}
+    >
+      <div className="flex min-h-screen flex-col bg-slate-50">
+        {/* Vos composants de structure globale (Sidebar, Navbar) consommeront ce contexte */}
+        {children}
+      </div>
+    </RBACProvider>
   );
 }

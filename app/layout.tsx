@@ -11,7 +11,7 @@ import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
 import { LeftSidebar } from "@/components/toggle/left-sidebar";
 import { RightSidebar } from "@/components/toggle/right-sidebar";
 import { Footer } from "@/components/footer";
-import { RootProviders } from "@/components/theme/root-providers";
+import { RootProvider } from "@/components/providers/root-provider";
 import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { CartSyncManager } from "@/components/cart/cart-sync-manager";
 
@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="fr" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable} ${lato.variable} ${cormorant.variable} antialiased font-sans`}>
-        <RootProviders session={authSession}>
+        <RootProvider session={authSession}>
           <CartSyncManager />
           {/* Injection directe de la session pour supprimer le délai d'hydratation */}
           <Navbar />
@@ -58,7 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </UIWrapper>
 
           <Footer />
-        </RootProviders>
+        </RootProvider>
       </body>
     </html>
   );

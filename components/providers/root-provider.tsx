@@ -13,7 +13,7 @@ interface RootProvidersProps {
   children: React.ReactNode;
 }
 
-export function RootProviders({ children, session }: RootProvidersProps) {
+export function RootProvider({ children, session }: RootProvidersProps) {
   // Aucune extraction destructive. L'objet `session` reçu du serveur (qui vaut 
   // { session, user } ou null) correspond exactement à la signature attendue par le provider.
   return (
@@ -23,4 +23,4 @@ export function RootProviders({ children, session }: RootProvidersProps) {
   );
 }
 
-export default RootProviders;
+export default RootProvider;

@@ -564,11 +564,11 @@ export async function getNumericRestriction(
 export async function getCurrentUserRole(): Promise<Role> {
   // Better-Auth : récupère la session depuis les headers
   const headersList = await headers();
-  const auth = auth({
+  const authInstance = auth({
     // ta config better-auth existante
   });
 
-  const session = await auth.api.getSession({
+  const session = await authInstance.api.getSession({
     headers: headersList,
   });
 
@@ -590,11 +590,11 @@ export async function getCurrentUserRole(): Promise<Role> {
  */
 export async function getCurrentUserWithRole() {
   const headersList = await headers();
-  const auth = auth({
+  const authInstance = auth({
     // ta config
   });
 
-  const session = await auth.api.getSession({
+  const session = await authInstance.api.getSession({
     headers: headersList,
   });
 
