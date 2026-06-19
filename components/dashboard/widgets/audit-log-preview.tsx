@@ -98,14 +98,33 @@ async function fetchAuditLogs(limit: number = 6): Promise<AuditEntry[]> {
       action: true,
       entity: true,
       entityId: true,
-      userName: true,
-      severity: true,
       createdAt: true,
-      details: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+      metadata: true,
+      error: true,
     },
   });
 
-  return logs;
+  return logs.map((log) => {
+    const metadata = (log.metadata as Record<string, unknown> | null) ?? {};
+    const severity = (metadata.severity as string) ?? (metadata.success === false ? "CRITICAL" : "SUCCESS");
+    const details = (metadata.details as string) ?? log.error ?? null;
+
+    return {
+      id: log.id,
+      action: log.action,
+      entity: log.entity ?? "",
+      entityId: log.entityId,
+      userName: log.user?.name ?? null,
+      severity,
+      createdAt: log.createdAt,
+      details,
+    };
+  });
 }
 
 // ───────────────────────────────────────────

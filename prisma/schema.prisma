@@ -668,6 +668,26 @@ model StorageQuota {
   @@map("storage_quota")
 }
 
+// Stores actual uploaded media files (images, videos, documents, etc.)
+model Media {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  url       String
+  mimeType  String
+  sizeBytes Int      @default(0)
+  bucket    String
+  type      String?  // e.g. "PRODUCT_IMAGE", "BANNER", etc.
+  metadata  Json?    // arbitrary metadata (views, duration, dimensions, etc.)
+  uploadedBy String? @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([bucket])
+  @@index([mimeType])
+  @@index([createdAt])
+  @@map("media")
+}
+
 model VideoTypeConfig {
   id                         String   @id @default(uuid()) @db.Uuid
   videoType                  String   @unique

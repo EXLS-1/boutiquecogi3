@@ -48,7 +48,7 @@ interface VideoStats {
 // ───────────────────────────────────────────
 
 async function fetchVideoStats(): Promise<VideoStats> {
-  const videos = await prisma.mediaFile.findMany({
+  const videos = await prisma.media.findMany({
     where: {
       mimeType: { startsWith: "video/" },
     },

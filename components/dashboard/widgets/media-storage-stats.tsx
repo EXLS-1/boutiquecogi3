@@ -65,7 +65,7 @@ function getMediaColor(type: string): string {
 // ───────────────────────────────────────────
 
 async function fetchMediaStats(): Promise<MediaStats> {
-  const files = await prisma.mediaFile.findMany({
+  const files = await prisma.media.findMany({
     select: {
       mimeType: true,
       sizeBytes: true,
