@@ -21,7 +21,6 @@ import {
   type WidgetProps,
 } from "@/lib/dashboard/widget-server-utils";
 import {
-  Plus,
   Package,
   ShoppingCart,
   Users,
@@ -41,7 +40,7 @@ interface QuickAction {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  permission: string | null; // null = tous les rôles authentifiés
+  permission: string | null;
   variant: "default" | "secondary" | "outline" | "ghost";
   description: string;
 }

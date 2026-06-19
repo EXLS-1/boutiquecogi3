@@ -89,7 +89,6 @@ async function fetchPaymentDistribution(): Promise<PaymentMethod[]> {
   });
 
   const totalAmount = payments.reduce((sum, p) => sum + (p._sum.totalAmount ?? 0), 0);
-  const totalCount = payments.reduce((sum, p) => sum + p._count.paymentMethod, 0);
 
   return payments.map((p) => {
     const method = p.paymentMethod ?? "UNKNOWN";
@@ -171,7 +170,7 @@ async function PaymentMethodDistributionContent({ className }: WidgetProps) {
                   key={method.method}
                   className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
                 >
-                  <div className={`h-8 w-8 rounded-full ${method.color} bg-opacity-20 flex items-center justify-center shrink-0`}>
+                  <div className={`h-8 w-8 rounded-full ${method.color} flex items-center justify-center shrink-0`}>
                     <Icon className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">

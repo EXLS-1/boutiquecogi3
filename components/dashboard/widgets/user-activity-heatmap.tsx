@@ -39,7 +39,6 @@ async function fetchActivityHeatmap(): Promise<HeatmapCell[]> {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Sessions ou connexions récentes
   const sessions = await prisma.session.findMany({
     where: {
       createdAt: { gte: thirtyDaysAgo },
@@ -49,9 +48,7 @@ async function fetchActivityHeatmap(): Promise<HeatmapCell[]> {
     },
   });
 
-  // Grille 7j x 24h
   const grid = new Map<string, number>();
-  const maxCount = 1;
 
   for (const session of sessions) {
     const date = new Date(session.createdAt);
@@ -89,29 +86,26 @@ const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 const HOUR_LABELS = ["00", "06", "12", "18"];
 
 const INTENSITY_COLORS = [
-  "hsl(var(--muted) / 0.3)",    // 0 - aucune activité
-  "hsl(var(--primary) / 0.25)", // 1 - faible
-  "hsl(var(--primary) / 0.5)",  // 2 - moyen
-  "hsl(var(--primary) / 0.75)", // 3 - élevé
-  "hsl(var(--primary))",        // 4 - intense
+  "hsl(var(--muted) / 0.3)",
+  "hsl(var(--primary) / 0.25)",
+  "hsl(var(--primary) / 0.5)",
+  "hsl(var(--primary) / 0.75)",
+  "hsl(var(--primary))",
 ];
 
 function HeatmapGrid({ cells }: { cells: HeatmapCell[] }) {
   const cellSize = 10;
   const gap = 2;
-  const dayHeight = cellSize + gap;
-  const hourWidth = cellSize + gap;
 
   return (
     <div className="w-full overflow-x-auto">
       <div className="min-w-[400px]">
-        {/* Légende heures */}
         <div className="flex items-center mb-1 ml-8">
           {HOUR_LABELS.map((h) => (
             <span
               key={h}
               className="text-[9px] text-muted-foreground"
-              style={{ width: `${6 * hourWidth}px`, textAlign: "center" }}
+              style={{ width: `${6 * (cellSize + gap)}px`, textAlign: "center" }}
             >
               {h}h
             </span>
@@ -119,7 +113,6 @@ function HeatmapGrid({ cells }: { cells: HeatmapCell[] }) {
         </div>
 
         <div className="flex">
-          {/* Labels jours */}
           <div className="flex flex-col justify-around mr-2 py-1">
             {DAY_LABELS.map((d) => (
               <span key={d} className="text-[9px] text-muted-foreground h-[10px] leading-[10px]">
@@ -128,7 +121,6 @@ function HeatmapGrid({ cells }: { cells: HeatmapCell[] }) {
             ))}
           </div>
 
-          {/* Grille */}
           <div
             className="grid gap-[2px]"
             style={{
@@ -151,7 +143,6 @@ function HeatmapGrid({ cells }: { cells: HeatmapCell[] }) {
           </div>
         </div>
 
-        {/* Légende intensité */}
         <div className="flex items-center justify-end gap-2 mt-2">
           <span className="text-[9px] text-muted-foreground">Faible</span>
           {INTENSITY_COLORS.map((color, i) => (
