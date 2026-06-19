@@ -2,20 +2,18 @@
 // Contenu du dashboard — reçoit la session déjà validée
 
 import { Suspense } from "react";
-import { prisma } from "@/lib/prisma";
-import { OverviewStats } from "@/components/dashboard/widgets/overview-stats";
-import { RevenueChart } from "@/components/dashboard/widgets/revenue-chart";
-import { RecentOrders } from "@/components/dashboard/widgets/recent-orders";
-import { TopProducts } from "@/components/dashboard/widgets/top-products";
-import { CategoryBreakdown } from "@/components/dashboard/widgets/category-breakdown";
-import { AuditLogPreview } from "@/components/dashboard/widgets/audit-log-preview";
-import { TreasurySummary } from "@/components/dashboard/widgets/treasury-summary";
-import { MediaStorageStats } from "@/components/dashboard/widgets/media-storage-stats";
-import { WishlistActivity } from "@/components/dashboard/widgets/wishlist-activity";
-import { VideoAnalytics } from "@/components/dashboard/widgets/video-analytics";
-import { PaymentMethodDistribution } from "@/components/dashboard/widgets/payment-method-distribution";
-import { UserActivityHeatmap } from "@/components/dashboard/widgets/user-activity-heatmap";
-import { QuickActions } from "@/components/dashboard/widgets/quick-actions";
+import RevenueChart from "@/components/dashboard/widgets/revenue-chart";
+import RecentOrders from "@/components/dashboard/widgets/recent-orders";
+import TopProducts from "@/components/dashboard/widgets/top-products";
+import CategoryBreakdown from "@/components/dashboard/widgets/category-breakdown";
+import AuditLogPreview from "@/components/dashboard/widgets/audit-log-preview";
+import TreasurySummary from "@/components/dashboard/widgets/treasury-summary";
+import MediaStorageStats from "@/components/dashboard/widgets/media-storage-stats";
+import WishlistActivity from "@/components/dashboard/widgets/wishlist-activity";
+import VideoAnalytics from "@/components/dashboard/widgets/video-analytics";
+import PaymentMethodDistribution from "@/components/dashboard/widgets/payment-method-distribution";
+import UserActivityHeatmap from "@/components/dashboard/widgets/user-activity-heatmap";
+import QuickActions from "@/components/dashboard/widgets/quick-actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ... (tous les fetchers getOverviewStats, getRecentOrders, etc. identiques)
@@ -55,10 +53,10 @@ export async function DashboardContent({ session }: DashboardContentProps) {
             <RevenueChart />
           </Suspense>
           <Suspense fallback={<Skeleton className="h-64" />}>
-            <TopProducts data={getTopProducts()} />
+            <TopProducts />
           </Suspense>
           <Suspense fallback={<Skeleton className="h-64" />}>
-            <WishlistActivity data={getWishlistStats()} />
+            <WishlistActivity />
           </Suspense>
         </section>
       )}
@@ -67,10 +65,10 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       {level <= 4 && (
         <section className="grid gap-4 md:grid-cols-2">
           <Suspense fallback={<Skeleton className="h-96" />}>
-            <RecentOrders data={getRecentOrders()} />
+            <RecentOrders />
           </Suspense>
           <Suspense fallback={<Skeleton className="h-96" />}>
-            <CategoryBreakdown data={getCategoryBreakdown()} />
+            <CategoryBreakdown />
           </Suspense>
         </section>
       )}
@@ -80,13 +78,13 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         <>
           <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Suspense fallback={<Skeleton className="h-64" />}>
-              <MediaStorageStats data={getMediaStats()} />
+              <MediaStorageStats />
             </Suspense>
             <Suspense fallback={<Skeleton className="h-64" />}>
-              <VideoAnalytics data={getVideoStats()} />
+              <VideoAnalytics />
             </Suspense>
             <Suspense fallback={<Skeleton className="h-64" />}>
-              <PaymentMethodDistribution data={getPaymentDistribution()} />
+              <PaymentMethodDistribution />
             </Suspense>
           </section>
           <section className="grid gap-4 md:grid-cols-2">
@@ -94,7 +92,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
               <UserActivityHeatmap />
             </Suspense>
             <Suspense fallback={<Skeleton className="h-64" />}>
-              <TreasurySummary data={getTreasurySummary()} />
+              <TreasurySummary />
             </Suspense>
           </section>
         </>
@@ -104,7 +102,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       {level <= 2 && (
         <section className="grid gap-4">
           <Suspense fallback={<Skeleton className="h-96" />}>
-            <AuditLogPreview data={getAuditLogs()} />
+            <AuditLogPreview />
           </Suspense>
         </section>
       )}
