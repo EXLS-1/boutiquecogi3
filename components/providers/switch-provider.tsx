@@ -16,6 +16,10 @@ const CLIENT_ROLE_LEVELS: Record<Role, number> = {
 };
 
 type SwitchContextType = {
+  // Identité réelle (jamais modifiée)
+  realRole: Role;
+  realLevel: number;
+
   // Données de l'identité active (Réelle ou Simulée)
   activeRole: Role;
   activeLevel: number;
@@ -51,24 +55,27 @@ export function SwitchProvider({
 }: SwitchProviderProps) {
   const [isPending, startTransition] = useTransition();
   
+  // Identité réelle figée pour les vérifications de sécurité
+  const [realRole] = useState<Role>(initialRole);
+  const [realLevel] = useState<number>(initialLevel);
+
   // États de l'identité en cours d'utilisation
   const [activeRole, setActiveRole] = useState<Role>(initialRole);
   const [activePermissions, setActivePermissions] = useState<Permission[]>(initialPermissions);
   const [activeRestrictions, setActiveRestrictions] = useState<Record<Restriction, string | ToggleState>>(initialRestrictions);
 
-  const isAuditMode = activeRole !== initialRole;
+  const isAuditMode = activeRole !== realRole;
 
   // Cache d'accès rapide pour les permissions
   const permissionSet = useMemo(() => new Set(activePermissions), [activePermissions]);
 
   const startAudit = async (targetRole: Role) => {
-    const currentRealLevel = CLIENT_ROLE_LEVELS[initialRole];
     const targetLevel = CLIENT_ROLE_LEVELS[targetRole];
 
     // RÈGLE CRITIQUE : Interdiction absolue de basculer vers un niveau supérieur ou égal
     // Rappel : Level 1 (SUPER_ADMIN) < Level 2 (ADMIN). Plus le chiffre est petit, plus le pouvoir est grand.
-    if (currentRealLevel >= targetLevel) {
-      console.error(`Violation de sécurité : Un niveau ${currentRealLevel} ne peut pas auditer un niveau ${targetLevel}.`);
+    if (realLevel >= targetLevel) {
+      console.error(`Violation de sécurité : Un niveau ${realLevel} ne peut pas auditer un niveau ${targetLevel}.`);
       alert("Action refusée : Droits hiérarchiques insuffisants pour simuler ce rôle.");
       return;
     }
@@ -93,13 +100,15 @@ export function SwitchProvider({
 
   const stopAudit = () => {
     startTransition(() => {
-      setActiveRole(initialRole);
+      setActiveRole(realRole);
       setActivePermissions(initialPermissions);
       setActiveRestrictions(initialRestrictions);
     });
   };
 
   const contextValue = useMemo<SwitchContextType>(() => ({
+    realRole,
+    realLevel,
     activeRole,
     activeLevel: CLIENT_ROLE_LEVELS[activeRole],
     isAuditMode,
@@ -109,7 +118,7 @@ export function SwitchProvider({
     hasPermission: (p) => permissionSet.has(p),
     hasAnyPermission: (ps) => ps.some((p) => permissionSet.has(p)),
     getRestriction: (r) => activeRestrictions[r] ?? "OFF",
-  }), [activeRole, isAuditMode, isPending, permissionSet, activeRestrictions]);
+  }), [realRole, realLevel, activeRole, isAuditMode, isPending, permissionSet, activeRestrictions]);
 
   return (
     <SwitchContext.Provider value={contextValue}>
