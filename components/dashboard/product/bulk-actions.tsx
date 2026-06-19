@@ -19,7 +19,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CheckSquare, Trash2, Package, Archive, ChevronDown, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  CheckSquare,
+  Trash2,
+  Package,
+  Archive,
+  ChevronDown,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { bulkProductsAction } from "@/app/dashboard/products/actions";
 
@@ -43,13 +51,28 @@ interface BulkActionConfig {
   requiresConfirmation?: boolean;
   confirmationTitle?: string;
   confirmationDescription?: string;
-  maxLevelAllowed?: number; // Protection UI : Le niveau de l'utilisateur doit être INFÉRIEUR ou ÉGAL à cette valeur
+  maxLevelAllowed?: number;
 }
 
 const BULK_ACTIONS_CONFIG: BulkActionConfig[] = [
-  { id: "activate", label: "Activer les produits", icon: <Package className="h-4 w-4" />, permission: "products:update" },
-  { id: "deactivate", label: "Passer en brouillon", icon: <Archive className="h-4 w-4" />, permission: "products:update" },
-  { id: "archive", label: "Archiver les produits", icon: <Archive className="h-4 w-4" />, permission: "products:bulk_edit" },
+  {
+    id: "activate",
+    label: "Activer les produits",
+    icon: <Package className="h-4 w-4" />,
+    permission: "products:update",
+  },
+  {
+    id: "deactivate",
+    label: "Passer en brouillon",
+    icon: <Archive className="h-4 w-4" />,
+    permission: "products:update",
+  },
+  {
+    id: "archive",
+    label: "Archiver les produits",
+    icon: <Archive className="h-4 w-4" />,
+    permission: "products:bulk-edit",
+  },
   {
     id: "delete",
     label: "Supprimer définitivement",
@@ -57,15 +80,17 @@ const BULK_ACTIONS_CONFIG: BulkActionConfig[] = [
     permission: "products:delete",
     variant: "destructive",
     requiresConfirmation: true,
-    maxLevelAllowed: 2, // SÉCURITÉ : Uniquement Level 1 (SUPER_ADMIN) et Level 2 (ADMIN)
+    maxLevelAllowed: 2,
     confirmationTitle: "Suppression critique par lots",
-    confirmationDescription: "Cette action est irréversible. Les produits sélectionnés seront définitivement purgés.",
+    confirmationDescription:
+      "Cette action est irréversible. Les produits sélectionnés seront définitivement purgés.",
   },
 ];
 
 export function BulkActions({
   permissions,
   selectedIds,
+  onSelectionChange,
   onActionComplete,
   userLevel,
 }: BulkActionsProps) {
@@ -73,7 +98,6 @@ export function BulkActions({
   const [pendingAction, setPendingAction] = useState<BulkActionConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filtrage des actions selon les permissions ET le niveau hiérarchique inversé
   const availableActions = useMemo(() => {
     return BULK_ACTIONS_CONFIG.filter((action) => {
       const hasPermission = permissions.includes(action.permission as Permission);
@@ -82,43 +106,58 @@ export function BulkActions({
     });
   }, [permissions, userLevel]);
 
-  const executeAction = useCallback(async (action: BulkActionConfig) => {
-    if (selectedIds.length === 0) return;
-    setIsLoading(true);
+  const executeAction = useCallback(
+    async (action: BulkActionConfig) => {
+      if (selectedIds.length === 0) return;
+      setIsLoading(true);
 
-    try {
-      const response = await bulkProductsAction({
-        action: action.id,
-        ids: selectedIds,
-      });
+      try {
+        const response = await bulkProductsAction({
+          action: action.id,
+          ids: selectedIds,
+        });
 
-      if (!response.success) {
-        throw new Error(response.error);
+        if (!response.success) {
+          throw new Error(response.error);
+        }
+
+        onActionComplete();
+      } catch (err) {
+        console.error("[BULK_CLIENT_ERROR]", err);
+        alert(err instanceof Error ? err.message : "Erreur d'habilitation ou de traitement.");
+      } finally {
+        setIsLoading(false);
+        setIsDialogOpen(false);
+        setPendingAction(null);
       }
-
-      onActionComplete();
-    } catch (err) {
-      console.error("[BULK_CLIENT_ERROR]", err);
-      alert(err instanceof Error ? err.message : "Une erreur d'habilitation ou de traitement est survenue.");
-    } finally {
-      setIsLoading(false);
-      setIsDialogOpen(false);
-      setPendingAction(null);
-    }
-  }, [selectedIds, onActionComplete]);
+    },
+    [selectedIds, onActionComplete],
+  );
 
   if (availableActions.length === 0 || selectedIds.length === 0) return null;
 
   return (
     <div className="flex items-center gap-3 animate-in fade-in-50 duration-200">
-      <Badge variant="secondary" className="font-mono bg-primary/10 text-primary border-none px-2.5 py-1">
+      <Badge
+        variant="secondary"
+        className="font-mono bg-primary/10 text-primary border-none px-2.5 py-1"
+      >
         {selectedIds.length} sélectionné(s)
       </Badge>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={isLoading} className="gap-2 border-primary/20">
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckSquare className="h-4 w-4" />}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+            className="gap-2 border-primary/20"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckSquare className="h-4 w-4" />
+            )}
             Actions de groupe
             <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
@@ -128,11 +167,16 @@ export function BulkActions({
           {availableActions.map((action) => (
             <DropdownMenuItem
               key={action.id}
-              onClick={() => action.requiresConfirmation ? (setPendingAction(action), setIsDialogOpen(true)) : executeAction(action)}
+              onClick={() =>
+                action.requiresConfirmation
+                  ? (setPendingAction(action), setIsDialogOpen(true))
+                  : executeAction(action)
+              }
               disabled={isLoading}
               className={cn(
                 "gap-2 cursor-pointer",
-                action.variant === "destructive" && "text-destructive focus:text-destructive focus:bg-destructive/10"
+                action.variant === "destructive" &&
+                  "text-destructive focus:text-destructive focus:bg-destructive/10",
               )}
             >
               {action.icon}
@@ -161,10 +205,18 @@ export function BulkActions({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isLoading}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isLoading}
+            >
               Annuler
             </Button>
-            <Button variant="destructive" onClick={() => pendingAction && executeAction(pendingAction)} disabled={isLoading}>
+            <Button
+              variant="destructive"
+              onClick={() => pendingAction && executeAction(pendingAction)}
+              disabled={isLoading}
+            >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Exécuter la mutation
             </Button>

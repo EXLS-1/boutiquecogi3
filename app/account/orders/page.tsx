@@ -4,7 +4,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getUserOrders } from "@/lib/actions/actions/order.actions";
+import { getUserOrders } from "@/lib/actions/order.actions";
 import { Button } from "@/components/ui/button";
 
 export default async function AccountOrdersPage() {

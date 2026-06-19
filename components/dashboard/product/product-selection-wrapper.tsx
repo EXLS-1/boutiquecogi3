@@ -1,13 +1,22 @@
 // components/dashboard/products/product-selection-wrapper.tsx
 "use client";
 
-import { useState } from "react";
-import { ProductsTable } from "./products-table"; // Votre tableau existant adapté
-import { BulkActions } from "./bulk-actions";  // Le composant d'UI pour les actions
+import { useState, useCallback } from "react";
+import { ProductsTable } from "./products-table";
+import { BulkActions } from "./bulk-actions";
 import type { Permission } from "@/lib/auth/rbac";
+import type { Prisma } from "@prisma/client";
+
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: {
+    category: { select: { id: true; name: true } };
+    variants: { select: { id: true } };
+    _count: { select: { reviews: true; orderItems: true } };
+  };
+}>;
 
 interface ProductSelectionWrapperProps {
-  products: any[];
+  products: ProductWithRelations[];
   total: number;
   page: number;
   limit: number;
@@ -31,14 +40,22 @@ export function ProductSelectionWrapper({
 }: ProductSelectionWrapperProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  const handleSelectionChange = useCallback((ids: string[]) => {
+    setSelectedIds(ids);
+  }, []);
+
+  const handleActionComplete = useCallback(() => {
+    setSelectedIds([]);
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end min-h-[40px]">
         <BulkActions
           permissions={clientPermissions}
           selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-          onActionComplete={() => setSelectedIds([])}
+          onSelectionChange={handleSelectionChange}
+          onActionComplete={handleActionComplete}
           totalCount={products.length}
           userLevel={userLevel}
         />
@@ -53,7 +70,7 @@ export function ProductSelectionWrapper({
         canManageVariants={canManageVariants}
         canManageReviews={canManageReviews}
         selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
+        onSelectionChange={handleSelectionChange}
       />
     </div>
   );

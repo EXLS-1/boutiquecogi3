@@ -1,15 +1,17 @@
 // app/dashboard/products/page.tsx
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getServerRBACSession } from "@/lib/auth/server"; 
 import { prisma } from "@/lib/prisma";
+import {
+  getSessionWithUser,
+  resolveEffectivePermissions,
+  getClientPermissions,
+} from "@/lib/auth/rbac";
 
-import { ProductFilters } from "@/components/dashboard/product/product-filters";
-import { ProductActionBar } from "@/components/dashboard/product/product-action-bar";
-import { ProductSelectionWrapper } from "@/components/dashboard/product/product-selection-wrapper";
+import { ProductFilters } from "@/components/dashboard/products/product-filters";
+import { ProductActionBar } from "@/components/dashboard/products/product-action-bar";
+import { ProductSelectionWrapper } from "@/components/dashboard/products/product-selection-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getClientPermissions } from "@/lib/auth/rbac";
-import { dashboardProductArgs } from "@/types/prisma";
 
 interface ProductsPageProps {
   searchParams: Promise<{
@@ -17,65 +19,58 @@ interface ProductsPageProps {
     category?: string;
     status?: string;
     search?: string;
-    page?: number;
+    page?: string;
   }>;
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  // 1. Récupération de la session RBAC Server-Side
-  const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  const session = await getSessionWithUser();
+  if (!session) redirect("/auth/sign-in");
 
-  const { level, effectivePermissions, role } = session;
+  const { role, level } = session;
   const params = await searchParams;
 
-  /**
-   * SÉCURITÉ CONSOLIDÉE SUR LA HIÉRARCHIE INVERSÉE :
-   * Level 1 = SUPER_ADMIN (Pouvoir max) -> Level 6 = USER (Pouvoir min)
-   * Si level > 5 (ex: Level 6 USER), l'accès est strictement refusé.
-   */
   if (level > 5) {
     redirect("/unauthorized");
   }
 
-  // 2. Évaluation des droits fins basée sur vos permissions effectives
+  const effectivePermissions = await resolveEffectivePermissions(role);
+
   const canCreate = effectivePermissions.has("products:create");
   const canDelete = effectivePermissions.has("products:delete");
-  
-  // Seuls les rôles de niveau 1, 2 ou 3 ont accès à l'import/export
   const canImport = level <= 3 && effectivePermissions.has("products:import");
   const canExport = level <= 3 && effectivePermissions.has("products:export");
-  
   const canManageVariants = effectivePermissions.has("products:manage_variants");
   const canManageReviews = effectivePermissions.has("products:manage_reviews");
 
-  // Transformation du Set de permissions en Array pour le passage sécurisé aux Client Components
   const clientPermissionsArray = await getClientPermissions(role);
 
-  const page = parseInt(params.page || "1");
+  const page = Math.max(1, parseInt(params.page || "1", 10));
   const limit = 20;
 
-  // 3. Clause WHERE sécurisée avec typage de recherche insensible à la casse
   const where = {
     ...(params.type && { type: params.type }),
     ...(params.category && { categoryId: params.category }),
     ...(params.status && { status: params.status }),
     ...(params.search && {
       OR: [
-        { name: { contains: params.search, mode: "insensitive" } },
-        { description: { contains: params.search, mode: "insensitive" } },
+        { name: { contains: params.search, mode: "insensitive" as const } },
+        { description: { contains: params.search, mode: "insensitive" as const } },
       ],
     }),
   };
 
-  // 4. Extraction de données optimisée (requêtes parallèles)
   const [products, total, categories] = await Promise.all([
     prisma.product.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: "desc" },
-      ...dashboardProductArgs,
+      include: {
+        category: { select: { id: true, name: true } },
+        variants: { select: { id: true } },
+        _count: { select: { reviews: true, orderItems: true } },
+      },
     }),
     prisma.product.count({ where }),
     prisma.category.findMany({ select: { id: true, name: true } }),
@@ -97,7 +92,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <ProductFilters categories={categories} />
       </Suspense>
 
-      {/* Orchestrateur client de l'état partagé (selectedIds) */}
       <ProductSelectionWrapper
         products={products}
         total={total}
