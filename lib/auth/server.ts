@@ -26,6 +26,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/lib/auth"; // ✅ Singleton
 import { prisma } from "@/lib/prisma";
+import { generateUUIDv7 } from "@/lib/uuid";
 import {
   // Types
   type Role,
@@ -57,6 +58,9 @@ import {
   getSessionWithUser,
   // Cache
   invalidateRBACCache,
+  // Client helpers
+  getClientPermissions,
+  getClientRestrictions,
 } from "@/lib/auth/rbac";
 
 // ═══════════════════════════════════════════
@@ -627,15 +631,19 @@ export async function logAudit(entry: Omit<AuditEntry, "timestamp">): Promise<vo
   prisma.auditLog
     .create({
       data: {
+        id: generateUUIDv7(),
         userId: fullEntry.userId,
-        role: fullEntry.role,
         action: fullEntry.action,
-        resource: fullEntry.resource,
-        resourceId: fullEntry.resourceId,
-        success: fullEntry.success,
-        details: fullEntry.details,
-        ipAddress: fullEntry.ip,
+        entity: fullEntry.resource,
+        entityId: fullEntry.resourceId,
+        ip: fullEntry.ip,
         userAgent: fullEntry.userAgent,
+        status: fullEntry.success ? "SUCCESS" : "FAILURE",
+        metadata: {
+          role: fullEntry.role,
+          details: fullEntry.details,
+          success: fullEntry.success,
+        },
       },
     })
     .catch((err) => {
@@ -738,6 +746,33 @@ export async function requirePermission(
  */
 export async function getServerSession() {
   return getCachedSession();
+}
+
+const ROLE_DETAILS: Record<string, { name: string; color: string }> = {
+  SUPER_ADMIN: { name: "Super-Admin", color: "#ef4444" },
+  ADMIN: { name: "Admin", color: "#f97316" },
+  MANAGER: { name: "Manager", color: "#3b82f6" },
+  EDITOR: { name: "Editor", color: "#10b981" },
+  SUPERVISOR: { name: "Supervisor", color: "#8b5cf6" },
+  USER: { name: "User", color: "#6b7280" },
+};
+
+/**
+ * Récupère la session enrichie avec les rôles, niveaux et permissions (compatibilité RBAC).
+ */
+export async function getServerRBACSession() {
+  const context = await resolveAuthContext();
+  if (!context) return null;
+
+  const { role, level, id } = context.user;
+  const roleInfo = ROLE_DETAILS[role] || { name: role, color: "#6b7280" };
+
+  return {
+    level,
+    userId: id,
+    role: roleInfo,
+    effectivePermissions: context.permissions,
+  };
 }
 
 // ═══════════════════════════════════════════

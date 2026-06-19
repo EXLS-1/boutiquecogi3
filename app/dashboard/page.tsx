@@ -3,7 +3,7 @@
 // Pas de middleware, pas de client-side check — tout côté serveur
 
 import { redirect } from "next/navigation";
-import { getServerRBACSession } from "@/lib/rbac/server";
+import { getServerRBACSession } from "@/lib/auth/server";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default async function DashboardPage() {
