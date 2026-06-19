@@ -105,6 +105,11 @@ export const PERMISSIONS = {
   CONTENT_DELETE: "content:delete",
   CONTENT_PUBLISH: "content:publish",
   CONTENT_MODERATE: "content:moderate",
+  // Permissions d'audit (nouvelles)
+  AUDIT_SWITCH_SELF: "audit:switch-self",           // Basculer vers un rôle inférieur (soi-même)
+  AUDIT_SWITCH_OTHERS: "audit:switch-others",       // Autoriser un autre utilisateur à auditer
+  AUDIT_APPROVE_REQUEST: "audit:approve-request",     // Approuver une demande d'audit (SUPER_ADMIN uniquement)
+  AUDIT_VIEW_LOGS: "audit:view-logs",               // Consulter les logs d'audit
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -129,6 +134,10 @@ export const RESTRICTIONS = {
   SESSION_DURATION_HOURS: "session_duration_hours",
   REQUIRE_2FA: "require_2fa",
   REQUIRE_APPROVAL_FOR_DELETE: "require_approval_for_delete",
+  // Restrictions d'audit (nouvelles)
+  REQUIRES_AUDIT_APPROVAL: "requires_audit_approval",           // Nécessite approbation SUPER_ADMIN pour auditer
+  AUDIT_MAX_DURATION_MINUTES: "audit_max_duration_minutes",     // Durée max d'une session d'audit
+  AUDIT_ALLOWED_TARGET_LEVELS: "audit_allowed_target_levels",   // Levels cibles autorisés (CSV: "4,5,6")
 } as const;
 
 export type Restriction = (typeof RESTRICTIONS)[keyof typeof RESTRICTIONS];
@@ -177,12 +186,19 @@ const DEFAULT_ROLE_CONFIG: Record<
         [PERMISSIONS.SYSTEM_MAINTENANCE]: "OFF",
         [PERMISSIONS.SYSTEM_BACKUP]: "OFF",
         [PERMISSIONS.USERS_IMPERSONATE]: "OFF",
+        [PERMISSIONS.AUDIT_SWITCH_SELF]: "ON",
+      [PERMISSIONS.AUDIT_SWITCH_OTHERS]: "OFF",
+      [PERMISSIONS.AUDIT_APPROVE_REQUEST]: "OFF",
+      [PERMISSIONS.AUDIT_VIEW_LOGS]: "ON",
       },
       "ON",
     ),
     restrictions: createRestrictions(
       {
-        [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "ON",
+        [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON",        // ✅ DOIT être approuvé par SUPER_ADMIN
+      [RESTRICTIONS.AUDIT_MAX_DURATION_MINUTES]: "30",
+      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "3,4,5,6", // Peut auditer MANAGER et inférieur
+      [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "ON",
       },
       "OFF",
     ),
@@ -218,6 +234,10 @@ const DEFAULT_ROLE_CONFIG: Record<
       [PERMISSIONS.CONTENT_UPDATE]: "ON",
       [PERMISSIONS.CONTENT_PUBLISH]: "ON",
       [PERMISSIONS.CONTENT_MODERATE]: "ON",
+      [PERMISSIONS.AUDIT_SWITCH_SELF]: "ON",
+      [PERMISSIONS.AUDIT_SWITCH_OTHERS]: "OFF",
+      [PERMISSIONS.AUDIT_APPROVE_REQUEST]: "OFF",
+      [PERMISSIONS.AUDIT_VIEW_LOGS]: "OFF",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "100",
@@ -231,6 +251,9 @@ const DEFAULT_ROLE_CONFIG: Record<
       [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "ON",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "120",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "12",
+      [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON",        // ✅ DOIT être approuvé par SUPER_ADMIN
+      [RESTRICTIONS.AUDIT_MAX_DURATION_MINUTES]: "20",
+      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "4,5,6", // Peut auditer EDITOR et inférieur
     }),
   },
   [ROLES.EDITOR]: {
@@ -246,6 +269,10 @@ const DEFAULT_ROLE_CONFIG: Record<
       [PERMISSIONS.CONTENT_CREATE]: "ON",
       [PERMISSIONS.CONTENT_UPDATE]: "ON",
       [PERMISSIONS.CONTENT_PUBLISH]: "ON",
+      [PERMISSIONS.AUDIT_SWITCH_SELF]: "ON",
+      [PERMISSIONS.AUDIT_SWITCH_OTHERS]: "OFF",
+      [PERMISSIONS.AUDIT_APPROVE_REQUEST]: "OFF",
+      [PERMISSIONS.AUDIT_VIEW_LOGS]: "OFF",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "20",
@@ -256,6 +283,9 @@ const DEFAULT_ROLE_CONFIG: Record<
       [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "60",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "8",
+      [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON",        // ✅ DOIT être approuvé par SUPER_ADMIN
+      [RESTRICTIONS.AUDIT_MAX_DURATION_MINUTES]: "15",
+      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "5,6",   // Peut auditer SUPERVISOR et USER
     }),
   },
   [ROLES.SUPERVISOR]: {
@@ -344,8 +374,8 @@ const _configCache = new Map<Role, ReturnType<typeof mergeConfig>>();
 function mergeConfig(
   defaults: (typeof DEFAULT_ROLE_CONFIG)[Role],
   dbConfig: {
-    permissions?: Record<string, unknown>;
-    restrictions?: Record<string, unknown>;
+    permissions?: unknown;
+    restrictions?: unknown;
   },
 ) {
   return {

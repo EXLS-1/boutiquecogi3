@@ -8,19 +8,13 @@ import {
   getClientPermissions,
   getClientRestrictions,
   getRoleLevel,
+  isRestrictionEnabled,
+  RESTRICTIONS,
 } from "@/lib/auth/rbac";
 import { SwitchProvider } from "@/components/providers/switch-provider";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
-type DashboardLayoutProps = {
-  children: ReactNode;
-};
-
-// =============================================================================
-// BLOCAGE LEVEL 6 (USER/CLIENT)
-// =============================================================================
-// Le dashboard est STRICTEMENT réservé au staff (niveaux 1-5)
-// Level 6 = CLIENT = aucun accès, même en lecture seule
+type DashboardLayoutProps = { children: ReactNode };
 
 const DASHBOARD_MAX_ALLOWED_LEVEL = 5;
 
@@ -32,16 +26,14 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   const userLevel = getRoleLevel(role);
 
-  // ❌ Level 6 (USER) et supérieur = redirection vers page d'erreur
-  // ✅ Level 1-5 = accès autorisé
   if (userLevel > DASHBOARD_MAX_ALLOWED_LEVEL) {
     redirect("/unauthorized");
   }
 
-  // Résolution parallèle des droits pour hydrater le provider client
-  const [permissions, restrictions] = await Promise.all([
+  const [permissions, restrictions, requiresAuditApproval] = await Promise.all([
     getClientPermissions(role),
     getClientRestrictions(role),
+    isRestrictionEnabled(role, RESTRICTIONS.REQUIRES_AUDIT_APPROVAL),
   ]);
 
   return (
@@ -50,6 +42,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       initialLevel={userLevel}
       initialPermissions={permissions}
       initialRestrictions={restrictions}
+      requiresAuditApproval={requiresAuditApproval}
     >
       <DashboardShell
         userEmail={userData.user.email ?? ""}

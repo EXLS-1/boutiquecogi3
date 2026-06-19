@@ -246,6 +246,29 @@ model AuditLog {
   @@map("audit_log")
 }
 
+model AuditApprovalRequest {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requesterId            String
+  requesterRole          String
+  requesterLevel         Int
+  targetRole             String
+  targetLevel            Int
+  reason                 String
+  status                 String // PENDING | APPROVED | REJECTED | EXPIRED | REVOKED
+  approvedById           String?
+  approvedByRole         String?
+  approvalToken          String?   @unique
+  approvalTokenExpiresAt DateTime?
+  expiresAt              DateTime
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([requesterId, status])
+  @@index([status, expiresAt])
+  @@index([approvalToken])
+  @@map("audit_approval_request")
+}
+
 // ==========================================
 // ADRESSES
 // ==========================================
