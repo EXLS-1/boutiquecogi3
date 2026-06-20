@@ -1,9 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { main as runSeed } from "@/prisma/seed/index";
 
-const prisma = new PrismaClient();
+async function main() {
+  await runSeed();
+}
 
-runSeed()
+main()
   .catch((e) => {
     console.error("❌ Erreur critique lors du seed :");
     console.error(e);

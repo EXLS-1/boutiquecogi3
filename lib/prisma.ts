@@ -7,9 +7,10 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Configure pool options and enable SSL when requested via env
+// Use DIRECT_URL for the adapter (bypasses PgBouncer which is incompatible
+// with Prisma's driver adapter). Fall back to DATABASE_URL if not set.
 const poolOptions: any = {
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL,
   max: 10, // Optimisation : limite les connexions simultanées
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

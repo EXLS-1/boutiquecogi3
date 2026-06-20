@@ -34,6 +34,7 @@
     "@upstash/redis": "^1.38.0",
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",
+    "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.18",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
@@ -85,7 +86,7 @@
     "supabase": "^2.98.1",
     "tailwindcss": "^4.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   },
   "directories": {

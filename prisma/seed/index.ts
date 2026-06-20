@@ -1,7 +1,6 @@
-// Orchestrateur principal du seed avec RBAC atomique
+// prisma/seed/index.ts
+// Orchestrateur principal du seed avec RBAC atomique — compatible enum Prisma
 
-import { PrismaClient } from "@prisma/client";
-import { seedRoles, ROLE_DEFINITIONS } from "./roles.seed";
 import { seedRoleConfigs } from "./role-config.seed";
 import { seedModules } from "./modules.seed";
 import { seedUsers } from "./users.seed";
@@ -17,9 +16,8 @@ import { seedAuditApprovalPolicies } from "./audit-approval.seed";
 import { productData } from "@/data/product-data";
 import { slugify, normalizeImage } from "./seed-helpers";
 import { generateUUIDv7 } from "@/lib/uuid";
-import { ROLES } from "@/lib/auth/rbac";
-
-const prisma = new PrismaClient();
+import { ROLES, LEVELS } from "@/lib/auth/rbac";
+import { prisma } from "@/lib/prisma";
 
 async function main() {
   console.log("🚀 [BOUTIQUE COGI] Démarrage du seed atomique RBAC...");
@@ -31,14 +29,8 @@ async function main() {
   console.log("PHASE 1 : FONDATIONS RBAC CANONIQUE");
   console.log("═".repeat(60));
 
-  const roleMap = await seedRoles(prisma);
   await seedRoleConfigs(prisma);
   await seedModules(prisma);
-
-  const superAdminRoleId = roleMap.get(ROLES.SUPER_ADMIN);
-  if (!superAdminRoleId) {
-    throw new Error("[RBAC] CRITIQUE: SUPER_ADMIN non trouvé dans la Map des rôles.");
-  }
 
   const admin = await seedUsers(prisma, {
     role: ROLES.SUPER_ADMIN,
@@ -46,7 +38,7 @@ async function main() {
     name: "SuperAdmin Cogi",
     password: "@@@123Exls",
   });
-  console.log(`   ✓ Admin lié au rôle ID: ${superAdminRoleId}`);
+  console.log(`   ✓ Admin créé: ${admin.email} [${admin.role}]`);
 
   // ═══════════════════════════════════════════
   // PHASE 2 : CONFIGURATION MÉTIER RBAC
@@ -152,7 +144,7 @@ async function main() {
   console.log("\n" + "═".repeat(60));
   console.log("✨ SEED TERMINÉ — RAPPORT D'ATOMICITÉ RBAC");
   console.log("═".repeat(60));
-  console.log(`Rôles canoniques         : ${ROLE_DEFINITIONS.length}/6`);
+  console.log(`Enum Role Prisma         : 6 valeurs (SUPER_ADMIN → USER)`);
   console.log(`Configs RBAC             : 6/6 (permissions + restrictions)`);
   console.log(`Super Admin              : ${admin.email} [${admin.role}]`);
   console.log(`Statuts de commande      : 8`);
