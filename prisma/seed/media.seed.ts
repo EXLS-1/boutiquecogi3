@@ -1,4 +1,3 @@
-// prisma/seed/media.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
@@ -199,9 +198,9 @@ export async function seedMediaTypes(prisma: PrismaClient) {
         requiresCompression: media.requiresCompression,
       },
     });
-    console.log(f"   ✓ {media.label} [bucket:{media.storageBucket}, upload:L{media.minRoleLevelUpload}, public:{media.isPublic}]");
+    console.log(`   ✓ ${media.label} [bucket:${media.storageBucket}, upload:L${media.minRoleLevelUpload}, public:${media.isPublic}]`);
   }
-  console.log(f"🖼️  [RBAC] {len(MEDIA_TYPES)} types de médias configurés.");
+  console.log(`🖼️  [RBAC] ${MEDIA_TYPES.length} types de médias configurés.`);
 }
 
 export async function seedStorageQuotas(prisma: PrismaClient) {
@@ -222,9 +221,9 @@ export async function seedStorageQuotas(prisma: PrismaClient) {
         minRoleLevelConfigure: quota.minRoleLevelConfigure, appliesToRoles: quota.appliesToRoles,
       },
     });
-    limitText = "illimité" if quota.maxStorageMB == 0 else f"{quota.maxStorageMB}MB"
-    filesText = "∞" if quota.maxFiles == 0 else str(quota.maxFiles)
-    console.log(f"   ✓ {quota.label} [{limitText}, files:{filesText}, config:L{quota.minRoleLevelConfigure}]");
+    const limitText = quota.maxStorageMB === 0 ? "illimité" : `${quota.maxStorageMB}MB`;
+    const filesText = quota.maxFiles === 0 ? "∞" : String(quota.maxFiles);
+    console.log(`   ✓ ${quota.label} [${limitText}, files:${filesText}, config:L${quota.minRoleLevelConfigure}]`);
   }
-  console.log(f"💾 [RBAC] {len(STORAGE_QUOTAS)} quotas de stockage configurés.");
+  console.log(`💾 [RBAC] ${STORAGE_QUOTAS.length} quotas de stockage configurés.`);
 }

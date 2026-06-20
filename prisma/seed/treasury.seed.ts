@@ -1,4 +1,3 @@
-// prisma/seed/treasury.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
@@ -147,9 +146,9 @@ export async function seedPaymentMethods(prisma: PrismaClient) {
         maxTransactionAmount: method.maxTransactionAmount, currency: method.currency,
       },
     });
-    console.log(f"   ✓ {method.label} [active:{method.isActive}, max:{method.maxTransactionAmount}c, config:L{method.minRoleLevelConfigure}]");
+    console.log(`   ✓ ${method.label} [active:${method.isActive}, max:${method.maxTransactionAmount}c, config:L${method.minRoleLevelConfigure}]`);
   }
-  console.log(f"💰 [RBAC] {len(PAYMENT_METHODS)} méthodes de paiement configurées.");
+  console.log(`💰 [RBAC] ${PAYMENT_METHODS.length} méthodes de paiement configurées.`);
 }
 
 export async function seedFinancialThresholds(prisma: PrismaClient) {
@@ -174,7 +173,7 @@ export async function seedFinancialThresholds(prisma: PrismaClient) {
         triggersAlert: threshold.triggersAlert, alertRecipients: threshold.alertRecipients,
       },
     });
-    console.log(f"   ✓ {threshold.label} [{threshold.amount}c, override:L{threshold.minRoleLevelOverride}, alert:{threshold.triggersAlert}]");
+    console.log(`   ✓ ${threshold.label} [${threshold.amount}c, override:L${threshold.minRoleLevelOverride}, alert:${threshold.triggersAlert}]`);
   }
-  console.log(f"📊 [RBAC] {len(FINANCIAL_THRESHOLDS)} seuils financiers configurés.");
+  console.log(`📊 [RBAC] ${FINANCIAL_THRESHOLDS.length} seuils financiers configurés.`);
 }

@@ -1,4 +1,3 @@
-// prisma/seed/index.ts
 // Orchestrateur principal du seed avec RBAC atomique
 
 import { PrismaClient } from "@prisma/client";
@@ -14,6 +13,7 @@ import { seedAuditEventTypes, seedRetentionPolicies } from "./audit.seed";
 import { seedPaymentMethods, seedFinancialThresholds } from "./treasury.seed";
 import { seedMediaTypes, seedStorageQuotas } from "./media.seed";
 import { seedVideoTypes, seedStreamingConfig } from "./video.seed";
+import { seedAuditApprovalPolicies } from "./audit-approval.seed";
 import { productData } from "@/data/product-data";
 import { slugify, normalizeImage } from "./seed-helpers";
 import { generateUUIDv7 } from "@/lib/uuid";
@@ -68,6 +68,7 @@ async function main() {
   await seedStorageQuotas(prisma);
   await seedVideoTypes(prisma);
   await seedStreamingConfig(prisma);
+  await seedAuditApprovalPolicies(prisma);
 
   // ═══════════════════════════════════════════
   // PHASE 3 : DONNÉES MÉTIER
@@ -115,15 +116,15 @@ async function main() {
       where: { sku },
       update: {
         attributes: {
-          taille: (raw as any).size ?? null,
-          couleur: (raw as any).couleur ?? null,
+          taille: (raw as unknown as Record<string, unknown>).size ?? null,
+          couleur: (raw as unknown as Record<string, unknown>).couleur ?? null,
         },
       },
       create: {
         id: generateUUIDv7(), productId: product.id, sku,
         attributes: {
-          taille: (raw as any).size ?? null,
-          couleur: (raw as any).couleur ?? null,
+          taille: (raw as unknown as Record<string, unknown>).size ?? null,
+          couleur: (raw as unknown as Record<string, unknown>).couleur ?? null,
         },
         priceOffset: 0,
       },
@@ -152,23 +153,24 @@ async function main() {
   console.log("✨ SEED TERMINÉ — RAPPORT D'ATOMICITÉ RBAC");
   console.log("═".repeat(60));
   console.log(`Rôles canoniques         : ${ROLE_DEFINITIONS.length}/6`);
-  console.log(`Configs RBAC           : 6/6 (permissions + restrictions)`);
-  console.log(`Super Admin            : ${admin.email} [${admin.role}]`);
-  console.log(`Statuts de commande    : 8`);
-  console.log(`Étapes de checkout     : 4`);
-  console.log(`Types de wishlist      : 4`);
-  console.log(`Types de produits      : 5`);
-  console.log(`Attributs de variante  : 4`);
-  console.log(`Types d'audit          : 10`);
-  console.log(`Politiques de rétention: 4`);
-  console.log(`Méthodes de paiement   : 4`);
-  console.log(`Seuils financiers      : 4`);
-  console.log(`Types de médias        : 7`);
-  console.log(`Quotas de stockage     : 6`);
-  console.log(`Types de vidéos        : 5`);
-  console.log(`Configs streaming      : 3`);
-  console.log(`Catégories             : ${categoryMap.size}`);
-  console.log(`Produits               : ${allProducts.length}`);
+  console.log(`Configs RBAC             : 6/6 (permissions + restrictions)`);
+  console.log(`Super Admin              : ${admin.email} [${admin.role}]`);
+  console.log(`Statuts de commande      : 8`);
+  console.log(`Étapes de checkout       : 4`);
+  console.log(`Types de wishlist        : 4`);
+  console.log(`Types de produits        : 5`);
+  console.log(`Attributs de variante    : 4`);
+  console.log(`Types d'audit            : 14 (incl. 4 événements d'audit de rôle)`);
+  console.log(`Politiques de rétention  : 5 (incl. audit approval)`);
+  console.log(`Méthodes de paiement     : 4`);
+  console.log(`Seuils financiers        : 4`);
+  console.log(`Types de médias          : 7`);
+  console.log(`Quotas de stockage       : 6`);
+  console.log(`Types de vidéos          : 5`);
+  console.log(`Configs streaming        : 3`);
+  console.log(`Politiques audit approval: 1`);
+  console.log(`Catégories               : ${categoryMap.size}`);
+  console.log(`Produits                 : ${allProducts.length}`);
   console.log("═".repeat(60));
 }
 

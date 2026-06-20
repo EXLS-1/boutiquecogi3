@@ -1,4 +1,3 @@
-// prisma/seed/product-config.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";

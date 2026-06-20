@@ -20,7 +20,7 @@ model Permission {
 
 model RoleConfig {
   id       String       @id @db.Uuid
-  role     String       @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
+  role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
   level    Int // 1-6
   // permissions Json     // { "users:read": "ON", "users:delete": "OFF" }
   users    User[]
@@ -58,7 +58,7 @@ model RolePermission {
 
 model User {
   id               String           @id @unique @db.Uuid
-  role             String           @default("USER") // SUPER_ADMIN | ADMIN | MANAGER | EDITOR | SUPERVISOR | USER
+  role             Role // SUPER_ADMIN | ADMIN | MANAGER | EDITOR | SUPERVISOR | USER
   roleConfigId     String?          @db.Uuid
   sessions         Session[]
   name             String?
@@ -201,6 +201,10 @@ enum VerificationType {
   TWO_FACTOR
 }
 
+// =============================================
+// DASHBOARD & AUDITS
+// =============================================
+
 model Dashboard {
   id        String   @id @db.Uuid
   name      String
@@ -247,14 +251,14 @@ model AuditLog {
 }
 
 model AuditApprovalRequest {
-  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                     String    @id @db.Uuid
   requesterId            String
   requesterRole          String
   requesterLevel         Int
   targetRole             String
   targetLevel            Int
   reason                 String
-  status                 String // PENDING | APPROVED | REJECTED | EXPIRED | REVOKED
+  status                 String    @default("PENDING")
   approvedById           String?
   approvedByRole         String?
   approvalToken          String?   @unique
@@ -267,6 +271,48 @@ model AuditApprovalRequest {
   @@index([status, expiresAt])
   @@index([approvalToken])
   @@map("audit_approval_request")
+}
+
+model AuditApprovalPolicy {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policyName                String   @unique
+  label                     String
+  description               String?
+  approvalTokenTtlMinutes   Int
+  requestTtlMinutes         Int
+  whoCanApprove             String[]
+  requiredPermissionApprove String
+  minRoleLevelApprove       Int
+  requiresDualApproval      Boolean  @default(false)
+  isActive                  Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([policyName, isActive, createdAt])
+  @@index([isActive, createdAt])
+  @@index([policyName])
+  @@map("audit_approval_policy")
+}
+
+model AuditEventType {
+  id                       String   @id @db.Uuid
+  event                    String   @unique
+  label                    String
+  description              String?
+  severity                 String
+  whoCanView               String[]
+  whoCanDelete             String[]
+  requiredPermissionView   String
+  requiredPermissionDelete String
+  minRoleLevelView         Int
+  minRoleLevelDelete       Int
+  retentionDays            Int
+  isImmutable              Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([event, severity, createdAt])
+  @@map("audit_event_type")
 }
 
 // ==========================================
@@ -334,6 +380,9 @@ model Product {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
+  images   String[]
+  videoUrl String?
+
   isFeatured     Boolean   @default(false)
   isArchived     Boolean   @default(false)
   isdeleted      Boolean   @default(false)
@@ -350,6 +399,7 @@ model Product {
   salePrice Int?
   saleStart DateTime?
   saleEnd   DateTime?
+  soldCount Int       @default(0)
 
   orderItems OrderItem[]
 
@@ -515,7 +565,7 @@ model ProductPrice {
 }
 
 model ProductTypeConfig {
-  id                       String   @id @default(uuid()) @db.Uuid
+  id                       String   @id @db.Uuid
   type                     String   @unique
   label                    String
   description              String?
@@ -537,8 +587,24 @@ model ProductTypeConfig {
   @@map("product_type_config")
 }
 
+model ProductView {
+  id        String @id @db.Uuid
+  productId String @db.Uuid
+
+  sessionId String?
+  userId    String? @db.Uuid
+
+  viewedAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([productId, viewedAt])
+  @@map("product_views")
+}
+
 model VariantAttributeConfig {
-  id              String   @id @default(uuid()) @db.Uuid
+  id              String   @id @db.Uuid
   attribute       String   @unique
   label           String
   type            String
@@ -552,29 +618,8 @@ model VariantAttributeConfig {
   @@map("variant_attribute_config")
 }
 
-model AuditEventType {
-  id                       String   @id @default(uuid()) @db.Uuid
-  event                    String   @unique
-  label                    String
-  description              String?
-  severity                 String
-  whoCanView               String[]
-  whoCanDelete             String[]
-  requiredPermissionView   String
-  requiredPermissionDelete String
-  minRoleLevelView         Int
-  minRoleLevelDelete       Int
-  retentionDays            Int
-  isImmutable              Boolean  @default(true)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-
-  @@index([event, severity, createdAt])
-  @@map("audit_event_type")
-}
-
 model RetentionPolicy {
-  id              String   @id @default(uuid()) @db.Uuid
+  id              String   @id @db.Uuid
   policyName      String   @unique
   label           String
   description     String?
@@ -589,30 +634,8 @@ model RetentionPolicy {
   @@map("retention_policy")
 }
 
-model PaymentMethodConfig {
-  id                          String   @id @default(uuid()) @db.Uuid
-  method                      String   @unique
-  label                       String
-  description                 String?
-  provider                    String
-  isActive                    Boolean  @default(true)
-  whoCanConfigure             String[]
-  whoCanViewTransactions      String[]
-  requiredPermissionConfigure String
-  requiredPermissionView      String
-  minRoleLevelConfigure       Int
-  minRoleLevelView            Int
-  requiresApproval            Boolean  @default(false)
-  maxTransactionAmount        Int
-  currency                    String   @default("USD")
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
-
-  @@map("payment_method_config")
-}
-
 model FinancialThreshold {
-  id                         String   @id @default(uuid()) @db.Uuid
+  id                         String   @id @db.Uuid
   thresholdName              String   @unique
   label                      String
   description                String?
@@ -630,7 +653,7 @@ model FinancialThreshold {
 }
 
 model MediaTypeConfig {
-  id                       String   @id @default(uuid()) @db.Uuid
+  id                       String   @id @db.Uuid
   mediaType                String   @unique
   label                    String
   description              String?
@@ -653,7 +676,7 @@ model MediaTypeConfig {
 }
 
 model StorageQuota {
-  id                    String   @id @default(uuid()) @db.Uuid
+  id                    String   @id @db.Uuid
   quotaName             String   @unique
   label                 String
   description           String?
@@ -670,15 +693,15 @@ model StorageQuota {
 
 // Stores actual uploaded media files (images, videos, documents, etc.)
 model Media {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  url       String
-  mimeType  String
-  sizeBytes Int      @default(0)
-  bucket    String
-  type      String?  // e.g. "PRODUCT_IMAGE", "BANNER", etc.
-  metadata  Json?    // arbitrary metadata (views, duration, dimensions, etc.)
-  uploadedBy String? @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  url        String
+  mimeType   String
+  sizeBytes  Int      @default(0)
+  bucket     String
+  type       String? // e.g. "PRODUCT_IMAGE", "BANNER", etc.
+  metadata   Json? // arbitrary metadata (views, duration, dimensions, etc.)
+  uploadedBy String?  @db.Uuid
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -726,7 +749,7 @@ model StreamingConfig {
   requiredPermission String
   minRoleLevel       Int
   isActive           Boolean  @default(false)
-  settings           Json
+  settings           Json     @default("{}")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -1002,7 +1025,7 @@ model StockReservation {
 }
 
 model CheckoutStep {
-  id                 String   @id @default(uuid()) @db.Uuid
+  id                 String   @id @db.Uuid
   step               String   @unique
   label              String
   description        String?
@@ -1028,7 +1051,7 @@ model ShippingMethod {
   description   String?
   price         Int
   freeShipping  Boolean    @default(false)
-  metadata      Json? // RBAC metadata
+  metadata      Json       @default("{}")
   minAmount     Int?
   carrier       String?
   estimatedDays String?
@@ -1129,6 +1152,28 @@ enum PaymentMethodType {
   ORANGE_MONEY
   AIRTEL_MONEY
   CASH_ON_DELIVERY
+}
+
+model PaymentMethodConfig {
+  id                          String   @id @default(uuid()) @db.Uuid
+  method                      String   @unique
+  label                       String
+  description                 String?
+  provider                    String
+  isActive                    Boolean  @default(true)
+  whoCanConfigure             String[]
+  whoCanViewTransactions      String[]
+  requiredPermissionConfigure String
+  requiredPermissionView      String
+  minRoleLevelConfigure       Int
+  minRoleLevelView            Int
+  requiresApproval            Boolean  @default(false)
+  maxTransactionAmount        Int
+  currency                    String   @default("USD")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("payment_method_config")
 }
 
 model PaymentWebhookEvent {
@@ -1510,22 +1555,6 @@ model Invoice {
 
   @@index([invoiceNumber])
   @@map("invoice")
-}
-
-model ProductView {
-  id        String @id @db.Uuid
-  productId String @db.Uuid
-
-  sessionId String?
-  userId    String? @db.Uuid
-
-  viewedAt DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([productId, viewedAt])
-  @@map("product_views")
 }
 
 model SeoRedirect {

@@ -1,4 +1,3 @@
-// prisma/seed/users.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { hash } from "bcryptjs";
@@ -18,19 +17,14 @@ const DEFAULT_SUPER_ADMIN: SeedUserOptions = {
   role: ROLES.SUPER_ADMIN,
 };
 
-/**
- * Crée ou met à jour l'administrateur par défaut.
- * Le rôle est strictement typé et validé contre le RBAC.
- */
 export async function seedUsers(
   prisma: PrismaClient,
-  options: Partial<<SeedUserOptions> = {}
+  options: Partial<SeedUserOptions> = {}
 ) {
   const config = { ...DEFAULT_SUPER_ADMIN, ...options };
 
   console.log(`👤 [RBAC] Création de l'administrateur (${config.role})...`);
 
-  // Validation stricte : le rôle doit exister dans le RBAC
   if (!Object.values(ROLES).includes(config.role)) {
     throw new Error(`[RBAC] Rôle invalide: ${config.role}. Attendu: ${Object.values(ROLES).join(", ")}`);
   }

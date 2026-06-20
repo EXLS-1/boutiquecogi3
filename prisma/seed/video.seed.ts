@@ -1,4 +1,3 @@
-// prisma/seed/video.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
@@ -113,7 +112,7 @@ interface StreamingConfig {
   requiredPermission: string;
   minRoleLevel: number;
   isActive: boolean;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
 }
 
 const STREAMING_CONFIGS: StreamingConfig[] = [
@@ -198,9 +197,9 @@ export async function seedVideoTypes(prisma: PrismaClient) {
         requiresApproval: video.requiresApproval,
       },
     });
-    console.log(f"   ✓ {video.label} [upload:L{video.minRoleLevelUpload}, mod:L{video.minRoleLevelModerate}, approval:{video.requiresApproval}]");
+    console.log(`   ✓ ${video.label} [upload:L${video.minRoleLevelUpload}, mod:L${video.minRoleLevelModerate}, approval:${video.requiresApproval}]`);
   }
-  console.log(f"🎬 [RBAC] {len(VIDEO_TYPES)} types de vidéos configurés.");
+  console.log(`🎬 [RBAC] ${VIDEO_TYPES.length} types de vidéos configurés.`);
 }
 
 export async function seedStreamingConfig(prisma: PrismaClient) {
@@ -223,7 +222,7 @@ export async function seedStreamingConfig(prisma: PrismaClient) {
         isActive: config.isActive, settings: config.settings,
       },
     });
-    console.log(f"   ✓ {config.label} [provider:{config.provider}, active:{config.isActive}, config:L{config.minRoleLevel}]");
+    console.log(`   ✓ ${config.label} [provider:${config.provider}, active:${config.isActive}, config:L${config.minRoleLevel}]`);
   }
-  console.log(f"📡 [RBAC] {len(STREAMING_CONFIGS)} configurations de streaming synchronisées.");
+  console.log(`📡 [RBAC] ${STREAMING_CONFIGS.length} configurations de streaming synchronisées.`);
 }

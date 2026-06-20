@@ -1,10 +1,5 @@
-// prisma/seed/roles.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
-
-// ───────────────────────────────────────────
-// CONFIGURATION CANONIQUE RBAC — 6 NIVEAUX
-// ───────────────────────────────────────────
 
 export const ROLE_DEFINITIONS = [
   {
@@ -47,10 +42,6 @@ export const ROLE_DEFINITIONS = [
 
 export type RoleName = (typeof ROLE_DEFINITIONS)[number]["name"];
 
-/**
- * Seed atomique des rôles avec upsert.
- * Retourne une Map<<RoleName, RoleId> pour les dépendances.
- */
 export async function seedRoles(prisma: PrismaClient) {
   console.log("👥 [RBAC] Configuration des 6 rôles hiérarchiques...");
 
@@ -78,5 +69,5 @@ export async function seedRoles(prisma: PrismaClient) {
   }
 
   console.log(`👥 [RBAC] ${roleMap.size} rôles synchronisés.`);
-  return roleMap as Map<<RoleName, string>;
+  return roleMap as Map<RoleName, string>;
 }

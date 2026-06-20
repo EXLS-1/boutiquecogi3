@@ -1,4 +1,3 @@
-// prisma/seed/categories.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { generateSlug } from "@/lib/utils/slug";

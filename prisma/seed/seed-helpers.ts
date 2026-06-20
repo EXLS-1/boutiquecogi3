@@ -1,10 +1,5 @@
-// prisma/seed/seed-helpers.ts
-
 import { generateUUIDv7 } from "../../lib/uuid";
 
-/**
- * Génère un slug URL-friendly à partir d'une chaîne.
- */
 export function slugify(text: string): string {
   return text
     .toString()

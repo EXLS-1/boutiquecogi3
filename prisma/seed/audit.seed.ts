@@ -1,4 +1,3 @@
-// prisma/seed/audit.seed.ts
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
@@ -109,6 +108,42 @@ const AUDIT_EVENT_TYPES: AuditEventType[] = [
     requiredPermissionDelete: PERMISSIONS.SYSTEM_MAINTENANCE,
     minRoleLevelView: 2, minRoleLevelDelete: 1, retentionDays: 30, isImmutable: true,
   },
+  {
+    event: "AUDIT_APPROVAL_REQUESTED", label: "Demande d'approbation d'audit",
+    description: "Un utilisateur a demandé l'approbation pour basculer vers un rôle inférieur",
+    severity: "WARNING", whoCanView: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
+    whoCanDelete: [ROLES.SUPER_ADMIN],
+    requiredPermissionView: PERMISSIONS.AUDIT_VIEW_LOGS,
+    requiredPermissionDelete: PERMISSIONS.SYSTEM_MAINTENANCE,
+    minRoleLevelView: 2, minRoleLevelDelete: 1, retentionDays: 365, isImmutable: true,
+  },
+  {
+    event: "AUDIT_APPROVAL_GRANTED", label: "Approbation d'audit accordée",
+    description: "Un SUPER_ADMIN a approuvé une demande d'audit",
+    severity: "CRITICAL", whoCanView: [ROLES.SUPER_ADMIN],
+    whoCanDelete: [ROLES.SUPER_ADMIN],
+    requiredPermissionView: PERMISSIONS.AUDIT_APPROVE_REQUEST,
+    requiredPermissionDelete: PERMISSIONS.SYSTEM_MAINTENANCE,
+    minRoleLevelView: 1, minRoleLevelDelete: 1, retentionDays: 730, isImmutable: true,
+  },
+  {
+    event: "AUDIT_APPROVAL_REJECTED", label: "Approbation d'audit rejetée",
+    description: "Une demande d'approbation d'audit a été rejetée",
+    severity: "WARNING", whoCanView: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
+    whoCanDelete: [ROLES.SUPER_ADMIN],
+    requiredPermissionView: PERMISSIONS.AUDIT_VIEW_LOGS,
+    requiredPermissionDelete: PERMISSIONS.SYSTEM_MAINTENANCE,
+    minRoleLevelView: 2, minRoleLevelDelete: 1, retentionDays: 365, isImmutable: true,
+  },
+  {
+    event: "AUDIT_SWITCH_EXECUTED", label: "Basculement d'audit exécuté",
+    description: "Un utilisateur a basculé vers un rôle inférieur avec approbation",
+    severity: "CRITICAL", whoCanView: [ROLES.SUPER_ADMIN],
+    whoCanDelete: [ROLES.SUPER_ADMIN],
+    requiredPermissionView: PERMISSIONS.AUDIT_VIEW_LOGS,
+    requiredPermissionDelete: PERMISSIONS.SYSTEM_MAINTENANCE,
+    minRoleLevelView: 1, minRoleLevelDelete: 1, retentionDays: 730, isImmutable: true,
+  },
 ];
 
 interface RetentionPolicy {
@@ -145,6 +180,12 @@ const RETENTION_POLICIES: RetentionPolicy[] = [
     policyName: "ORDER_HISTORY", label: "Historique commandes",
     description: "Historique des commandes", retentionDays: 365,
     whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER], minRoleLevel: 3,
+    autoArchive: true, autoDelete: false,
+  },
+  {
+    policyName: "AUDIT_APPROVAL_LOGS", label: "Logs d'approbation d'audit",
+    description: "Traçabilité des demandes et approbations d'audit de rôle", retentionDays: 730,
+    whoCanConfigure: [ROLES.SUPER_ADMIN], minRoleLevel: 1,
     autoArchive: true, autoDelete: false,
   },
 ];
