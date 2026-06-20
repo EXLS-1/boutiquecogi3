@@ -1,16 +1,10 @@
-import { prisma } from "@/lib/prisma";
-import { main as runSeed } from "@/prisma/seed/index";
+import { prisma } from './seed-client'
 
 async function main() {
-  await runSeed();
+  const { main: seedMain } = await import('./seed/index')
+  await seedMain(prisma)
 }
 
 main()
-  .catch((e) => {
-    console.error("❌ Erreur critique lors du seed :");
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch((e) => { console.error(e); process.exit(1) })
+  .finally(async () => { await prisma.$disconnect() })
