@@ -3,7 +3,7 @@
 
 import { BetterAuthContext } from "@/lib/auth/auth-client";
 import type { auth } from "@/lib/auth";
-import authClient from "@/lib/auth/auth-client";
+import { authClient } from "@/lib/auth/auth-client";
 import React from "react";
 import { ThemeProvider } from "./theme-provider";
 

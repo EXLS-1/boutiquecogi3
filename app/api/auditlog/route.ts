@@ -1,14 +1,9 @@
-// components/auth/route.ts
-
+// app/api/auditlog/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/uuid";
 
-/**
- * Route interne pour l'enregistrement des logs d'audit depuis le Middleware
- */
 export async function POST(req: Request) {
-  // Sécurisation : on vérifie que l'appel vient bien de notre propre infrastructure
   const secret = req.headers.get("x-internal-secret");
   if (!secret || secret !== process.env.AUTH_SECRET) {
     return new NextResponse("Unauthorized", { status: 401 });

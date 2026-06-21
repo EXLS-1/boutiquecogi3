@@ -1,7 +1,8 @@
 // components/footer.tsx
-import SocialIcons from "./social/social-icon";
 
 "use client";
+
+import SocialIcons from "./social/social-icon";
 
 export default function Footer() {
   return (
