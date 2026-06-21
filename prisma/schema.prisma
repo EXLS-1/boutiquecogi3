@@ -12,12 +12,6 @@ datasource db {
 // AUTHENTIFICATION & UTILISATEURS (BetterAuth)
 // =============================================
 
-model Permission {
-  id    String           @id @db.Uuid
-  name  String           @unique
-  roles RolePermission[]
-}
-
 model RoleConfig {
   id       String       @id @db.Uuid
   role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
@@ -42,16 +36,21 @@ model RoleConfig {
   @@map("role_config")
 }
 
-// Joint table for many-to-many relationship between RoleConfig and Permission
+model Permission {
+  id    String           @id @db.Uuid
+  name  String           @unique
+  roles RolePermission[]
+}
+
 model RolePermission {
-  id           String     @id @db.Uuid // Add an ID field for the join table
+  id           String     @id @db.Uuid
   roleId       String     @db.Uuid
   roleconfig   RoleConfig @relation(fields: [roleconfigId], references: [id], onDelete: Cascade)
   roleconfigId String     @db.Uuid
   permissionId String     @db.Uuid
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@unique([roleId, permissionId])
+  @@unique([roleconfigId, permissionId])
   @@map("role_permission")
 }
 
@@ -122,7 +121,7 @@ model TwoFactorBackupCode {
 model Post {
   id        String   @id @db.Uuid
   title     String
-  userId    String
+  userId    String   @db.Uuid
   content   String?
   published Boolean  @default(false)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -136,7 +135,7 @@ model Post {
 model Session {
   id           String @id @db.Uuid
   role         Role   @default(USER)
-  userId       String
+  userId       String @db.Uuid
   sessionToken String @unique
 
   expires DateTime
@@ -153,7 +152,7 @@ model Session {
 
 model Account {
   id                String  @id @db.Uuid
-  userId            String
+  userId            String  @db.Uuid
   type              String
   provider          String
   providerAccountId String
@@ -182,7 +181,7 @@ enum Role {
 }
 
 model VerificationToken {
-  identifier String
+  identifier String           @db.Uuid
   token      String           @unique
   type       VerificationType
   expires    DateTime
@@ -207,7 +206,7 @@ enum VerificationType {
 model Dashboard {
   id        String   @id @db.Uuid
   name      String
-  userId    String
+  userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -218,7 +217,7 @@ model Dashboard {
 model AuditLog {
   id         String   @id @db.Uuid
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull) // Add this line
-  userId     String?
+  userId     String?  @db.Uuid
   action     String
   entity     String?
   entityType String?
@@ -376,19 +375,19 @@ model Product {
   basePrice   Decimal @db.Decimal(10, 2)
   currency    String  @default("USD") @db.VarChar(3)
 
-  userId String
+  userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id])
 
   images   String[]
   videoUrl String?
 
-  isFeatured     Boolean   @default(false)
-  isArchived     Boolean   @default(false)
-  isdeleted      Boolean   @default(false)
+  isFeatured     Boolean       @default(false)
+  isArchived     Boolean       @default(false)
+  isdeleted      Boolean       @default(false)
   deletedAt      DateTime?
-  status         String    @default("DRAFT") // ACTIVE | DRAFT | ARCHIVED
+  status         ProductStatus
   seoTitle       String?
-  seoDescription String?   @db.Text
+  seoDescription String?       @db.Text
 
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -955,7 +954,7 @@ model OrderItem {
 
 model OrderStatusHistory {
   id            String      @id @db.Uuid
-  orderId       String
+  orderId       String      @db.Uuid
   order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   status        OrderStatus @relation(fields: [orderStatusId], references: [id])
   note          String?     @db.Text
@@ -968,7 +967,7 @@ model OrderStatusHistory {
 
 model OrderAddress {
   id        String   @id @db.Uuid
-  orderId   String
+  orderId   String   @db.Uuid
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   street    String
   commune   String
@@ -1248,7 +1247,7 @@ model ReturnReason {
 
 model Return {
   id             String        @id @db.Uuid
-  orderId        String
+  orderId        String        @db.Uuid
   order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   reason         String
   status         ReturnStatus  @default(REQUESTED)
@@ -1264,7 +1263,7 @@ model Return {
 
 model ReturnItem {
   id             String        @id @db.Uuid
-  returnId       String
+  returnId       String        @db.Uuid
   return         Return        @relation(fields: [returnId], references: [id], onDelete: Cascade)
   orderItemId    String
   orderItem      OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
@@ -1353,16 +1352,18 @@ model Coupon {
 
 model CouponUsage {
   id       String   @id @db.Uuid
-  couponId String
+  couponId String   @db.Uuid
   coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  userId   String
+  userId   String   @db.Uuid
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderId  String   @unique
+  orderId  String   @unique @db.Uuid
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   usedAt   DateTime @default(now())
 
+  @@unique([couponId, userId, orderId])
   @@index([couponId])
   @@index([userId])
+  @@index([orderId])
   @@map("coupon_usage")
 }
 
@@ -1387,9 +1388,9 @@ model GiftCard {
 
 model GiftCardRedemption {
   id         String   @id @db.Uuid
-  giftCardId String
+  giftCardId String   @db.Uuid
   giftCard   GiftCard @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
-  orderId    String
+  orderId    String   @db.Uuid
   order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount     Int
   createdAt  DateTime @default(now())
@@ -1415,7 +1416,7 @@ model Wishlist {
 
 model WishlistItem {
   id         String   @id @db.Uuid
-  wishlistId String
+  wishlistId String   @db.Uuid
   wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
   productId  String
   product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
@@ -1453,7 +1454,7 @@ model WishlistConfig {
 
 model Notification {
   id        String   @id @db.Uuid
-  userId    String
+  userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
   title     String
