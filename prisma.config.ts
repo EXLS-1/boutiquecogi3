@@ -1,18 +1,17 @@
-// This file configures Prisma for the project
 // prisma.config.ts
 import "dotenv/config"; 
 import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
-   earlyAccess: true, // Nécessaire pour Prisma 7.x
+  earlyAccess: true,
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "tsx prisma/seed.ts", // ou "npx tsx prisma/seed.ts" selon ton setup
+    seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: env("DATABASE_URL"),
-    provider: "postgresql", // ou "mysql", "sqlite", "mongodb" selon ta DB
-    
+    provider: "postgresql",
+    url: env("DATABASE_URL"),   
+    directUrl: env("DIRECT_URL"),
   },
 });
