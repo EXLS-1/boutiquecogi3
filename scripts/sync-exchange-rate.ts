@@ -2,7 +2,7 @@
 // Script autonome pour forcer la synchronisation du taux de change.
 // Utilisation : npx tsx scripts/sync-exchange-rate.ts
 
-import { updateExchangeRateCronJob } from "../lib/exchange-rate/exchange-rate-cron";
+import { updateExchangeRateCronJob } from "@/lib/exchange-rate/exchange-rate-cron ";
 
 async function run() {
   console.log("[SYNC_SCRIPT] Lancement de la synchronisation manuelle...");
