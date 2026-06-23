@@ -1,27 +1,46 @@
 // lib/exchange-rate/exchange-rate-cache.ts
-// Ce module gère la persistance du taux de change USD/CDF en base de données pour assurer une continuité de service.
-// Il expose des fonctions pour sauvegarder le dernier taux valide et pour récupérer ce taux en cas de défaillance de la source principale (BCC).
+// =============================================================================
+// Persistance du taux de change en base de données (cache L3).
+// Garantit la continuité de service en cas d'indisponibilité de la BCC.
+// =============================================================================
 
-import { prisma } from "@/lib/prisma";
-import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
-import { CACHE_KEY } from "@lib/currency/exchange-rate-constants";
+import { CACHE_KEY } from "../currency/exchange-rate-constants";
+
+// ─── Lazy import de Prisma pour éviter les cycles de dépendance ───────────────
+
+let _prisma: typeof import("@/lib/prisma").prisma | null = null;
+
+function getPrisma() {
+  if (!_prisma) {
+    _prisma = require("@/lib/prisma").prisma;
+  }
+  return _prisma;
+}
+
+// ─── Génération UUID v7 (RFC 9562) ────────────────────────────────────────────
 
 /**
- * Génère un UUID v7 conforme aux spécifications RFC 9562 de manière native.
+ * Génère un UUID v7 chronologiquement triable (Node.js 22+).
+ * Optimise les index de base de données pour les clés primaires.
  */
 export function generateUUIDv7(): string {
-  // L'option { version: 7 } est disponible nativement depuis Node.js 22.0.0
-  // Cette version est chronologiquement triable, optimisant les index de base de données.
-  // @ts-ignore - Supporté nativement dans les runtimes modernes
+  const { randomUUID } = require("crypto");
+  // @ts-expect-error — Supporté nativement dans les runtimes modernes (Node 22+)
   return randomUUID({ version: 7 });
 }
 
+// ─── Opérations de cache ────────────────────────────────────────────────────
+
 /**
- * Sauvegarde le dernier taux de change valide dans la base de données.
+ * Sauvegarde le dernier taux de change valide en base de données.
+ * Utilise upsert pour garantir l'atomicité de l'opération.
+ * @param rate - Taux à persister
+ * @throws Error si l'écriture en base échoue
  */
 export async function saveLastValidRate(rate: Prisma.Decimal): Promise<void> {
-  const rateString = rate.toFixed(); // Convertir en chaîne pour le stockage
+  const prisma = getPrisma();
+  const rateString = rate.toFixed();
 
   try {
     await prisma.systemConfiguration.upsert({
@@ -47,16 +66,18 @@ export async function saveLastValidRate(rate: Prisma.Decimal): Promise<void> {
 
 /**
  * Récupère le dernier taux valide depuis la base de données.
+ * @returns Le taux stocké ou `null` si aucun taux n'est disponible
  */
 export async function getLastValidRate(): Promise<Prisma.Decimal | null> {
+  const prisma = getPrisma();
+
   try {
     const config = await prisma.systemConfiguration.findUnique({
       where: { key: CACHE_KEY },
     });
 
-    if (!config) return null;
+    if (!config?.value) return null;
 
-    // Reconvertir la chaîne en Prisma.Decimal
     return new Prisma.Decimal(config.value);
   } catch (error) {
     console.error(

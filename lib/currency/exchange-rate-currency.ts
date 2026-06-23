@@ -1,16 +1,17 @@
 // lib/currency/exchange-rate-currency.ts
+// =============================================================================
+// Métadonnées des devises et formatage monétaire.
+// Supporte USD et CDF avec formatage localisé.
+// =============================================================================
 
-export type DisplayCurrency = "USD" | "CDF";
+import {
+  DisplayCurrency,
+  CurrencyMetadata,
+} from "../exchange-rate/exchange-rate-types";
 
-export interface CurrencyMetadata {
-  code: DisplayCurrency;
-  symbol: string;
-  label: string;
-  locale: string;
-  precision: number;
-}
+// ─── Définitions des devises ──────────────────────────────────────────────────
 
-export const CURRENCIES: Record<DisplayCurrency, CurrencyMetadata> = {
+export const CURRENCIES: Readonly<Record<DisplayCurrency, CurrencyMetadata>> = {
   USD: {
     code: "USD",
     symbol: "$",
@@ -18,7 +19,6 @@ export const CURRENCIES: Record<DisplayCurrency, CurrencyMetadata> = {
     locale: "en-US",
     precision: 2,
   },
-
   CDF: {
     code: "CDF",
     symbol: "FC",
@@ -26,26 +26,35 @@ export const CURRENCIES: Record<DisplayCurrency, CurrencyMetadata> = {
     locale: "fr-CD",
     precision: 0,
   },
-};
+} as const;
 
-export const SUPPORTED_CURRENCY_CODES = Object.keys(
+/** Liste des codes de devise supportés. */
+export const SUPPORTED_CURRENCY_CODES: readonly DisplayCurrency[] = Object.keys(
   CURRENCIES,
 ) as DisplayCurrency[];
 
+// ─── Accesseurs ───────────────────────────────────────────────────────────────
+
+/**
+ * Retourne les métadonnées d'une devise.
+ * @param currency - Code de devise
+ * @returns Métadonnées de la devise (USD par défaut si invalide)
+ */
 export function getCurrencyMetadata(
   currency: DisplayCurrency,
 ): CurrencyMetadata {
   return CURRENCIES[currency] ?? CURRENCIES.USD;
 }
 
-const FORMATTERS = {
+// ─── Formatters (lazy initialization, réutilisables) ─────────────────────────
+
+const FORMATTERS: Readonly<Record<DisplayCurrency, Intl.NumberFormat>> = {
   USD: new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }),
-
   CDF: new Intl.NumberFormat("fr-CD", {
     style: "currency",
     currency: "CDF",
@@ -54,8 +63,14 @@ const FORMATTERS = {
   }),
 };
 
+/**
+ * Formate un montant en devise avec la locale appropriée.
+ * @param amount - Montant numérique
+ * @param currency - Code de devise
+ * @returns Chaîne formatée (ex: "2 400 FC" ou "$100.00")
+ */
 export function formatPrice(amount: number, currency: DisplayCurrency): string {
   const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return FORMATTERS[currency].format(safeAmount);
+  const formatter = FORMATTERS[currency] ?? FORMATTERS.USD;
+  return formatter.format(safeAmount);
 }
