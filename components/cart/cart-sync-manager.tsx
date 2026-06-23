@@ -12,18 +12,16 @@ export function CartSyncManager() {
   const { items } = useCart();
 
   useEffect(() => {
-    // On ne synchronise que si l'utilisateur est connecté et que le panier n'est pas vide
-    if (session?.user && items.length > 0) {
-      const handleSync = async () => {
-        const result = await syncCartAction(items);
-        if (result.success) {
-          console.log("Panier synchronisé avec succès");
-        }
-      };
-
-      handleSync();
-    }
-  }, [session, items.length]); // Déclenché lors du login ou ajout au panier
+  if (session?.user && items && items.length > 0) {
+    const handleSync = async () => {
+      const result = await syncCartAction(items);
+      if (result.success) {
+        console.log("Panier synchronisé avec succès");
+      }
+    };
+    handleSync();
+  }
+  }, [session, items?.length ?? 0]);
 
   return null; // Ce composant ne fait aucun rendu
 }

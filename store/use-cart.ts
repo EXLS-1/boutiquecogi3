@@ -237,6 +237,6 @@ export function useCartItemCount(): number {
 }
 
 /** Récupère uniquement l'état ouvert/fermé */
-export function useCartOpen(): boolean {
+export default function useCartOpen(): boolean {
   return useCartStore((state) => state.isOpen);
 }

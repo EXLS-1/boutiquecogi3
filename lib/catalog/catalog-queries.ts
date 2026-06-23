@@ -8,7 +8,7 @@
 
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, ProductStatus } from "@prisma/client";
 import {
   CatalogQueryParams,
   CatalogQueryParamsValidated,
@@ -31,7 +31,7 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
     isArchived: false,
     isdeleted: false,
     deletedAt: null,
-    status: "published" as any,
+    status: ProductStatus.ACTIVE,
   } as Prisma.ProductWhereInput;
 }
 

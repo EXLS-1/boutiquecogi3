@@ -6,7 +6,7 @@
 // et il est positionné de manière absolue pour se superposer à l'icône du panier.
 "use client";
 
-import useCart from "@/store/use-cart";
+import useCartOpen from "@/store/use-cart";
 import { useEffect, useState } from "react";
 
 export function CartBadge() {
