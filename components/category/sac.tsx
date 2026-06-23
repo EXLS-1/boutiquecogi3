@@ -1,14 +1,26 @@
-// components/category/sac.tsx
-import { CategoryCard } from './category-card'
+/**
+ * =============================================================================
+ * BOUTIQUE SAC - Boutiquecogi3
+ * =============================================================================
+ */
 
-export default function BoutiqueSac() {
+import { memo } from "react";
+import { CategoryCard } from "./category-card";
+import { STATIC_CATEGORIES } from "@/lib/category/category-constants";
+
+function BoutiqueSacComponent() {
+  const category = STATIC_CATEGORIES.find((c) => c.slug === "sac");
+  if (!category) return null;
+
   return (
     <CategoryCard
-      title="SAC DAME"
-      subtitle="Accessoires indispensables"
-      imageSrc="/Media/pict04.webp"
-      imageAlt="Sac Dame"
-      href="/products?category=sac"
+      title={category.title}
+      subtitle={category.subtitle}
+      imageSrc={category.imageSrc}
+      imageAlt={category.imageAlt}
+      href={category.href}
     />
-  )
+  );
 }
+
+export default memo(BoutiqueSacComponent);

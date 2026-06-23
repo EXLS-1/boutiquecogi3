@@ -1,14 +1,26 @@
-// components/category/homme.tsx
-import { CategoryCard } from './category-card'
+/**
+ * =============================================================================
+ * BOUTIQUE HOMME - Boutiquecogi3
+ * =============================================================================
+ */
 
-export default function BoutiqueHomme() {
+import { memo } from "react";
+import { CategoryCard } from "./category-card";
+import { STATIC_CATEGORIES } from "@/lib/category/category-constants";
+
+function BoutiqueHommeComponent() {
+  const category = STATIC_CATEGORIES.find((c) => c.slug === "homme");
+  if (!category) return null;
+
   return (
     <CategoryCard
-      title="HABIT HOMME"
-      subtitle="Style moderne et raffiné"
-      imageSrc="/Media/pict02.webp"
-      imageAlt="Habit Homme"
-      href="/products?category=homme"
+      title={category.title}
+      subtitle={category.subtitle}
+      imageSrc={category.imageSrc}
+      imageAlt={category.imageAlt}
+      href={category.href}
     />
-  )
+  );
 }
+
+export default memo(BoutiqueHommeComponent);

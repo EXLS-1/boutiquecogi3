@@ -1,15 +1,26 @@
-// components/category/accesoire.tsx
+/**
+ * =============================================================================
+ * BOUTIQUE ACCESSOIRE - Boutiquecogi3
+ * =============================================================================
+ */
 
-import { CategoryCard } from './category-card'
+import { memo } from "react";
+import { CategoryCard } from "./category-card";
+import { STATIC_CATEGORIES } from "@/lib/category/category-constants";
 
-export default function BoutiqueAccessoire() {
+function BoutiqueAccessoireComponent() {
+  const category = STATIC_CATEGORIES.find((c) => c.slug === "accessoire");
+  if (!category) return null;
+
   return (
     <CategoryCard
-      title="ACCESSOIRE"
-      subtitle="Accessoires indispensables"
-      imageSrc="/Media/pict04.webp"
-      imageAlt="Accessoire"
-      href="/products?category=accessoire"
+      title={category.title}
+      subtitle={category.subtitle}
+      imageSrc={category.imageSrc}
+      imageAlt={category.imageAlt}
+      href={category.href}
     />
-  )
+  );
 }
+
+export default memo(BoutiqueAccessoireComponent);

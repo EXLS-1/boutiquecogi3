@@ -1,55 +1,73 @@
-// components/product/product-sort-filter.tsx
+/**
+ * =============================================================================
+ * PRODUCT SORT FILTER - Boutiquecogi3
+ * =============================================================================
+ * Filtre de tri avec nuqs pour state URL type-safe.
+ * Pas de useRouter/useSearchParams manuel - nuqs gère tout.
+ */
 
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useQueryState, parseAsStringLiteral } from "nuqs";
+import { 
+  SORT_OPTIONS, 
+  type SortValue 
+} from "@/lib/product/product-types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowUpDown } from "lucide-react";
 
-const SORT_OPTIONS = [
-  { label: "Nouveautés", value: "newest" },
-  { label: "Prix : Croissant", value: "price-asc" },
-  { label: "Prix : Décroissant", value: "price-desc" },
-];
+const sortValues = SORT_OPTIONS.map((o) => o.value) as [string, ...string[]];
+const sortParser = parseAsStringLiteral(sortValues).withDefault("newest");
 
 export function ProductSortFilter() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const currentSort = searchParams.get("sort") || "newest";
+  const [sort, setSort] = useQueryState("sort", sortParser);
 
-  const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    const params = new URLSearchParams(searchParams.toString());
-    
-    if (value === "newest") {
-      params.delete("sort");
-    } else {
-      params.set("sort", value);
-    }
-    
-    // Réinitialise la page à 1 lors d'un changement de tri
-    params.delete("page");
-
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [pathname, router, searchParams]);
+  const handleSortChange = (value: SortValue) => {
+    setSort(value === "newest" ? null : value, {
+      shallow: false, // Déclenche re-render serveur
+    });
+  };
 
   return (
     <div className="flex items-center gap-3">
-      <label htmlFor="sort-filter" className="text-xs uppercase tracking-widest text-muted-foreground font-bold whitespace-nowrap">
-        Trier par :
-      </label>
-      <select
-        id="sort-filter"
-        value={currentSort}
-        onChange={handleSortChange}
-        className="h-9 w-[180px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+      <ArrowUpDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      <label 
+        htmlFor="sort-filter" 
+        className="text-xs uppercase tracking-widest text-muted-foreground font-bold whitespace-nowrap"
       >
-        {SORT_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        Trier par
+      </label>
+      <Select
+        value={sort}
+        onValueChange={handleSortChange}
+      >
+        <SelectTrigger 
+          id="sort-filter"
+          className="h-9 w-[200px] text-sm"
+          aria-label="Choisir un critère de tri"
+        >
+          <SelectValue placeholder="Nouveautés" />
+        </SelectTrigger>
+        <SelectContent>
+          {SORT_OPTIONS.map((option) => (
+            <SelectItem 
+              key={option.value} 
+              value={option.value}
+              className="text-sm"
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
+
+export default ProductSortFilter;

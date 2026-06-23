@@ -2,9 +2,6 @@
 
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-
-import { Prisma } from "@/generated/prisma";
-
 import { prisma } from "@/lib/prisma";
 
 import { ProductList } from "@/components/product/product-list";

@@ -1,15 +1,26 @@
-// components/category/enfant.tsx
+/**
+ * =============================================================================
+ * BOUTIQUE ENFANT - Boutiquecogi3
+ * =============================================================================
+ */
 
-import { CategoryCard } from './category-card'
+import { memo } from "react";
+import { CategoryCard } from "./category-card";
+import { STATIC_CATEGORIES } from "@/lib/category/category-constants";
 
-export default function BoutiqueEnfant() {
+function BoutiqueEnfantComponent() {
+  const category = STATIC_CATEGORIES.find((c) => c.slug === "enfant");
+  if (!category) return null;
+
   return (
     <CategoryCard
-      title="HABIT ENFANT"
-      subtitle="Tendresse et qualité"
-      imageSrc="/Media/pict03.webp"
-      imageAlt="Habit Enfant"
-      href="/products?category=enfant"
+      title={category.title}
+      subtitle={category.subtitle}
+      imageSrc={category.imageSrc}
+      imageAlt={category.imageAlt}
+      href={category.href}
     />
-  )
+  );
 }
+
+export default memo(BoutiqueEnfantComponent);

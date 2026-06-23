@@ -1,199 +1,60 @@
-import { Suspense, cache } from "react";
-import type { Metadata } from "next";
-import type { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+/**
+ * =============================================================================
+ * PRODUCTS PAGE - Boutiquecogi3
+ * =============================================================================
+ * Page catalog avec parsing serveur des params URL via nuqs.
+ */
+
+import { Suspense } from "react";
+import { Metadata } from "next";
+import { searchParamsCache } from "@/lib/product/search-params";
+import { searchCatalogProducts } from "@/lib/catalog/catalog-queries";
 import ProductCatalog from "@/components/product/product-catalog";
-import { CategoryCard } from "@/components/category/category-card";
-import { Pagination } from "@/components/ui/pagination";
-import { CATALOG_PAGE_SIZE } from "@/lib/catalog/catalog-constants";
-import { mapCatalogProduct } from "@/lib/catalog/catalog-mappers";
-import { z } from "zod";
+import { ProductListSkeleton } from "@/components/product/product-list";
 
-// --- VALIDATION ET TYPAGE ---
-
-const searchParamsSchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .default("1")
-    .transform((val) => {
-      const parsed = parseInt(val, 10);
-      return isNaN(parsed) || parsed < 1 ? 1 : parsed;
-    }),
-  sort: z
-    .enum(["newest", "basePrice-asc", "basePrice-desc"])
-    .optional()
-    .default("newest"),
-  category: z.string().optional().default("all"),
-  q: z.string().optional().default(""),
-});
-
-type ValidatedSearchParams = z.infer<typeof searchParamsSchema>;
+export const metadata: Metadata = {
+  title: "Nos Produits | Boutique COGI",
+  description: "Découvrez notre collection de vêtements et accessoires.",
+};
 
 interface ProductsPageProps {
-  searchParams: Promise<{
-    page?: string;
-    sort?: string;
-    category?: string;
-    q?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
-
-// --- FONCTIONS AUXILIAIRES ET CACHE ---
-
-const getCachedCategories = cache(async () => {
-  return prisma.category.findMany({
-    where: {
-      products: {
-        some: {
-          isArchived: false,
-          isdeleted: false,
-          deletedAt: null,
-        },
-      },
-    },
-    orderBy: { name: "asc" },
-    select: { name: true, slug: true },
-  });
-});
-
-function buildPaginationUrl(page: number, params: ValidatedSearchParams): string {
-  const urlParams = new URLSearchParams();
-  urlParams.set("page", page.toString());
-  if (params.sort !== "newest") urlParams.set("sort", params.sort);
-  if (params.category !== "all") urlParams.set("category", params.category);
-  if (params.q) urlParams.set("q", params.q);
-  return `${BASE_URL}/products?${urlParams.toString()}`;
-}
-
-// --- GENERATION DES METADONNÉES (SÉCURISÉE CORRÉLATION REQUÊTES) ---
-
-export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
-  const rawParams = await searchParams;
-  const parsed = searchParamsSchema.safeParse(rawParams);
-  const data = parsed.success ? parsed.data : searchParamsSchema.parse({});
-
-  const title = data.category !== "all" 
-    ? `Produits ${data.category} | Boutique COGI` 
-    : "Catalogue complet | Boutique COGI";
-
-  return {
-    title,
-    description: "Découvrez notre catalogue complet de produits de haute qualité adaptés à vos besoins.",
-    alternates: {
-      canonical: `${BASE_URL}/products`,
-    },
-  };
-}
-
-// --- COMPOSANT DE PAGE PRINCIPAL ---
-
-export const revalidate = 300; // ISR à 5 minutes
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  // Résolution asynchrone des searchParams propre à Next.js 16
-  const rawParams = await searchParams;
-  const parsedParams = searchParamsSchema.safeParse(rawParams);
-  
-  // Remplacement immédiat par les valeurs par défaut si altération de l'URL
-  const validatedData = parsedParams.success ? parsedParams.data : searchParamsSchema.parse({});
-  const { page, sort, category: categorySlug, q: query } = validatedData;
+  // Parsing type-safe des params URL (nuqs server)
+  const { q, page, category, sort, minPrice, maxPrice } = 
+    await searchParamsCache.parse(await searchParams);
 
-  // Construction stricte de la clause WHERE (Performance Index Database)
-  const where: Prisma.ProductWhereInput = {
-    isArchived: false,
-    isdeleted: false,
-    deletedAt: null,
-  };
+  // Récupération des produits
+  const { products, totalCount } = await searchCatalogProducts({
+    limit: 12,
+    offset: (page - 1) * 12,
+    categorySlug: category === "all" ? undefined : category,
+    searchQuery: q || undefined,
+    sortBy: sort === "newest" ? "createdAt" : 
+            sort === "price-asc" ? "price" :
+            sort === "price-desc" ? "price" :
+            sort === "name-asc" ? "name" :
+            sort === "name-desc" ? "name" : "createdAt",
+    sortOrder: sort === "price-desc" || sort === "name-desc" ? "desc" : "asc",
+    minPrice: minPrice || undefined,
+    maxPrice: maxPrice || undefined,
+  });
 
-  if (categorySlug && categorySlug !== "all") {
-    where.category = { slug: categorySlug };
-  }
-
-  if (query.trim().length > 0) {
-    where.OR = [
-      { name: { contains: query, mode: "insensitive" } },
-      { description: { contains: query, mode: "insensitive" } },
-    ];
-  }
-
-  // Configuration de l'ordre de tri (Garantie de déterminisme via ID)
-  let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
-    { createdAt: "desc" },
-    { id: "desc" },
-  ];
-
-  if (sort === "basePrice-asc") {
-    orderBy = [{ basePrice: "asc" }, { id: "asc" }];
-  } else if (sort === "basePrice-desc") {
-    orderBy = [{ basePrice: "desc" }, { id: "desc" }];
-  }
-
-  // Exécution parallélisée non bloquante via Prisma Pool
-  const [products, totalCount, categories] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      orderBy,
-      skip: (page - 1) * CATALOG_PAGE_SIZE,
-      take: CATALOG_PAGE_SIZE,
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true },
-        },
-        availabilityProjection: {
-          select: { isAvailable: true },
-        },
-        productImages: {
-          orderBy: { position: "asc" },
-          take: 1,
-          select: { url: true },
-        },
-      },
-    }),
-    prisma.product.count({ where }),
-    getCachedCategories(),
-  ]);
-
-  const formattedProducts = products.map(mapCatalogProduct);
-  const categoriesList = ["all", ...categories.map((c) => c.slug)];
-  const totalPages = Math.ceil(totalCount / CATALOG_PAGE_SIZE);
-
-  // Sécurité aux limites : Empêcher le rendu d'une page hors-limite supérieure
-  if (page > totalPages && totalPages > 0) {
-    // Optionnel : rediriger ou forcer la dernière page
-    const lastPageParams = buildPaginationUrl(totalPages, validatedData);
-  }
+  const categories = ["all", "femme", "homme", "enfant", "sac", "chaussure", "accessoire"];
 
   return (
-    <main className="container mx-auto px-4 pb-12 bg-background md:px-6">
-      <CategoryCard className="mb-8" />
-
-      <ProductCatalog
-        title="Notre Catalogue"
-        products={formattedProducts}
-        totalCount={totalCount}
-        categories={categoriesList}
-      />
-
-      {totalPages > 1 && (
-        <div className="mt-12 flex justify-center">
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            hasPrevPage={page > 1}
-            hasNextPage={page < totalPages}
-            baseUrl="/products"
-            // Injection propre des objets nécessaires pour la compatibilité descendante des deux composants
-            searchParams={{
-              category: categorySlug,
-              sort: sort,
-              q: query,
-            }}
-          />
-        </div>
-      )}
+    <main className="min-h-screen bg-background">
+      <Suspense fallback={<ProductListSkeleton count={12} />}>
+        <ProductCatalog
+          products={products}
+          totalCount={totalCount}
+          categories={categories}
+          title="Nos Produits"
+          pageSize={12}
+        />
+      </Suspense>
     </main>
   );
 }
