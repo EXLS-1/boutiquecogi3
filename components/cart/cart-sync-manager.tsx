@@ -12,16 +12,22 @@ export function CartSyncManager() {
   const { items } = useCart();
 
   useEffect(() => {
-  if (session?.user && items && items.length > 0) {
-    const handleSync = async () => {
-      const result = await syncCartAction(items);
-      if (result.success) {
-        console.log("Panier synchronisé avec succès");
-      }
-    };
-    handleSync();
-  }
-  }, [session, items?.length ?? 0]);
+    // Protection contre undefined + panier vide
+    if (session?.user && items && items.length > 0) {
+      const handleSync = async () => {
+        try {
+          const result = await syncCartAction(items);
+          if (result.success) {
+            console.log("Panier synchronisé avec succès");
+          }
+        } catch (error) {
+          console.error("Erreur synchronisation panier:", error);
+        }
+      };
 
-  return null; // Ce composant ne fait aucun rendu
+      handleSync();
+    }
+  }, [session, items?.length]); // ← Optional chaining ici aussi
+
+  return null;
 }

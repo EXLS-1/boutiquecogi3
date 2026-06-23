@@ -19,6 +19,7 @@ export default function GlobalError({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center p-4" role="alert">
       <h2 className="text-4xl font-bold text-red-600">Une erreur critique est survenue...</h2>
+      <pre>{error.message}</pre>
       <p className="text-cyan-500 max-w-md">
         Désolé, un problème inattendu empêche l&apos;affichage de la Boutique COGI. Notre équipe technique a été notifiée.
       </p>
