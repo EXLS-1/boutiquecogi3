@@ -10,8 +10,6 @@ export interface CurrencyMetadata {
   precision: number;
 }
 
-export const DEFAULT_USD_TO_CDF_RATE = 2300;
-
 export const CURRENCIES: Record<DisplayCurrency, CurrencyMetadata> = {
   USD: {
     code: "USD",
@@ -60,20 +58,4 @@ export function formatPrice(amount: number, currency: DisplayCurrency): string {
   const safeAmount = Number.isFinite(amount) ? amount : 0;
 
   return FORMATTERS[currency].format(safeAmount);
-}
-
-export function convertUsdToCdf(amountUsd: number, rate: number): number {
-  if (!Number.isFinite(amountUsd) || !Number.isFinite(rate)) {
-    return 0;
-  }
-
-  return Math.round(amountUsd * rate);
-}
-
-export function convertCdfToUsd(amountCdf: number, rate: number): number {
-  if (!Number.isFinite(amountCdf) || !Number.isFinite(rate) || rate <= 0) {
-    return 0;
-  }
-
-  return amountCdf / rate;
 }

@@ -4,7 +4,7 @@
 // La fonction convertUSDToCDF utilise le taux récupéré pour convertir un montant USD en CDF avec un arrondi intelligent.
 
 import { Prisma } from "@prisma/client";
-import { fetchRate } from "./bcc-client"; // CORRECTION : Importation du vrai client de scraping
+import { fetchRate } from "./exchange-rate-bcc"; // CORRECTION : Importation du vrai client de scraping
 import { saveLastValidRate, getLastValidRate } from "./exchange-rate-cache";
 import { validateRate } from "./exchange-rate-validator";
 import { ExchangeRate } from "./exchange-rate-types";

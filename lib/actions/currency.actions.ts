@@ -2,7 +2,7 @@
 
 "use server";
 import { cookies } from "next/headers";
-import type { DisplayCurrency } from "@/lib/currency/currency";
+import type { DisplayCurrency } from "@/lib/currency/exchange-rate-currency";
 
 export async function setDisplayCurrency(currency: DisplayCurrency) {
   (await cookies()).set("displayCurrency", currency, {

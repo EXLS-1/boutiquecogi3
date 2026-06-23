@@ -3,11 +3,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-import {
-  DisplayCurrency,
-  DEFAULT_USD_TO_CDF_RATE,
-} from "@/lib/currency/currency";
+import { DEFAULT_USD_TO_CDF_RATE } from "@/lib/currency/exchange-rate-constants";
+import { DisplayCurrency } from "@/lib/currency/exchange-rate-currency";
 
 interface CurrencyState {
   currency: DisplayCurrency;

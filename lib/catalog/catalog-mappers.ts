@@ -6,7 +6,7 @@
  * Validation Zod intégrée pour garantir l'intégrité des données.
  */
 
-import { usdToCdf } from "@/lib/currency/convert";
+import { usdToCdf } from "@/lib/currency/exchange-rate-convert";
 import { PRODUCT_PLACEHOLDER, DEFAULT_PRODUCT_RBAC } from "./catalog-constants";
 import {
   RawCatalogProduct,
@@ -20,22 +20,24 @@ import {
  * Détermine le statut de disponibilité basé sur les données stock
  */
 function resolveAvailabilityStatus(
-  projection: RawCatalogProduct["availabilityProjection"]
+  projection: RawCatalogProduct["availabilityProjection"],
 ): AvailabilityStatus {
   if (!projection) return AVAILABILITY_STATUS.OUT_OF_STOCK;
 
   const { isAvailable, stockQuantity = 0 } = projection;
 
   if (!isAvailable) return AVAILABILITY_STATUS.OUT_OF_STOCK;
-  if (stockQuantity <= STOCK_THRESHOLDS.CRITICAL_STOCK) return AVAILABILITY_STATUS.OUT_OF_STOCK;
-  if (stockQuantity <= STOCK_THRESHOLDS.LOW_STOCK) return AVAILABILITY_STATUS.LOW_STOCK;
-  
+  if (stockQuantity <= STOCK_THRESHOLDS.CRITICAL_STOCK)
+    return AVAILABILITY_STATUS.OUT_OF_STOCK;
+  if (stockQuantity <= STOCK_THRESHOLDS.LOW_STOCK)
+    return AVAILABILITY_STATUS.LOW_STOCK;
+
   return AVAILABILITY_STATUS.IN_STOCK;
 }
 
 /**
  * Map un produit brut Prisma vers le format Catalog domaine.
- * 
+ *
  * Règles métier :
  * - Image : première image par position, fallback placeholder
  * - Prix CDF : conversion automatique depuis USD
@@ -52,7 +54,9 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
   const basePriceCDF = usdToCdf(basePriceUSD);
 
   // ─── Disponibilité ────────────────────────────────────────────────────────
-  const availabilityStatus = resolveAvailabilityStatus(raw.availabilityProjection);
+  const availabilityStatus = resolveAvailabilityStatus(
+    raw.availabilityProjection,
+  );
   const isAvailable = availabilityStatus !== AVAILABILITY_STATUS.OUT_OF_STOCK;
 
   // ─── RBAC ─────────────────────────────────────────────────────────────────
@@ -93,7 +97,11 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
     const { catalogProductSchema } = require("./catalog-types");
     const result = catalogProductSchema.safeParse(product);
     if (!result.success) {
-      console.warn("[CatalogMapper] Validation warning pour produit:", raw.id, result.error.flatten());
+      console.warn(
+        "[CatalogMapper] Validation warning pour produit:",
+        raw.id,
+        result.error.flatten(),
+      );
     }
   }
 
@@ -103,7 +111,9 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
 /**
  * Map un tableau de produits bruts
  */
-export function mapCatalogProducts(raws: readonly RawCatalogProduct[]): readonly CatalogProduct[] {
+export function mapCatalogProducts(
+  raws: readonly RawCatalogProduct[],
+): readonly CatalogProduct[] {
   return Object.freeze(raws.map(mapCatalogProduct));
 }
 
@@ -113,14 +123,12 @@ export function mapCatalogProducts(raws: readonly RawCatalogProduct[]): readonly
 export function mapCatalogProductsWithRbac(
   raws: readonly RawCatalogProduct[],
   userRbacLevel: number,
-  isAuthenticated: boolean
+  isAuthenticated: boolean,
 ): readonly CatalogProduct[] {
   return Object.freeze(
-    raws
-      .map(mapCatalogProduct)
-      .filter((product) => {
-        if (product.requiresAuth && !isAuthenticated) return false;
-        return userRbacLevel <= product.minRbacLevel;
-      })
+    raws.map(mapCatalogProduct).filter((product) => {
+      if (product.requiresAuth && !isAuthenticated) return false;
+      return userRbacLevel <= product.minRbacLevel;
+    }),
   );
 }

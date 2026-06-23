@@ -11,3 +11,6 @@ export const CACHE_KEY = "LATEST_USD_CDF_RATE";
 
 // Durée de vie du cache en mémoire (ex: 1 heure en millisecondes)
 export const MEMORY_CACHE_TTL_MS = 60 * 60 * 1000;
+
+//
+export const DEFAULT_USD_TO_CDF_RATE = 2400;

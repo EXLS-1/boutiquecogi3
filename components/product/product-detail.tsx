@@ -13,7 +13,7 @@ import Image from "next/image";
 import { useCartStore } from "@/store/use-cart";
 import { useCurrencyStore } from "@/store/use-currency-store";
 import { toast } from "sonner";
-import { formatPrice } from "@/lib/currency/currency";
+import { formatPrice } from "@/lib/currency/exchange-rate-currency";
 import { 
   Minus, 
   Plus, 
