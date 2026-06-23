@@ -1,305 +1,446 @@
-// app/api/cron/exchange-rate/route.ts
+// lib/services/cron-job-org-service.ts
 // =============================================================================
-// Route API CRON pour le rafraîchissement forcé du taux de change USD/CDF.
-// Cette route est STRICTEMENT réservée aux appels automatisés (CRON/Vercel/Upstash).
-// Protection multi-couches : token secret + RBAC (L1-L2 uniquement).
+// Service d'intégration avec l'API REST officielle de cron-job.org.
+// Documentation : https://docs.cron-job.org/rest-api.html
+//
+// Rate Limits :
+//   - Liste jobs : 5 req/s
+//   - Création job : 1 req/s, 5 req/min
+//   - Mise à jour : 5 req/s
+//   - Historique : 5 req/s
+//   - Quota journalier : 100 req/jour (5 000 pour sustaining members)
 // =============================================================================
 
-import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { updateExchangeRateCronJob } from "@/lib/currency/exchange-rate-cron";
 
-// ─── Configuration & Constantes ───────────────────────────────────────────────
+// ─── Configuration ──────────────────────────────────────────────────────────
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+const CRON_JOB_API_BASE = "https://api.cron-job.org";
+const CRON_JOB_API_KEY = process.env.CRON_JOB_API_KEY;
 
-/** Token secret pour authentification CRON (fourni par l'orchestrateur) */
-const CRON_SECRET = process.env.CRON_SECRET;
+// ─── Enums officiels cron-job.org ─────────────────────────────────────────────
 
-/** Durée max d'exécution autorisée pour le job (ms) */
-const CRON_TIMEOUT_MS = 30_000;
-
-export interface CronJobSchedule {
-  readonly minute?: number;
-  readonly minutes?: number[];
-  readonly hours?: number[];
-  readonly daysOfMonth?: number[];
-  readonly months?: number[];
-  readonly daysOfWeek?: number[];
+/** Statut d'exécution d'un job */
+export enum JobStatus {
+  UNKNOWN = 0,
+  OK = 1,
+  FAILED_DNS = 2,
+  FAILED_CONNECT = 3,
+  FAILED_HTTP = 4,
+  FAILED_TIMEOUT = 5,
+  FAILED_TOO_MUCH_DATA = 6,
+  FAILED_INVALID_URL = 7,
+  FAILED_INTERNAL = 8,
+  FAILED_UNKNOWN = 9,
 }
 
-function buildStepValues(step: number, max: number, start = 0): number[] {
-  if (!Number.isInteger(step) || step <= 0) {
-    throw new Error("step must be a positive integer");
+/** Type de job */
+export enum JobType {
+  DEFAULT = 0,
+  MONITORING = 1,
+}
+
+/** Méthode HTTP */
+export enum RequestMethod {
+  GET = 0,
+  POST = 1,
+  OPTIONS = 2,
+  HEAD = 3,
+  PUT = 4,
+  DELETE = 5,
+  TRACE = 6,
+  CONNECT = 7,
+  PATCH = 8,
+}
+
+// ─── Schémas Zod (validation runtime) ───────────────────────────────────────
+
+const ScheduleSchema = z.object({
+  timezone: z.string().default("UTC"),
+  expiresAt: z.number().default(0),
+  hours: z.array(z.number()).default([-1]),
+  mdays: z.array(z.number()).default([-1]),
+  minutes: z.array(z.number()).default([0]),
+  months: z.array(z.number()).default([-1]),
+  wdays: z.array(z.number()).default([-1]),
+});
+
+const AuthSchema = z.object({
+  enable: z.boolean().default(false),
+  user: z.string().default(""),
+  password: z.string().default(""),
+});
+
+const NotificationSchema = z.object({
+  onFailure: z.boolean().default(false),
+  onFailureCount: z.number().min(1).default(1),
+  onSuccess: z.boolean().default(false),
+  onDisable: z.boolean().default(false),
+  onSslCertExpiry: z.boolean().default(false),
+  onSslCertExpirySeconds: z.number().min(0).default(604_800),
+});
+
+const ExtendedDataSchema = z.object({
+  headers: z.record(z.string()).default({}),
+  body: z.string().default(""),
+});
+
+/** Job (liste simplifiée) */
+export const JobSchema = z.object({
+  jobId: z.number(),
+  enabled: z.boolean(),
+  title: z.string(),
+  saveResponses: z.boolean(),
+  url: z.string(),
+  lastStatus: z.number(),
+  lastDuration: z.number(),
+  lastExecution: z.number(),
+  sslCertExpiry: z.number(),
+  nextExecution: z.number().nullable(),
+  type: z.number(),
+  requestTimeout: z.number(),
+  redirectSuccess: z.boolean(),
+  folderId: z.number(),
+  schedule: ScheduleSchema,
+  requestMethod: z.number(),
+});
+
+/** Job détaillé (création / mise à jour / détails) */
+export const DetailedJobSchema = JobSchema.extend({
+  auth: AuthSchema,
+  notification: NotificationSchema,
+  extendedData: ExtendedDataSchema,
+});
+
+/** Entrée d'historique */
+export const HistoryItemSchema = z.object({
+  jobLogId: z.number(),
+  jobId: z.number(),
+  identifier: z.string(),
+  date: z.number(),
+  datePlanned: z.number(),
+  jitter: z.number(),
+  url: z.string(),
+  duration: z.number(),
+  status: z.number(),
+  statusText: z.string(),
+  httpStatus: z.number(),
+  headers: z.string().nullable(),
+  body: z.string().nullable(),
+  sslCertExpiry: z.number(),
+  stats: z.object({
+    nameLookup: z.number(),
+    connect: z.number(),
+    appConnect: z.number(),
+    preTransfer: z.number(),
+    startTransfer: z.number(),
+    total: z.number(),
+  }),
+});
+
+/** Dossier */
+export const FolderSchema = z.object({
+  folderId: z.number(),
+  title: z.string(),
+});
+
+// ─── Types dérivés ────────────────────────────────────────────────────────────
+
+export type CronSchedule = z.infer<typeof ScheduleSchema>;
+export type CronJobAuth = z.infer<typeof AuthSchema>;
+export type CronJobNotification = z.infer<typeof NotificationSchema>;
+export type CronJobExtendedData = z.infer<typeof ExtendedDataSchema>;
+export type CronJob = z.infer<typeof JobSchema>;
+export type CronDetailedJob = z.infer<typeof DetailedJobSchema>;
+export type CronHistoryItem = z.infer<typeof HistoryItemSchema>;
+export type CronFolder = z.infer<typeof FolderSchema>;
+
+/** Input pour création de job (tous les champs optionnels sauf url) */
+export type CronJobCreateInput = Partial<Omit<CronDetailedJob, "jobId">> & {
+  url: string;
+};
+
+// ─── Erreurs personnalisées ───────────────────────────────────────────────────
+
+export class CronJobOrgError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+    public readonly responseBody?: string,
+  ) {
+    super(message);
+    this.name = "CronJobOrgError";
   }
-
-  const values: number[] = [];
-  for (let value = start; value < max; value += step) {
-    values.push(value);
-  }
-  return values;
 }
 
-export function hourly(): CronJobSchedule {
-  return { minutes: [0], hours: buildStepValues(1, 24) };
-}
+// ─── Client HTTP interne ──────────────────────────────────────────────────────
 
-export function dailyAt(hour: number, minute = 0): CronJobSchedule {
-  return { minutes: [minute], hours: [hour] };
-}
-
-export function everyNMinutes(n: number): CronJobSchedule {
-  return { minutes: buildStepValues(n, 60) };
-}
-
-export function everyNHours(n: number): CronJobSchedule {
-  return { minutes: [0], hours: buildStepValues(n, 24) };
-}
-
-export function weekdaysAt(hour: number, minute = 0): CronJobSchedule {
-  return { minutes: [minute], hours: [hour], daysOfWeek: [1, 2, 3, 4, 5] };
-}
-
-// ─── RBAC : Niveaux de Privilège ──────────────────────────────────────────────
-//
-// LEVEL 1 = SUPER-ADMIN
-// LEVEL 2 = ADMIN
-// LEVEL 3 = MANAGER
-// LEVEL 4 = EDITOR
-// LEVEL 5 = SUPERVISOR
-// LEVEL 6 = USER
-// LEVEL 7 = GUEST (public, non authentifié)
-//
-// Cette route CRON est réservée aux SUPER-ADMIN (L1) et ADMIN (L2) uniquement.
-
-type PrivilegeLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
-
-interface AuthContext {
-  readonly isAuthenticated: boolean;
-  readonly privilegeLevel: PrivilegeLevel;
-  readonly userId?: string;
-}
-
-// ─── Helpers d'authentification ───────────────────────────────────────────────
-
-/**
- * Extrait et valide le token Bearer de l'en-tête Authorization.
- * Le token CRON_SECRET est la première ligne de défense.
- */
-function validateCronToken(authHeader: string | null): boolean {
-  if (!authHeader || !CRON_SECRET) return false;
-  const prefix = "Bearer ";
-  if (!authHeader.startsWith(prefix)) return false;
-  const token = authHeader.slice(prefix.length);
-  // Comparaison en temps constant pour prévenir les attaques timing
-  return timingSafeEqual(token, CRON_SECRET);
-}
-
-/**
- * Comparaison de chaînes en temps constant (protection timing attack).
- */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
-}
-
-/**
- * Extrait le contexte d'authentification depuis la requête.
- * Pour les appels CRON, on vérifie d'abord le token, puis la session Better-Auth.
- */
-async function getAuthContext(request: NextRequest): Promise<AuthContext> {
-  // Vérification du token CRON (méthode privilégiée pour les orchestrateurs)
-  const authHeader = request.headers.get("authorization");
-  const isCronTokenValid = validateCronToken(authHeader);
-
-  if (isCronTokenValid) {
-    // Token CRON valide = traité comme SUPER-ADMIN (L1)
-    return { isAuthenticated: true, privilegeLevel: 1 };
-  }
-
-  // Fallback : vérification de session Better-Auth (pour usage manuel admin)
-  try {
-    const sessionCookie = request.cookies.get("better-auth.session")?.value;
-    if (!sessionCookie) {
-      return { isAuthenticated: false, privilegeLevel: 7 };
-    }
-
-    // TODO: Intégrer votre logique Better-Auth ici
-    // const session = await auth.api.getSession({ headers: request.headers });
-    // if (!session) return { isAuthenticated: false, privilegeLevel: 7 };
-    // return {
-    //   isAuthenticated: true,
-    //   privilegeLevel: (session.user?.level ?? 7) as PrivilegeLevel,
-    //   userId: session.user?.id,
-    // };
-
-    return { isAuthenticated: false, privilegeLevel: 7 };
-  } catch {
-    return { isAuthenticated: false, privilegeLevel: 7 };
-  }
-}
-
-/**
- * Vérifie si le niveau de privilège satisfait le minimum requis.
- * LEVEL 7 (GUEST) = public, aucun privilège.
- */
-function hasPrivilege(
-  ctx: AuthContext,
-  requiredLevel: PrivilegeLevel,
-): boolean {
-  if (!ctx.isAuthenticated) return false;
-  return ctx.privilegeLevel <= requiredLevel;
-}
-
-// ─── Helpers de réponse ─────────────────────────────────────────────────────
-
-interface CronResponse {
-  readonly success: boolean;
-  readonly timestamp: string;
-  readonly execution:
-    | "completed"
-    | "failed_fallback_active"
-    | "forbidden"
-    | "timeout";
-  readonly rate?: string;
-  readonly levelServed?: string;
-  readonly error?: { readonly code: string; readonly message: string };
-}
-
-function jsonResponse(data: CronResponse, status: number): NextResponse {
-  return NextResponse.json(data, {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      Pragma: "no-cache",
-      Expires: "0",
-    },
-  });
-}
-
-// ─── Route Handler ────────────────────────────────────────────────────────────
-
-/**
- * GET /api/cron/exchange-rate
- * Exécute le job CRON de rafraîchissement du taux USD/CDF.
- * Niveau requis : SUPER-ADMIN (L1) ou ADMIN (L2).
- * Si le token CRON_SECRET est fourni, bypass de la session Better-Auth.
- */
-export async function GET(request: NextRequest) {
-  const startTime = performance.now();
-
-  try {
-    // ── Étape 1 : Authentification ─────────────────────────────────────────
-    const auth = await getAuthContext(request);
-
-    // RBAC : Seuls L1 (SUPER-ADMIN) et L2 (ADMIN) peuvent exécuter le CRON
-    if (!hasPrivilege(auth, 2)) {
-      console.warn(
-        `[CRON_ROUTE] Tentative d'accès non autorisée — Privilège: L${auth.privilegeLevel}, Authentifié: ${auth.isAuthenticated}`,
-      );
-      return jsonResponse(
-        {
-          success: false,
-          timestamp: new Date().toISOString(),
-          execution: "forbidden",
-          error: {
-            code: "FORBIDDEN",
-            message:
-              "Accès interdit. Cette route est réservée aux SUPER-ADMIN (L1) et ADMIN (L2).",
-          },
-        },
-        403,
-      );
-    }
-
-    console.log(
-      `[CRON_ROUTE] Exécution autorisée — Privilège: L${auth.privilegeLevel}, User: ${auth.userId ?? "cron-token"}`,
-    );
-
-    // ── Étape 2 : Exécution du job avec timeout ────────────────────────────
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("CRON_TIMEOUT")), CRON_TIMEOUT_MS),
-    );
-
-    const success = await Promise.race([
-      updateExchangeRateCronJob(),
-      timeoutPromise,
-    ]);
-
-    const duration = Math.round(performance.now() - startTime);
-
-    console.log(
-      `[CRON_ROUTE] Job terminé en ${duration}ms — Succès: ${success}`,
-    );
-
-    return jsonResponse(
-      {
-        success,
-        timestamp: new Date().toISOString(),
-        execution: success ? "completed" : "failed_fallback_active",
-      },
-      success ? 200 : 502,
-    );
-  } catch (error) {
-    const duration = Math.round(performance.now() - startTime);
-
-    if (error instanceof Error && error.message === "CRON_TIMEOUT") {
-      console.error(`[CRON_ROUTE] Timeout après ${duration}ms`);
-      return jsonResponse(
-        {
-          success: false,
-          timestamp: new Date().toISOString(),
-          execution: "timeout",
-          error: {
-            code: "TIMEOUT",
-            message: `Le job CRON a dépassé la limite de ${CRON_TIMEOUT_MS}ms.`,
-          },
-        },
-        504,
-      );
-    }
-
-    console.error("[CRON_ROUTE_ERROR]", error);
-    return jsonResponse(
-      {
-        success: false,
-        timestamp: new Date().toISOString(),
-        execution: "failed_fallback_active",
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Erreur interne lors de l'exécution du job CRON.",
-        },
-      },
+async function apiRequest<T>(
+  method: string,
+  endpoint: string,
+  body?: unknown,
+): Promise<T> {
+  if (!CRON_JOB_API_KEY) {
+    throw new CronJobOrgError(
+      "CRON_JOB_API_KEY non configuré. Ajoutez-la dans vos variables d'environnement.",
       500,
     );
   }
+
+  const url = `${CRON_JOB_API_BASE}${endpoint}`;
+  const options: RequestInit = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${CRON_JOB_API_KEY}`,
+      "User-Agent": "Boutique-COGI-CronSync/1.0",
+    },
+  };
+
+  if (body !== undefined) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, options);
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new CronJobOrgError(
+      `Erreur API cron-job.org [${response.status}]: ${response.statusText}`,
+      response.status,
+      responseText,
+    );
+  }
+
+  try {
+    return JSON.parse(responseText) as T;
+  } catch {
+    // Réponse vide (ex: DELETE, PATCH) → retourner {} casté
+    return {} as T;
+  }
+}
+
+// ─── Fonctions publiques ────────────────────────────────────────────────────
+
+/**
+ * Liste tous les jobs de l'account.
+ * Rate limit : 5 req/s
+ */
+export async function listJobs(): Promise<{
+  jobs: CronJob[];
+  someFailed: boolean;
+}> {
+  return apiRequest("GET", "/jobs");
 }
 
 /**
- * OPTIONS /api/cron/exchange-rate
- * Répond aux requêtes preflight CORS (utile pour les orchestrateurs HTTP).
+ * Récupère les détails d'un job.
+ * Rate limit : 5 req/s
  */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
-    },
+export async function getJobDetails(
+  jobId: number,
+): Promise<{ jobDetails: CronDetailedJob }> {
+  return apiRequest("GET", `/jobs/${jobId}`);
+}
+
+/**
+ * Crée un nouveau job.
+ * Rate limit : 1 req/s, 5 req/min
+ */
+export async function createJob(
+  job: CronJobCreateInput,
+): Promise<{ jobId: number }> {
+  const validated = DetailedJobSchema.partial()
+    .extend({ url: z.string().url() })
+    .parse(job);
+  return apiRequest("PUT", "/jobs", { job: validated });
+}
+
+/**
+ * Met à jour un job existant (PATCH partiel).
+ * Rate limit : 5 req/s
+ */
+export async function updateJob(
+  jobId: number,
+  partialJob: Partial<CronJobCreateInput>,
+): Promise<void> {
+  await apiRequest<Record<string, never>>("PATCH", `/jobs/${jobId}`, {
+    job: partialJob,
   });
 }
 
 /**
- * Client REST complet pour l'API officielle cron-job.org
- * Schémas Zod validés selon la documentation officielle
- * Enums TypeScript stricts (JobStatus, RequestMethod, JobType)
- * Rate limits documentés pour chaque endpoint
+ * Supprime un job.
+ * Rate limit : 5 req/s
+ */
+export async function deleteJob(jobId: number): Promise<void> {
+  await apiRequest<Record<string, never>>("DELETE", `/jobs/${jobId}`);
+}
+
+/**
+ * Récupère l'historique d'exécution d'un job.
+ * Rate limit : 5 req/s
+ */
+export async function getJobHistory(
+  jobId: number,
+): Promise<{ history: CronHistoryItem[]; predictions: number[] }> {
+  return apiRequest("GET", `/jobs/${jobId}/history`);
+}
+
+/**
+ * Récupère les détails complets d'une exécution (headers + body).
+ * Rate limit : 5 req/s
+ */
+export async function getHistoryItemDetails(
+  jobId: number,
+  identifier: string,
+): Promise<{ jobHistoryDetails: CronHistoryItem }> {
+  return apiRequest("GET", `/jobs/${jobId}/history/${identifier}`);
+}
+
+// ─── Fonctions dossiers ─────────────────────────────────────────────────────
+
+/**
+ * Liste tous les dossiers.
+ * Rate limit : 5 req/s
+ */
+export async function listFolders(): Promise<{ folders: CronFolder[] }> {
+  return apiRequest("GET", "/folders");
+}
+
+/**
+ * Crée un dossier.
+ * Rate limit : 1 req/s, 10 req/min
+ */
+export async function createFolder(
+  title: string,
+): Promise<{ folderId: number }> {
+  return apiRequest("PUT", "/folders", { folder: { title } });
+}
+
+/**
+ * Met à jour un dossier.
+ * Rate limit : 1 req/s
+ */
+export async function updateFolder(
+  folderId: number,
+  title: string,
+): Promise<void> {
+  await apiRequest<Record<string, never>>("PATCH", `/folders/${folderId}`, {
+    folder: { title },
+  });
+}
+
+/**
+ * Supprime un dossier.
+ * Rate limit : 1 req/s
+ */
+export async function deleteFolder(folderId: number): Promise<void> {
+  await apiRequest<Record<string, never>>("DELETE", `/folders/${folderId}`);
+}
+
+// ─── Helpers de schedule (builders) ───────────────────────────────────────────
+
+/**
+ * Génère un schedule pour une exécution toutes les N minutes.
+ * @param n - Intervalle en minutes (1-59)
+ */
+export function everyNMinutes(n: number): CronSchedule {
+  if (n < 1 || n > 59)
+    throw new Error("Intervalle doit être entre 1 et 59 minutes");
+  const minutes: number[] = [];
+  for (let i = 0; i < 60; i += n) minutes.push(i);
+  return {
+    timezone: "Africa/Kinshasa",
+    expiresAt: 0,
+    hours: [-1],
+    mdays: [-1],
+    minutes,
+    months: [-1],
+    wdays: [-1],
+  };
+}
+
+/**
+ * Génère un schedule pour une exécution quotidienne à une heure fixe.
+ * @param hour - Heure (0-23)
+ * @param minute - Minute (0-59, défaut 0)
+ */
+export function dailyAt(hour: number, minute: number = 0): CronSchedule {
+  if (hour < 0 || hour > 23) throw new Error("Heure doit être entre 0 et 23");
+  if (minute < 0 || minute > 59)
+    throw new Error("Minute doit être entre 0 et 59");
+  return {
+    timezone: "Africa/Kinshasa",
+    expiresAt: 0,
+    hours: [hour],
+    mdays: [-1],
+    minutes: [minute],
+    months: [-1],
+    wdays: [-1],
+  };
+}
+
+/**
+ * Génère un schedule pour une exécution toutes les heures.
+ */
+export function hourly(): CronSchedule {
+  return {
+    timezone: "Africa/Kinshasa",
+    expiresAt: 0,
+    hours: [-1],
+    mdays: [-1],
+    minutes: [0],
+    months: [-1],
+    wdays: [-1],
+  };
+}
+
+/**
+ * Génère un schedule pour une exécution chaque jour de semaine (Lun-Ven) à une heure fixe.
+ */
+export function weekdaysAt(hour: number, minute: number = 0): CronSchedule {
+  if (hour < 0 || hour > 23) throw new Error("Heure doit être entre 0 et 23");
+  if (minute < 0 || minute > 59)
+    throw new Error("Minute doit être entre 0 et 59");
+  return {
+    timezone: "Africa/Kinshasa",
+    expiresAt: 0,
+    hours: [hour],
+    mdays: [-1],
+    minutes: [minute],
+    months: [-1],
+    wdays: [1, 2, 3, 4, 5], // Lundi = 1 ... Vendredi = 5
+  };
+}
+
+/**
+ * Génère un schedule pour une exécution toutes les N heures.
+ * @param n - Intervalle en heures (1-23)
+ */
+export function everyNHours(n: number): CronSchedule {
+  if (!Number.isInteger(n) || n < 1 || n > 23) {
+    throw new Error("Intervalle doit être un entier entre 1 et 23 heures");
+  }
+  const hours: number[] = [];
+  for (let i = 0; i < 24; i += n) hours.push(i);
+  return {
+    timezone: "Africa/Kinshasa",
+    expiresAt: 0,
+    hours,
+    mdays: [-1],
+    minutes: [0],
+    months: [-1],
+    wdays: [-1],
+  };
+}
+
+/** 
+ * Table
+Export	            Ligne	Type
+listJobs	          ~L215	async function
+createJob	          ~L227	async function
+updateJob	          ~L235	async function
+RequestMethod	      ~L35	enum
+CronJobCreateInput	~L125	type
  */
