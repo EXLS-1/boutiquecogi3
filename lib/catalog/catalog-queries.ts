@@ -8,6 +8,7 @@
 
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import {
   CatalogQueryParams,
   CatalogQueryParamsValidated,
@@ -15,22 +16,23 @@ import {
   CACHE_TAGS,
   CACHE_DURATIONS,
   HOME_PRODUCTS_LIMIT,
-  CATALOG_PAGE_SIZE,
 } from "./catalog-types";
 import { mapCatalogProduct, mapCatalogProducts } from "./catalog-mappers";
+
+const CATALOG_PAGE_SIZE = 12;
 
 // ─── Base Query Builder (DRY) ───────────────────────────────────────────────
 
 /**
  * Conditions WHERE communes pour tous les produits catalog
  */
-function buildBaseWhere() {
+function buildBaseWhere(): Prisma.ProductWhereInput {
   return {
     isArchived: false,
     isdeleted: false,
     deletedAt: null,
-    status: "published" as const,
-  };
+    status: "published" as any,
+  } as Prisma.ProductWhereInput;
 }
 
 /**
@@ -62,6 +64,15 @@ function buildBaseInclude() {
   } as const;
 }
 
+/**
+ * Normalize Decimal fields returned by Prisma to plain JS numbers
+ * (primarily basePrice) to satisfy RawCatalogProduct typings.
+ */
+function normalizeBasePrice<T extends { basePrice?: any }>(items: T[] | null) {
+  if (!items) return items as any;
+  return items.map((p) => ({ ...p, basePrice: Number((p as any).basePrice) }));
+}
+
 // ─── Query : Produits Récents (Homepage) ───────────────────────────────────
 
 /**
@@ -69,50 +80,53 @@ function buildBaseInclude() {
  * Cache React pour deduplication intra-requête.
  * Tag : catalog-recent
  */
-export const getRecentProducts = cache(async (limit: number = HOME_PRODUCTS_LIMIT) => {
-  "use cache";
-  
-  const products = await prisma.product.findMany({
-    where: buildBaseWhere(),
-    orderBy: [
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
-    take: Math.min(limit, 100),
-    include: buildBaseInclude(),
-  });
+export const getRecentProducts = cache(
+  async (limit: number = HOME_PRODUCTS_LIMIT) => {
+    "use cache";
 
-  return mapCatalogProducts(products);
-});
+    const products = await prisma.product.findMany({
+      where: buildBaseWhere(),
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: Math.min(limit, 100),
+      include: buildBaseInclude(),
+    });
+
+    // Prisma returns Decimal for basePrice; convert to number to match RawCatalogProduct
+    const normalized = products.map((p) => ({
+      ...p,
+      basePrice: Number((p as any).basePrice),
+    }));
+
+    return mapCatalogProducts(
+      normalized as unknown as readonly RawCatalogProduct[],
+    );
+  },
+);
 
 // ─── Query : Produits par Catégorie ────────────────────────────────────────
 
 /**
  * Récupère les produits filtrés par catégorie.
  */
-export const getProductsByCategory = cache(async (
-  categorySlug: string,
-  limit: number = CATALOG_PAGE_SIZE
-) => {
-  "use cache";
+export const getProductsByCategory = cache(
+  async (categorySlug: string, limit: number = CATALOG_PAGE_SIZE) => {
+    "use cache";
 
-  const products = await prisma.product.findMany({
-    where: {
-      ...buildBaseWhere(),
-      category: {
-        slug: categorySlug,
+    const products = await prisma.product.findMany({
+      where: {
+        ...(buildBaseWhere() as any),
+        category: {
+          slug: categorySlug,
+        },
       },
-    },
-    orderBy: [
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
-    take: Math.min(limit, 100),
-    include: buildBaseInclude(),
-  });
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: Math.min(limit, 100),
+      include: buildBaseInclude(),
+    });
 
-  return mapCatalogProducts(products);
-});
+    return mapCatalogProducts(products);
+  },
+);
 
 // ─── Query : Promotions ─────────────────────────────────────────────────────
 
@@ -120,27 +134,27 @@ export const getProductsByCategory = cache(async (
  * Récupère les produits en promotion (isPromoted = true OU discountPercent > 0).
  * Cache court (3 min) car les promotions changent fréquemment.
  */
-export const getPromotionalProducts = cache(async (limit: number = CATALOG_PAGE_SIZE) => {
-  "use cache";
+export const getPromotionalProducts = cache(
+  async (limit: number = CATALOG_PAGE_SIZE) => {
+    "use cache";
 
-  const products = await prisma.product.findMany({
-    where: {
-      ...buildBaseWhere(),
-      OR: [
-        { isPromoted: true },
-        { discountPercent: { gt: 0 } },
-      ],
-    },
-    orderBy: [
-      { discountPercent: "desc" },
-      { createdAt: "desc" },
-    ],
-    take: Math.min(limit, 100),
-    include: buildBaseInclude(),
-  });
+    const products = await prisma.product.findMany({
+      where: {
+        ...buildBaseWhere(),
+        OR: [{ isPromoted: true }, { discountPercent: { gt: 0 } }],
+      },
+      orderBy: [{ discountPercent: "desc" }, { createdAt: "desc" }],
+      take: Math.min(limit, 100),
+      include: buildBaseInclude(),
+    });
 
-  return mapCatalogProducts(products);
-});
+    const normalized = normalizeBasePrice(
+      products,
+    ) as unknown as readonly RawCatalogProduct[];
+
+    return mapCatalogProducts(normalized);
+  },
+);
 
 // ─── Query : Nouveautés ─────────────────────────────────────────────────────
 
@@ -148,30 +162,30 @@ export const getPromotionalProducts = cache(async (limit: number = CATALOG_PAGE_
  * Récupère les nouveautés (isNewArrival = true OU créés récemment).
  * Cache court (3 min).
  */
-export const getNewArrivalProducts = cache(async (limit: number = CATALOG_PAGE_SIZE) => {
-  "use cache";
+export const getNewArrivalProducts = cache(
+  async (limit: number = CATALOG_PAGE_SIZE) => {
+    "use cache";
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const products = await prisma.product.findMany({
-    where: {
-      ...buildBaseWhere(),
-      OR: [
-        { isNewArrival: true },
-        { createdAt: { gte: thirtyDaysAgo } },
-      ],
-    },
-    orderBy: [
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
-    take: Math.min(limit, 100),
-    include: buildBaseInclude(),
-  });
+    const products = await prisma.product.findMany({
+      where: {
+        ...buildBaseWhere(),
+        OR: [{ isNewArrival: true }, { createdAt: { gte: thirtyDaysAgo } }],
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: Math.min(limit, 100),
+      include: buildBaseInclude(),
+    });
 
-  return mapCatalogProducts(products);
-});
+    const normalized = normalizeBasePrice(
+      products,
+    ) as unknown as readonly RawCatalogProduct[];
+
+    return mapCatalogProducts(normalized);
+  },
+);
 
 // ─── Query : Recherche Avancée (Paginée) ───────────────────────────────────
 
@@ -180,7 +194,7 @@ export const getNewArrivalProducts = cache(async (limit: number = CATALOG_PAGE_S
  * Non cacheable car params dynamiques.
  */
 export async function searchCatalogProducts(
-  params: CatalogQueryParams
+  params: CatalogQueryParams,
 ): Promise<{
   products: ReturnType<typeof mapCatalogProducts>;
   totalCount: number;
@@ -210,8 +224,18 @@ export async function searchCatalogProducts(
     }),
     ...(validated.searchQuery && {
       OR: [
-        { name: { contains: validated.searchQuery, mode: "insensitive" as const } },
-        { description: { contains: validated.searchQuery, mode: "insensitive" as const } },
+        {
+          name: {
+            contains: validated.searchQuery,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          description: {
+            contains: validated.searchQuery,
+            mode: "insensitive" as const,
+          },
+        },
       ],
     }),
   };
@@ -230,8 +254,12 @@ export async function searchCatalogProducts(
     prisma.product.count({ where }),
   ]);
 
+  const normalized = normalizeBasePrice(
+    products,
+  ) as unknown as readonly RawCatalogProduct[];
+
   return {
-    products: mapCatalogProducts(products),
+    products: mapCatalogProducts(normalized),
     totalCount,
   };
 }
@@ -275,13 +303,15 @@ export const getProductBySlug = cache(async (slug: string) => {
  */
 export async function getProductCountsByStatus() {
   const [published, archived, outOfStock, total] = await Promise.all([
-    prisma.product.count({ where: { ...buildBaseWhere(), status: "published" } }),
+    prisma.product.count({
+      where: { ...buildBaseWhere(), status: "published" },
+    }),
     prisma.product.count({ where: { isArchived: true } }),
-    prisma.product.count({ 
-      where: { 
+    prisma.product.count({
+      where: {
         ...buildBaseWhere(),
         availabilityProjection: { isAvailable: false },
-      } 
+      },
     }),
     prisma.product.count({ where: { isdeleted: false } }),
   ]);
