@@ -5,7 +5,7 @@
 // La réponse JSON indique le succès ou l'échec de l'opération, avec des logs détaillés pour faciliter le monitoring.
 
 import { NextResponse } from "next/server";
-import { updateExchangeRateCronJob } from "@/lib/exchange-rate/exchange-rate-cron";
+import { updateExchangeRateCronJob } from "@/lib/currency/exchange-rate-cron";
 
 // Force Next.js to treat this route as dynamic, preventing caching issues.
 export const dynamic = "force-dynamic";
