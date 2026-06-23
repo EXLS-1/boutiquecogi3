@@ -10,7 +10,7 @@ import { memo } from "react";
 import { Sparkles } from "lucide-react";
 import { CategoryCard } from "./category-card";
 import { NEW_ARRIVAL_CATEGORIES } from "@/lib/category/category-constants";
-import { useFilteredCategories } from "@/hooks/use-category-permissions";
+import { useFilteredCategories } from "@/hooks/category/use-category-permissions";
 
 interface NewProductCategoryProps {
   readonly userRbacLevel?: number;

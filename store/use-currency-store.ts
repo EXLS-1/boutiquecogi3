@@ -1,184 +1,96 @@
-// app/api/exchange-rate/route.ts
-// =============================================================================
-// Route API publique pour récupérer le taux de change USD/CDF.
-// Optimisée pour des performances maximales (< 50ms) via lecture cache exclusive.
-// Sécurisée par RBAC : GUEST (L7) peut lire, ADMIN+ peut forcer refresh.
-// =============================================================================
+// store/use-currency-store.ts
+"use client";
 
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import {
-  getFastUSDToCDFRate,
-  forceRefreshExchangeRate,
-} from "@/lib/currency/exchange-rate-service";
-import { ExchangeRateApiResponse } from "@/lib/currency/exchange-rate-types";
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { setDisplayCurrency } from "@/lib/actions/currency.actions";
 
-// ─── RBAC & Authentification ──────────────────────────────────────────────────
+export type DisplayCurrency = "USD" | "CDF";
 
-/** Niveaux de privilège (1=SUPER-ADMIN ... 6=USER, 7=GUEST) */
-type PrivilegeLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
-
-interface AuthContext {
-  readonly isAuthenticated: boolean;
-  readonly privilegeLevel: PrivilegeLevel;
-  readonly userId?: string;
+interface ExchangeRateState {
+  rate: number | null;
+  lastUpdated: string | null;
+  isLoading: boolean;
+  error: string | null;
 }
 
-/**
- * Extrait le contexte d'authentification depuis la requête.
- * En l'absence de session, retourne GUEST (L7).
- */
-async function getAuthContext(request: NextRequest): Promise<AuthContext> {
-  try {
-    // Intégration Better-Auth : adapter selon votre implémentation
-    const authHeader = request.headers.get("authorization");
-    const sessionCookie = request.cookies.get("better-auth.session")?.value;
-
-    if (!authHeader && !sessionCookie) {
-      return { isAuthenticated: false, privilegeLevel: 7 };
-    }
-
-    // TODO: Implémenter la vérification JWT/session Better-Auth ici
-    // const session = await verifySession(authHeader ?? sessionCookie);
-    // return { isAuthenticated: true, privilegeLevel: session.user.level, userId: session.user.id };
-
-    // Fallback temporaire — À REMPLACER par votre logique Better-Auth
-    return { isAuthenticated: false, privilegeLevel: 7 };
-  } catch {
-    return { isAuthenticated: false, privilegeLevel: 7 };
-  }
+interface CurrencyStore extends ExchangeRateState {
+  currency: DisplayCurrency;
+  setCurrency: (currency: DisplayCurrency) => Promise<void>;
+  fetchRate: () => Promise<void>;
+  clearError: () => void;
 }
 
-/**
- * Vérifie si le niveau de privilège satisfait le minimum requis.
- */
-function hasPrivilege(
-  ctx: AuthContext,
-  requiredLevel: PrivilegeLevel,
-): boolean {
-  // GUEST (7) peut accéder aux ressources publiques
-  // Les utilisateurs connectés (1-6) ont toujours accès aux ressources publiques
-  if (requiredLevel === 7) return true;
-  if (!ctx.isAuthenticated) return false;
-  return ctx.privilegeLevel <= requiredLevel;
-}
+const INITIAL_RATE_STATE: ExchangeRateState = {
+  rate: null,
+  lastUpdated: null,
+  isLoading: false,
+  error: null,
+};
 
-// ─── Helpers de réponse ─────────────────────────────────────────────────────
+export const useCurrencyStore = create<CurrencyStore>()(
+  persist(
+    (set, get) => ({
+      currency: "USD",
+      ...INITIAL_RATE_STATE,
 
-function successResponse(
-  data: Omit<ExchangeRateApiResponse, "success" | "error">,
-): NextResponse {
-  return NextResponse.json(
-    { success: true, ...data } satisfies ExchangeRateApiResponse,
-    { status: 200, headers: { "Cache-Control": "no-store" } },
-  );
-}
+      setCurrency: async (currency) => {
+        if (currency === get().currency) return;
 
-function errorResponse(
-  code: string,
-  message: string,
-  status: number,
-): NextResponse {
-  return NextResponse.json(
+        // 1. Persistance serveur (cookie)
+        await setDisplayCurrency(currency);
+
+        // 2. Mise à jour state local
+        set({ currency, ...INITIAL_RATE_STATE });
+
+        // 3. Rafraîchissement du taux si on passe en CDF
+        if (currency === "CDF") {
+          await get().fetchRate();
+        }
+      },
+
+      fetchRate: async () => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const res = await fetch("/api/exchange-rate", {
+            cache: "no-store",
+            headers: { Accept: "application/json" },
+          });
+
+          if (!res.ok) {
+            const payload = await res.json().catch(() => ({}));
+            throw new Error(payload?.error?.message || `HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+
+          if (!data.success || !data.rate) {
+            throw new Error("Réponse API invalide");
+          }
+
+          set({
+            rate: parseFloat(data.rate),
+            lastUpdated: data.timestamp,
+            isLoading: false,
+          });
+        } catch (err) {
+          set({
+            error: err instanceof Error ? err.message : "Erreur inconnue",
+            isLoading: false,
+          });
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
     {
-      success: false,
-      error: { code, message },
-    } satisfies ExchangeRateApiResponse,
-    { status },
-  );
-}
-
-// ─── Schémas de validation ────────────────────────────────────────────────────
-
-const refreshQuerySchema = z.object({
-  refresh: z.enum(["true", "1"]).optional(),
-});
-
-// ─── Route Handlers ───────────────────────────────────────────────────────────
-
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
-
-/**
- * GET /api/exchange-rate
- * Récupère le taux de change actuel (lecture cache, < 50ms).
- * Accessible à tous (GUEST inclus).
- * Paramètre query `refresh=true` réservé aux ADMIN+ (L1-L2).
- */
-export async function GET(request: NextRequest) {
-  const startTime = performance.now();
-
-  try {
-    const auth = await getAuthContext(request);
-    const { searchParams } = new URL(request.url);
-    const query = refreshQuerySchema.safeParse({
-      refresh: searchParams.get("refresh") ?? undefined,
-    });
-
-    const wantsRefresh = query.success && !!query.data.refresh;
-
-    // ── Vérification RBAC pour le refresh forcé ──────────────────────────────
-    if (wantsRefresh) {
-      if (!hasPrivilege(auth, 2)) {
-        // ADMIN = L2 minimum
-        return errorResponse(
-          "FORBIDDEN",
-          "Privilège insuffisant pour forcer le rafraîchissement. Niveau requis : ADMIN (L2).",
-          403,
-        );
-      }
-
-      const rate = await forceRefreshExchangeRate();
-      if (!rate) {
-        return errorResponse(
-          "REFRESH_FAILED",
-          "Impossible de rafraîchir le taux depuis la BCC. Le cache existant est conservé.",
-          503,
-        );
-      }
-
-      const duration = Math.round(performance.now() - startTime);
-      return successResponse({
-        rate: rate.toString(),
-        currency: "CDF",
-        base: "USD",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // ── Lecture rapide (cache uniquement) ────────────────────────────────────
-    const rate = await getFastUSDToCDFRate();
-    const duration = Math.round(performance.now() - startTime);
-
-    console.log(`[API_EXCHANGE_RATE] GET répondu en ${duration}ms`);
-
-    return successResponse({
-      rate: rate.toString(),
-      currency: "CDF",
-      base: "USD",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error("[API_EXCHANGE_RATE_GET_ERROR]", error);
-    return errorResponse(
-      "INTERNAL_ERROR",
-      "Erreur interne lors de la récupération du taux de change.",
-      500,
-    );
-  }
-}
-
-/**
- * OPTIONS /api/exchange-rate
- * Répond aux requêtes preflight CORS.
- */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      name: "currency-storage",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        currency: state.currency,
+        // On ne persiste PAS le taux en localStorage pour forcer un re-fetch frais
+      }),
     },
-  });
-}
+  ),
+);

@@ -82,8 +82,6 @@ function normalizeBasePrice<T extends { basePrice?: any }>(items: T[] | null) {
  */
 export const getRecentProducts = cache(
   async (limit: number = HOME_PRODUCTS_LIMIT) => {
-    "use cache";
-
     const products = await prisma.product.findMany({
       where: buildBaseWhere(),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -110,8 +108,6 @@ export const getRecentProducts = cache(
  */
 export const getProductsByCategory = cache(
   async (categorySlug: string, limit: number = CATALOG_PAGE_SIZE) => {
-    "use cache";
-
     const products = await prisma.product.findMany({
       where: {
         ...(buildBaseWhere() as any),
@@ -136,8 +132,6 @@ export const getProductsByCategory = cache(
  */
 export const getPromotionalProducts = cache(
   async (limit: number = CATALOG_PAGE_SIZE) => {
-    "use cache";
-
     const products = await prisma.product.findMany({
       where: {
         ...buildBaseWhere(),
@@ -164,8 +158,6 @@ export const getPromotionalProducts = cache(
  */
 export const getNewArrivalProducts = cache(
   async (limit: number = CATALOG_PAGE_SIZE) => {
-    "use cache";
-
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -271,8 +263,6 @@ export async function searchCatalogProducts(
  * Cache long (10 min) car les détails changent peu.
  */
 export const getProductBySlug = cache(async (slug: string) => {
-  "use cache";
-
   const product = await prisma.product.findUnique({
     where: {
       slug,

@@ -12,7 +12,7 @@ import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CatalogProduct } from "@/lib/catalog/catalog-types";
-import { useCatalogStore } from "@/hooks/use-catalog-store";
+import { useCatalogStore } from "@/hooks/catalog/use-catalog-store";
 
 interface ProductCardProps {
   readonly product: CatalogProduct;

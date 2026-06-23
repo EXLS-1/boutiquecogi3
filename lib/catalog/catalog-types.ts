@@ -19,7 +19,7 @@ export const RBAC_LEVELS = {
   GUEST: 7,
 } as const;
 
-export type RbacLevel = typeof RBAC_LEVELS[keyof typeof RBAC_LEVELS];
+export type RbacLevel = (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS];
 
 // ─── Statuts de Produit ─────────────────────────────────────────────────────
 export const PRODUCT_STATUS = {
@@ -30,7 +30,8 @@ export const PRODUCT_STATUS = {
   DISCONTINUED: "discontinued",
 } as const;
 
-export type ProductStatus = typeof PRODUCT_STATUS[keyof typeof PRODUCT_STATUS];
+export type ProductStatus =
+  (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
 
 // ─── Statuts de Disponibilité ────────────────────────────────────────────────
 export const AVAILABILITY_STATUS = {
@@ -41,7 +42,8 @@ export const AVAILABILITY_STATUS = {
   BACK_ORDER: "back_order",
 } as const;
 
-export type AvailabilityStatus = typeof AVAILABILITY_STATUS[keyof typeof AVAILABILITY_STATUS];
+export type AvailabilityStatus =
+  (typeof AVAILABILITY_STATUS)[keyof typeof AVAILABILITY_STATUS];
 
 // ─── Interface Core Produit (Domaine) ────────────────────────────────────────
 export interface CatalogProduct {
@@ -60,11 +62,11 @@ export interface CatalogProduct {
   readonly status: ProductStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly minRbacLevel: RbacLevel;    // Niveau minimum pour voir le produit
-  readonly requiresAuth: boolean;      // Nécessite authentification
-  readonly isPromoted: boolean;        // Mis en avant (promotions)
-  readonly isNewArrival: boolean;      // Nouveauté
-  readonly discountPercent: number;    // 0 = pas de promo
+  readonly minRbacLevel: RbacLevel; // Niveau minimum pour voir le produit
+  readonly requiresAuth: boolean; // Nécessite authentification
+  readonly isPromoted: boolean; // Mis en avant (promotions)
+  readonly isNewArrival: boolean; // Nouveauté
+  readonly discountPercent: number; // 0 = pas de promo
 }
 
 // ─── Interface Produit Brut (Prisma) ────────────────────────────────────────
@@ -182,5 +184,14 @@ export const catalogQueryParamsSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
+export const HOME_PRODUCTS_LIMIT = 12; // ou la valeur souhaitée
+export const STOCK_THRESHOLDS = {
+  LOW: 6,
+  MEDIUM: 20,
+  // ...
+};
+
 export type CatalogProductValidated = z.infer<typeof catalogProductSchema>;
-export type CatalogQueryParamsValidated = z.infer<typeof catalogQueryParamsSchema>;
+export type CatalogQueryParamsValidated = z.infer<
+  typeof catalogQueryParamsSchema
+>;

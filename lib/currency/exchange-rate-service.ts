@@ -1,166 +1,67 @@
-// lib/exchange-rate/exchange-rate-service.ts
-// =============================================================================
-// Service central de taux de change USD/CDF avec stratégie de résilience 4 niveaux.
-// L1 (Mémoire) → L2 (Scraper BCC) → L3 (Cache DB) → L4 (Fallback .env)
-// =============================================================================
+// lib/currency/exchange-rate-service.ts
+"use server";
 
+import {
+  getLastValidRate,
+  saveLastValidRate,
+} from "./exchange-rate-cache";
 import { Prisma } from "@prisma/client";
-import { fetchRate } from "../currency/exchange-rate-bcc";
-import { saveLastValidRate, getLastValidRate } from "./exchange-rate-cache";
-import { validateRate } from "./exchange-rate-validator";
-import {
-  ExchangeRate,
-  MemoryCacheEntry,
-  CacheLevel,
-} from "./exchange-rate-types";
-import {
-  MEMORY_CACHE_TTL_MS,
-  FALLBACK_EXCHANGE_RATE,
-} from "../currency/exchange-rate-constants";
 
-// ─── Fallback d'urgence ─────────────────────────────────────────────────────
-
-const FALLBACK_RATE: ExchangeRate = new Prisma.Decimal(
-  FALLBACK_EXCHANGE_RATE.toString(),
-);
-
-// ─── Cache mémoire L1 (module-level singleton) ────────────────────────────────
-
-let memoryCache: MemoryCacheEntry | null = null;
-
-// ─── Fonctions utilitaires ────────────────────────────────────────────────────
-
-function isCacheValid(entry: MemoryCacheEntry | null): boolean {
-  if (!entry) return false;
-  return Date.now() - entry.timestamp < MEMORY_CACHE_TTL_MS;
-}
-
-function setMemoryCache(rate: ExchangeRate, level: CacheLevel): void {
-  memoryCache = { rate, timestamp: Date.now(), level };
-}
-
-// ─── Service principal : récupération du taux ─────────────────────────────────
+const BCC_API_URL = "https://www.bcc.cd/..."; // Votre endpoint BCC
+const DEFAULT_RATE = new Prisma.Decimal(2800); // Fallback conservateur
 
 /**
- * Récupère le taux USD/CDF selon la stratégie de résilience à 4 niveaux.
- * L1 (Mémoire) → L2 (Scraper BCC) → L3 (Cache DB) → L4 (Fallback .env)
- * @returns Taux de change validé
+ * Récupère le taux depuis le cache DB (lecture < 50ms).
+ * Ne fait JAMAIS d'appel réseau.
  */
-export async function getUSDToCDFRate(): Promise<ExchangeRate> {
-  const now = Date.now();
+export async function getFastUSDToCDFRate(): Promise<Prisma.Decimal> {
+  const cached = await getLastValidRate();
+  if (cached) return cached;
 
-  // ── Étape 0 : Cache mémoire L1 ───────────────────────────────────────────
-  if (memoryCache && isCacheValid(memoryCache)) {
-    return memoryCache.rate;
-  }
+  console.warn("[EXCHANGE_RATE_SERVICE] Cache vide — fallback défaut utilisé");
+  return DEFAULT_RATE;
+}
 
-  // ── Étape 1 : Scraper officiel BCC (L2) ──────────────────────────────────
-  const officialRate = await fetchRate();
+/**
+ * Force un refresh depuis la BCC, puis persiste en DB.
+ * Réservé aux ADMIN+ (appelé via /api/exchange-rate?refresh=true).
+ */
+export async function forceRefreshExchangeRate(): Promise<Prisma.Decimal | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
-  if (officialRate && validateRate(officialRate)) {
-    try {
-      await saveLastValidRate(officialRate);
-      console.log(
-        `[EXCHANGE_SERVICE] Taux mis à jour depuis la BCC : ${officialRate.toFixed()} CDF`,
-      );
-    } catch (error) {
-      console.error(
-        "[EXCHANGE_SERVICE] Échec d'écriture du cache DB, poursuite sur mémoire.",
-        error,
-      );
+    const res = await fetch(BCC_API_URL, {
+      signal: controller.signal,
+      next: { revalidate: 0 },
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) throw new Error(`BCC HTTP ${res.status}`);
+
+    const data = await res.json();
+    const rate = extractRateFromBCC(data); // Votre logique de parsing
+
+    if (!rate || rate.lessThanOrEqualTo(0)) {
+      throw new Error("Taux BCC invalide");
     }
-    setMemoryCache(officialRate, CacheLevel.L2_SCRAPER);
-    return officialRate;
+
+    await saveLastValidRate(rate);
+    return rate;
+  } catch (error) {
+    console.error("[EXCHANGE_RATE_REFRESH_ERROR]", error);
+    return null;
   }
-
-  console.warn(
-    "[EXCHANGE_SERVICE] Source BCC indisponible. Rabattement sur le cache DB...",
-  );
-
-  // ── Étape 2 : Cache base de données L3 ───────────────────────────────────
-  const cachedRate = await getLastValidRate();
-  if (cachedRate && validateRate(cachedRate)) {
-    console.log(
-      `[EXCHANGE_SERVICE] Mode dégradé (L3 DB utilisé) : ${cachedRate.toFixed()} CDF`,
-    );
-    setMemoryCache(cachedRate, CacheLevel.L3_DATABASE);
-    return cachedRate;
-  }
-
-  // ── Étape 3 : Fallback d'urgence L4 ─────────────────────────────────────
-  console.error(
-    `[EXCHANGE_SERVICE] ALERTE CRITIQUE : Panne système globale. Fallback appliqué : ${FALLBACK_RATE.toFixed()} CDF`,
-  );
-  return FALLBACK_RATE;
 }
 
-/**
- * Convertit un montant USD en Francs Congolais (CDF) avec arrondi intelligent.
- * @param amountInUSD - Montant en USD
- * @returns Montant en CDF arrondi à l'unité
- */
-export async function convertUSDToCDF(
-  amountInUSD: number,
-): Promise<Prisma.Decimal> {
-  if (!Number.isFinite(amountInUSD) || amountInUSD <= 0) {
-    return new Prisma.Decimal(0);
-  }
-  const rate = await getUSDToCDFRate();
-  return rate
-    .times(amountInUSD)
-    .toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP);
-}
-
-// ─── Rafraîchissement forcé (CRON) ──────────────────────────────────────────
-
-/**
- * Force le rafraîchissement du taux depuis la BCC.
- * Met à jour les caches DB et mémoire. Conçu pour être invoqué par un job CRON.
- * @returns Le nouveau taux ou `null` en cas d'échec
- */
-export async function forceRefreshExchangeRate(): Promise<ExchangeRate | null> {
-  const officialRate = await fetchRate();
-
-  if (officialRate && validateRate(officialRate)) {
-    try {
-      await saveLastValidRate(officialRate);
-      setMemoryCache(officialRate, CacheLevel.L2_SCRAPER);
-      return officialRate;
-    } catch (error) {
-      console.error(
-        "[EXCHANGE_SERVICE] Échec d'écriture DB lors du rafraîchissement forcé",
-        error,
-      );
-      // Mise à jour mémoire même si DB indisponible
-      setMemoryCache(officialRate, CacheLevel.L2_SCRAPER);
-      return officialRate;
+// Adapter selon le format réel de la BCC
+function extractRateFromBCC(data: unknown): Prisma.Decimal | null {
+  // Exemple : data = { usd_cdf: 2810.50 }
+  if (typeof data === "object" && data !== null) {
+    const rate = (data as Record<string, unknown>)?.usd_cdf;
+    if (typeof rate === "number" || typeof rate === "string") {
+      return new Prisma.Decimal(rate);
     }
   }
-
   return null;
-}
-
-// ─── Lecture ultra-rapide (API publique) ──────────────────────────────────────
-
-/**
- * Récupération ultra-rapide du taux pour les requêtes publiques.
- * Parcourt uniquement les caches sans jamais initier de scraping synchrone.
- * Architecture lecture seule : Mémoire (L1) → DB (L3) → Fallback (L4)
- * @returns Taux de change depuis le cache le plus récent disponible
- */
-export async function getFastUSDToCDFRate(): Promise<ExchangeRate> {
-  // 1. Vérification mémoire locale L1
-  if (memoryCache && isCacheValid(memoryCache)) {
-    return memoryCache.rate;
-  }
-
-  // 2. Repli immédiat sur la base de données L3
-  const cachedRate = await getLastValidRate();
-  if (cachedRate && validateRate(cachedRate)) {
-    setMemoryCache(cachedRate, CacheLevel.L3_DATABASE);
-    return cachedRate;
-  }
-
-  // 3. Fallback ultime L4
-  return FALLBACK_RATE;
 }

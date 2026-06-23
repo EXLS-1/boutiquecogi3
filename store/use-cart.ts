@@ -11,19 +11,66 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { 
-  CartStore, 
-  Product, 
-  CartItem, 
-  MAX_CART_QUANTITY,
-  CART_STORAGE_KEY,
-  RBAC_LEVELS,
-} from "@/lib/product/product-types";
+import { RBAC_LEVELS, CatalogProduct } from "@/lib/catalog/catalog-types";
+
+interface CartItem {
+  product: CatalogProduct;
+  quantity: number;
+  addedAt: Date;
+}
+interface StockedProduct extends CatalogProduct {
+  stock?: number;
+}
+
+type CartProduct = CartItem["product"];
+
+interface CartStoreState {
+  items: CartItem[];
+  isOpen: boolean;
+  isLoading: boolean;
+}
+
+interface CartStoreActions {
+  addItem: (product: CartProduct, quantity?: number) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  toggleCart: () => void;
+  openCart: () => void;
+  closeCart: () => void;
+  getTotalItems: () => number;
+  getTotalPrice: (currency: string) => number;
+  getItemQuantity: (productId: string) => number;
+  isInCart: (productId: string) => boolean;
+}
+
+interface PersistedCartItem {
+  product: CatalogProduct;
+  quantity: number;
+  addedAt: string;
+}
+
+interface CartStorageState {
+  items: PersistedCartItem[];
+}
+
+interface CartStore extends CartStoreState, CartStoreActions {}
+
+const MAX_CART_QUANTITY = 99;
+const CART_STORAGE_KEY = "boutiquecogi3_cart";
+
+/**
+ * Récupère la quantité disponible pour un produit.
+ */
+function getProductStock(product: CatalogProduct): number {
+  const stocked = product as StockedProduct;
+  return typeof stocked.stock === "number" ? stocked.stock : MAX_CART_QUANTITY;
+}
 
 /**
  * Crée un CartItem immutable avec timestamp
  */
-function createCartItem(product: Product, quantity: number = 1): CartItem {
+function createCartItem(product: CartProduct, quantity: number = 1): CartItem {
   return Object.freeze({
     product: Object.freeze({ ...product }),
     quantity: Math.min(quantity, MAX_CART_QUANTITY),
@@ -35,9 +82,9 @@ function createCartItem(product: Product, quantity: number = 1): CartItem {
  * Vérifie si l'utilisateur peut ajouter ce produit (RBAC)
  */
 function canAddToCart(
-  product: Product,
+  product: CatalogProduct,
   userRbacLevel: number = RBAC_LEVELS.GUEST,
-  isAuthenticated: boolean = false
+  isAuthenticated: boolean = false,
 ): boolean {
   if (product.requiresAuth && !isAuthenticated) return false;
   return userRbacLevel <= product.minRbacLevel;
@@ -54,14 +101,14 @@ export const useCartStore = create<CartStore>()(
 
         // ─── Actions ────────────────────────────────────────────────────────
         addItem: (product, quantity = 1) => {
-          if (!product.isAvailable || product.stock <= 0) {
+          if (!product.isAvailable || getProductStock(product) <= 0) {
             console.warn(`[Cart] Produit indisponible: ${product.id}`);
             return;
           }
 
           set((state) => {
             const existingIndex = state.items.findIndex(
-              (item) => item.product.id === product.id
+              (item) => item.product.id === product.id,
             );
 
             if (existingIndex >= 0) {
@@ -69,7 +116,7 @@ export const useCartStore = create<CartStore>()(
               const newQuantity = Math.min(
                 state.items[existingIndex].quantity + quantity,
                 MAX_CART_QUANTITY,
-                product.stock
+                getProductStock(product),
               );
               state.items[existingIndex] = {
                 ...state.items[existingIndex],
@@ -77,14 +124,20 @@ export const useCartStore = create<CartStore>()(
               };
             } else {
               // Nouveau produit
-              state.items.push(createCartItem(product, quantity));
+              const validQuantity = Math.min(
+                quantity,
+                getProductStock(product),
+              );
+              state.items.push(createCartItem(product, validQuantity));
             }
           });
         },
 
         removeItem: (productId) => {
           set((state) => {
-            state.items = state.items.filter((item) => item.product.id !== productId);
+            state.items = state.items.filter(
+              (item) => item.product.id !== productId,
+            );
           });
         },
 
@@ -97,7 +150,10 @@ export const useCartStore = create<CartStore>()(
           set((state) => {
             const item = state.items.find((i) => i.product.id === productId);
             if (item) {
-              const maxQty = Math.min(MAX_CART_QUANTITY, item.product.stock);
+              const maxQty = Math.min(
+                MAX_CART_QUANTITY,
+                getProductStock(item.product),
+              );
               item.quantity = Math.min(quantity, maxQty);
             }
           });
@@ -123,16 +179,25 @@ export const useCartStore = create<CartStore>()(
 
         getTotalPrice: (currency) => {
           return get().items.reduce((sum, item) => {
-            const price = currency === "CDF" 
-              ? item.product.priceCDF 
-              : item.product.priceUSD;
-            const discountedPrice = price * (1 - item.product.discountPercent / 100);
+            const product = item.product as any;
+            const price =
+              currency === "CDF"
+                ? (product.priceCDF ??
+                  product.priceCdf ??
+                  product.price ??
+                  product.priceUSD)
+                : (product.priceUSD ?? product.price);
+            const discountedPrice =
+              price * (1 - item.product.discountPercent / 100);
             return sum + discountedPrice * item.quantity;
           }, 0);
         },
 
         getItemQuantity: (productId) => {
-          return get().items.find((item) => item.product.id === productId)?.quantity ?? 0;
+          const item = get().items.find(
+            (item) => item.product.id === productId,
+          );
+          return item ? item.quantity : 0;
         },
 
         isInCart: (productId) => {
@@ -150,17 +215,18 @@ export const useCartStore = create<CartStore>()(
           })),
         }),
         onRehydrateStorage: () => (state) => {
-          if (state) {
-            // Reconversion des dates après hydration
-            state.items = state.items.map((item: any) => ({
-              ...item,
+          if (state?.items) {
+            const persistedItems = state.items as PersistedCartItem[];
+            state.items = persistedItems.map((item) => ({
+              product: item.product,
+              quantity: item.quantity,
               addedAt: new Date(item.addedAt),
             }));
           }
         },
-      }
-    )
-  )
+      },
+    ),
+  ),
 );
 
 // ─── Hooks dérivés pour performance ───────────────────────────────────────────
