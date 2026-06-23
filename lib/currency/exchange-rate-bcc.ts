@@ -1,4 +1,4 @@
-// lib/exchange-rate/bcc-client.ts
+// lib/currency/exchange-rate-bcc.ts
 // Ce module extrait le taux USD/CDF depuis la BCC via 3 sources : HTML, PDF ou Excel.
 // Il utilise Cheerio pour le parsing HTML, pdf-parse pour les PDF et XLSX pour les Excel.
 // La fonction extractRateFromText est robuste pour éviter les faux positifs liés aux dates ou années.
@@ -7,9 +7,12 @@
 import * as cheerio from "cheerio";
 import * as XLSX from "xlsx";
 import { Prisma } from "@prisma/client";
-import { BCC_URL, REQUEST_TIMEOUT_MS } from "./exchange-rate-constants";
-import { validateRate } from "./exchange-rate-validator";
-import { ExchangeRate } from "./exchange-rate-types";
+import {
+  BCC_URL,
+  REQUEST_TIMEOUT_MS,
+} from "@lib/currency/exchange-rate-constants";
+import { validateRate } from "@lib/currency/exchange-rate-validator";
+import { ExchangeRate } from "@lib/currency/exchange-rate-types";
 
 async function fetchWithTimeout(
   url: string,

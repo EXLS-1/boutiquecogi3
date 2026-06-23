@@ -1,4 +1,4 @@
-// lib/exchange-rate/exchange-rate-constants.ts
+// lib/currency/exchange-rate-constants.ts
 // Centralise les constantes utilisées par les services de taux de change.
 
 export const BCC_URL = "https://www.bcc.cd/taux-de-change";

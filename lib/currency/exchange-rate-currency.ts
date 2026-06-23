@@ -1,4 +1,4 @@
-// lib/currency/currency.ts
+// lib/currency/exchange-rate-currency.ts
 
 export type DisplayCurrency = "USD" | "CDF";
 

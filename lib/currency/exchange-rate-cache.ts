@@ -5,7 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
-import { CACHE_KEY } from "./exchange-rate-constants";
+import { CACHE_KEY } from "@lib/currency/exchange-rate-constants";
 
 /**
  * Génère un UUID v7 conforme aux spécifications RFC 9562 de manière native.

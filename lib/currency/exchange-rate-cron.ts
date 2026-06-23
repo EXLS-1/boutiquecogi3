@@ -1,4 +1,4 @@
-// lib/exchange-rate/exchange-rate-cron.ts
+// lib/currency/exchange-rate-cron.ts
 
 import { forceRefreshExchangeRate } from "./exchange-rate-service";
 
