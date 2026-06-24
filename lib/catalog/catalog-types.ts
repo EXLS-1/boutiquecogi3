@@ -184,13 +184,6 @@ export const catalogQueryParamsSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
-export const HOME_PRODUCTS_LIMIT = 12; // ou la valeur souhaitée
-export const STOCK_THRESHOLDS = {
-  LOW: 6,
-  MEDIUM: 20,
-  // ...
-};
-
 export type CatalogProductValidated = z.infer<typeof catalogProductSchema>;
 export type CatalogQueryParamsValidated = z.infer<
   typeof catalogQueryParamsSchema

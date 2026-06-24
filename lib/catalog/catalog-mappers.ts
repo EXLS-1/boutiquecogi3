@@ -7,14 +7,17 @@
  */
 
 import { usdToCdf } from "@/lib/currency/exchange-rate-convert";
-import { PRODUCT_PLACEHOLDER, DEFAULT_PRODUCT_RBAC } from "./catalog-constants";
+import {
+  PRODUCT_PLACEHOLDER,
+  DEFAULT_PRODUCT_RBAC,
+  STOCK_THRESHOLDS,
+} from "@/lib/catalog/catalog-constants";
 import {
   RawCatalogProduct,
   CatalogProduct,
   AvailabilityStatus,
   AVAILABILITY_STATUS,
-  STOCK_THRESHOLDS,
-} from "./catalog-types";
+} from "@/lib/catalog/catalog-types";
 
 /**
  * Détermine le statut de disponibilité basé sur les données stock
@@ -85,7 +88,6 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
     status: raw.status,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
-    minRbacLevel,
     requiresAuth,
     isPromoted,
     isNewArrival,

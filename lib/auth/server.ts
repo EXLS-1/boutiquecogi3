@@ -7,7 +7,7 @@
 //
 // RESPONSABILITÉS :
 //   1. Gestion atomique de la session (cache + singleton)
-//   2. Guards hiérarchiques (Level 1-6) avec redirections
+//   2. Guards hiérarchiques (Level 1-7) avec redirections
 //   3. Vérification des permissions avec héritage
 //   4. Vérification des restrictions (quotas, feature flags)
 //   5. Audit et traçabilité (userId, timestamp, action)
@@ -318,7 +318,7 @@ export async function guardAnyPermission(
 
 /**
  * Guard : exige un niveau hiérarchique minimum.
- * Level 1 = SUPER_ADMIN (plus permissif), Level 6 = USER (moins permissif).
+ * Level 1 = SUPER_ADMIN (plus permissif), Level 7 = GUEST (moins permissif).
  */
 export async function guardMinLevel(
   minLevel: number,
@@ -780,6 +780,7 @@ const ROLE_DETAILS: Record<string, { name: string; color: string }> = {
   EDITOR: { name: "Editor", color: "#10b981" },
   SUPERVISOR: { name: "Supervisor", color: "#8b5cf6" },
   USER: { name: "User", color: "#6b7280" },
+  GUEST: { name: "Guest", color: "#9ca3af" },
 };
 
 /**

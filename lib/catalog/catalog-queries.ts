@@ -10,16 +10,17 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { Prisma, ProductStatus } from "@prisma/client";
 import {
-  CatalogQueryParams,
-  CatalogQueryParamsValidated,
-  catalogQueryParamsSchema,
   CACHE_TAGS,
   CACHE_DURATIONS,
   HOME_PRODUCTS_LIMIT,
-} from "./catalog-types";
+  CATALOG_PAGE_SIZE,
+} from "./catalog-constants";
 import { mapCatalogProduct, mapCatalogProducts } from "./catalog-mappers";
 
-const CATALOG_PAGE_SIZE = 12;
+// Temporary local type to represent the raw product shape returned by Prisma
+// (normalized to plain JS types). Defined here to avoid a missing type error
+// when importing from other modules is not desired.
+type RawCatalogProduct = any;
 
 // ─── Base Query Builder (DRY) ───────────────────────────────────────────────
 
@@ -262,26 +263,18 @@ export async function searchCatalogProducts(
  */
 export const getProductBySlug = cache(async (slug: string) => {
   const product = await prisma.product.findUnique({
-    where: {
-      slug,
-      ...buildBaseWhere(),
-    },
-    include: {
-      ...buildBaseInclude(),
-      productImages: {
-        orderBy: { position: "asc" },
-        select: {
-          url: true,
-          alt: true,
-          position: true,
-        },
-      },
-    },
+    where: { slug },
   });
 
   if (!product) return null;
 
-  return mapCatalogProduct(product);
+  // Prisma returns Decimal for basePrice; convert to number to match RawCatalogProduct
+  const normalized = {
+    ...product,
+    basePrice: Number((product as any).basePrice),
+  } as unknown as RawCatalogProduct;
+
+  return mapCatalogProduct(normalized);
 });
 
 // ─── Query : Comptage ───────────────────────────────────────────────────────

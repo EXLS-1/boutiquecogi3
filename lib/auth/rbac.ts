@@ -1,6 +1,6 @@
 // lib/auth/rbac.ts
 // ============================================
-// RBAC SERVER-SIDE — HIERARCHIE STRICTE LEVEL 1-6
+// RBAC SERVER-SIDE — HIERARCHIE STRICTE LEVEL 1-7
 // ============================================
 // PUREMENT server-side. Aucun 'use client'.
 // Importé dans : Server Components, Server Actions, Route Handlers, Proxy.
@@ -26,6 +26,7 @@ export const ROLES = {
   EDITOR: "EDITOR",
   SUPERVISOR: "SUPERVISOR",
   USER: "USER",
+  GUEST: "GUEST",
 } as const;
 
 export const LEVELS = {
@@ -35,6 +36,7 @@ export const LEVELS = {
   LEVEL_4: 4,
   LEVEL_5: 5,
   LEVEL_6: 6,
+  LEVEL_7: 7,
 } as const;
 
 const ROLE_TO_LEVEL: Record<Role, number> = {
@@ -44,6 +46,7 @@ const ROLE_TO_LEVEL: Record<Role, number> = {
   [ROLES.EDITOR]: LEVELS.LEVEL_4,
   [ROLES.SUPERVISOR]: LEVELS.LEVEL_5,
   [ROLES.USER]: LEVELS.LEVEL_6,
+  [ROLES.GUEST]: LEVELS.LEVEL_7,
 };
 
 const LEVEL_TO_ROLE: Record<number, Role> = {
@@ -53,6 +56,7 @@ const LEVEL_TO_ROLE: Record<number, Role> = {
   [LEVELS.LEVEL_4]: ROLES.EDITOR,
   [LEVELS.LEVEL_5]: ROLES.SUPERVISOR,
   [LEVELS.LEVEL_6]: ROLES.USER,
+  [LEVELS.LEVEL_7]: ROLES.GUEST,
 };
 
 // ───────────────────────────────────────────
@@ -103,11 +107,11 @@ export const PERMISSIONS = {
   CONTENT_DELETE: "content:delete",
   CONTENT_PUBLISH: "content:publish",
   CONTENT_MODERATE: "content:moderate",
-  // Permissions d'audit (nouvelles)
-  AUDIT_SWITCH_SELF: "audit:switch-self", // Basculer vers un rôle inférieur (soi-même)
-  AUDIT_SWITCH_OTHERS: "audit:switch-others", // Autoriser un autre utilisateur à auditer
-  AUDIT_APPROVE_REQUEST: "audit:approve-request", // Approuver une demande d'audit (SUPER_ADMIN uniquement)
-  AUDIT_VIEW_LOGS: "audit:view-logs", // Consulter les logs d'audit
+  // Permissions d'audit
+  AUDIT_SWITCH_SELF: "audit:switch-self",
+  AUDIT_SWITCH_OTHERS: "audit:switch-others",
+  AUDIT_APPROVE_REQUEST: "audit:approve-request",
+  AUDIT_VIEW_LOGS: "audit:view-logs",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -132,10 +136,10 @@ export const RESTRICTIONS = {
   SESSION_DURATION_HOURS: "session_duration_hours",
   REQUIRE_2FA: "require_2fa",
   REQUIRE_APPROVAL_FOR_DELETE: "require_approval_for_delete",
-  // Restrictions d'audit (nouvelles)
-  REQUIRES_AUDIT_APPROVAL: "requires_audit_approval", // Nécessite approbation SUPER_ADMIN pour auditer
-  AUDIT_MAX_DURATION_MINUTES: "audit_max_duration_minutes", // Durée max d'une session d'audit
-  AUDIT_ALLOWED_TARGET_LEVELS: "audit_allowed_target_levels", // Levels cibles autorisés (CSV: "4,5,6")
+  // Restrictions d'audit
+  REQUIRES_AUDIT_APPROVAL: "requires_audit_approval",
+  AUDIT_MAX_DURATION_MINUTES: "audit_max_duration_minutes",
+  AUDIT_ALLOWED_TARGET_LEVELS: "audit_allowed_target_levels",
 } as const;
 
 export type Restriction = (typeof RESTRICTIONS)[keyof typeof RESTRICTIONS];
@@ -193,9 +197,9 @@ const DEFAULT_ROLE_CONFIG: Record<
     ),
     restrictions: createRestrictions(
       {
-        [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON", // ✅ DOIT être approuvé par SUPER_ADMIN
+        [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON",
         [RESTRICTIONS.AUDIT_MAX_DURATION_MINUTES]: "30",
-        [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "3,4,5,6", // Peut auditer MANAGER et inférieur
+        [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "3,4,5,6,7",
         [RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE]: "ON",
       },
       "OFF",
@@ -249,9 +253,9 @@ const DEFAULT_ROLE_CONFIG: Record<
       [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "ON",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "120",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "12",
-      [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON", // ✅ DOIT être approuvé par SUPER_ADMIN
+      [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON",
       [RESTRICTIONS.AUDIT_MAX_DURATION_MINUTES]: "20",
-      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "4,5,6", // Peut auditer EDITOR et inférieur
+      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "4,5,6,7",
     }),
   },
   [ROLES.EDITOR]: {
@@ -281,9 +285,9 @@ const DEFAULT_ROLE_CONFIG: Record<
       [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "60",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "8",
-      [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON", // ✅ DOIT être approuvé par SUPER_ADMIN
+      [RESTRICTIONS.REQUIRES_AUDIT_APPROVAL]: "ON",
       [RESTRICTIONS.AUDIT_MAX_DURATION_MINUTES]: "15",
-      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "5,6", // Peut auditer SUPERVISOR et USER
+      [RESTRICTIONS.AUDIT_ALLOWED_TARGET_LEVELS]: "5,6,7",
     }),
   },
   [ROLES.SUPERVISOR]: {
@@ -330,6 +334,29 @@ const DEFAULT_ROLE_CONFIG: Record<
       [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
       [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "20",
       [RESTRICTIONS.SESSION_DURATION_HOURS]: "4",
+    }),
+  },
+  [ROLES.GUEST]: {
+    level: LEVELS.LEVEL_7,
+    permissions: createPermissions({
+      [PERMISSIONS.PRODUCTS_READ]: "ON",
+      [PERMISSIONS.CATEGORIES_READ]: "ON",
+      [PERMISSIONS.CONTENT_READ]: "ON",
+      [PERMISSIONS.MEDIA_READ]: "ON",
+    }),
+    restrictions: createRestrictions({
+      [RESTRICTIONS.MAX_DAILY_ORDERS]: "0",
+      [RESTRICTIONS.MAX_PRODUCTS_PER_USER]: "0",
+      [RESTRICTIONS.MAX_STORAGE_MB]: "0",
+      [RESTRICTIONS.MAX_TEAM_MEMBERS]: "0",
+      [RESTRICTIONS.CAN_ACCESS_API]: "OFF",
+      [RESTRICTIONS.CAN_ACCESS_WEBHOOKS]: "OFF",
+      [RESTRICTIONS.CAN_ACCESS_ADVANCED_ANALYTICS]: "OFF",
+      [RESTRICTIONS.CAN_EXPORT_DATA]: "OFF",
+      [RESTRICTIONS.CAN_USE_BULK_ACTIONS]: "OFF",
+      [RESTRICTIONS.RESTRICTED_TO_OWN_DATA]: "ON",
+      [RESTRICTIONS.RATE_LIMIT_PER_MINUTE]: "10",
+      [RESTRICTIONS.SESSION_DURATION_HOURS]: "1",
     }),
   },
 };
@@ -442,7 +469,7 @@ export async function resolveEffectivePermissions(
   const effectivePerms = new Set<Permission>();
   const allConfigs = await loadAllRoleConfigs();
 
-  for (let level = userLevel; level <= LEVELS.LEVEL_6; level++) {
+  for (let level = userLevel; level <= LEVELS.LEVEL_7; level++) {
     const levelRole = LEVEL_TO_ROLE[level];
     const config = allConfigs.get(levelRole) ?? DEFAULT_ROLE_CONFIG[levelRole];
 
@@ -468,7 +495,7 @@ export async function resolveEffectiveRestrictions(
   const effectiveRestr = new Map<Restriction, string | ToggleState>();
   const allConfigs = await loadAllRoleConfigs();
 
-  for (let level = LEVELS.LEVEL_6; level >= userLevel; level--) {
+  for (let level = LEVELS.LEVEL_7; level >= userLevel; level--) {
     const levelRole = LEVEL_TO_ROLE[level];
     const config = allConfigs.get(levelRole) ?? DEFAULT_ROLE_CONFIG[levelRole];
 
@@ -544,7 +571,7 @@ export async function getCurrentUserRole(): Promise<Role> {
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList });
 
-  if (!session?.user) return ROLES.USER;
+  if (!session?.user) return ROLES.GUEST;
 
   const roleStr =
     (session.user as Record<string, unknown>).role ??

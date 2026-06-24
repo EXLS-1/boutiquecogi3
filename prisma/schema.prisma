@@ -532,11 +532,11 @@ model Review {
 }
 
 enum ProductStatus {
-  PUBLISHED
   DRAFT
-  ACTIVE
-  OUT_OF_STOCK
+  PUBLISHED
   ARCHIVED
+  OUT_OF_STOCK
+  DISCONTINUED
 }
 
 model Product_Availability_Projection {
