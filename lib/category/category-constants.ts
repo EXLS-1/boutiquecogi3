@@ -1,23 +1,40 @@
 /**
  * =============================================================================
- * CATEGORY CONSTANTS - Boutiquecogi3
+ * CATEGORY CONSTANTS — Boutiquecogi3
  * =============================================================================
  * Centralisation de toutes les constantes liées aux catégories.
+ * 
+ * Problème audit #10: IDs codés en dur.
+ * Recommandation: Migrer vers UUID v7 générés via seed Prisma.
+ * 
+ * PLAN DE MIGRATION:
+ * 1. Créer un seed Prisma qui génère les catégories avec UUID v7
+ * 2. Remplacer STATIC_CATEGORIES par une requête DB dans les composants
+ * 3. Conserver ces constantes comme fallback / configuration par défaut
  */
 
 import { CategoryDefinition, RBAC_LEVELS, CATEGORY_TYPES } from "./category-types";
 
-// ─── Configuration Grid par défaut ─────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 1: CONFIGURATION GRID
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const DEFAULT_GRID_CONFIG = {
   columns: { mobile: 1, tablet: 2, desktop: 3 },
   gap: "2rem", // gap-8
 } as const;
 
-// ─── Définitions des Catégories Statiques ─────────────────────────────────────
-// Ordre déterministe (sortOrder). Ajouter une catégorie = ajouter un objet ici.
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 2: CATÉGORIES STATIQUES (Fallback)
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// ATTENTION: Ces IDs sont codés en dur. Pour une architecture scalable,
+// utiliser getCategoriesFromDB() qui interroge Prisma avec UUID v7.
+// Ces constantes servent de fallback et de configuration initiale.
+
 export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
   {
-    id: "cat-femme-001",
+    id: "cat-femme-001",  // TODO: Remplacer par UUID v7 en DB
     slug: "femme",
     title: "HABIT FEMME",
     subtitle: "Élégance et sophistication",
@@ -31,7 +48,7 @@ export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
     requiresAuth: false,
   },
   {
-    id: "cat-homme-002",
+    id: "cat-homme-002",  // TODO: Remplacer par UUID v7 en DB
     slug: "homme",
     title: "HABIT HOMME",
     subtitle: "Style moderne et raffiné",
@@ -45,7 +62,7 @@ export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
     requiresAuth: false,
   },
   {
-    id: "cat-enfant-003",
+    id: "cat-enfant-003",  // TODO: Remplacer par UUID v7 en DB
     slug: "enfant",
     title: "HABIT ENFANT",
     subtitle: "Tendresse et qualité",
@@ -59,7 +76,7 @@ export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
     requiresAuth: false,
   },
   {
-    id: "cat-sac-004",
+    id: "cat-sac-004",  // TODO: Remplacer par UUID v7 en DB
     slug: "sac",
     title: "SAC DAME",
     subtitle: "Accessoires indispensables",
@@ -73,7 +90,7 @@ export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
     requiresAuth: false,
   },
   {
-    id: "cat-chaussure-005",
+    id: "cat-chaussure-005",  // TODO: Remplacer par UUID v7 en DB
     slug: "chaussure",
     title: "CHAUSSURE DAME",
     subtitle: "Chaussures indispensables",
@@ -87,7 +104,7 @@ export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
     requiresAuth: false,
   },
   {
-    id: "cat-accessoire-006",
+    id: "cat-accessoire-006",  // TODO: Remplacer par UUID v7 en DB
     slug: "accessoire",
     title: "ACCESSOIRE",
     subtitle: "Accessoires indispensables",
@@ -102,7 +119,10 @@ export const STATIC_CATEGORIES: readonly CategoryDefinition[] = [
   },
 ] as const;
 
-// ─── Définitions des Catégories Promotionnelles ──────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 3: CATÉGORIES PROMOTIONNELLES
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const PROMOTIONAL_CATEGORIES: readonly CategoryDefinition[] = [
   {
     id: "cat-promo-001",
@@ -120,7 +140,10 @@ export const PROMOTIONAL_CATEGORIES: readonly CategoryDefinition[] = [
   },
 ] as const;
 
-// ─── Définitions des Catégories Nouveautés ───────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 4: CATÉGORIES NOUVEAUTÉS
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const NEW_ARRIVAL_CATEGORIES: readonly CategoryDefinition[] = [
   {
     id: "cat-new-001",
@@ -138,9 +161,110 @@ export const NEW_ARRIVAL_CATEGORIES: readonly CategoryDefinition[] = [
   },
 ] as const;
 
-// ─── Regroupement de toutes les catégories ────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 5: REGROUPEMENT
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const ALL_CATEGORIES: readonly CategoryDefinition[] = [
   ...NEW_ARRIVAL_CATEGORIES,
   ...PROMOTIONAL_CATEGORIES,
   ...STATIC_CATEGORIES,
 ] as const;
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 6: FONCTIONS D'ACCÈS DB (Recommandé pour production)
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #10: Ces fonctions remplacent progressivement les constantes
+// statiques par des requêtes Prisma dynamiques avec UUID v7.
+
+import { prisma } from "@/lib/prisma";
+import { cache } from "react";
+
+/**
+ * Récupère les catégories actives depuis la base de données.
+ * À utiliser préférentiellement à ALL_CATEGORIES en production.
+ * 
+ * @returns Catégories triées par sortOrder avec UUID v7
+ */
+export const getCategoriesFromDB = cache(async (): Promise<CategoryDefinition[]> => {
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      subtitle: true,
+      imageSrc: true,
+      imageAlt: true,
+      sortOrder: true,
+      isActive: true,
+      minRbacLevel: true,
+      requiresAuth: true,
+      type: true,
+    },
+  });
+
+  return categories.map((cat) => ({
+    id: cat.id,           // UUID v7 depuis Prisma
+    slug: cat.slug,
+    title: cat.name,
+    subtitle: cat.subtitle ?? "",
+    imageSrc: cat.imageSrc ?? "/placeholder.webp",
+    imageAlt: cat.imageAlt ?? cat.name,
+    href: `/products?category=${cat.slug}`,
+    type: (cat.type as CategoryDefinition["type"]) ?? CATEGORY_TYPES.STATIC,
+    sortOrder: cat.sortOrder,
+    isActive: cat.isActive,
+    minRbacLevel: (cat.minRbacLevel ?? RBAC_LEVELS.GUEST) as typeof RBAC_LEVELS[keyof typeof RBAC_LEVELS],
+    requiresAuth: cat.requiresAuth ?? false,
+  }));
+});
+
+/**
+ * Récupère un ensemble spécifique de catégories (promo + nouveautés)
+ * Idéal pour les bannières principales (Hero Section)
+ * 
+ * @returns Catégories spéciales triées par sortOrder
+ */
+export const getSpecialCategories = cache(async (): Promise<CategoryDefinition[]> => {
+  // On sélectionne seulement les catégories qui ont un intérêt marketing fort
+  const specialSlugs = ['promotions', 'nouveautes'];
+  
+  const categories = await prisma.category.findMany({
+    where: {
+      slug: { in: specialSlugs },
+      isActive: true,
+    },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      subtitle: true,
+      imageSrc: true,
+      imageAlt: true,
+      sortOrder: true,
+      isActive: true,
+      minRbacLevel: true,
+      requiresAuth: true,
+      type: true,
+    },
+  });
+
+  return categories.map((cat) => ({
+    id: cat.id,
+    slug: cat.slug,
+    title: cat.name,
+    subtitle: cat.subtitle ?? "",
+    imageSrc: cat.imageSrc ?? "/placeholder.webp",
+    imageAlt: cat.imageAlt ?? cat.name,
+    href: `/products?category=${cat.slug}`,
+    type: (cat.type as CategoryDefinition["type"]) ?? CATEGORY_TYPES.STATIC,
+    sortOrder: cat.sortOrder,
+    isActive: cat.isActive,
+    minRbacLevel: (cat.minRbacLevel ?? RBAC_LEVELS.GUEST) as typeof RBAC_LEVELS[keyof typeof RBAC_LEVELS],
+    requiresAuth: cat.requiresAuth ?? false,
+  }));
+});

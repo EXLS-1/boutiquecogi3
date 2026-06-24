@@ -13,6 +13,7 @@ const CLIENT_ROLE_LEVELS: Record<Role, number> = {
   EDITOR: 4,
   SUPERVISOR: 5,
   USER: 6,
+  GUEST: 7
 };
 
 type AuditState = 
@@ -135,7 +136,7 @@ export function SwitchProvider({
 
       // Programme l'auto-expiration
       clearExpiryTimer();
-      const msUntilExpiry = validation.request.approvalTokenExpiresAt.getTime() - Date.now();
+      const msUntilExpiry = validation.request.expiresAt.getTime() - Date.now();
       if (msUntilExpiry > 0) {
         expiryTimerRef.current = setTimeout(() => {
           stopAudit();
@@ -146,7 +147,7 @@ export function SwitchProvider({
       setAuditState({ 
         status: "approved", 
         token: approvalToken,
-        expiresAt: validation.request.approvalTokenExpiresAt 
+        expiresAt: validation.request.expiresAt 
       });
     }
 

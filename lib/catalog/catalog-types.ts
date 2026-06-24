@@ -1,51 +1,106 @@
 /**
  * =============================================================================
- * CATALOG TYPES - Boutiquecogi3
+ * CATALOG TYPES — Boutiquecogi3
  * =============================================================================
  * Définitions strictes pour l'ensemble du système catalog.
  * Atomicité : chaque type a une responsabilité unique.
+ * 
+ * RÈGLES :
+ * - AUCUNE constante ne doit être redéfinie ici (voir catalog-constants.ts).
+ * - Les enums métier doivent refléter EXACTEMENT le schéma Prisma.
  */
 
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
+import { 
+  STOCK_THRESHOLDS, 
+  PRODUCT_ACCESS_POLICY,
+  DEFAULT_PRODUCT_RBAC,
+} from "./catalog-constants";
 
-// ─── RBAC Levels (réutilisés depuis category-types ou redéfinis ici) ───────
+// ─── Re-export des constantes nécessaires pour compatibilité ─────────────
+// NOTE: Ces re-exports sont DEPRECATED. Préférer l'import direct depuis
+// catalog-constants.ts dans tout nouveau code.
+export { STOCK_THRESHOLDS, DEFAULT_PRODUCT_RBAC };
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 1: RBAC LEVELS (alignés avec lib/auth/rbac.ts)
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const RBAC_LEVELS = {
-  SUPER_ADMIN: 1,
-  ADMIN: 2,
-  MANAGER: 3,
-  EDITOR: 4,
-  SUPERVISOR: 5,
-  USER: 6,
-  GUEST: 7,
+  SUPER_ADMIN: 1,   // LEVEL 1
+  ADMIN: 2,         // LEVEL 2
+  MANAGER: 3,       // LEVEL 3
+  EDITOR: 4,        // LEVEL 4
+  SUPERVISOR: 5,    // LEVEL 5
+  USER: 6,          // LEVEL 6
+  GUEST: 7,         // LEVEL 7 — Sessions libres (non authentifiées)
 } as const;
 
 export type RbacLevel = (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS];
 
-// ─── Statuts de Produit ─────────────────────────────────────────────────────
-export const PRODUCT_STATUS = {
-  DRAFT: "draft",
-  PUBLISHED: "published",
-  ARCHIVED: "archived",
-  OUT_OF_STOCK: "out_of_stock",
-  DISCONTINUED: "discontinued",
-} as const;
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 2: STATUTS PRODUIT (alignés avec Prisma ProductStatus)
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #7: Les enums métier étaient dupliquées côté Prisma et domaine.
+// Désormais, on importe DIRECTEMENT depuis @prisma/client pour garantir
+// la synchronisation. Les types domaine sont des alias type-safe.
 
-export type ProductStatus =
-  (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
+import { ProductStatus as PrismaProductStatus } from "@prisma/client";
 
-// ─── Statuts de Disponibilité ────────────────────────────────────────────────
+export type ProductStatus = PrismaProductStatus;
+
+// Valeurs possibles (pour runtime checks)
+export const PRODUCT_STATUS_VALUES = [
+  "DRAFT",
+  "PUBLISHED", 
+  "ARCHIVED",
+  "OUT_OF_STOCK",
+  "DISCONTINUED"
+] as const satisfies readonly ProductStatus[];
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 3: STATUTS DE DISPONIBILITÉ
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const AVAILABILITY_STATUS = {
   IN_STOCK: "in_stock",
   LOW_STOCK: "low_stock",
   OUT_OF_STOCK: "out_of_stock",
   PRE_ORDER: "pre_order",
-  BACK_ORDER: "back_order",
+  BACK_ORDER: "back_order"
 } as const;
 
 export type AvailabilityStatus =
   (typeof AVAILABILITY_STATUS)[keyof typeof AVAILABILITY_STATUS];
 
-// ─── Interface Core Produit (Domaine) ────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 4: PRODUCT ACCESS POLICY TYPES
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #5: RBAC insuffisamment modélisé.
+
+export interface ProductAccessPolicy {
+  readonly visibility: "public" | "authenticated" | "restricted" | "private" | "hidden";
+  readonly minRbacLevel: RbacLevel;
+  readonly requiresAuth: boolean;
+  readonly requiredPermissions?: readonly string[];
+  readonly excludedRoles?: readonly string[];
+  readonly ownerOnly?: boolean;
+  readonly restrictions?: readonly string[];
+}
+
+export const DEFAULT_ACCESS_POLICY: ProductAccessPolicy = {
+  visibility: "public",
+  minRbacLevel: RBAC_LEVELS.GUEST,
+  requiresAuth: false,
+} as const;
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 5: INTERFACE CORE PRODUIT (Domaine)
+// ═════════════════════════════════════════════════════════════════════════════
+
 export interface CatalogProduct {
   readonly id: string;
   readonly name: string;
@@ -62,39 +117,51 @@ export interface CatalogProduct {
   readonly status: ProductStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly minRbacLevel: RbacLevel; // Niveau minimum pour voir le produit
-  readonly requiresAuth: boolean; // Nécessite authentification
-  readonly isPromoted: boolean; // Mis en avant (promotions)
-  readonly isNewArrival: boolean; // Nouveauté
-  readonly discountPercent: number; // 0 = pas de promo
+  // RBAC
+  readonly accessPolicy: ProductAccessPolicy;
+  // Promotions
+  readonly isPromoted: boolean;
+  readonly isNewArrival: boolean;
+  readonly discountPercent: number;
 }
 
-// ─── Interface Produit Brut (Prisma) ────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 6: INTERFACE PRODUIT BRUT (Prisma — avec sérialisation)
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #6: Le mapper consommait stockQuantity mais la requête
+// ne le chargeait pas. Désormais, l'interface explicite TOUT ce que le
+// mapper attend, et les requêtes DOIVENT le fournir.
+
 export interface RawCatalogProduct {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
   readonly description: string | null;
-  readonly basePrice: number;
+  readonly basePrice: number;        // Déjà sérialisé (Decimal → number)
   readonly status: ProductStatus;
   readonly isArchived: boolean;
   readonly isdeleted: boolean;
   readonly deletedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  // RBAC
   readonly minRbacLevel?: number;
   readonly requiresAuth?: boolean;
+  // Promotions
   readonly isPromoted?: boolean;
   readonly isNewArrival?: boolean;
   readonly discountPercent?: number;
+  // Relations
   readonly category?: {
     readonly name: string;
     readonly slug: string;
   } | null;
+  // Problème audit #6: stockQuantity EST REQUIS
   readonly availabilityProjection?: {
     readonly isAvailable: boolean;
     readonly status?: AvailabilityStatus;
-    readonly stockQuantity?: number;
+    readonly stockQuantity: number;  // ← CHAMP REQUIS (était manquant)
   } | null;
   readonly productImages?: readonly {
     readonly url: string;
@@ -102,7 +169,24 @@ export interface RawCatalogProduct {
   }[];
 }
 
-// ─── Paramètres de Requête Catalog ──────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 7: PARAMÈTRES DE REQUÊTE CATALOG
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #9: Tri non garanti. Les champs de tri sont désormais
+// strictement typés et validés contre le schéma Prisma.
+
+export const SORTABLE_FIELDS = [
+  "createdAt",
+  "updatedAt", 
+  "name",
+  "basePrice",
+  // "popularity" — DÉSACTIVÉ: champ non existant dans Prisma
+  // Ajouter ici quand le champ est créé côté DB
+] as const;
+
+export type SortableField = (typeof SORTABLE_FIELDS)[number];
+
 export interface CatalogQueryParams {
   readonly limit: number;
   readonly offset?: number;
@@ -114,11 +198,14 @@ export interface CatalogQueryParams {
   readonly minPrice?: number;
   readonly maxPrice?: number;
   readonly searchQuery?: string;
-  readonly sortBy?: "createdAt" | "price" | "name" | "popularity";
+  readonly sortBy?: SortableField;
   readonly sortOrder?: "asc" | "desc";
 }
 
-// ─── Résultat Paginé ─────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 8: RÉSULTAT PAGINÉ
+// ═════════════════════════════════════════════════════════════════════════════
+
 export interface PaginatedCatalogResult<T> {
   readonly items: readonly T[];
   readonly totalCount: number;
@@ -129,13 +216,16 @@ export interface PaginatedCatalogResult<T> {
   readonly hasPreviousPage: boolean;
 }
 
-// ─── Zod Schemas pour validation runtime ────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 9: ZOD SCHEMAS (validation runtime)
+// ═════════════════════════════════════════════════════════════════════════════
+
 export const productStatusSchema = z.enum([
-  "draft",
-  "published",
-  "archived",
-  "out_of_stock",
-  "discontinued",
+  "DRAFT",
+  "PUBLISHED",
+  "ARCHIVED",
+  "OUT_OF_STOCK",
+  "DISCONTINUED",
 ]);
 
 export const availabilityStatusSchema = z.enum([
@@ -146,15 +236,25 @@ export const availabilityStatusSchema = z.enum([
   "back_order",
 ]);
 
+export const productAccessPolicySchema = z.object({
+  visibility: z.enum(["public", "authenticated", "restricted", "private", "hidden"]),
+  minRbacLevel: z.number().int().min(1).max(7),
+  requiresAuth: z.boolean(),
+  requiredPermissions: z.array(z.string()).optional(),
+  excludedRoles: z.array(z.string()).optional(),
+  ownerOnly: z.boolean().optional(),
+  restrictions: z.array(z.string()).optional(),
+});
+
 export const catalogProductSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(200),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   description: z.string().max(5000).nullable(),
-  basePrice: z.number().positive().max(100000000),
+  basePrice: z.number().nonnegative().max(100_000_000),
   image: z.string().min(1),
-  basePriceUSD: z.number().positive(),
-  basePriceCDF: z.number().positive(),
+  basePriceUSD: z.number().nonnegative(),
+  basePriceCDF: z.number().nonnegative(),
   isAvailable: z.boolean(),
   availabilityStatus: availabilityStatusSchema,
   categoryName: z.string().nullable(),
@@ -162,8 +262,7 @@ export const catalogProductSchema = z.object({
   status: productStatusSchema,
   createdAt: z.date(),
   updatedAt: z.date(),
-  minRbacLevel: z.number().int().min(1).max(7),
-  requiresAuth: z.boolean(),
+  accessPolicy: productAccessPolicySchema,
   isPromoted: z.boolean(),
   isNewArrival: z.boolean(),
   discountPercent: z.number().int().min(0).max(100),
@@ -177,14 +276,65 @@ export const catalogQueryParamsSchema = z.object({
   isAvailable: z.boolean().optional(),
   isPromoted: z.boolean().optional(),
   isNewArrival: z.boolean().optional(),
-  minPrice: z.number().positive().optional(),
-  maxPrice: z.number().positive().optional(),
+  minPrice: z.number().nonnegative().optional(),
+  maxPrice: z.number().nonnegative().optional(),
   searchQuery: z.string().max(100).optional(),
-  sortBy: z.enum(["createdAt", "price", "name", "popularity"]).optional(),
+  sortBy: z.enum(SORTABLE_FIELDS).optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 export type CatalogProductValidated = z.infer<typeof catalogProductSchema>;
-export type CatalogQueryParamsValidated = z.infer<
-  typeof catalogQueryParamsSchema
->;
+export type CatalogQueryParamsValidated = z.infer<typeof catalogQueryParamsSchema>;
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 10: SERIALIZATION HELPERS (Prisma Decimal → number)
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #6 + recherche Prisma: Prisma retourne Decimal pour les
+// champs monétaires. Ces helpers centralisent la conversion.
+
+/**
+ * Convertit un Prisma Decimal en number de manière sécurisée.
+ * Gère null, undefined, et les valeurs déjà numériques.
+ */
+export function serializeDecimal(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  // Prisma.Decimal a une méthode toNumber()
+  if (typeof (value as { toNumber?: () => number }).toNumber === "function") {
+    const parsed = (value as { toNumber: () => number }).toNumber();
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+/**
+ * Normalise un tableau de produits Prisma en convertissant les Decimals.
+ * À appeler IMMÉDIATEMENT après chaque requête Prisma.
+ */
+export function normalizeProducts<T extends { basePrice?: unknown }>(
+  items: T[] | null | undefined,
+): (T & { basePrice: number })[] {
+  if (!items) return [];
+  return items.map((item) => ({
+    ...item,
+    basePrice: serializeDecimal(item.basePrice),
+  })) as (T & { basePrice: number })[];
+}
+
+/**
+ * Normalise un produit unique Prisma.
+ */
+export function normalizeProduct<T extends { basePrice?: unknown }>(
+  item: T | null | undefined,
+): (T & { basePrice: number }) | null {
+  if (!item) return null;
+  return {
+    ...item,
+    basePrice: serializeDecimal(item.basePrice),
+  } as T & { basePrice: number };
+}

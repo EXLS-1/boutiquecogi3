@@ -7,7 +7,7 @@
 
 import { memo } from "react";
 import { Product } from "@/lib/product/product-types";
-import { ProductCard } from "@/components/catalog/catalog-card";
+import { ProductCard } from "@/components/catalog/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProductListProps {

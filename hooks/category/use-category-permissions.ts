@@ -1,9 +1,11 @@
 /**
  * =============================================================================
- * USE CATEGORY PERMISSIONS - Boutiquecogi3
+ * USE CATEGORY PERMISSIONS — Boutiquecogi3
  * =============================================================================
  * Hook centralisant la logique RBAC pour les catégories.
- * Gère les sessions libres (GUEST) et authentifiées.
+ * Gère les sessions libres (GUEST = Level 7) et authentifiées.
+ * 
+ * Aligné avec le système RBAC Level 1-7.
  */
 
 "use client";
@@ -30,16 +32,16 @@ interface UseCategoryPermissionsReturn {
  * Filtre les catégories selon les permissions RBAC de l'utilisateur.
  * 
  * Règles :
- * - GUEST (non authentifié) : LEVEL 7, accès minimal
+ * - GUEST (Level 7, non authentifié) : accès minimal
  * - Authentifié : niveau déterminé par le système RBAC
  * - requiresAuth=true : catégorie visible uniquement si authentifié
- * - minRbacLevel : niveau minimum requis
+ * - minRbacLevel : niveau minimum requis (plus bas = plus privilégié)
  */
 export function useCategoryPermissions({
   userRbacLevel = RBAC_LEVELS.GUEST,
   isAuthenticated,
 }: UseCategoryPermissionsOptions): UseCategoryPermissionsReturn {
-  
+
   const canViewCategory = useMemo(() => {
     return (category: CategoryDefinition): boolean => {
       // Si la catégorie nécessite une authentification et l'utilisateur ne l'est pas

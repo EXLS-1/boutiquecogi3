@@ -2,16 +2,16 @@
  * =============================================================================
  * BOUTIQUECOGI3 — SECURE PRODUCT CATALOG SYSTEM
  * =============================================================================
- * 
+ *
  * Architecture: Modular, Atomic, Cache-Optimized, RBAC-Aware
  * Stack: Prisma + Zod + React Cache + Audit Logging + Rate Limit Stub
- * 
+ *
  * Security:
  * - All inputs validated via Zod
  * - Audit logging for admin mutations
  * - RBAC checks on write operations
  * - PII-safe logging
- * 
+ *
  * Performance:
  * - React cache for read operations
  * - Prisma select optimization
@@ -23,7 +23,6 @@ import { cache } from "react";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { productData } from "@/data/product-data";
-import { auditLog, AdminEvent, SecurityEvent } from "@/lib/security/audit";
 import type { RBACLevel } from "@/lib/security/audit";
 import type { Product } from "@/types/products";
 
@@ -32,29 +31,33 @@ import type { Product } from "@/types/products";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const EXCHANGE_RATE_CDF = Number(process.env.EXCHANGE_RATE_CDF) || 2400;
-const PRODUCT_CACHE_TTL = Number(process.env.PRODUCT_CACHE_TTL) || 300; // seconds
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ZOD SCHEMAS (Input Validation & Type Safety)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ProductIdSchema = z.string().min(1).max(100);
-const SlugSchema = z.string().min(1).max(200).regex(/^[a-z0-9-]+$/);
-const PriceSchema = z.number().nonnegative().max(100000000);
-const StockSchema = z.number().int().min(0).max(1000000);
 
 const CreateProductSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(5000).default(""),
-  basePrice: PriceSchema,
+  basePrice: z.number().nonnegative().max(100000000),
   categoryId: z.string().uuid().optional(),
   categorySlug: z.string().optional(),
   images: z.array(z.string().url().max(2000)).max(20).default([]),
   sku: z.string().min(1).max(100),
-  initialStock: StockSchema.default(0),
+  initialStock: z.number().int().min(0).max(1000000).default(0),
   isPublished: z.boolean().default(false),
   actorId: z.string().uuid().optional(),
-  actorLevel: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"]),
+  actorLevel: z.enum([
+    "LEVEL_1",
+    "LEVEL_2",
+    "LEVEL_3",
+    "LEVEL_4",
+    "LEVEL_5",
+    "LEVEL_6",
+    "GUEST",
+  ]),
   actorEmail: z.string().email().optional(),
   sessionId: z.string().optional(),
 });
@@ -63,13 +66,21 @@ const UpdateProductSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).optional(),
-  basePrice: PriceSchema.optional(),
+  basePrice: z.number().nonnegative().max(100000000).optional(),
   categoryId: z.string().uuid().optional(),
   images: z.array(z.string().url().max(2000)).max(20).optional(),
   isPublished: z.boolean().optional(),
   isArchived: z.boolean().optional(),
   actorId: z.string().uuid().optional(),
-  actorLevel: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"]),
+  actorLevel: z.enum([
+    "LEVEL_1",
+    "LEVEL_2",
+    "LEVEL_3",
+    "LEVEL_4",
+    "LEVEL_5",
+    "LEVEL_6",
+    "GUEST",
+  ]),
   actorEmail: z.string().email().optional(),
   sessionId: z.string().optional(),
 });
@@ -78,7 +89,15 @@ const DeleteProductSchema = z.object({
   id: z.string().uuid(),
   permanent: z.boolean().default(false),
   actorId: z.string().uuid().optional(),
-  actorLevel: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"]),
+  actorLevel: z.enum([
+    "LEVEL_1",
+    "LEVEL_2",
+    "LEVEL_3",
+    "LEVEL_4",
+    "LEVEL_5",
+    "LEVEL_6",
+    "GUEST",
+  ]),
   actorEmail: z.string().email().optional(),
   sessionId: z.string().optional(),
 });
@@ -92,17 +111,21 @@ export type DeleteProductInput = z.infer<typeof DeleteProductSchema>;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PRODUCT_PERMISSIONS = {
-  VIEW_PRODUCTS: ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"] as RBACLevel[],
+  VIEW_PRODUCTS: [
+    "LEVEL_1",
+    "LEVEL_2",
+    "LEVEL_3",
+    "LEVEL_4",
+    "LEVEL_5",
+    "LEVEL_6",
+    "GUEST",
+  ] as RBACLevel[],
   VIEW_ARCHIVED: ["LEVEL_1", "LEVEL_2", "LEVEL_3"] as RBACLevel[],
-  CREATE_PRODUCT: ["LEVEL_1", "LEVEL_2", "LEVEL_3"] as RBACLevel[],
-  UPDATE_PRODUCT: ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"] as RBACLevel[],
-  DELETE_PRODUCT: ["LEVEL_1", "LEVEL_2"] as RBACLevel[],
-  PUBLISH_PRODUCT: ["LEVEL_1", "LEVEL_2", "LEVEL_3"] as RBACLevel[],
 } as const;
 
 function hasPermission(
   level: RBACLevel,
-  permission: keyof typeof PRODUCT_PERMISSIONS
+  permission: keyof typeof PRODUCT_PERMISSIONS,
 ): boolean {
   return PRODUCT_PERMISSIONS[permission].includes(level);
 }
@@ -116,7 +139,7 @@ export class ProductError extends Error {
     message: string,
     public readonly code: string,
     public readonly productId?: string,
-    public readonly severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "MEDIUM"
+    public readonly severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "MEDIUM",
   ) {
     super(message);
     this.name = "ProductError";
@@ -130,7 +153,7 @@ export class ProductPermissionError extends ProductError {
       `RBAC violation: Level ${level} cannot perform '${action}'`,
       "RBAC_VIOLATION",
       undefined,
-      "HIGH"
+      "HIGH",
     );
     this.name = "ProductPermissionError";
   }
@@ -143,28 +166,20 @@ export class ProductValidationError extends ProductError {
   }
 }
 
-export class ProductNotFoundError extends ProductError {
-  constructor(identifier: string) {
-    super(`Product not found: ${identifier}`, "NOT_FOUND", identifier, "LOW");
-    this.name = "ProductNotFoundError";
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MAPPERS (JSON ↔ Domain ↔ DB)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Maps a JSON product to the domain Product type.
- * Sanitizes inputs and normalizes paths.
- */
 function mapJsonProduct(p: Record<string, unknown>): Product {
   const basePrice = Number(p.price || 0);
   const rawImage = String(p.image || "");
-  
-  // Normalize image path
+
   let cleanPath = rawImage;
-  if (cleanPath && !cleanPath.startsWith("/media/") && !cleanPath.startsWith("http")) {
+  if (
+    cleanPath &&
+    !cleanPath.startsWith("/media/") &&
+    !cleanPath.startsWith("http")
+  ) {
     cleanPath = `/media${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
   }
 
@@ -181,21 +196,20 @@ function mapJsonProduct(p: Record<string, unknown>): Product {
   };
 }
 
-/**
- * Maps a Prisma product to the domain Product type.
- * Optimized with minimal field selection.
- */
-function mapDbProduct(p: {
-  id: string;
-  name: string;
-  description: string | null;
-  basePrice: number;
-  images: string[];
-  category: { slug: string } | null;
-  variants: { sku: string; stock: number }[];
-  isPublished: boolean;
-  isArchived: boolean;
-}): Product {
+function mapDbProduct(
+  p: {
+    id: string;
+    name: string;
+    description: string | null;
+    basePrice: number;
+    images: string[];
+    category: { slug: string } | null;
+    variants: { sku: string; stock: number }[];
+  } & {
+    isPublished: boolean;
+    isArchived: boolean;
+  },
+): Product {
   const priceUSD = Math.round(p.basePrice / 100);
   const image = p.images[0] ?? "/media/placeholder.webp";
 
@@ -212,13 +226,12 @@ function mapDbProduct(p: {
   };
 }
 
-/**
- * Extracts products from JSON fallback data.
- */
 function getProductsFromJson(): Product[] {
   try {
     const products = Object.values(productData.products).flat();
-    return products.map((p) => mapJsonProduct(p as unknown as Record<string, unknown>));
+    return products.map((p) =>
+      mapJsonProduct(p as unknown as Record<string, unknown>),
+    );
   } catch (error) {
     console.error("[PRODUCTS] JSON fallback error:", error);
     return [];
@@ -246,12 +259,6 @@ export interface ProductListResult {
   hasMore: boolean;
 }
 
-/**
- * Retrieves all active products with React cache optimization.
- * Falls back to JSON data if database is unavailable.
- * 
- * RBAC: GUEST+ (all levels)
- */
 export const getAllProducts = cache(
   async (options: ProductListOptions = {}): Promise<ProductListResult> => {
     const {
@@ -265,37 +272,30 @@ export const getAllProducts = cache(
       actorLevel = "GUEST",
     } = options;
 
-    // ── RBAC Check ──
     if (includeArchived && !hasPermission(actorLevel, "VIEW_ARCHIVED")) {
       throw new ProductPermissionError(actorLevel, "viewArchivedProducts");
     }
 
     try {
-      // ── Build Prisma Query ──
       const where: Record<string, unknown> = {};
-      
-      if (!includeArchived) {
-        where.isArchived = false;
-      }
-      
-      if (categorySlug) {
-        where.category = { slug: categorySlug };
-      }
-      
+      if (!includeArchived) where.isArchived = false;
+      if (categorySlug) where.category = { slug: categorySlug };
+
       if (searchQuery) {
         where.OR = [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
         ];
       }
-      
+
       if (minPrice !== undefined || maxPrice !== undefined) {
         where.basePrice = {};
-        if (minPrice !== undefined) (where.basePrice as Record<string, number>).gte = minPrice * 100;
-        if (maxPrice !== undefined) (where.basePrice as Record<string, number>).lte = maxPrice * 100;
+        if (minPrice !== undefined)
+          (where.basePrice as Record<string, number>).gte = minPrice * 100;
+        if (maxPrice !== undefined)
+          (where.basePrice as Record<string, number>).lte = maxPrice * 100;
       }
 
-      // ── Atomic Fetch: Products + Count ──
       const [dbProducts, total] = await Promise.all([
         prisma.product.findMany({
           where,
@@ -312,7 +312,7 @@ export const getAllProducts = cache(
 
       if (dbProducts.length > 0) {
         return {
-          products: dbProducts.map(mapDbProduct),
+          products: dbProducts.map(mapDbProduct as any),
           total,
           hasMore: offset + dbProducts.length < total,
         };
@@ -321,11 +321,14 @@ export const getAllProducts = cache(
       console.warn("[PRODUCTS] Database fallback to JSON:", error);
     }
 
-    // ── JSON Fallback ──
     const jsonProducts = getProductsFromJson();
     const filtered = jsonProducts.filter((p) => {
       if (categorySlug && p.category !== categorySlug) return false;
-      if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (
+        searchQuery &&
+        !p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+        return false;
       if (minPrice !== undefined && p.priceUSD < minPrice) return false;
       if (maxPrice !== undefined && p.priceUSD > maxPrice) return false;
       return true;
@@ -336,30 +339,21 @@ export const getAllProducts = cache(
       total: filtered.length,
       hasMore: offset + limit < filtered.length,
     };
-  }
+  },
 );
 
-/**
- * Retrieves a single product by ID, SKU, or slug.
- * 
- * RBAC: GUEST+ (all levels)
- */
 export async function getProductById(
   id: string,
-  actorLevel: RBACLevel = "GUEST"
+  actorLevel: RBACLevel = "GUEST",
 ): Promise<Product | null> {
-  // ── Input Validation ──
   const validatedId = ProductIdSchema.safeParse(id);
   if (!validatedId.success) {
     throw new ProductValidationError(`Invalid product identifier: ${id}`, id);
   }
 
   try {
-    // ── Search by Variant SKU or ID ──
     const byVariant = await prisma.productVariant.findFirst({
-      where: {
-        OR: [{ sku: id }, { id }],
-      },
+      where: { OR: [{ sku: id }, { id }] },
       include: {
         product: {
           include: {
@@ -370,41 +364,28 @@ export async function getProductById(
       },
     });
 
-    if (byVariant?.product) {
-      return mapDbProduct(byVariant.product);
-    }
+    if (byVariant?.product) return mapDbProduct(byVariant.product as any);
 
-    // ── Search by Product ID or Slug ──
     const byProduct = await prisma.product.findFirst({
-      where: {
-        OR: [{ id }, { slug: id }],
-        isArchived: false,
-      },
+      where: { OR: [{ id }, { slug: id }], isArchived: false },
       include: {
         category: { select: { slug: true } },
         variants: { select: { sku: true, stock: true }, take: 1 },
       },
     });
 
-    if (byProduct) {
-      return mapDbProduct(byProduct);
-    }
+    if (byProduct) return mapDbProduct(byProduct as any);
   } catch (error) {
     console.warn("[PRODUCTS] Database fallback to JSON for ID:", id, error);
   }
 
-  // ── JSON Fallback ──
   const jsonProduct = getProductsFromJson().find((p) => p.id === id);
   return jsonProduct ?? null;
 }
 
-/**
- * Retrieves multiple products by IDs (batch operation).
- * Optimized for cart/checkout scenarios.
- */
 export async function getProductsByIds(
   ids: string[],
-  actorLevel: RBACLevel = "GUEST"
+  actorLevel: RBACLevel = "GUEST",
 ): Promise<Map<string, Product>> {
   const validatedIds = z.array(ProductIdSchema).max(50).safeParse(ids);
   if (!validatedIds.success) {
@@ -430,11 +411,24 @@ export async function getProductsByIds(
     });
 
     for (const product of dbProducts) {
-      const mapped = mapDbProduct(product);
-      // Map by all possible identifiers
+      const mapped = mapDbProduct(product as any);
       productMap.set(product.id, mapped);
-      if (product.variants[0]?.sku) {
+      if (product.variants[0]?.sku)
         productMap.set(product.variants[0].sku, mapped);
-      }
     }
-  } catch (error
+
+    if (productMap.size > 0) return productMap;
+  } catch (error) {
+    console.warn("[PRODUCTS] Database fallback to JSON for batch:", error);
+  }
+
+  const jsonProducts = getProductsFromJson();
+  const filtered = jsonProducts.filter((p) => ids.includes(p.id));
+
+  for (const p of filtered) {
+    productMap.set(p.id, p);
+    if (p.mediaUrls?.[0]) productMap.set(p.mediaUrls[0], p);
+  }
+
+  return productMap;
+}

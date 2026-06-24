@@ -1,0 +1,518 @@
+.next/dev/types/validator.ts(297,31): error TS2344: Type 'typeof import("C:/Users/excel/Documents/GitHub/boutiquecogi3/app/dashboard/sidebar/page")' does not satisfy the constraint 'AppPageConfig<"/dashboard/sidebar">'.
+  Property 'default' is missing in type 'typeof import("C:/Users/excel/Documents/GitHub/boutiquecogi3/app/dashboard/sidebar/page")' but required in type 'AppPageConfig<"/dashboard/sidebar">'.
+.next/types/validator.ts(297,31): error TS2344: Type 'typeof import("C:/Users/excel/Documents/GitHub/boutiquecogi3/app/dashboard/sidebar/page")' does not satisfy the constraint 'AppPageConfig<"/dashboard/sidebar">'.
+  Property 'default' is missing in type 'typeof import("C:/Users/excel/Documents/GitHub/boutiquecogi3/app/dashboard/sidebar/page")' but required in type 'AppPageConfig<"/dashboard/sidebar">'.
+app/(protected)/layout.tsx(21,6): error TS2741: Property 'requiresAuditApproval' is missing in type '{ children: Element; initialRole: Role; initialLevel: number; initialPermissions: Permission[]; initialRestrictions: Record<Restriction, string>; }' but required in type 'SwitchProviderProps'.
+app/api/admin/block-user/route.ts(5,3): error TS2305: Module '"@/lib/auth/rbac"' has no exported member 'canBlockUser'.
+app/api/admin/block-user/route.ts(6,3): error TS2305: Module '"@/lib/auth/rbac"' has no exported member 'canBlockAdmin'.
+app/api/admin/block-user/route.ts(7,3): error TS2305: Module '"@/lib/auth/rbac"' has no exported member 'canBlockSuperAdmin'.
+app/api/admin/block-user/route.ts(49,7): error TS2367: This comparison appears to be unintentional because the types 'Role' and '"user"' have no overlap.
+app/api/admin/block-user/route.ts(57,14): error TS2367: This comparison appears to be unintentional because the types 'Role' and '"admin"' have no overlap.
+app/api/admin/block-user/route.ts(65,14): error TS2367: This comparison appears to be unintentional because the types 'Role' and '"super_admin"' have no overlap.
+app/api/admin/create-admin/route.ts(4,10): error TS2305: Module '"@/lib/auth/rbac"' has no exported member 'canCreateAdmin'.
+app/api/admin/create-admin/route.ts(18,3): error TS2820: Type '"admin"' is not assignable to type 'Role | null'. Did you mean '"ADMIN"'?
+app/api/admin/users/route.ts(24,23): error TS2304: Cannot find name 'prisma'.
+app/api/admin/users/route.ts(40,31): error TS2304: Cannot find name 'isRestrictionEnabled'.
+app/api/admin/users/route.ts(42,5): error TS2304: Cannot find name 'RESTRICTIONS'.
+app/api/exchange-rate/route.ts(14,8): error TS2307: Cannot find module '@/lib/exchange-rate/exchange-rate-service' or its corresponding type declarations.
+app/api/exchange-rate/route.ts(40,42): error TS2339: Property 'level' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; role: string; }'.
+app/api/products/[id]/route.ts(42,27): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/products/route.ts(112,29): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/products/route.ts(158,7): error TS2322: Type '{ id: string; name: any; slug: string; description: string; basePrice: number; images: any[]; categoryId: string | undefined; isFeatured: boolean; variants: { create: { id: string; sku: string; attributes: {}; priceOffset: number; }; }; }' is not assignable to type '(Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput) | (Without<...> & ProductCreateInput)'.
+  Type '{ id: string; name: any; slug: string; description: string; basePrice: number; images: any[]; categoryId: string | undefined; isFeatured: boolean; variants: { create: { id: string; sku: string; attributes: {}; priceOffset: number; }; }; }' is not assignable to type 'Without<ProductUncheckedCreateInput, ProductCreateInput> & ProductCreateInput'.
+    Type '{ id: string; name: any; slug: string; description: string; basePrice: number; images: any[]; categoryId: string | undefined; isFeatured: boolean; variants: { create: { id: string; sku: string; attributes: {}; priceOffset: number; }; }; }' is not assignable to type 'Without<ProductUncheckedCreateInput, ProductCreateInput>'.
+      Types of property 'categoryId' are incompatible.
+        Type 'string | undefined' is not assignable to type 'undefined'.
+          Type 'string' is not assignable to type 'undefined'.
+app/api/proxy/dashboard/route.ts(16,35): error TS2339: Property 'level' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; role: string; }'.
+app/api/webhook/cinetpay/route.ts(11,30): error TS7016: Could not find a declaration file for module 'uuid'. 'C:/Users/excel/Documents/GitHub/boutiquecogi3/node_modules/uuid/dist/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/uuid` if it exists or add a new declaration (.d.ts) file containing `declare module 'uuid';`
+app/api/webhook/cinetpay/route.ts(71,15): error TS2353: Object literal may only specify known properties, and 'productVariant' does not exist in type '(Without<InventoryTransactionCreateInput, InventoryTransactionUncheckedCreateInput> & InventoryTransactionUncheckedCreateInput) | (Without<...> & InventoryTransactionCreateInput)'.
+app/api/webhook/cinetpay/route.ts(71,53): error TS2339: Property 'productVariantId' does not exist on type '{ id: string; productImage: string | null; exchangeRate: Decimal | null; taxAmount: number | null; discountAmount: number | null; currency: string | null; productId: string; ... 7 more ...; subtotal: number; }'.
+app/auditlog/page.tsx(8,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/auditlog/page.tsx(39,25): error TS2322: Type '({ user: { name: string | null; email: string; } | null; } & { id: string; createdAt: Date; updatedAt: Date; userId: string | null; userAgent: string | null; error: string | null; ... 19 more ...; context: JsonValue; })[]' is not assignable to type 'AuditLogEntry[]'.
+  Type '{ user: { name: string | null; email: string; } | null; } & { id: string; createdAt: Date; updatedAt: Date; userId: string | null; userAgent: string | null; error: string | null; ... 19 more ...; context: JsonValue; }' is not assignable to type 'AuditLogEntry'.
+    Types of property 'user' are incompatible.
+      Type '{ name: string | null; email: string; } | null' is not assignable to type '{ name: string | null; email: string | null; } | undefined'.
+        Type 'null' is not assignable to type '{ name: string | null; email: string | null; } | undefined'.
+app/auth/forgot-password/page.tsx(3,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/auth/sign-in/page.tsx(2,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/auth/sign-up/page.tsx(2,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/auth/update-password/page.tsx(3,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/buy-product-success/page.tsx(12,11): error TS2339: Property 'removeAll' does not exist on type 'Boolean'.
+app/cart/page.tsx(27,17): error TS2339: Property 'items' does not exist on type 'boolean'.
+app/cart/page.tsx(31,12): error TS2339: Property 'items' does not exist on type 'boolean'.
+app/cart/page.tsx(41,13): error TS2339: Property 'items' does not exist on type 'boolean'.
+app/cart/page.tsx(41,27): error TS2339: Property 'items' does not exist on type 'boolean'.
+app/cart/page.tsx(64,15): error TS2339: Property 'items' does not exist on type 'boolean'.
+app/cart/page.tsx(95,39): error TS2339: Property 'updateQuantity' does not exist on type 'boolean'.
+app/cart/page.tsx(106,39): error TS2339: Property 'updateQuantity' does not exist on type 'boolean'.
+app/cart/page.tsx(118,37): error TS2339: Property 'removeItem' does not exist on type 'boolean'.
+app/cart/page.tsx(132,27): error TS2339: Property 'removeAll' does not exist on type 'boolean'.
+app/category/[category]/page.tsx(3,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/category/[category]/page.tsx(7,29): error TS2307: Cannot find module '@/components/product/product-list' or its corresponding type declarations.
+app/category/[category]/page.tsx(123,5): error TS2503: Cannot find namespace 'Prisma'.
+app/category/[category]/page.tsx(157,5): error TS2503: Cannot find namespace 'Prisma'.
+app/category/[category]/page.tsx(220,7): error TS2345: Argument of type '(raw: RawCatalogProduct) => CatalogProduct' is not assignable to parameter of type '(value: { category: { id: string; name: string; slug: string; } | null; productImages: { url: string; }[]; availabilityProjection: { isAvailable: boolean; } | null; } & { id: string; createdAt: Date; ... 24 more ...; updatedBy: string | null; }, index: number, array: ({ ...; } & { ...; })[]) => CatalogProduct'.
+  Types of parameters 'raw' and 'value' are incompatible.
+    Type '{ category: { id: string; name: string; slug: string; } | null; productImages: { url: string; }[]; availabilityProjection: { isAvailable: boolean; } | null; } & { id: string; createdAt: Date; ... 24 more ...; updatedBy: string | null; }' is not assignable to type 'RawCatalogProduct'.
+      Types of property 'basePrice' are incompatible.
+        Type 'Decimal' is not assignable to type 'number'.
+app/category/[category]/page.tsx(226,8): error TS2739: Type '{ className: string; }' is missing the following properties from type 'ExtendedCategoryCardProps': title, subtitle, imageSrc, imageAlt, href
+app/category/page.tsx(9,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/category/page.tsx(11,29): error TS2307: Cannot find module '@/components/product/product-list' or its corresponding type declarations.
+app/category/page.tsx(55,5): error TS2322: Type 'CatalogProduct[]' is not assignable to type 'Product[]'.
+  Type 'CatalogProduct' is missing the following properties from type 'Product': price, imageUrl
+app/category/page.tsx(55,35): error TS2345: Argument of type '(raw: RawCatalogProduct) => CatalogProduct' is not assignable to parameter of type '(value: CatalogProduct, index: number, array: readonly CatalogProduct[]) => CatalogProduct'.
+  Types of parameters 'raw' and 'value' are incompatible.
+    Type 'CatalogProduct' is missing the following properties from type 'RawCatalogProduct': isArchived, isdeleted, deletedAt
+app/checkout/_components/checkout-client.tsx(7,36): error TS2307: Cannot find module '@/lib/actions/actions/currency.actions' or its corresponding type declarations.
+app/checkout/_components/checkout-client.tsx(8,59): error TS2307: Cannot find module '@/lib/currenc/currency' or its corresponding type declarations.
+app/checkout/_components/checkout-client.tsx(9,41): error TS2307: Cannot find module '../../../lib/actions/actions/checkout.action' or its corresponding type declarations.
+app/checkout/_components/checkout-client.tsx(13,11): error TS2339: Property 'items' does not exist on type 'Boolean'.
+app/checkout/_components/checkout-client.tsx(21,34): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+app/checkout/_components/checkout-client.tsx(21,39): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/dashboard/analytics/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/analytics/page.tsx(10,30): error TS2307: Cannot find module '@/components/dashboard/analytics/revenue-chart' or its corresponding type declarations.
+app/dashboard/analytics/page.tsx(11,33): error TS2307: Cannot find module '@/components/dashboard/analytics/user-growth-chart' or its corresponding type declarations.
+app/dashboard/analytics/page.tsx(12,36): error TS2307: Cannot find module '@/components/dashboard/analytics/product-performance' or its corresponding type declarations.
+app/dashboard/analytics/page.tsx(13,29): error TS2307: Cannot find module '@/components/dashboard/analytics/export-panel' or its corresponding type declarations.
+app/dashboard/audit/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/audit/page.tsx(10,31): error TS2307: Cannot find module '@/components/dashboard/audit/audit-log-table' or its corresponding type declarations.
+app/dashboard/audit/page.tsx(11,30): error TS2307: Cannot find module '@/components/dashboard/audit/audit-filters' or its corresponding type declarations.
+app/dashboard/audit/page.tsx(12,28): error TS2307: Cannot find module '@/components/dashboard/audit/audit-stats' or its corresponding type declarations.
+app/dashboard/audit/page.tsx(55,31): error TS2322: Type '"severity"[]' is not assignable to type 'AuditLogScalarFieldEnum | AuditLogScalarFieldEnum[]'.
+  Type '"severity"[]' is not assignable to type 'AuditLogScalarFieldEnum[]'.
+    Type '"severity"' is not assignable to type 'AuditLogScalarFieldEnum'.
+app/dashboard/audit/page.tsx(56,31): error TS2322: Type '"event"[]' is not assignable to type 'AuditLogScalarFieldEnum | AuditLogScalarFieldEnum[]'.
+  Type '"event"[]' is not assignable to type 'AuditLogScalarFieldEnum[]'.
+    Type '"event"' is not assignable to type 'AuditLogScalarFieldEnum'.
+app/dashboard/audit/page.tsx(75,51): error TS2339: Property 'event' does not exist on type 'PickEnumerable<AuditLogGroupByOutputType, AuditLogScalarFieldEnum | AuditLogScalarFieldEnum[]> & { ...; }'.
+app/dashboard/categories/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/categories/page.tsx(10,30): error TS2307: Cannot find module '@/components/dashboard/categories/category-tree' or its corresponding type declarations.
+app/dashboard/categories/page.tsx(11,31): error TS2307: Cannot find module '@/components/dashboard/categories/category-stats' or its corresponding type declarations.
+app/dashboard/categories/page.tsx(32,16): error TS2353: Object literal may only specify known properties, and 'order' does not exist in type 'CategoryOrderByWithRelationInput | CategoryOrderByWithRelationInput[]'.
+app/dashboard/checkout/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/checkout/page.tsx(9,32): error TS2307: Cannot find module '@/components/dashboard/checkout/checkout-config' or its corresponding type declarations.
+app/dashboard/checkout/page.tsx(10,37): error TS2307: Cannot find module '@/components/dashboard/checkout/payment-methods-panel' or its corresponding type declarations.
+app/dashboard/checkout/page.tsx(11,32): error TS2307: Cannot find module '@/components/dashboard/checkout/cinetpay-config' or its corresponding type declarations.
+app/dashboard/media/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/media/page.tsx(10,27): error TS2307: Cannot find module '@/components/dashboard/media/media-grid' or its corresponding type declarations.
+app/dashboard/media/page.tsx(11,31): error TS2307: Cannot find module '@/components/dashboard/media/media-uploader' or its corresponding type declarations.
+app/dashboard/media/page.tsx(12,30): error TS2307: Cannot find module '@/components/dashboard/media/media-filters' or its corresponding type declarations.
+app/dashboard/orders/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/orders/page.tsx(10,35): error TS2307: Cannot find module '@/components/dashboard/orders/order-status-filter' or its corresponding type declarations.
+app/dashboard/orders/page.tsx(11,29): error TS2307: Cannot find module '@/components/dashboard/orders/orders-table' or its corresponding type declarations.
+app/dashboard/orders/page.tsx(12,33): error TS2307: Cannot find module '@/components/dashboard/orders/order-stats-cards' or its corresponding type declarations.
+app/dashboard/orders/page.tsx(42,7): error TS2322: Type '{ userId?: any; status?: string | undefined; }' is not assignable to type 'OrderWhereInput'.
+  Types of property 'status' are incompatible.
+    Type 'string | undefined' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+      Type 'string' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+app/dashboard/orders/page.tsx(51,26): error TS2322: Type '{ userId?: any; status?: string | undefined; }' is not assignable to type 'OrderWhereInput'.
+  Types of property 'status' are incompatible.
+    Type 'string | undefined' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+      Type 'string' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+app/dashboard/products/page.tsx(11,32): error TS2307: Cannot find module '@/components/dashboard/products/product-filters' or its corresponding type declarations.
+app/dashboard/products/page.tsx(12,34): error TS2307: Cannot find module '@/components/dashboard/products/product-action-bar' or its corresponding type declarations.
+app/dashboard/products/page.tsx(13,41): error TS2307: Cannot find module '@/components/dashboard/products/product-selection-wrapper' or its corresponding type declarations.
+app/dashboard/products/page.tsx(43,54): error TS2345: Argument of type '"products:manage_variants"' is not assignable to parameter of type 'Permission'.
+app/dashboard/products/page.tsx(44,53): error TS2345: Argument of type '"products:manage_reviews"' is not assignable to parameter of type 'Permission'.
+app/dashboard/products/page.tsx(65,7): error TS2322: Type '{ OR?: ({ name: { contains: string; mode: "insensitive"; }; description?: undefined; } | { description: { contains: string; mode: "insensitive"; }; name?: undefined; })[] | undefined; status?: string | undefined; categoryId?: string | undefined; type?: string | undefined; }' is not assignable to type 'ProductWhereInput'.
+  Types of property 'status' are incompatible.
+    Type 'string | undefined' is not assignable to type 'ProductStatus | EnumProductStatusFilter<"Product"> | undefined'.
+      Type 'string' is not assignable to type 'ProductStatus | EnumProductStatusFilter<"Product"> | undefined'.
+app/dashboard/products/page.tsx(72,29): error TS2353: Object literal may only specify known properties, and 'reviews' does not exist in type 'ProductCountOutputTypeSelect<DefaultArgs>'.
+app/dashboard/products/page.tsx(75,28): error TS2322: Type '{ OR?: ({ name: { contains: string; mode: "insensitive"; }; description?: undefined; } | { description: { contains: string; mode: "insensitive"; }; name?: undefined; })[] | undefined; status?: string | undefined; categoryId?: string | undefined; type?: string | undefined; }' is not assignable to type 'ProductWhereInput'.
+  Types of property 'status' are incompatible.
+    Type 'string | undefined' is not assignable to type 'ProductStatus | EnumProductStatusFilter<"Product"> | undefined'.
+      Type 'string' is not assignable to type 'ProductStatus | EnumProductStatusFilter<"Product"> | undefined'.
+app/dashboard/promotions/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/promotions/page.tsx(10,33): error TS2307: Cannot find module '@/components/dashboard/promotions/promotions-table' or its corresponding type declarations.
+app/dashboard/promotions/page.tsx(11,31): error TS2307: Cannot find module '@/components/dashboard/promotions/coupon-manager' or its corresponding type declarations.
+app/dashboard/promotions/page.tsx(12,32): error TS2307: Cannot find module '@/components/dashboard/promotions/promotion-stats' or its corresponding type declarations.
+app/dashboard/promotions/page.tsx(36,12): error TS2339: Property 'promotion' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/dashboard/promotions/page.tsx(38,12): error TS2339: Property 'promotion' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/dashboard/settings/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/settings/page.tsx(9,33): error TS2307: Cannot find module '@/components/dashboard/settings/general-settings' or its corresponding type declarations.
+app/dashboard/settings/page.tsx(10,30): error TS2307: Cannot find module '@/components/dashboard/settings/rbac-settings' or its corresponding type declarations.
+app/dashboard/settings/page.tsx(11,33): error TS2307: Cannot find module '@/components/dashboard/settings/payment-settings' or its corresponding type declarations.
+app/dashboard/settings/page.tsx(12,30): error TS2307: Cannot find module '@/components/dashboard/settings/system-config' or its corresponding type declarations.
+app/dashboard/sidebar/page.tsx(10,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+app/dashboard/sidebar/page.tsx(11,45): error TS2307: Cannot find module '@/types/rbac' or its corresponding type declarations.
+app/dashboard/sidebar/page.tsx(39,28): error TS2307: Cannot find module '@/components/ui/scroll-area' or its corresponding type declarations.
+app/dashboard/sidebar/page.tsx(45,8): error TS2307: Cannot find module '@/components/ui/collapsible' or its corresponding type declarations.
+app/dashboard/sidebar/page.tsx(137,11): error TS2304: Cannot find name 'BadgeCheck'.
+app/dashboard/sidebar/page.tsx(144,15): error TS2304: Cannot find name 'BadgeCheck'.
+app/dashboard/sidebar/page.tsx(151,15): error TS2304: Cannot find name 'BadgeCheck'.
+app/dashboard/sidebar/page.tsx(572,46): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: { className?: string | undefined; }, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type '{ className: string; style: { color: string; }; }' is not assignable to type 'IntrinsicAttributes & { className?: string | undefined; }'.
+      Property 'style' does not exist on type 'IntrinsicAttributes & { className?: string | undefined; }'.
+  Overload 2 of 2, '(props: { className?: string | undefined; }): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type '{ className: string; style: { color: string; }; }' is not assignable to type 'IntrinsicAttributes & { className?: string | undefined; }'.
+      Property 'style' does not exist on type 'IntrinsicAttributes & { className?: string | undefined; }'.
+app/dashboard/treasury/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/treasury/page.tsx(10,34): error TS2307: Cannot find module '@/components/dashboard/treasury/treasury-overview' or its corresponding type declarations.
+app/dashboard/treasury/page.tsx(11,34): error TS2307: Cannot find module '@/components/dashboard/treasury/transaction-table' or its corresponding type declarations.
+app/dashboard/treasury/page.tsx(12,37): error TS2307: Cannot find module '@/components/dashboard/treasury/payment-method-config' or its corresponding type declarations.
+app/dashboard/treasury/page.tsx(54,66): error TS2322: Type '{ id: number; }' is not assignable to type 'ReactNode'.
+app/dashboard/users/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/users/page.tsx(10,28): error TS2307: Cannot find module '@/components/dashboard/users/users-table' or its corresponding type declarations.
+app/dashboard/users/page.tsx(11,27): error TS2307: Cannot find module '@/components/dashboard/users/user-stats' or its corresponding type declarations.
+app/dashboard/users/page.tsx(12,29): error TS2307: Cannot find module '@/components/dashboard/users/role-manager' or its corresponding type declarations.
+app/dashboard/users/page.tsx(48,7): error TS2322: Type '{ role?: { name: string; level?: undefined; } | { level: { gt: number; }; name?: undefined; } | undefined; status?: string | undefined; }' is not assignable to type 'UserWhereInput'.
+  Types of property 'role' are incompatible.
+    Type '{ name: string; level?: undefined; } | { level: { gt: number; }; name?: undefined; } | undefined' is not assignable to type 'Role | EnumRoleFilter<"User"> | undefined'.
+      Type '{ name: string; level?: undefined; }' is not assignable to type 'Role | EnumRoleFilter<"User"> | undefined'.
+app/dashboard/users/page.tsx(53,9): error TS2353: Object literal may only specify known properties, and 'role' does not exist in type 'UserInclude<DefaultArgs>'.
+app/dashboard/users/page.tsx(57,25): error TS2322: Type '{ role?: { name: string; level?: undefined; } | { level: { gt: number; }; name?: undefined; } | undefined; status?: string | undefined; }' is not assignable to type 'UserWhereInput'.
+  Types of property 'role' are incompatible.
+    Type '{ name: string; level?: undefined; } | { level: { gt: number; }; name?: undefined; } | undefined' is not assignable to type 'Role | EnumRoleFilter<"User"> | undefined'.
+      Type '{ name: string; level?: undefined; }' is not assignable to type 'Role | EnumRoleFilter<"User"> | undefined'.
+app/dashboard/users/page.tsx(58,12): error TS2339: Property 'role' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/dashboard/users/page.tsx(62,27): error TS2322: Type '"status"[]' is not assignable to type 'UserScalarFieldEnum | UserScalarFieldEnum[]'.
+  Type '"status"[]' is not assignable to type 'UserScalarFieldEnum[]'.
+    Type '"status"' is not assignable to type 'UserScalarFieldEnum'.
+app/dashboard/videos/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/videos/page.tsx(10,27): error TS2307: Cannot find module '@/components/dashboard/videos/video-grid' or its corresponding type declarations.
+app/dashboard/videos/page.tsx(11,31): error TS2307: Cannot find module '@/components/dashboard/videos/video-uploader' or its corresponding type declarations.
+app/dashboard/videos/page.tsx(12,32): error TS2307: Cannot find module '@/components/dashboard/videos/video-analytics' or its corresponding type declarations.
+app/dashboard/videos/page.tsx(40,12): error TS2339: Property 'video' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/dashboard/videos/page.tsx(41,12): error TS2339: Property 'video' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/dashboard/videos/page.tsx(42,12): error TS2339: Property 'video' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/dashboard/wishlist/page.tsx(7,38): error TS2307: Cannot find module '@/lib/rbac/server' or its corresponding type declarations.
+app/dashboard/wishlist/page.tsx(10,30): error TS2307: Cannot find module '@/components/dashboard/wishlist/wishlist-grid' or its corresponding type declarations.
+app/dashboard/wishlist/page.tsx(11,31): error TS2307: Cannot find module '@/components/dashboard/wishlist/wishlist-stats' or its corresponding type declarations.
+app/dashboard/wishlist/page.tsx(40,18): error TS2353: Object literal may only specify known properties, and 'wishlistCount' does not exist in type 'ProductOrderByWithRelationInput | ProductOrderByWithRelationInput[]'.
+app/dashboard/wishlist/page.tsx(41,52): error TS2353: Object literal may only specify known properties, and 'wishlistCount' does not exist in type 'ProductSelect<DefaultArgs>'.
+app/layout.tsx(2,31): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/orders/page.tsx(6,35): error TS2307: Cannot find module '@/lib/actions/actions/admin/order.admin.actions' or its corresponding type declarations.
+app/orders/page.tsx(28,26): error TS7006: Parameter 'order' implicitly has an 'any' type.
+app/page.tsx(10,8): error TS1192: Module '"C:/Users/excel/Documents/GitHub/boutiquecogi3/components/newsletter/newsletter-success.client"' has no default export.
+app/page.tsx(35,5): error TS2322: Type 'CatalogProduct[]' is not assignable to type 'Product[]'.
+  Type 'CatalogProduct' is missing the following properties from type 'Product': priceUSD, priceCDF, stock, mediaUrls, category
+app/page.tsx(35,35): error TS2345: Argument of type '(raw: RawCatalogProduct) => CatalogProduct' is not assignable to parameter of type '(value: CatalogProduct, index: number, array: readonly CatalogProduct[]) => CatalogProduct'.
+  Types of parameters 'raw' and 'value' are incompatible.
+    Type 'CatalogProduct' is missing the following properties from type 'RawCatalogProduct': isArchived, isdeleted, deletedAt
+app/products/[id]/page.tsx(4,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/products/[id]/page.tsx(85,30): error TS2345: Argument of type '{ category: { id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; ... 6 more ...; displayOrder: number; } | null; variants: { ...; }[]; productImages: { ...; }[]; availabilityProjection: { ...; } | null; } & { ...; }' is not assignable to parameter of type 'RawCatalogProduct'.
+  Types of property 'basePrice' are incompatible.
+    Type 'Decimal' is not assignable to type 'number'.
+app/products/page.tsx(9,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/products/page.tsx(10,35): error TS2307: Cannot find module '@/lib/product/search-params' or its corresponding type declarations.
+app/products/page.tsx(13,37): error TS2307: Cannot find module '@/components/product/product-list' or its corresponding type declarations.
+app/products/page.tsx(35,5): error TS2322: Type '"createdAt" | "name" | "price"' is not assignable to type '"createdAt" | "updatedAt" | "name" | "basePrice" | undefined'.
+  Type '"price"' is not assignable to type '"createdAt" | "updatedAt" | "name" | "basePrice" | undefined'.
+app/profile/page.tsx(4,26): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+app/profile/page.tsx(38,20): error TS2353: Object literal may only specify known properties, and 'orderItems' does not exist in type 'OrderInclude<DefaultArgs>'.
+app/wishlist/page.tsx(18,11): error TS2339: Property 'addItem' does not exist on type 'Boolean'.
+components/auth/admin.tsx(7,31): error TS2307: Cannot find module '@/lib/auth/rbac/constants' or its corresponding type declarations.
+components/auth/forgot-password-form.tsx(39,33): error TS2339: Property 'errors' does not exist on type 'ZodError<{ email: string; }>'.
+components/auth/forgot-password-form.tsx(46,53): error TS2551: Property 'forgetPassword' does not exist on type '{ signIn: { social: <FetchOptions extends ClientFetchOption<Partial<{ provider: (string & {}) | "github" | "apple" | "atlassian" | "cognito" | "discord" | "facebook" | "figma" | "microsoft" | "google" | "huggingface" | ... 24 more ... | "wechat"; ... 8 more ...; additionalData?: Record<...> | undefined; }> & Record<...'. Did you mean 'resetPassword'?
+components/auth/order-card.tsx(3,46): error TS2307: Cannot find module '@/lib/currency/format-currency' or its corresponding type declarations.
+components/auth/orders-container.tsx(12,36): error TS2307: Cannot find module '@/lib/actions/actions/order.actions' or its corresponding type declarations.
+components/auth/profile.tsx(35,24): error TS2339: Property 'role' does not exist on type 'StripEmptyObjects<{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }>'.
+components/auth/profile.tsx(35,64): error TS2339: Property 'role' does not exist on type 'StripEmptyObjects<{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }>'.
+components/auth/role-guard.tsx(8,39): error TS2307: Cannot find module '@/types/rbac' or its corresponding type declarations.
+components/auth/role-guard.tsx(167,40): error TS2345: Argument of type 'Permission[] | undefined' is not assignable to parameter of type 'Permission[]'.
+  Type 'undefined' is not assignable to type 'Permission[]'.
+components/auth/update-password-form.tsx(57,43): error TS2339: Property 'errors' does not exist on type 'ZodError<{ password: string; confirmPassword: string; }>'.
+components/cart/cart-sync-manager.tsx(12,11): error TS2339: Property 'items' does not exist on type 'Boolean'.
+components/catalog/product-list.tsx(9,25): error TS2307: Cannot find module '@/lib/product/product-types' or its corresponding type declarations.
+components/category/category-filter.tsx(13,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/category/category-grid.tsx(10,10): error TS2305: Module '"@/lib/category/category-constants"' has no exported member 'CategoryGridConfig'.
+components/category/new-product.tsx(29,7): error TS2322: Type 'number | undefined' is not assignable to type 'RbacLevel | undefined'.
+  Type 'number' is not assignable to type 'RbacLevel | undefined'.
+components/category/promotion-product.tsx(28,7): error TS2322: Type 'number | undefined' is not assignable to type 'RbacLevel | undefined'.
+  Type 'number' is not assignable to type 'RbacLevel | undefined'.
+components/dashboard/dashboard-content.tsx(46,23): error TS2322: Type '{ level: number; permissions: string[]; }' is not assignable to type 'IntrinsicAttributes & WidgetProps'.
+  Property 'level' does not exist on type 'IntrinsicAttributes & WidgetProps'.
+components/dashboard/product/actions.ts(99,13): error TS2322: Type '{ id: string; name: string; slug: string; description: string; basePrice: number; price: number; status: "DRAFT" | "ACTIVE" | "ARCHIVED"; categoryId: string | null; createdBy: string; }' is not assignable to type '(Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput) | (Without<...> & ProductCreateInput)'.
+  Type '{ id: string; name: string; slug: string; description: string; basePrice: number; price: number; status: "DRAFT" | "ACTIVE" | "ARCHIVED"; categoryId: string | null; createdBy: string; }' is not assignable to type 'Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput'.
+    Property 'userId' is missing in type '{ id: string; name: string; slug: string; description: string; basePrice: number; price: number; status: "DRAFT" | "ACTIVE" | "ARCHIVED"; categoryId: string | null; createdBy: string; }' but required in type 'ProductUncheckedCreateInput'.
+components/dashboard/product/bulk-actions.tsx(32,36): error TS2307: Cannot find module '@/app/dashboard/products/actions' or its corresponding type declarations.
+components/dashboard/product/lib_auth_rbac.ts(365,63): error TS2345: Argument of type '{ role: Role; permissions: JsonValue; restrictions: JsonValue; }' is not assignable to parameter of type '{ permissions?: Record<string, unknown> | undefined; restrictions?: Record<string, unknown> | undefined; }'.
+  Types of property 'permissions' are incompatible.
+    Type 'JsonValue' is not assignable to type 'Record<string, unknown> | undefined'.
+      Type 'null' is not assignable to type 'Record<string, unknown> | undefined'.
+components/dashboard/product/products-table.tsx(262,36): error TS2345: Argument of type 'Decimal' is not assignable to parameter of type 'number'.
+components/dashboard/widgets/overview-stats.tsx(68,37): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'ProductWhereInput'.
+components/dashboard/widgets/overview-stats.tsx(70,51): error TS2322: Type '"COMPLETED"' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+components/dashboard/widgets/overview-stats.tsx(76,9): error TS2322: Type '"COMPLETED"' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+components/dashboard/widgets/overview-stats.tsx(82,19): error TS18048: 'recentRevenue._sum' is possibly 'undefined'.
+components/dashboard/widgets/overview-stats.tsx(83,26): error TS18048: 'prevRevenue._sum' is possibly 'undefined'.
+components/dashboard/widgets/payment-method-distribution.tsx(82,5): error TS2322: Type '"paymentMethod"[]' is not assignable to type 'OrderScalarFieldEnum | OrderScalarFieldEnum[]'.
+  Type '"paymentMethod"[]' is not assignable to type 'OrderScalarFieldEnum[]'.
+    Type '"paymentMethod"' is not assignable to type 'OrderScalarFieldEnum'.
+components/dashboard/widgets/payment-method-distribution.tsx(85,7): error TS2322: Type '"COMPLETED"' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+components/dashboard/widgets/payment-method-distribution.tsx(87,15): error TS2353: Object literal may only specify known properties, and 'paymentMethod' does not exist in type 'OrderCountAggregateInputType'.
+components/dashboard/widgets/payment-method-distribution.tsx(91,58): error TS18048: 'p._sum' is possibly 'undefined'.
+components/dashboard/widgets/payment-method-distribution.tsx(94,22): error TS2339: Property 'paymentMethod' does not exist on type 'PickEnumerable<OrderGroupByOutputType, OrderScalarFieldEnum | OrderScalarFieldEnum[]> & { ...; }'.
+components/dashboard/widgets/payment-method-distribution.tsx(95,20): error TS18048: 'p._sum' is possibly 'undefined'.
+components/dashboard/widgets/payment-method-distribution.tsx(96,19): error TS18048: 'p._count' is possibly 'undefined'.
+components/dashboard/widgets/payment-method-distribution.tsx(96,28): error TS2339: Property 'paymentMethod' does not exist on type 'true | { id?: number | undefined; orderNumber?: number | undefined; userId?: number | undefined; status?: number | undefined; subtotalAmount?: number | undefined; taxAmount?: number | undefined; ... 12 more ...; _all?: number | undefined; }'.
+  Property 'paymentMethod' does not exist on type 'true'.
+components/dashboard/widgets/revenue-chart.tsx(47,7): error TS2322: Type '"COMPLETED"' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+components/dashboard/widgets/top-products.tsx(70,41): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+components/dashboard/widgets/treasury-summary.tsx(51,9): error TS2322: Type '"COMPLETED"' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+components/dashboard/widgets/treasury-summary.tsx(72,9): error TS2322: Type '"COMPLETED"' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFilter<"Order"> | undefined'.
+components/dashboard/widgets/treasury-summary.tsx(83,24): error TS18048: 'completed._sum' is possibly 'undefined'.
+components/dashboard/widgets/treasury-summary.tsx(92,20): error TS18048: 'avgOrder._avg' is possibly 'undefined'.
+components/dashboard/widgets/wishlist-activity.tsx(57,16): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'WishlistItemWhereInput'.
+components/hero/hero.tsx(48,17): error TS2322: Type 'HeroSlide' is not assignable to type '{ type: "images"; items: HeroImage[]; }'.
+  Property 'items' is missing in type '{ type: "video"; item: HeroVideo; }' but required in type '{ type: "images"; items: HeroImage[]; }'.
+components/navbar-primo/navbar-profile-button.tsx(62,18): error TS2339: Property 'role' does not exist on type 'StripEmptyObjects<{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }>'.
+components/navbar-primo/navbar-profile-button.tsx(63,18): error TS2339: Property 'role' does not exist on type 'StripEmptyObjects<{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }>'.
+components/navbar-primo/profile.tsx(35,24): error TS2339: Property 'role' does not exist on type 'StripEmptyObjects<{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }>'.
+components/navbar-primo/profile.tsx(35,64): error TS2339: Property 'role' does not exist on type 'StripEmptyObjects<{ id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }>'.
+components/Navbar-secundo/navbar-secondary-actions.tsx(23,25): error TS2554: Expected 0 arguments, but got 1.
+components/Navbar-secundo/navbar-secondary-actions.tsx(23,26): error TS7006: Parameter 'state' implicitly has an 'any' type.
+components/Navbar-secundo/navbar-secondary-actions.tsx(24,28): error TS2339: Property 'reduce' does not exist on type 'boolean'.
+components/Navbar-secundo/navbar-secondary-actions.tsx(24,36): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+components/Navbar-secundo/navbar-secondary-actions.tsx(24,41): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/Navbar-secundo/navbar-secondary-actions.tsx(28,14): error TS2339: Property 'length' does not exist on type 'boolean'.
+components/price/purchase-zone.tsx(44,27): error TS2554: Expected 0 arguments, but got 1.
+components/price/purchase-zone.tsx(44,28): error TS7006: Parameter 'state' implicitly has an 'any' type.
+components/price/purchase-zone.tsx(59,5): error TS2349: This expression is not callable.
+  Type 'Boolean' has no call signatures.
+components/product/product-catalog.tsx(9,29): error TS2307: Cannot find module '@/components/product/product-list' or its corresponding type declarations.
+components/product/product-catalog.tsx(12,25): error TS2307: Cannot find module '@/lib/product/product-types' or its corresponding type declarations.
+components/product/product-category-filter.tsx(12,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/product/product-detail.tsx(30,25): error TS2307: Cannot find module '@/lib/product/product-types' or its corresponding type declarations.
+components/product/product-sort-filter.tsx(15,8): error TS2307: Cannot find module '@/lib/product/product-types' or its corresponding type declarations.
+components/product/product-sort-filter.tsx(25,38): error TS7006: Parameter 'o' implicitly has an 'any' type.
+components/product/product-sort-filter.tsx(58,30): error TS7006: Parameter 'option' implicitly has an 'any' type.
+components/providers/root-provider.tsx(23,42): error TS2322: Type '{ session: { id: string; createdAt: Date; updatedAt: Date; userId: string; expiresAt: Date; token: string; ipAddress?: string | null | undefined; userAgent?: string | null | undefined; }; user: { ...; }; } | null' is not assignable to type 'Session | null | undefined'.
+  Type '{ session: { id: string; createdAt: Date; updatedAt: Date; userId: string; expiresAt: Date; token: string; ipAddress?: string | null | undefined; userAgent?: string | null | undefined; }; user: { ...; }; }' is missing the following properties from type 'Session': token, expiresAt
+components/providers/root-provider.tsx(24,22): error TS2322: Type '{ children: ReactNode; attribute: string; defaultTheme: "system"; enableSystem: true; }' is not assignable to type 'IntrinsicAttributes & ThemeProviderProps'.
+  Property 'attribute' does not exist on type 'IntrinsicAttributes & ThemeProviderProps'.
+components/providers/switch-provider.tsx(9,7): error TS2741: Property 'GUEST' is missing in type '{ SUPER_ADMIN: number; ADMIN: number; MANAGER: number; EDITOR: number; SUPERVISOR: number; USER: number; }' but required in type 'Record<Role, number>'.
+components/providers/switch-provider.tsx(138,48): error TS2339: Property 'approvalTokenExpiresAt' does not exist on type 'AuditApprovalRequest'.
+components/providers/switch-provider.tsx(149,39): error TS2339: Property 'approvalTokenExpiresAt' does not exist on type 'AuditApprovalRequest'.
+components/ui/dialog.tsx(7,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/hover-card.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/kbd.tsx(1,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/separator.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/slider.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/spinner.tsx(3,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/switch.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/textarea.tsx(3,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/toggle.tsx(7,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/tooltip.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/wishlist/wishlist-sync-manager.tsx(12,36): error TS2307: Cannot find module '@/lib/actions/actions/wishlist.actions' or its corresponding type declarations.
+data/product-data.ts(537,9): error TS2353: Object literal may only specify known properties, and 'sound' does not exist in type 'Product'.
+hooks/rbac/use-rbac.ts(8,30): error TS2307: Cannot find module '@/stores/rbac-store' or its corresponding type declarations.
+hooks/rbac/use-rbac.ts(9,63): error TS2307: Cannot find module '@/types/rbac' or its corresponding type declarations.
+hooks/rbac/use-rbac.ts(102,42): error TS7006: Parameter 'p' implicitly has an 'any' type.
+hooks/rbac/use-rbac.ts(112,34): error TS7006: Parameter 'p' implicitly has an 'any' type.
+hooks/use-auth-actions.ts(7,30): error TS2307: Cannot find module '@/stores/rbac-store' or its corresponding type declarations.
+hooks/use-auth-actions.ts(14,41): error TS7006: Parameter 's' implicitly has an 'any' type.
+hooks/use-auth-actions.ts(40,37): error TS2345: Argument of type '{ email: string; password: string; }' is not assignable to parameter of type 'Prettify<{ email: string; name: string; password: string; image?: string | undefined; callbackURL?: string | undefined; fetchOptions?: ClientFetchOption<Partial<{ name: string; email: string; password: string; image?: string | undefined; callbackURL?: string | undefined; rememberMe?: boolean | undefined; }> & Record...'.
+  Property 'name' is missing in type '{ email: string; password: string; }' but required in type 'Prettify<{ email: string; name: string; password: string; image?: string | undefined; callbackURL?: string | undefined; fetchOptions?: ClientFetchOption<Partial<{ name: string; email: string; password: string; image?: string | undefined; callbackURL?: string | undefined; rememberMe?: boolean | undefined; }> & Record...'.
+lib/actions/admin/user.admin.actions.ts(4,24): error TS2307: Cannot find module '@/lib/prisma/client' or its corresponding type declarations.
+lib/actions/admin/user.admin.actions.ts(5,22): error TS2307: Cannot find module '@/lib/auth/auth' or its corresponding type declarations.
+lib/actions/cart.actions.ts(58,9): error TS2322: Type '{ id: string; createdAt: Date; updatedAt: Date; userId: string | null; expiresAt: Date; sessionToken: string | null; }' is not assignable to type '{ items: { id: string; createdAt: Date; updatedAt: Date; cartId: string; variantId: string; quantity: number; snapshotPriceAtAdd: JsonValue; }[]; } & { id: string; createdAt: Date; updatedAt: Date; userId: string | null; expiresAt: Date; sessionToken: string | null; }'.
+  Property 'items' is missing in type '{ id: string; createdAt: Date; updatedAt: Date; userId: string | null; expiresAt: Date; sessionToken: string | null; }' but required in type '{ items: { id: string; createdAt: Date; updatedAt: Date; cartId: string; variantId: string; quantity: number; snapshotPriceAtAdd: JsonValue; }[]; }'.
+lib/actions/cart.actions.ts(59,11): error TS2322: Type '{ userId: string; }' is not assignable to type '(Without<CartCreateInput, CartUncheckedCreateInput> & CartUncheckedCreateInput) | (Without<...> & CartCreateInput)'.
+  Type '{ userId: string; }' is not assignable to type 'Without<CartCreateInput, CartUncheckedCreateInput> & CartUncheckedCreateInput'.
+    Type '{ userId: string; }' is missing the following properties from type 'CartUncheckedCreateInput': id, expiresAt
+lib/actions/cart.actions.ts(71,23): error TS18047: 'cart' is possibly 'null'.
+lib/actions/cart.actions.ts(76,11): error TS2322: Type '{ cartId: string; variantId: string; quantity: number; }' is not assignable to type '(Without<CartItemCreateInput, CartItemUncheckedCreateInput> & CartItemUncheckedCreateInput) | (Without<...> & CartItemCreateInput)'.
+  Type '{ cartId: string; variantId: string; quantity: number; }' is not assignable to type 'Without<CartItemCreateInput, CartItemUncheckedCreateInput> & CartItemUncheckedCreateInput'.
+    Property 'id' is missing in type '{ cartId: string; variantId: string; quantity: number; }' but required in type 'CartItemUncheckedCreateInput'.
+lib/actions/cart.actions.ts(77,21): error TS18047: 'cart' is possibly 'null'.
+lib/actions/category.actions.ts(10,29): error TS2307: Cannot find module '@/lib/auth/rbac/constants' or its corresponding type declarations.
+lib/actions/currency.actions.ts(7,15): error TS2459: Module '"@/lib/currency/exchange-rate-currency"' declares 'DisplayCurrency' locally, but it is not exported.
+lib/actions/currency.actions.ts(23,14): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'ExchangeRateWhereInput'.
+lib/actions/currency.actions.ts(24,16): error TS2353: Object literal may only specify known properties, and 'updatedAt' does not exist in type 'ExchangeRateOrderByWithRelationInput | ExchangeRateOrderByWithRelationInput[]'.
+lib/actions/currency.actions.ts(33,7): error TS2353: Object literal may only specify known properties, and 'fromCurrency' does not exist in type 'ExchangeRateWhereInput'.
+lib/actions/currency.actions.ts(40,19): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+lib/actions/order.actions.ts(30,27): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(42,45): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(69,18): error TS2353: Object literal may only specify known properties, and 'orderItems' does not exist in type 'OrderInclude<DefaultArgs>'.
+lib/actions/order.actions.ts(88,27): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(99,45): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(112,27): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(122,45): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(136,27): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/order.actions.ts(144,15): error TS2322: Type '{ id: string; createdAt: Date; updatedAt: Date; description: string | null; status: string; label: string; requiredPermission: string; minRoleLevel: number; color: string; whoCanSet: string[]; isTerminal: boolean; triggersNotification: boolean; }' is not assignable to type 'OrderStatusEnum | EnumOrderStatusEnumFieldUpdateOperationsInput | undefined'.
+lib/actions/order.actions.ts(148,44): error TS2304: Cannot find name 'OrderWithItems'.
+lib/actions/product.actions.ts(153,34): error TS2345: Argument of type '(p: { id: string; name: string; description: string; basePrice: number; images: string[]; isFeatured: boolean; createdAt: Date; updatedAt: Date; category: { slug: string; } | null; variants: { ...; }[]; }) => ProductSummary' is not assignable to parameter of type '(value: { id: string; createdAt: Date; updatedAt: Date; name: string; description: string; category: { slug: string; } | null; basePrice: Decimal; images: string[]; isFeatured: boolean; variants: { ...; }[]; }, index: number, array: { ...; }[]) => ProductSummary'.
+  Types of parameters 'p' and 'value' are incompatible.
+    Type '{ id: string; createdAt: Date; updatedAt: Date; name: string; description: string; category: { slug: string; } | null; basePrice: Decimal; images: string[]; isFeatured: boolean; variants: { ...; }[]; }' is not assignable to type '{ id: string; name: string; description: string; basePrice: number; images: string[]; isFeatured: boolean; createdAt: Date; updatedAt: Date; category: { slug: string; } | null; variants: { ...; }[]; }'.
+      Types of property 'basePrice' are incompatible.
+        Type 'Decimal' is not assignable to type 'number'.
+lib/actions/product.actions.ts(185,36): error TS2345: Argument of type '{ id: string; createdAt: Date; updatedAt: Date; name: string; description: string; category: { slug: string; } | null; basePrice: Decimal; images: string[]; isFeatured: boolean; variants: { ...; }[]; }' is not assignable to parameter of type '{ id: string; name: string; description: string; basePrice: number; images: string[]; isFeatured: boolean; createdAt: Date; updatedAt: Date; category: { slug: string; } | null; variants: { ...; }[]; }'.
+  Types of property 'basePrice' are incompatible.
+    Type 'Decimal' is not assignable to type 'number'.
+lib/actions/product.actions.ts(208,50): error TS2345: Argument of type '(p: { id: string; name: string; description: string; basePrice: number; images: string[]; isFeatured: boolean; createdAt: Date; updatedAt: Date; category: { slug: string; } | null; variants: { ...; }[]; }) => ProductSummary' is not assignable to parameter of type '(value: { id: string; createdAt: Date; updatedAt: Date; name: string; description: string; category: { slug: string; } | null; basePrice: Decimal; images: string[]; isFeatured: boolean; variants: { ...; }[]; }, index: number, array: { ...; }[]) => ProductSummary'.
+  Types of parameters 'p' and 'value' are incompatible.
+    Type '{ id: string; createdAt: Date; updatedAt: Date; name: string; description: string; category: { slug: string; } | null; basePrice: Decimal; images: string[]; isFeatured: boolean; variants: { ...; }[]; }' is not assignable to type '{ id: string; name: string; description: string; basePrice: number; images: string[]; isFeatured: boolean; createdAt: Date; updatedAt: Date; category: { slug: string; } | null; variants: { ...; }[]; }'.
+      Types of property 'basePrice' are incompatible.
+        Type 'Decimal' is not assignable to type 'number'.
+lib/actions/product.actions.ts(393,29): error TS2304: Cannot find name 'auth'.
+lib/actions/product.actions.ts(393,66): error TS2552: Cannot find name 'headers'. Did you mean 'Headers'?
+lib/auth/audit-approval.ts(313,25): error TS2322: Type '{ id: string; createdAt: Date; updatedAt: Date; expiresAt: Date; status: string; requesterId: string; requesterRole: string; requesterLevel: number; targetRole: string; targetLevel: number; ... 4 more ...; approvalTokenExpiresAt: Date | null; }' is not assignable to type 'AuditApprovalRequest'.
+  Types of property 'requesterRole' are incompatible.
+    Type 'string' is not assignable to type 'Role'.
+lib/auth/client.ts(3,24): error TS2305: Module '"./auth-client"' has no exported member 'SessionUser'.
+lib/catalog/catalog-queries.ts(37,60): error TS2344: Type '{ include: () => { readonly category: { readonly select: { readonly name: true; readonly slug: true; }; }; readonly availabilityProjection: { readonly select: { readonly isAvailable: true; readonly stockQuantity: true; }; }; readonly productImages: { ...; }; }; }' does not satisfy the constraint 'boolean | ProductDefaultArgs<DefaultArgs> | null | undefined'.
+  Type '{ include: () => { readonly category: { readonly select: { readonly name: true; readonly slug: true; }; }; readonly availabilityProjection: { readonly select: { readonly isAvailable: true; readonly stockQuantity: true; }; }; readonly productImages: { ...; }; }; }' is not assignable to type 'ProductDefaultArgs<DefaultArgs>'.
+    Types of property 'include' are incompatible.
+      Value of type '() => { readonly category: { readonly select: { readonly name: true; readonly slug: true; }; }; readonly availabilityProjection: { readonly select: { readonly isAvailable: true; readonly stockQuantity: true; }; }; readonly productImages: { ...; }; }' has no properties in common with type 'ProductInclude<DefaultArgs>'. Did you mean to call it?
+lib/catalog/catalog-queries.ts(75,9): error TS2353: Object literal may only specify known properties, and 'stockQuantity' does not exist in type 'Product_Availability_ProjectionSelect<DefaultArgs>'.
+lib/catalog/catalog-queries.ts(119,3): error TS2554: Expected 2 arguments, but got 1.
+lib/catalog/catalog-queries.ts(127,46): error TS2554: Expected 2 arguments, but got 1.
+lib/catalog/catalog-queries.ts(206,18): error TS2353: Object literal may only specify known properties, and 'isPromoted' does not exist in type 'ProductWhereInput'.
+lib/catalog/catalog-queries.ts(206,40): error TS2353: Object literal may only specify known properties, and 'discountPercent' does not exist in type 'ProductWhereInput'.
+lib/catalog/catalog-queries.ts(208,21): error TS2353: Object literal may only specify known properties, and 'discountPercent' does not exist in type 'ProductOrderByWithRelationInput'.
+lib/catalog/catalog-types.ts(60,3): error TS2322: Type '"DISCONTINUED"' is not assignable to type 'ProductStatus'.
+lib/category/category-constants.ts(192,14): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'CategoryWhereInput'.
+lib/category/category-constants.ts(193,16): error TS2353: Object literal may only specify known properties, and 'sortOrder' does not exist in type 'CategoryOrderByWithRelationInput | CategoryOrderByWithRelationInput[]'.
+lib/category/category-constants.ts(198,7): error TS2353: Object literal may only specify known properties, and 'subtitle' does not exist in type 'CategorySelect<DefaultArgs>'.
+lib/category/category-constants.ts(213,19): error TS2339: Property 'subtitle' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(214,19): error TS2339: Property 'imageSrc' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(215,19): error TS2339: Property 'imageAlt' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(217,16): error TS2339: Property 'type' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(218,20): error TS2339: Property 'sortOrder' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(219,19): error TS2339: Property 'isActive' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(220,24): error TS2339: Property 'minRbacLevel' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(221,23): error TS2339: Property 'requiresAuth' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(238,7): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'CategoryWhereInput'.
+lib/category/category-constants.ts(240,16): error TS2353: Object literal may only specify known properties, and 'sortOrder' does not exist in type 'CategoryOrderByWithRelationInput | CategoryOrderByWithRelationInput[]'.
+lib/category/category-constants.ts(245,7): error TS2353: Object literal may only specify known properties, and 'subtitle' does not exist in type 'CategorySelect<DefaultArgs>'.
+lib/category/category-constants.ts(260,19): error TS2339: Property 'subtitle' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(261,19): error TS2339: Property 'imageSrc' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(262,19): error TS2339: Property 'imageAlt' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(264,16): error TS2339: Property 'type' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(265,20): error TS2339: Property 'sortOrder' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(266,19): error TS2339: Property 'isActive' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(267,24): error TS2339: Property 'minRbacLevel' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-constants.ts(268,23): error TS2339: Property 'requiresAuth' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; name: string; parentId: string | null; description: string | null; deletedAt: Date | null; slug: string; seoTitle: string | null; ... 5 more ...; displayOrder: number; }'.
+lib/category/category-types.ts(109,15): error TS2554: Expected 2-3 arguments, but got 1.
+lib/currency/exchange-rate-bcc.ts(15,30): error TS2307: Cannot find module '../exchange-rate/exchange-rate-validator' or its corresponding type declarations.
+lib/currency/exchange-rate-bcc.ts(16,30): error TS2307: Cannot find module '../exchange-rate/exchange-rate-types' or its corresponding type declarations.
+lib/currency/exchange-rate-cache.ts(31,3): error TS2578: Unused '@ts-expect-error' directive.
+lib/currency/exchange-rate-cache.ts(48,11): error TS18047: 'prisma' is possibly 'null'.
+lib/currency/exchange-rate-cache.ts(77,26): error TS18047: 'prisma' is possibly 'null'.
+lib/currency/exchange-rate-cron.ts(7,42): error TS2307: Cannot find module '../exchange-rate/exchange-rate-service' or its corresponding type declarations.
+lib/currency/exchange-rate-currency.ts(10,8): error TS2307: Cannot find module '../exchange-rate/exchange-rate-types' or its corresponding type declarations.
+lib/idempotency.ts(44,11): error TS2353: Object literal may only specify known properties, and 'responseStatus' does not exist in type '(Without<IdempotencyKeyCreateInput, IdempotencyKeyUncheckedCreateInput> & IdempotencyKeyUncheckedCreateInput) | (Without<...> & IdempotencyKeyCreateInput)'.
+lib/mappers/product.mapper.ts(12,12): error TS18048: 'validated.images' is possibly 'undefined'.
+lib/orders/services.order.ts(68,23): error TS2365: Operator '+' cannot be applied to types 'Decimal' and 'number'.
+lib/orders/services.order.ts(88,17): error TS2693: 'OrderStatus' only refers to a type, but is being used as a value here.
+lib/orders/services.order.ts(95,11): error TS2322: Type '{ id: string; variantId: string; quantity: number; unitPrice: number; subtotal: number; }[]' is not assignable to type '(Without<OrderItemCreateWithoutOrderInput, OrderItemUncheckedCreateWithoutOrderInput> & OrderItemUncheckedCreateWithoutOrderInput) | (Without<...> & OrderItemCreateWithoutOrderInput) | OrderItemCreateWithoutOrderInput[] | OrderItemUncheckedCreateWithoutOrderInput[] | undefined'.
+  Type '{ id: string; variantId: string; quantity: number; unitPrice: number; subtotal: number; }[]' is not assignable to type 'OrderItemCreateWithoutOrderInput[]'.
+    Type '{ id: string; variantId: string; quantity: number; unitPrice: number; subtotal: number; }' is missing the following properties from type 'OrderItemCreateWithoutOrderInput': productName, variantSku, product, variant
+lib/orders/services.order.ts(115,31): error TS2561: Object literal may only specify known properties, but 'payments' does not exist in type 'OrderInclude<DefaultArgs>'. Did you mean to write 'payment'?
+lib/orders/services.order.ts(140,16): error TS2561: Object literal may only specify known properties, but 'payments' does not exist in type 'OrderInclude<DefaultArgs>'. Did you mean to write 'payment'?
+lib/orders/services.order.ts(147,13): error TS2339: Property 'paymentStatus' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; userId: string | null; orderNumber: string; status: OrderStatusEnum; subtotalAmount: number; taxAmount: number; ... 9 more ...; couponId: string | null; }'.
+lib/orders/services.order.ts(154,15): error TS2693: 'OrderStatus' only refers to a type, but is being used as a value here.
+lib/security/audit.ts(404,19): error TS2339: Property 'ip' does not exist on type 'NextRequest'.
+lib/security/audit.ts(570,47): error TS2554: Expected 2 arguments, but got 4.
+lib/security/audit.ts(602,7): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+lib/security/audit.ts(758,18): error TS2353: Object literal may only specify known properties, and 'timestamp' does not exist in type 'AuditLogOrderByWithRelationInput | AuditLogOrderByWithRelationInput[]'.
+lib/security/audit.ts(766,5): error TS2322: Type '{ metadata: Record<string, unknown>; timestamp: any; id: string; createdAt: Date; updatedAt: Date; userId: string | null; userAgent: string | null; error: string | null; referrer: string | null; ... 17 more ...; context: JsonValue; }[]' is not assignable to type 'AuditLogEntry[]'.
+  Type '{ metadata: Record<string, unknown>; timestamp: any; id: string; createdAt: Date; updatedAt: Date; userId: string | null; userAgent: string | null; error: string | null; referrer: string | null; ... 17 more ...; context: JsonValue; }' is missing the following properties from type 'AuditLogEntry': eventType, severity, actorId, actorLevel, and 9 more.
+lib/security/audit.ts(769,20): error TS2339: Property 'timestamp' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; userId: string | null; userAgent: string | null; error: string | null; referrer: string | null; status: string | null; sessionId: string | null; ... 16 more ...; context: JsonValue; }'.
+lib/security/audit.ts(793,50): error TS2554: Expected 2 arguments, but got 5.
+lib/security/audit.ts(800,5): error TS2345: Argument of type '["audit-consumers", string, { [x: string]: string; }, { count: number; block: number; }]' is not assignable to parameter of type '[group: string, consumer: string, key: string, id: string, options?: Options | undefined] | [group: string, consumer: string, key: string[], id: string[], options?: Options | undefined]'.
+  Type '["audit-consumers", string, { [x: string]: string; }, { count: number; block: number; }]' is not assignable to type '[group: string, consumer: string, key: string[], id: string[], options?: Options | undefined]'.
+    Type at position 2 in source is not compatible with type at position 2 in target.
+      Type '{ [x: string]: string; }' is missing the following properties from type 'string[]': length, pop, push, concat, and 35 more.
+lib/security/audit.ts(809,24): error TS18046: 'message' is of type 'unknown'.
+lib/security/audit.ts(827,3): error TS2484: Export declaration conflicts with exported declaration of 'SuperAdminEvent'.
+lib/security/audit.ts(828,3): error TS2484: Export declaration conflicts with exported declaration of 'AdminEvent'.
+lib/security/audit.ts(829,3): error TS2484: Export declaration conflicts with exported declaration of 'PaymentEvent'.
+lib/security/audit.ts(830,3): error TS2484: Export declaration conflicts with exported declaration of 'UserEvent'.
+lib/security/audit.ts(831,3): error TS2484: Export declaration conflicts with exported declaration of 'SecurityEvent'.
+lib/security/audit.ts(832,3): error TS2484: Export declaration conflicts with exported declaration of 'Severity'.
+lib/security/inventory.ts(89,14): error TS2323: Cannot redeclare exported variable 'InventoryError'.
+lib/security/inventory.ts(102,14): error TS2323: Cannot redeclare exported variable 'InventoryPermissionError'.
+lib/security/inventory.ts(114,14): error TS2323: Cannot redeclare exported variable 'InventoryValidationError'.
+lib/security/inventory.ts(121,14): error TS2323: Cannot redeclare exported variable 'InventorySyncError'.
+lib/security/inventory.ts(176,18): error TS2353: Object literal may only specify known properties, and 'productVariantId' does not exist in type 'InventoryTransactionWhereInput'.
+lib/security/inventory.ts(190,25): error TS18048: 'aggregate._sum' is possibly 'undefined'.
+lib/security/inventory.ts(347,11): error TS2322: Type 'string' is not assignable to type 'TransactionType'.
+lib/security/inventory.ts(362,17): error TS2353: Object literal may only specify known properties, and 'stock' does not exist in type '(Without<ProductVariantUpdateInput, ProductVariantUncheckedUpdateInput> & ProductVariantUncheckedUpdateInput) | (Without<...> & ProductVariantUpdateInput)'.
+lib/security/inventory.ts(363,19): error TS2353: Object literal may only specify known properties, and 'stock' does not exist in type 'ProductVariantSelect<DefaultArgs>'.
+lib/security/inventory.ts(368,34): error TS2339: Property 'stock' does not exist on type '{ id: string; createdAt: Date; productId: string; attributes: JsonValue; sku: string; priceOffset: number; }'.
+lib/security/inventory.ts(489,11): error TS2322: Type '`Force sync: ledger (${number}) != snapshot (${number})`' is not assignable to type 'TransactionType'.
+lib/security/inventory.ts(503,17): error TS2353: Object literal may only specify known properties, and 'stock' does not exist in type '(Without<ProductVariantUpdateInput, ProductVariantUncheckedUpdateInput> & ProductVariantUncheckedUpdateInput) | (Without<...> & ProductVariantUpdateInput)'.
+lib/security/inventory.ts(695,53): error TS2339: Property 'reduce' does not exist on type 'never'.
+lib/security/inventory.ts(696,10): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+lib/security/inventory.ts(696,15): error TS7006: Parameter 'r' implicitly has an 'any' type.
+lib/security/inventory.ts(714,11): error TS2353: Object literal may only specify known properties, and 'productVariantId' does not exist in type 'Without<StockReservationCreateInput, StockReservationUncheckedCreateInput> & StockReservationUncheckedCreateInput'.
+lib/security/inventory.ts(796,11): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '(Without<StockReservationUpdateInput, StockReservationUncheckedUpdateInput> & StockReservationUncheckedUpdateInput) | (Without<...> & StockReservationUpdateInput)'.
+lib/security/inventory.ts(826,3): error TS2323: Cannot redeclare exported variable 'InventoryError'.
+lib/security/inventory.ts(826,3): error TS2484: Export declaration conflicts with exported declaration of 'InventoryError'.
+lib/security/inventory.ts(827,3): error TS2323: Cannot redeclare exported variable 'InventoryPermissionError'.
+lib/security/inventory.ts(827,3): error TS2484: Export declaration conflicts with exported declaration of 'InventoryPermissionError'.
+lib/security/inventory.ts(828,3): error TS2323: Cannot redeclare exported variable 'InventoryValidationError'.
+lib/security/inventory.ts(828,3): error TS2484: Export declaration conflicts with exported declaration of 'InventoryValidationError'.
+lib/security/inventory.ts(829,3): error TS2323: Cannot redeclare exported variable 'InventorySyncError'.
+lib/security/inventory.ts(829,3): error TS2484: Export declaration conflicts with exported declaration of 'InventorySyncError'.
+lib/security/mail.ts(135,14): error TS2323: Cannot redeclare exported variable 'MailError'.
+lib/security/mail.ts(148,14): error TS2323: Cannot redeclare exported variable 'MailRateLimitError'.
+lib/security/mail.ts(160,14): error TS2323: Cannot redeclare exported variable 'MailValidationError'.
+lib/security/mail.ts(167,14): error TS2323: Cannot redeclare exported variable 'MailProviderError'.
+lib/security/mail.ts(852,3): error TS2323: Cannot redeclare exported variable 'MailError'.
+lib/security/mail.ts(852,3): error TS2484: Export declaration conflicts with exported declaration of 'MailError'.
+lib/security/mail.ts(853,3): error TS2323: Cannot redeclare exported variable 'MailRateLimitError'.
+lib/security/mail.ts(853,3): error TS2484: Export declaration conflicts with exported declaration of 'MailRateLimitError'.
+lib/security/mail.ts(854,3): error TS2323: Cannot redeclare exported variable 'MailValidationError'.
+lib/security/mail.ts(854,3): error TS2484: Export declaration conflicts with exported declaration of 'MailValidationError'.
+lib/security/mail.ts(855,3): error TS2323: Cannot redeclare exported variable 'MailProviderError'.
+lib/security/mail.ts(855,3): error TS2484: Export declaration conflicts with exported declaration of 'MailProviderError'.
+lib/security/rate-limit.ts(177,16): error TS2339: Property 'ip' does not exist on type 'NextRequest'.
+lib/security/rate-limit.ts(305,38): error TS2322: Type '5' is not assignable to type '15'.
+lib/security/rate-limit.ts(305,51): error TS2322: Type '"5m"' is not assignable to type '"1m"'.
+lib/security/rate-limit.ts(306,41): error TS2322: Type '3' is not assignable to type '15'.
+lib/security/rate-limit.ts(306,54): error TS2322: Type '"10m"' is not assignable to type '"1m"'.
+lib/security/rate-limit.ts(307,48): error TS2322: Type '3' is not assignable to type '15'.
+lib/security/rate-limit.ts(307,61): error TS2322: Type '"15m"' is not assignable to type '"1m"'.
+lib/security/rate-limit.ts(308,35): error TS2322: Type '10' is not assignable to type '15'.
+lib/security/rate-limit.ts(309,33): error TS2322: Type '100' is not assignable to type '15'.
+lib/security/rate-limit.ts(367,23): error TS1361: 'NextRequest' cannot be used as a value because it was imported using 'import type'.
+lib/security/rate-limit.ts(400,3): error TS2578: Unused '@ts-expect-error' directive.
+lib/security/rate-limit.ts(402,5): error TS2578: Unused '@ts-expect-error' directive.
+lib/services/cron-job-org-service.ts(84,14): error TS2554: Expected 2-3 arguments, but got 1.
+next.config.ts(1,33): error TS2306: File 'C:/Users/excel/Documents/GitHub/boutiquecogi3/next.d.ts' is not a module.
+prisma.config.ts(13,5): error TS2353: Object literal may only specify known properties, and 'provider' does not exist in type '{ url?: string | undefined; shadowDatabaseUrl?: string | undefined; }'.
+prisma/seed.ts(5,18): error TS2554: Expected 0 arguments, but got 1.
+prisma/seed/index.ts(97,7): error TS2322: Type '{ id: string; name: string; slug: string; description: string; basePrice: number; currency: string; images: string[]; categoryId: string; isFeatured: false; isArchived: false; }' is not assignable to type '(Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput) | (Without<...> & ProductCreateInput)'.
+  Type '{ id: string; name: string; slug: string; description: string; basePrice: number; currency: string; images: string[]; categoryId: string; isFeatured: false; isArchived: false; }' is not assignable to type 'Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput'.
+    Type '{ id: string; name: string; slug: string; description: string; basePrice: number; currency: string; images: string[]; categoryId: string; isFeatured: false; isArchived: false; }' is missing the following properties from type 'ProductUncheckedCreateInput': price, userId, status
+prisma/seed/media.seed.ts(181,9): error TS2322: Type '{ width: number; height: number; } | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+prisma/seed/media.seed.ts(192,41): error TS2322: Type '{ width: number; height: number; } | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+prisma/seed/role-config.seed.ts(208,16): error TS2322: Type 'Role' is not assignable to type 'Role | undefined'.
+  Type '"GUEST"' is not assignable to type 'Role | undefined'.
+prisma/seed/role-config.seed.ts(217,9): error TS2322: Type 'import("C:/Users/excel/Documents/GitHub/boutiquecogi3/lib/auth/rbac").Role' is not assignable to type 'import("C:/Users/excel/Documents/GitHub/boutiquecogi3/node_modules/.prisma/client/index").$Enums.Role'.
+  Type '"GUEST"' is not assignable to type 'Role'.
+prisma/seed/roles.seed.ts(51,31): error TS2339: Property 'role' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+prisma/seed/users.seed.ts(35,7): error TS2322: Type 'Role' is not assignable to type 'Role | EnumRoleFieldUpdateOperationsInput | undefined'.
+  Type '"GUEST"' is not assignable to type 'Role | EnumRoleFieldUpdateOperationsInput | undefined'.
+prisma/seed/users.seed.ts(45,7): error TS2322: Type 'import("C:/Users/excel/Documents/GitHub/boutiquecogi3/lib/auth/rbac").Role' is not assignable to type 'import("C:/Users/excel/Documents/GitHub/boutiquecogi3/node_modules/.prisma/client/index").$Enums.Role'.
+  Type '"GUEST"' is not assignable to type 'Role'.
+prisma/seed/video.seed.ts(214,36): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'JsonNull | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+prisma/seed/video.seed.ts(222,36): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'JsonNull | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+proxy.ts(176,38): error TS2339: Property 'user' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; userId: string; expiresAt: Date; token: string; ipAddress?: string | null | undefined; userAgent?: string | null | undefined; }'.
+scripts/setup-cron-job-org.ts(142,7): error TS2741: Property 'body' is missing in type '{ headers: { "User-Agent": string; "X-Cron-Source": string; Accept: string; }; }' but required in type '{ headers: Record<string, unknown>; body: string; }'.
+scripts/sync-exchange-rate.ts(5,43): error TS2307: Cannot find module '@/lib/exchange-rate/exchange-rate-cron ' or its corresponding type declarations.
+store/use-cart.ts(89,15): error TS2339: Property 'requiresAuth' does not exist on type 'CatalogProduct'.
+store/use-cart.ts(90,35): error TS2339: Property 'minRbacLevel' does not exist on type 'CatalogProduct'.
+store/use-cart.ts(131,32): error TS2345: Argument of type 'CartItem' is not assignable to parameter of type 'WritableNonArrayDraft<CartItem>'.
+  The types of 'product.accessPolicy.requiredPermissions' are incompatible between these types.
+    Type 'readonly string[] | undefined' is not assignable to type 'string[] | undefined'.
+      The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+store/use-cart.ts(219,36): error TS2352: Conversion of type 'CartItem[]' to type 'PersistedCartItem[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'CartItem' is not comparable to type 'PersistedCartItem'.
+    Types of property 'addedAt' are incompatible.
+      Type 'Date' is not comparable to type 'string'.
+store/use-rbac-store.ts(3,52): error TS2307: Cannot find module '@/types/rbac' or its corresponding type declarations.
+types/prisma.ts(11,25): error TS2353: Object literal may only specify known properties, and 'reviews' does not exist in type 'ProductCountOutputTypeSelect<DefaultArgs>'.

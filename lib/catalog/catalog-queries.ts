@@ -1,12 +1,20 @@
 /**
  * =============================================================================
- * CATALOG QUERIES - Boutiquecogi3
+ * CATALOG QUERIES — Boutiquecogi3
  * =============================================================================
  * Requêtes Prisma optimisées avec React cache(), tags de revalidation,
  * et support RBAC. Next.js 16 + Prisma 7.8.0
+ * 
+ * Problèmes audit résolus :
+ * - #3: Imports CACHE_TAGS/CACHE_DURATIONS depuis catalog-constants.ts
+ * - #4: findUnique corrigé en findFirst avec include complet
+ * - #6: stockQuantity inclus dans availabilityProjection
+ * - #8: Cache tags intégrés dans unstable_cache + revalidateTag
+ * - #9: sortBy validé contre SORTABLE_FIELDS
  */
 
 import { cache } from "react";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { Prisma, ProductStatus } from "@prisma/client";
 import {
@@ -15,17 +23,28 @@ import {
   HOME_PRODUCTS_LIMIT,
   CATALOG_PAGE_SIZE,
 } from "./catalog-constants";
+import {
+  SORTABLE_FIELDS,
+  type SortableField,
+  type CatalogQueryParams,
+  normalizeProducts,
+  normalizeProduct,
+} from "./catalog-types";
+import { catalogQueryParamsSchema } from "./catalog-types";
 import { mapCatalogProduct, mapCatalogProducts } from "./catalog-mappers";
 
-// Temporary local type to represent the raw product shape returned by Prisma
-// (normalized to plain JS types). Defined here to avoid a missing type error
-// when importing from other modules is not desired.
-type RawCatalogProduct = any;
+// ─── Type local pour le produit brut Prisma ─────────────────────────────────
+type PrismaProductWithRelations = Prisma.ProductGetPayload<{
+  include: typeof buildBaseInclude;
+}>;
 
-// ─── Base Query Builder (DRY) ───────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 1: BASE QUERY BUILDER (DRY)
+// ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * Conditions WHERE communes pour tous les produits catalog
+ * Conditions WHERE communes pour tous les produits catalog.
+ * Filtre les produits archivés, supprimés, et non publiés.
  */
 function buildBaseWhere(): Prisma.ProductWhereInput {
   return {
@@ -33,11 +52,14 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
     isdeleted: false,
     deletedAt: null,
     status: ProductStatus.PUBLISHED,
-  } as Prisma.ProductWhereInput;
+  };
 }
 
 /**
- * Include standard pour les relations catalog
+ * Include standard pour les relations catalog.
+ * 
+ * Problème audit #6: stockQuantity EST INCLUS dans availabilityProjection.
+ * Sans ce champ, le mapper interprète tous les produits avec stockQuantity=0.
  */
 function buildBaseInclude() {
   return {
@@ -50,6 +72,7 @@ function buildBaseInclude() {
     availabilityProjection: {
       select: {
         isAvailable: true,
+        stockQuantity: true,  // ← CHAMP CRITIQUE (était manquant)
       },
     },
     productImages: {
@@ -60,129 +83,178 @@ function buildBaseInclude() {
         position: true,
       },
     },
-  } as const;
+  } as const satisfies Prisma.ProductInclude;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 2: CACHE STRATEGY
+// ═════════════════════════════════════════════════════════════════════════════
+// 
+// Problème audit #8: Les tags de cache étaient déclarés mais jamais utilisés.
+// Désormais, chaque requête utilise unstable_cache avec les tags appropriés.
+
+/**
+ * Wrapper de cache avec tags pour les requêtes catalog.
+ * 
+ * @param fn - Fonction à cacher
+ * @param tags - Tags de revalidation
+ * @param duration - Durée de cache en secondes
+ */
+function withCatalogCache<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  tags: string[],
+  duration: number,
+): T {
+  return unstable_cache(fn, undefined, {
+    tags,
+    revalidate: duration,
+  }) as T;
 }
 
 /**
- * Normalize Decimal fields returned by Prisma to plain JS numbers
- * (primarily basePrice) to satisfy RawCatalogProduct typings.
+ * Invalide le cache catalog pour un tag spécifique.
+ * À appeler après mutation (create/update/delete).
  */
-function normalizeBasePrice<T extends { basePrice?: any }>(items: T[] | null) {
-  if (!items) return items as any;
-  return items.map((p) => ({ ...p, basePrice: Number((p as any).basePrice) }));
+export async function invalidateCatalogCache(tag: string): Promise<void> {
+  revalidateTag(tag);
 }
 
-// ─── Query : Produits Récents (Homepage) ───────────────────────────────────
+/**
+ * Invalide TOUS les caches catalog.
+ * À utiliser avec parcimonie (ex: après import massif).
+ */
+export async function invalidateAllCatalogCaches(): Promise<void> {
+  Object.values(CACHE_TAGS).forEach((tag) => revalidateTag(tag));
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 3: QUERIES
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─── Query : Produits Récents (Homepage) ────────────────────────────────────
 
 /**
  * Récupère les produits récents pour la homepage.
  * Cache React pour deduplication intra-requête.
- * Tag : catalog-recent
+ * Cache Next.js avec revalidation tag.
+ * 
+ * Tag: CACHE_TAGS.CATALOG_RECENT
+ * Durée: CACHE_DURATIONS.HOME_PRODUCTS (5 min)
  */
 export const getRecentProducts = cache(
-  async (limit: number = HOME_PRODUCTS_LIMIT) => {
-    const products = await prisma.product.findMany({
-      where: buildBaseWhere(),
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: Math.min(limit, 100),
-      include: buildBaseInclude(),
-    });
+  withCatalogCache(
+    async (limit: number = HOME_PRODUCTS_LIMIT) => {
+      const products = await prisma.product.findMany({
+        where: buildBaseWhere(),
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
+        include: buildBaseInclude(),
+      });
 
-    // Prisma returns Decimal for basePrice; convert to number to match RawCatalogProduct
-    const normalized = products.map((p) => ({
-      ...p,
-      basePrice: Number((p as any).basePrice),
-    }));
-
-    return mapCatalogProducts(
-      normalized as unknown as readonly RawCatalogProduct[],
-    );
-  },
+      // Sérialisation des Decimals + mapping domaine
+      return mapCatalogProducts(normalizeProducts(products));
+    },
+    [CACHE_TAGS.CATALOG_RECENT],
+    CACHE_DURATIONS.HOME_PRODUCTS,
+  ),
 );
 
-// ─── Query : Produits par Catégorie ────────────────────────────────────────
+// ─── Query : Produits par Catégorie ──────────────────────────────────────────
 
 /**
  * Récupère les produits filtrés par catégorie.
+ * 
+ * Tag: CACHE_TAGS.CATALOG_CATEGORY
+ * Durée: CACHE_DURATIONS.CATALOG_LIST (1 min)
  */
 export const getProductsByCategory = cache(
-  async (categorySlug: string, limit: number = CATALOG_PAGE_SIZE) => {
-    const products = await prisma.product.findMany({
-      where: {
-        ...(buildBaseWhere() as any),
-        category: {
-          slug: categorySlug,
+  withCatalogCache(
+    async (categorySlug: string, limit: number = CATALOG_PAGE_SIZE) => {
+      const products = await prisma.product.findMany({
+        where: {
+          ...buildBaseWhere(),
+          category: {
+            slug: categorySlug,
+          },
         },
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: Math.min(limit, 100),
-      include: buildBaseInclude(),
-    });
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
+        include: buildBaseInclude(),
+      });
 
-    return mapCatalogProducts(products);
-  },
+      return mapCatalogProducts(normalizeProducts(products));
+    },
+    [CACHE_TAGS.CATALOG_CATEGORY],
+    CACHE_DURATIONS.CATALOG_LIST,
+  ),
 );
 
 // ─── Query : Promotions ─────────────────────────────────────────────────────
 
 /**
  * Récupère les produits en promotion (isPromoted = true OU discountPercent > 0).
- * Cache court (3 min) car les promotions changent fréquemment.
+ * 
+ * Tag: CACHE_TAGS.CATALOG_PROMOTIONS
+ * Durée: CACHE_DURATIONS.PROMOTIONS (3 min)
  */
 export const getPromotionalProducts = cache(
-  async (limit: number = CATALOG_PAGE_SIZE) => {
-    const products = await prisma.product.findMany({
-      where: {
-        ...buildBaseWhere(),
-        OR: [{ isPromoted: true }, { discountPercent: { gt: 0 } }],
-      },
-      orderBy: [{ discountPercent: "desc" }, { createdAt: "desc" }],
-      take: Math.min(limit, 100),
-      include: buildBaseInclude(),
-    });
+  withCatalogCache(
+    async (limit: number = CATALOG_PAGE_SIZE) => {
+      const products = await prisma.product.findMany({
+        where: {
+          ...buildBaseWhere(),
+          OR: [{ isPromoted: true }, { discountPercent: { gt: 0 } }],
+        },
+        orderBy: [{ discountPercent: "desc" }, { createdAt: "desc" }],
+        take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
+        include: buildBaseInclude(),
+      });
 
-    const normalized = normalizeBasePrice(
-      products,
-    ) as unknown as readonly RawCatalogProduct[];
-
-    return mapCatalogProducts(normalized);
-  },
+      return mapCatalogProducts(normalizeProducts(products));
+    },
+    [CACHE_TAGS.CATALOG_PROMOTIONS],
+    CACHE_DURATIONS.PROMOTIONS,
+  ),
 );
 
 // ─── Query : Nouveautés ─────────────────────────────────────────────────────
 
 /**
  * Récupère les nouveautés (isNewArrival = true OU créés récemment).
- * Cache court (3 min).
+ * 
+ * Tag: CACHE_TAGS.CATALOG_NOUVEAUTES
+ * Durée: CACHE_DURATIONS.NOUVEAUTES (3 min)
  */
 export const getNewArrivalProducts = cache(
-  async (limit: number = CATALOG_PAGE_SIZE) => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  withCatalogCache(
+    async (limit: number = CATALOG_PAGE_SIZE) => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const products = await prisma.product.findMany({
-      where: {
-        ...buildBaseWhere(),
-        OR: [{ isNewArrival: true }, { createdAt: { gte: thirtyDaysAgo } }],
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: Math.min(limit, 100),
-      include: buildBaseInclude(),
-    });
+      const products = await prisma.product.findMany({
+        where: {
+          ...buildBaseWhere(),
+          OR: [{ isNewArrival: true }, { createdAt: { gte: thirtyDaysAgo } }],
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
+        include: buildBaseInclude(),
+      });
 
-    const normalized = normalizeBasePrice(
-      products,
-    ) as unknown as readonly RawCatalogProduct[];
-
-    return mapCatalogProducts(normalized);
-  },
+      return mapCatalogProducts(normalizeProducts(products));
+    },
+    [CACHE_TAGS.CATALOG_NOUVEAUTES],
+    CACHE_DURATIONS.NOUVEAUTES,
+  ),
 );
 
 // ─── Query : Recherche Avancée (Paginée) ───────────────────────────────────
 
 /**
  * Requête paginée avec filtres multiples.
- * Non cacheable car params dynamiques.
+ * NON cacheable car params dynamiques.
+ * 
+ * Problème audit #9: sortBy est validé contre SORTABLE_FIELDS avant exécution.
  */
 export async function searchCatalogProducts(
   params: CatalogQueryParams,
@@ -193,7 +265,18 @@ export async function searchCatalogProducts(
   // Validation des paramètres
   const validated = catalogQueryParamsSchema.parse(params);
 
-  const where = {
+  // Problème audit #9: Validation du champ de tri
+  const sortField = validated.sortBy ?? "createdAt";
+  if (!SORTABLE_FIELDS.includes(sortField as SortableField)) {
+    throw new Error(
+      `Champ de tri invalide: "${sortField}". ` +
+      `Valeurs acceptées: ${SORTABLE_FIELDS.join(", ")}. ` +
+      `Pour ajouter un nouveau champ de tri, mettez à jour SORTABLE_FIELDS dans catalog-types.ts ` +
+      `et assurez-vous que le champ existe dans le schéma Prisma.`,
+    );
+  }
+
+  const where: Prisma.ProductWhereInput = {
     ...buildBaseWhere(),
     ...(validated.categorySlug && {
       category: { slug: validated.categorySlug },
@@ -208,10 +291,10 @@ export async function searchCatalogProducts(
       isNewArrival: validated.isNewArrival,
     }),
     ...(validated.minPrice !== undefined && {
-      basePrice: { gte: validated.minPrice },
+      basePrice: { gte: new Prisma.Decimal(validated.minPrice) },
     }),
     ...(validated.maxPrice !== undefined && {
-      basePrice: { lte: validated.maxPrice },
+      basePrice: { lte: new Prisma.Decimal(validated.maxPrice) },
     }),
     ...(validated.searchQuery && {
       OR: [
@@ -235,7 +318,7 @@ export async function searchCatalogProducts(
     prisma.product.findMany({
       where,
       orderBy: [
-        { [validated.sortBy ?? "createdAt"]: validated.sortOrder ?? "desc" },
+        { [sortField]: validated.sortOrder ?? "desc" },
         { id: "desc" },
       ],
       skip: validated.offset ?? 0,
@@ -245,12 +328,8 @@ export async function searchCatalogProducts(
     prisma.product.count({ where }),
   ]);
 
-  const normalized = normalizeBasePrice(
-    products,
-  ) as unknown as readonly RawCatalogProduct[];
-
   return {
-    products: mapCatalogProducts(normalized),
+    products: mapCatalogProducts(normalizeProducts(products)),
     totalCount,
   };
 }
@@ -259,33 +338,43 @@ export async function searchCatalogProducts(
 
 /**
  * Récupère un produit par son slug.
- * Cache long (10 min) car les détails changent peu.
+ * 
+ * Problème audit #4: findUnique ne supporte pas les relations dans where.
+ * Correction: Utilisation de findFirst avec le where complet + include.
+ * 
+ * Tag: CACHE_TAGS.CATALOG_PRODUCTS
+ * Durée: CACHE_DURATIONS.PRODUCT_DETAIL (10 min)
  */
-export const getProductBySlug = cache(async (slug: string) => {
-  const product = await prisma.product.findUnique({
-    where: { slug },
-  });
+export const getProductBySlug = cache(
+  withCatalogCache(
+    async (slug: string) => {
+      const product = await prisma.product.findFirst({
+        where: {
+          slug,
+          ...buildBaseWhere(),
+        },
+        include: buildBaseInclude(),
+      });
 
-  if (!product) return null;
+      if (!product) return null;
 
-  // Prisma returns Decimal for basePrice; convert to number to match RawCatalogProduct
-  const normalized = {
-    ...product,
-    basePrice: Number((product as any).basePrice),
-  } as unknown as RawCatalogProduct;
-
-  return mapCatalogProduct(normalized);
-});
+      return mapCatalogProduct(normalizeProduct(product)!);
+    },
+    [CACHE_TAGS.CATALOG_PRODUCTS],
+    CACHE_DURATIONS.PRODUCT_DETAIL,
+  ),
+);
 
 // ─── Query : Comptage ───────────────────────────────────────────────────────
 
 /**
- * Compte les produits par statut (pour dashboard admin)
+ * Compte les produits par statut (pour dashboard admin).
+ * Non caché: données admin en temps réel.
  */
 export async function getProductCountsByStatus() {
   const [published, archived, outOfStock, total] = await Promise.all([
     prisma.product.count({
-      where: { ...buildBaseWhere(), status: "published" },
+      where: { ...buildBaseWhere(), status: ProductStatus.PUBLISHED },
     }),
     prisma.product.count({ where: { isArchived: true } }),
     prisma.product.count({
@@ -299,3 +388,9 @@ export async function getProductCountsByStatus() {
 
   return { published, archived, outOfStock, total };
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 4: CONSTANTES LOCALES
+// ═════════════════════════════════════════════════════════════════════════════
+
+const MAX_CATALOG_PAGE_SIZE = 100;

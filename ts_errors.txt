@@ -1,0 +1,1 @@
+lib/security/products.ts(440,17): error TS1005: ')' expected.
