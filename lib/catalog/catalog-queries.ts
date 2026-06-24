@@ -31,7 +31,7 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
     isArchived: false,
     isdeleted: false,
     deletedAt: null,
-    status: ProductStatus.ACTIVE,
+    status: ProductStatus.PUBLISHED,
   } as Prisma.ProductWhereInput;
 }
 
@@ -49,8 +49,6 @@ function buildBaseInclude() {
     availabilityProjection: {
       select: {
         isAvailable: true,
-        status: true,
-        stockQuantity: true,
       },
     },
     productImages: {

@@ -6,6 +6,8 @@
  * Badge "Nouveau" intégré, style distinctif.
  */
 
+"use client";
+
 import { memo } from "react";
 import { Sparkles } from "lucide-react";
 import { CategoryCard } from "./category-card";

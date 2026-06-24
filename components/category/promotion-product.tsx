@@ -6,6 +6,8 @@
  * Badge "Promo" avec style distinctif (rouge/déstructif).
  */
 
+"use client";
+
 import { memo } from "react";
 import { Percent } from "lucide-react";
 import { CategoryCard } from "./category-card";
@@ -43,6 +45,7 @@ function PromotionProductCategoryComponent({
       aspectRatio="16/9"
       className="border-rose-200 hover:border-rose-400/50"
     />
+
   );
 }
 

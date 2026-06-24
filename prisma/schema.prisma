@@ -532,6 +532,7 @@ model Review {
 }
 
 enum ProductStatus {
+  PUBLISHED
   DRAFT
   ACTIVE
   OUT_OF_STOCK

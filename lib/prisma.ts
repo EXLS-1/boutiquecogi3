@@ -17,12 +17,21 @@ const poolOptions: any = {
 };
 
 // If the remote Postgres requires SSL, allow opt-in via env var `DATABASE_SSL=true`
-// or `PGSSLMODE=require`. We set `rejectUnauthorized: false` to support
-// managed providers that use self-signed certificates for connections.
-if (
+// or `PGSSLMODE=require`.
+//
+// Some managed Postgres providers (and certain network setups) require SSL but do not
+// always set PGSSLMODE for us. In that case, enabling SSL prevents runtime crashes
+// with: "(ESSLREQUIRED) SSL connection is required for user: postgres".
+//
+// We set `rejectUnauthorized: false` to support managed providers that use
+// self-signed certificates (common in staging environments).
+const wantsSsl =
   process.env.DATABASE_SSL === "true" ||
-  process.env.PGSSLMODE === "require"
-) {
+  process.env.PGSSLMODE === "require" ||
+  process.env.PGSSLMODE === "require" ||
+  process.env.POSTGRES_SSL === "true";
+
+if (wantsSsl) {
   poolOptions.ssl = { rejectUnauthorized: false };
 }
 

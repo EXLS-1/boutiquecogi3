@@ -10,7 +10,7 @@ import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
 import { LeftSidebar } from "@/components/toggle/left-sidebar";
 import { RightSidebar } from "@/components/toggle/right-sidebar";
-import { Footer } from "@/components/footer";
+import Footer from "@/components/footer";
 import RootProvider from "@/components/providers/root-provider";
 import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { CartSyncManager } from "@/components/cart/cart-sync-manager";

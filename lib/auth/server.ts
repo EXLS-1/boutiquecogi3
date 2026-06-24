@@ -19,8 +19,6 @@
 //   - TOUJOURS passer par les guards pour les Server Components
 //   - TOUJOURS utiliser les wrappers pour les Server Actions
 
-"use server";
-
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -162,7 +160,12 @@ export async function resolveAuthContext(): Promise<AuthContext | null> {
 
   const rawRole =
     (session.user as Record<string, unknown>).role ??
-    ((session.user as Record<string, unknown>).metadata as Record<string, unknown>)?.role;
+    (
+      (session.user as Record<string, unknown>).metadata as Record<
+        string,
+        unknown
+      >
+    )?.role;
 
   const role = normalizeRole(rawRole as string);
   const level = getRoleLevel(role);
@@ -179,10 +182,19 @@ export async function resolveAuthContext(): Promise<AuthContext | null> {
     name: session.user.name ?? null,
     role,
     level,
-    image: (session.user as Record<string, unknown>).image as string | null | undefined,
-    emailVerified: (session.user as Record<string, unknown>).emailVerified as boolean ?? false,
-    createdAt: new Date((session.user as Record<string, unknown>).createdAt as string),
-    updatedAt: new Date((session.user as Record<string, unknown>).updatedAt as string),
+    image: (session.user as Record<string, unknown>).image as
+      | string
+      | null
+      | undefined,
+    emailVerified:
+      ((session.user as Record<string, unknown>).emailVerified as boolean) ??
+      false,
+    createdAt: new Date(
+      (session.user as Record<string, unknown>).createdAt as string,
+    ),
+    updatedAt: new Date(
+      (session.user as Record<string, unknown>).updatedAt as string,
+    ),
   };
 
   return {
@@ -198,7 +210,10 @@ export async function resolveAuthContext(): Promise<AuthContext | null> {
  * Version synchrone du contexte (pour les cas où on a déjà le contexte).
  * À utiliser quand resolveAuthContext() a déjà été appelé en amont.
  */
-export function createAuthContextFromRole(role: Role, userData: Partial<AuthenticatedUser>): Promise<AuthContext> {
+export function createAuthContextFromRole(
+  role: Role,
+  userData: Partial<AuthenticatedUser>,
+): Promise<AuthContext> {
   // Cette fonction est async car resolveEffectivePermissions l'est
   return (async () => {
     const [permissions, restrictions] = await Promise.all([
@@ -605,7 +620,9 @@ export async function isRestrictedToOwnData(role: Role): Promise<boolean> {
 /**
  * Vérifie si l'approbation est requise pour les suppressions.
  */
-export async function isApprovalRequiredForDelete(role: Role): Promise<boolean> {
+export async function isApprovalRequiredForDelete(
+  role: Role,
+): Promise<boolean> {
   return isRestrictionEnabled(role, RESTRICTIONS.REQUIRE_APPROVAL_FOR_DELETE);
 }
 
@@ -617,13 +634,18 @@ export async function isApprovalRequiredForDelete(role: Role): Promise<boolean> 
  * Enregistre une entrée d'audit en base de données.
  * Ne bloque jamais le flux principal (fire-and-forget).
  */
-export async function logAudit(entry: Omit<AuditEntry, "timestamp">): Promise<void> {
+export async function logAudit(
+  entry: Omit<AuditEntry, "timestamp">,
+): Promise<void> {
   const headersList = await headers();
 
   const fullEntry: AuditEntry = {
     ...entry,
     timestamp: new Date(),
-    ip: headersList.get("x-forwarded-for") ?? headersList.get("x-real-ip") ?? undefined,
+    ip:
+      headersList.get("x-forwarded-for") ??
+      headersList.get("x-real-ip") ??
+      undefined,
     userAgent: headersList.get("user-agent") ?? undefined,
   };
 
@@ -710,10 +732,11 @@ export async function buildOwnDataFilter(
 /**
  * Version synchrone (si on a déjà le contexte).
  */
-export function buildOwnDataFilterSync(
-  context: AuthContext,
-): { userId?: string } {
-  const restricted = context.restrictions.get(RESTRICTIONS.RESTRICTED_TO_OWN_DATA) === "ON";
+export function buildOwnDataFilterSync(context: AuthContext): {
+  userId?: string;
+} {
+  const restricted =
+    context.restrictions.get(RESTRICTIONS.RESTRICTED_TO_OWN_DATA) === "ON";
   return restricted ? { userId: context.user.id } : {};
 }
 
@@ -725,7 +748,9 @@ export function buildOwnDataFilterSync(
  * @deprecated Utilisez guardAuth() à la place.
  * Maintenu pour compatibilité avec l'ancien code.
  */
-export async function requireAuth(redirectTo: string = "/auth/login"): Promise<AuthenticatedUser> {
+export async function requireAuth(
+  redirectTo: string = "/auth/login",
+): Promise<AuthenticatedUser> {
   const context = await guardAuth(redirectTo);
   return context.user;
 }

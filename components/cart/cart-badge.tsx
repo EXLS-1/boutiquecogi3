@@ -6,11 +6,11 @@
 // et il est positionné de manière absolue pour se superposer à l'icône du panier.
 "use client";
 
-import useCartOpen from "@/store/use-cart";
+import { useCartStore } from "@/store/use-cart";
 import { useEffect, useState } from "react";
 
 export function CartBadge() {
-  const items = useCart((state) => state.items); // Accès aux articles du panier via Zustand
+  const items = useCartStore((state) => state.items); // Accès aux articles du panier via Zustand
   const [mounted, setMounted] = useState(false); // État pour gérer l'hydratation côté client
 
   // Calcul de la quantité totale via la logique Zustand
