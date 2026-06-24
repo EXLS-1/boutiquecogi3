@@ -23,6 +23,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       initialLevel={level}
       initialPermissions={permissions}
       initialRestrictions={restrictions}
+      requiresAuditApproval={true}
     >
       <div className="flex min-h-screen flex-col bg-slate-50">
         {children}
