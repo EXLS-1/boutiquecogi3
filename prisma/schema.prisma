@@ -339,17 +339,26 @@ model Address {
 // PRODUITS & CATALOGUE
 // ==========================================
 
+model catalog {
+  id       String  @id @db.Uuid
+  imageSrc String?
+  imageAlt String
+}
+
 model Category {
   id          String  @id @db.Uuid
   name        String  @unique
   slug        String  @unique
   description String? @db.Text
+  subtitle    String
 
-  isNavigable        Boolean  @default(true) // true = visible dans le menu
+  isNavigable Boolean @default(true) // true = visible dans le menu
+
   managedByRoles     String[] @default([]) // Rôles autorisés à modifier
   requiredPermission String   @default("products:read")
   minRoleLevel       Int      @default(6) // Niveau minimum pour admin
   displayOrder       Int      @default(0)
+  OrderBy            String
 
   products Product[]
   parentId String?    @db.Uuid

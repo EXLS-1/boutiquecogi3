@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   if (!canCreateAdmin(userRole)) {
     return NextResponse.json(
-      { error: "Forbidden: seul super_admin peut créer un admin." },
+      { error: "Forbidden: Vous n'etes pas autorisés à créer ce role." },
       { status: 403 },
     );
   }
@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
     // const newUser = await createUser({ email, password, role: "admin" });
 
     return NextResponse.json(
-      { success: true, message: "Admin créé avec succès." },
+      { success: true, message: "Création de ce role avec succès !" },
       { status: 201 },
     );
   } catch (err) {
     return NextResponse.json(
-      { error: "Erreur lors de la création de l'admin." },
+      { error: "Erreur lors de la création de ce role." },
       { status: 500 },
     );
   }
