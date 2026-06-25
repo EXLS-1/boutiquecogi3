@@ -31,8 +31,21 @@ model RoleConfig {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  blockedAt     DateTime?
+  blockedReason String?
+  blockedBy     String?
+
+  unblockedAt     DateTime?
+  unblockedBy     String?
+  unblockedReason String?
 
   @@index([role])
+  @@index([level])
+  @@index([isActive])
+  @@index([isSystem])
   @@map("role_config")
 }
 
@@ -340,9 +353,13 @@ model Address {
 // ==========================================
 
 model catalog {
-  id       String  @id @db.Uuid
-  imageSrc String?
-  imageAlt String
+  id         String   @id @db.Uuid
+  imageSrc   String?
+  imageAlt   String
+  categoryId String   @db.Uuid
+  category   Category @relation("category", fields: [categoryId], references: [id])
+
+  @@map("catalog")
 }
 
 model Category {
@@ -361,6 +378,7 @@ model Category {
   OrderBy            String
 
   products Product[]
+  catalog  catalog[]  @relation("category")
   parentId String?    @db.Uuid
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
