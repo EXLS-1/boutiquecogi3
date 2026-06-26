@@ -10,7 +10,19 @@ export type CategoryType =
   | "accessoire";
 
 export interface Product {
-  id: string;
+  ProdutproductId: string;
+  name: string;
+  price: number; // Transformé en number pour permettre les calculs sans cast ultérieur
+  size: string;
+  couleur: string;
+  image: string;
+  description: string;
+  currency: string;
+  category: CategoryType;
+}
+
+export interface ProductVariant {
+  productId: string;
   name: string;
   price: number; // Transformé en number pour permettre les calculs sans cast ultérieur
   size: string;
@@ -30,7 +42,7 @@ export const productData: ProductCatalog = {
   products: {
     femme: [
       {
-        id: "f1",
+        productId: "f1",
         name: "Robe Lumineux à motif floral brillant",
         price: 95,
         size: "42 à 48",
@@ -42,7 +54,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f2",
+        productId: "f2",
         name: "Robe Elégante Espoll",
         price: 95,
         size: "42 à 48",
@@ -54,18 +66,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f3",
+        productId: "f3",
         name: "Robe Elégante à motif floral foncé",
         price: 95,
         size: "42 à 48",
         couleur: "Brun-Marron",
         image: "/pict03.webp",
-        description: "Robe longue fluide, idéale pour les soirées élégantes",
+        description:
+          "Robe longue fluproductIde, productIdéale pour les soirées élégantes",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f4",
+        productId: "f4",
         name: "Robe Elégante Espoll ",
         price: 95,
         size: "42 à 48",
@@ -77,31 +90,31 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f5",
+        productId: "f5",
         name: "Robe Plissée Zera à Ceinture Rouge",
         price: 65,
         size: "44 à 50",
         couleur: "Rouge sang",
         image: "/pict05.webp",
         description:
-          "Jupe plissée légère et confortable, parfaite pour le quotidien",
+          "Jupe plissée légère et confortable, parfaite pour le quotproductIdien",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f6",
+        productId: "f6",
         name: "Complet pantalon et gilet lovelf Bras Cassé Bleu  ",
         price: 75,
         size: "36 à 42",
         couleur: "Bleu",
         image: "/pict06.webp",
         description:
-          "Robe légère et fleurie, idéale pour la saison printanière",
+          "Robe légère et fleurie, productIdéale pour la saison printanière",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f7",
+        productId: "f7",
         name: "Robe Plissée Zera à Ceinture Noire",
         price: 65,
         size: "44 à 50",
@@ -112,7 +125,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f8",
+        productId: "f8",
         name: "Blouse blanche Unique avec boutons décoratifs ",
         price: 35,
         size: "36 à 50",
@@ -123,7 +136,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f9",
+        productId: "f9",
         name: "Robe Lumineux à motif floral brillant",
         price: 95,
         size: "42 à 48",
@@ -135,7 +148,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f10",
+        productId: "f10",
         name: "Robe Elégante Espoll",
         price: 95,
         size: "42 à 48",
@@ -147,18 +160,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f11",
+        productId: "f11",
         name: "Robe Elégante à motif floral foncé",
         price: 95,
         size: "42 à 48",
         couleur: "Brun-Marron",
         image: "/pict03.webp",
-        description: "Robe longue fluide, idéale pour les soirées élégantes",
+        description:
+          "Robe longue fluproductIde, productIdéale pour les soirées élégantes",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f12",
+        productId: "f12",
         name: "Robe Elégante Espoll ",
         price: 95,
         size: "42 à 48",
@@ -170,31 +184,31 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f13",
+        productId: "f13",
         name: "Robe Plissée Zera à Ceinture Rouge",
         price: 65,
         size: "44 à 50",
         couleur: "Rouge sang",
         image: "/pict05.webp",
         description:
-          "Jupe plissée légère et confortable, parfaite pour le quotidien",
+          "Jupe plissée légère et confortable, parfaite pour le quotproductIdien",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f14",
+        productId: "f14",
         name: "Complet pantalon et gilet lovelf Bras Cassé Bleu  ",
         price: 75,
         size: "36 à 42",
         couleur: "Bleu",
         image: "/pict06.webp",
         description:
-          "Robe légère et fleurie, idéale pour la saison printanière",
+          "Robe légère et fleurie, productIdéale pour la saison printanière",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f15",
+        productId: "f15",
         name: "Robe Plissée Zera à Ceinture Noire",
         price: 65,
         size: "44 à 50",
@@ -205,7 +219,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f16",
+        productId: "f16",
         name: "Blouse blanche Unique avec boutons décoratifs ",
         price: 35,
         size: "36 à 50",
@@ -216,7 +230,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f17",
+        productId: "f17",
         name: "Robe Lumineux à motif floral brillant",
         price: 95,
         size: "42 à 48",
@@ -228,7 +242,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f18",
+        productId: "f18",
         name: "Robe Elégante Espoll",
         price: 95,
         size: "42 à 48",
@@ -240,18 +254,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f19",
+        productId: "f19",
         name: "Robe Elégante à motif floral foncé",
         price: 95,
         size: "42 à 48",
         couleur: "Brun-Marron",
         image: "/pict03.webp",
-        description: "Robe longue fluide, idéale pour les soirées élégantes",
+        description:
+          "Robe longue fluproductIde, productIdéale pour les soirées élégantes",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f20",
+        productId: "f20",
         name: "Robe Elégante Espoll ",
         price: 95,
         size: "42 à 48",
@@ -263,31 +278,31 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f21",
+        productId: "f21",
         name: "Robe Plissée Zera à Ceinture Rouge",
         price: 65,
         size: "44 à 50",
         couleur: "Rouge sang",
         image: "/pict05.webp",
         description:
-          "Jupe plissée légère et confortable, parfaite pour le quotidien",
+          "Jupe plissée légère et confortable, parfaite pour le quotproductIdien",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f22",
+        productId: "f22",
         name: "Complet pantalon et gilet lovelf Bras Cassé Bleu  ",
         price: 75,
         size: "36 à 42",
         couleur: "Bleu",
         image: "/pict06.webp",
         description:
-          "Robe légère et fleurie, idéale pour la saison printanière",
+          "Robe légère et fleurie, productIdéale pour la saison printanière",
         category: "femme",
         currency: "USD",
       },
       {
-        id: "f23",
+        productId: "f23",
         name: "Robe Plissée Zera à Ceinture Noire",
         price: 65,
         size: "44 à 50",
@@ -298,7 +313,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "f24",
+        productId: "f24",
         name: "Blouse blanche Unique avec boutons décoratifs ",
         price: 35,
         size: "36 à 50",
@@ -311,7 +326,7 @@ export const productData: ProductCatalog = {
     ],
     homme: [
       {
-        id: "h1",
+        productId: "h1",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -323,7 +338,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h2",
+        productId: "h2",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -334,7 +349,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h3",
+        productId: "h3",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -346,7 +361,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h4",
+        productId: "h4",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -357,7 +372,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h5",
+        productId: "h5",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -369,7 +384,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h6",
+        productId: "h6",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -380,7 +395,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h7",
+        productId: "h7",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -392,7 +407,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h8",
+        productId: "h8",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -403,7 +418,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h9",
+        productId: "h9",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -415,7 +430,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h10",
+        productId: "h10",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -426,7 +441,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h11",
+        productId: "h11",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -438,7 +453,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h12",
+        productId: "h12",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -449,7 +464,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h13",
+        productId: "h13",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -461,7 +476,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h14",
+        productId: "h14",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -472,7 +487,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h15",
+        productId: "h15",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -484,7 +499,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h16",
+        productId: "h16",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -495,7 +510,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h17",
+        productId: "h17",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -507,7 +522,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h18",
+        productId: "h18",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -518,7 +533,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h19",
+        productId: "h19",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -530,7 +545,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h20",
+        productId: "h20",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -541,7 +556,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h21",
+        productId: "h21",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -553,7 +568,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h22",
+        productId: "h22",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -564,7 +579,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h23",
+        productId: "h23",
         name: "Costume Classique Noir",
         price: 120,
         size: "40 à 56",
@@ -576,7 +591,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "h24",
+        productId: "h24",
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
@@ -589,7 +604,7 @@ export const productData: ProductCatalog = {
     ],
     enfant: [
       {
-        id: "e1",
+        productId: "e1",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -600,18 +615,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e2",
+        productId: "e2",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e3",
+        productId: "e3",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -622,18 +638,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e4",
+        productId: "e4",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e5",
+        productId: "e5",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -644,18 +661,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e6",
+        productId: "e6",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e7",
+        productId: "e7",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -666,18 +684,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e8",
+        productId: "e8",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e9",
+        productId: "e9",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -688,18 +707,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e10",
+        productId: "e10",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e11",
+        productId: "e11",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -710,18 +730,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e12",
+        productId: "e12",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e13",
+        productId: "e13",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -732,18 +753,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e14",
+        productId: "e14",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e15",
+        productId: "e15",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -754,18 +776,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e16",
+        productId: "e16",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e17",
+        productId: "e17",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -776,18 +799,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e18",
+        productId: "e18",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e19",
+        productId: "e19",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -798,18 +822,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e20",
+        productId: "e20",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e21",
+        productId: "e21",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -820,18 +845,19 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e22",
+        productId: "e22",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
       {
-        id: "e23",
+        productId: "e23",
         name: "Robe Colorée Enfant",
         price: 35,
         size: "4 à 12 ans",
@@ -842,20 +868,21 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "e24",
+        productId: "e24",
         name: "Pantalon Enfant Bleu",
         price: 28,
         size: "4 à 10 ans",
         couleur: "Bleu",
         image: "/pict04.webp",
-        description: "Pantalon résistant pour enfant, idéal pour le quotidien",
+        description:
+          "Pantalon résistant pour enfant, productIdéal pour le quotproductIdien",
         category: "enfant",
         currency: "USD",
       },
     ],
     chaussure: [
       {
-        id: "ch1",
+        productId: "ch1",
         name: "Chaussure Talons Hauts Noir",
         price: 65,
         size: "35 à 42",
@@ -866,7 +893,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "ch2",
+        productId: "ch2",
         name: "Chaussure Confort Homme",
         price: 55,
         size: "38 à 46",
@@ -879,7 +906,7 @@ export const productData: ProductCatalog = {
     ],
     sac: [
       {
-        id: "s1",
+        productId: "s1",
         name: "Sac à Main Cuir Noir",
         price: 85,
         size: "Unique",
@@ -890,7 +917,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "s2",
+        productId: "s2",
         name: "Sac Bandoulière Marron",
         price: 60,
         size: "Unique",
@@ -903,7 +930,7 @@ export const productData: ProductCatalog = {
     ],
     accessoire: [
       {
-        id: "a1",
+        productId: "a1",
         name: "Ceinture Cuir Marron",
         price: 35,
         size: "Unique",
@@ -914,7 +941,7 @@ export const productData: ProductCatalog = {
         currency: "USD",
       },
       {
-        id: "a2",
+        productId: "a2",
         name: "Foulard Soie Coloré",
         price: 28,
         size: "Unique",

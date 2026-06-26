@@ -4,7 +4,7 @@
  * =============================================================================
  * Fonctions de mapping produit brut (Prisma) → Produit domaine (Catalog).
  * Validation Zod intégrée pour garantir l'intégrité des données.
- * 
+ *
  * Problèmes audit résolus :
  * - #1: STOCK_THRESHOLDS importé depuis catalog-constants.ts (source unique)
  * - #5: RBAC remplacé par ProductAccessPolicy complet
@@ -33,7 +33,7 @@ import {
 
 /**
  * Détermine le statut de disponibilité basé sur les données stock.
- * 
+ *
  * Problème audit #1: Utilise STOCK_THRESHOLDS depuis catalog-constants.ts.
  * Problème audit #6: stockQuantity est désormais requis.
  */
@@ -42,20 +42,17 @@ function resolveAvailabilityStatus(
 ): AvailabilityStatus {
   if (!projection) return AVAILABILITY_STATUS.OUT_OF_STOCK;
 
-  const { isAvailable, stockQuantity = 0 } = projection;
+  const { isAvailable } = projection;
 
+  // Prisma schema for Product_Availability_Projection exposes only `isAvailable`.
+  // Derivation by stock thresholds (stockQuantity) is not supported here.
   if (!isAvailable) return AVAILABILITY_STATUS.OUT_OF_STOCK;
-  if (stockQuantity <= STOCK_THRESHOLDS.CRITICAL_STOCK)
-    return AVAILABILITY_STATUS.OUT_OF_STOCK;
-  if (stockQuantity <= STOCK_THRESHOLDS.LOW_STOCK)
-    return AVAILABILITY_STATUS.LOW_STOCK;
-
   return AVAILABILITY_STATUS.IN_STOCK;
 }
 
 /**
  * Construit la politique d'accès complète à partir des données brutes.
- * 
+ *
  * Problème audit #5: Remplace le RBAC partiel (minRbacLevel + requiresAuth)
  * par une ProductAccessPolicy complète.
  */
@@ -75,7 +72,8 @@ function buildAccessPolicy(raw: RawCatalogProduct): ProductAccessPolicy {
 
   return {
     visibility,
-    minRbacLevel: minRbacLevel as typeof RBAC_LEVELS[keyof typeof RBAC_LEVELS],
+    minRbacLevel:
+      minRbacLevel as (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS],
     requiresAuth,
   };
 }
@@ -161,10 +159,10 @@ export function mapCatalogProducts(
 
 /**
  * Filtre les produits selon la ProductAccessPolicy et le contexte utilisateur.
- * 
+ *
  * Problème audit #5: Remplace le filtrage RBAC basique par une vérification
  * complète de la ProductAccessPolicy.
- * 
+ *
  * @param products - Produits déjà mappés
  * @param userRbacLevel - Niveau RBAC de l'utilisateur (7 = GUEST)
  * @param isAuthenticated - L'utilisateur est-il authentifié ?
@@ -209,7 +207,7 @@ export function filterProductsByAccessPolicy(
 /**
  * Map avec filtrage RBAC côté serveur (API legacy — déprécié).
  * Préférer filterProductsByAccessPolicy pour les nouveaux usages.
- * 
+ *
  * @deprecated Utilisez filterProductsByAccessPolicy à la place.
  */
 export function mapCatalogProductsWithRbac(

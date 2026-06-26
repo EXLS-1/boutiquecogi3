@@ -6,13 +6,13 @@
  * Server Component : reçoit les données, délègue l'interactivité.
  */
 
-import { ProductList } from "@/components/product/product-list";
+import { ProductList } from "@/components/catalog/product-list";
 import { ProductSortFilter } from "@/components/product/product-sort-filter";
 import { ProductCategoryFilter } from "@/components/product/product-category-filter";
-import { Product } from "@/lib/product/product-types";
+import { CatalogProduct } from "@/lib/catalog/catalog-types";
 
 interface ProductCatalogProps {
-  readonly products: readonly Product[];
+  readonly products: readonly CatalogProduct[];
   readonly totalCount: number;
   readonly categories: readonly string[];
   readonly title: string;

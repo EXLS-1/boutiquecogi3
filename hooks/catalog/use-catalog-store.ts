@@ -4,24 +4,26 @@
  * =============================================================================
  * État global client pour le catalog : filtres, panier rapide, wishlist.
  */
-
 "use client";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CatalogProduct, CatalogQueryParams } from "@/lib/catalog/catalog-types";
+import {
+  CatalogProduct,
+  CatalogQueryParams,
+} from "@/lib/catalog/catalog-types";
 
 interface CatalogState {
   // ─── Filtres actifs ───────────────────────────────────────────────────────
   readonly activeFilters: Partial<CatalogQueryParams>;
   readonly activeCategory: string | null;
-  
+
   // ─── Wishlist ─────────────────────────────────────────────────────────────
   readonly wishlistIds: readonly string[];
-  
+
   // ─── Quick View ───────────────────────────────────────────────────────────
   readonly quickViewProductId: string | null;
-  
+
   // ─── Actions ──────────────────────────────────────────────────────────────
   readonly setFilters: (filters: Partial<CatalogQueryParams>) => void;
   readonly clearFilters: () => void;
@@ -56,8 +58,7 @@ export const useCatalogStore = create<CatalogState>()(
           activeCategory: null,
         }),
 
-      setActiveCategory: (slug) =>
-        set({ activeCategory: slug }),
+      setActiveCategory: (slug) => set({ activeCategory: slug }),
 
       toggleWishlist: (productId) =>
         set((state) => ({
@@ -76,6 +77,6 @@ export const useCatalogStore = create<CatalogState>()(
         wishlistIds: state.wishlistIds,
         activeFilters: state.activeFilters,
       }),
-    }
-  )
+    },
+  ),
 );

@@ -9,8 +9,9 @@
 "use client";
 
 import { useQueryState, parseAsString } from "nuqs";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ProductCategoryFilterProps {
   readonly categories: readonly string[];
@@ -62,7 +63,7 @@ export function ProductCategoryFilter({
         {categories.map((cat) => {
           const isActive = category === cat;
           return (
-            <button
+            <Button
               key={cat}
               onClick={() => handleCategoryChange(cat)}
               role="radio"
@@ -77,7 +78,7 @@ export function ProductCategoryFilter({
               )}
             >
               {cat === "all" ? "Tout" : cat}
-            </button>
+            </Button>
           );
         })}
       </div>

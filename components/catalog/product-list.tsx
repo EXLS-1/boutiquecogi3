@@ -5,10 +5,11 @@
  * Grille de produits avec gestion vide, skeleton, et pagination.
  */
 
-import { memo } from "react";
-import { Product } from "@/lib/product/product-types";
+import { memo, type ComponentProps } from "react";
 import { ProductCard } from "@/components/catalog/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
+
+type Product = ComponentProps<typeof ProductCard>["product"];
 
 interface ProductListProps {
   readonly products: readonly Product[];
@@ -45,11 +46,12 @@ function ProductListComponent({
     <div role="list" aria-label={`${totalCount} produits`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product, index) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            priority={index < 4}
-          />
+          <div key={product.id} role="listitem">
+            <ProductCard
+              product={product}
+              priority={index < 4}
+            />
+          </div>
         ))}
       </div>
     </div>

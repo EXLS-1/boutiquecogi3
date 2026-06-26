@@ -9,10 +9,6 @@
 "use client";
 
 import { useQueryState, parseAsStringLiteral } from "nuqs";
-import { 
-  SORT_OPTIONS, 
-  type SortValue 
-} from "@/lib/product/product-types";
 import {
   Select,
   SelectContent,
@@ -21,6 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowUpDown } from "lucide-react";
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Nouveautés" },
+  { value: "price-asc", label: "Prix : du plus bas" },
+  { value: "price-desc", label: "Prix : du plus élevé" },
+] as const;
+
+type SortValue = (typeof SORT_OPTIONS)[number]["value"];
 
 const sortValues = SORT_OPTIONS.map((o) => o.value) as [string, ...string[]];
 const sortParser = parseAsStringLiteral(sortValues).withDefault("newest");
@@ -49,7 +53,7 @@ export function ProductSortFilter() {
       >
         <SelectTrigger 
           id="sort-filter"
-          className="h-9 w-[200px] text-sm"
+          className="h-9 w-50 text-sm"
           aria-label="Choisir un critère de tri"
         >
           <SelectValue placeholder="Nouveautés" />

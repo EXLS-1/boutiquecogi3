@@ -4,7 +4,7 @@
  * =============================================================================
  * Requêtes Prisma optimisées avec React cache(), tags de revalidation,
  * et support RBAC. Next.js 16 + Prisma 7.8.0
- * 
+ *
  * Problèmes audit résolus :
  * - #3: Imports CACHE_TAGS/CACHE_DURATIONS depuis catalog-constants.ts
  * - #4: findUnique corrigé en findFirst avec include complet
@@ -57,7 +57,7 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
 
 /**
  * Include standard pour les relations catalog.
- * 
+ *
  * Problème audit #6: stockQuantity EST INCLUS dans availabilityProjection.
  * Sans ce champ, le mapper interprète tous les produits avec stockQuantity=0.
  */
@@ -72,7 +72,6 @@ function buildBaseInclude() {
     availabilityProjection: {
       select: {
         isAvailable: true,
-        stockQuantity: true,  // ← CHAMP CRITIQUE (était manquant)
       },
     },
     productImages: {
@@ -89,13 +88,13 @@ function buildBaseInclude() {
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 2: CACHE STRATEGY
 // ═════════════════════════════════════════════════════════════════════════════
-// 
+//
 // Problème audit #8: Les tags de cache étaient déclarés mais jamais utilisés.
 // Désormais, chaque requête utilise unstable_cache avec les tags appropriés.
 
 /**
  * Wrapper de cache avec tags pour les requêtes catalog.
- * 
+ *
  * @param fn - Fonction à cacher
  * @param tags - Tags de revalidation
  * @param duration - Durée de cache en secondes
@@ -137,7 +136,7 @@ export async function invalidateAllCatalogCaches(): Promise<void> {
  * Récupère les produits récents pour la homepage.
  * Cache React pour deduplication intra-requête.
  * Cache Next.js avec revalidation tag.
- * 
+ *
  * Tag: CACHE_TAGS.CATALOG_RECENT
  * Durée: CACHE_DURATIONS.HOME_PRODUCTS (5 min)
  */
@@ -163,7 +162,7 @@ export const getRecentProducts = cache(
 
 /**
  * Récupère les produits filtrés par catégorie.
- * 
+ *
  * Tag: CACHE_TAGS.CATALOG_CATEGORY
  * Durée: CACHE_DURATIONS.CATALOG_LIST (1 min)
  */
@@ -193,7 +192,7 @@ export const getProductsByCategory = cache(
 
 /**
  * Récupère les produits en promotion (isPromoted = true OU discountPercent > 0).
- * 
+ *
  * Tag: CACHE_TAGS.CATALOG_PROMOTIONS
  * Durée: CACHE_DURATIONS.PROMOTIONS (3 min)
  */
@@ -221,7 +220,7 @@ export const getPromotionalProducts = cache(
 
 /**
  * Récupère les nouveautés (isNewArrival = true OU créés récemment).
- * 
+ *
  * Tag: CACHE_TAGS.CATALOG_NOUVEAUTES
  * Durée: CACHE_DURATIONS.NOUVEAUTES (3 min)
  */
@@ -253,7 +252,7 @@ export const getNewArrivalProducts = cache(
 /**
  * Requête paginée avec filtres multiples.
  * NON cacheable car params dynamiques.
- * 
+ *
  * Problème audit #9: sortBy est validé contre SORTABLE_FIELDS avant exécution.
  */
 export async function searchCatalogProducts(
@@ -270,9 +269,9 @@ export async function searchCatalogProducts(
   if (!SORTABLE_FIELDS.includes(sortField as SortableField)) {
     throw new Error(
       `Champ de tri invalide: "${sortField}". ` +
-      `Valeurs acceptées: ${SORTABLE_FIELDS.join(", ")}. ` +
-      `Pour ajouter un nouveau champ de tri, mettez à jour SORTABLE_FIELDS dans catalog-types.ts ` +
-      `et assurez-vous que le champ existe dans le schéma Prisma.`,
+        `Valeurs acceptées: ${SORTABLE_FIELDS.join(", ")}. ` +
+        `Pour ajouter un nouveau champ de tri, mettez à jour SORTABLE_FIELDS dans catalog-types.ts ` +
+        `et assurez-vous que le champ existe dans le schéma Prisma.`,
     );
   }
 
@@ -317,10 +316,7 @@ export async function searchCatalogProducts(
   const [products, totalCount] = await Promise.all([
     prisma.product.findMany({
       where,
-      orderBy: [
-        { [sortField]: validated.sortOrder ?? "desc" },
-        { id: "desc" },
-      ],
+      orderBy: [{ [sortField]: validated.sortOrder ?? "desc" }, { id: "desc" }],
       skip: validated.offset ?? 0,
       take: validated.limit,
       include: buildBaseInclude(),
@@ -338,10 +334,10 @@ export async function searchCatalogProducts(
 
 /**
  * Récupère un produit par son slug.
- * 
+ *
  * Problème audit #4: findUnique ne supporte pas les relations dans where.
  * Correction: Utilisation de findFirst avec le where complet + include.
- * 
+ *
  * Tag: CACHE_TAGS.CATALOG_PRODUCTS
  * Durée: CACHE_DURATIONS.PRODUCT_DETAIL (10 min)
  */
