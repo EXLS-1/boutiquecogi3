@@ -13,7 +13,8 @@
     "db:generate": "prisma generate",
     "db:format": "prisma format",
     "db:seed": "tsx prisma/seed.ts",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "doctor": "npx react-doctor@latest"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
