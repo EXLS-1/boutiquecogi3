@@ -28,10 +28,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["node"]
   },
   "include": [
     "next-env.d.ts",
+    "next.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

@@ -1,14 +1,14 @@
 /**
  * =============================================================================
- * CATEGORY INDEX PAGE - Boutiquecogi3
+ * CATALOG INDEX PAGE - Boutiquecogi3
  * =============================================================================
- * Page d'accueil des catégories avec ISR, streaming, et gestion d'erreurs.
+ * Page d'accueil des catalogues avec ISR, streaming, et gestion d'erreurs.
  */
 
 import { Suspense } from "react";
 import { Metadata } from "next";
 import Category from "@/components/category/category";
-import { ProductList } from "@/components/product/product-list";
+import { ProductList } from "@/components/catalog/product-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   HOME_PRODUCTS_LIMIT,
@@ -18,41 +18,35 @@ import {
 } from "@/lib/catalog/catalog-queries";
 import {
   mapCatalogProduct,
+  mapCatalogProducts,
 } from "@/lib/catalog/catalog-mappers";
 import { RBAC_LEVELS } from "@/lib/category/category-types";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-interface Product {
-  readonly id: string;
-  readonly name: string;
-  readonly slug: string;
-  readonly price: number;
-  readonly imageUrl: string;
-  readonly isAvailable: boolean;
-}
+type Product = ReturnType<typeof mapCatalogProduct>;
 
 // ─── Métadonnées ────────────────────────────────────────────────────────────
 export const revalidate = 300; // ISR 5 minutes
 
 export const metadata: Metadata = {
-  title: "Catégories | Boutique COGI",
-  description: "Parcourez nos différentes catégories de produits. Mode femme, homme, enfant, accessoires et plus encore.",
+  title: "Catalogue des Produits | Boutique COGI",
+  description: "Parcourez nos différentes catalogues de produits parcourrant chaque mode: Mode femme, homme, enfant, accessoires et plus encore.",
   openGraph: {
-    title: "Catégories | Boutique COGI",
+    title: "Catalogue | Boutique COGI",
     description: "Découvrez toutes nos collections",
     type: "website",
   },
 };
 
 // ─── Page Principale ────────────────────────────────────────────────────────
-export default async function CategoryIndexPage() {
+export default async function CatalogIndexPage() {
   // Récupération des produits récents avec gestion d'erreurs atomique
-  let recentProducts: Product[] = [];
+  let recentProducts: CatalogProduct[] = [];
   let fetchError: Error | null = null;
 
   try {
     const products = await getRecentProducts(HOME_PRODUCTS_LIMIT);
-    recentProducts = products.map(mapCatalogProduct);
+    recentProducts = mapCatalogProducts(products);
   } catch (error) {
     fetchError = error instanceof Error ? error : new Error("Erreur inconnue");
     console.error("[CategoryPage] Erreur récupération produits:", fetchError.message);
