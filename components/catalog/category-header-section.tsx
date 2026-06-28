@@ -1,3 +1,4 @@
+// components/catalog/catalog-header-section.tsx
 /**
  * =============================================================================
  * CATEGORY HEADER SECTION

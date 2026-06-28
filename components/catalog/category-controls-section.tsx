@@ -1,3 +1,4 @@
+// components/catalog/catalog-controls-section.tsx
 /**
  * =============================================================================
  * CATEGORY CONTROLS SECTION

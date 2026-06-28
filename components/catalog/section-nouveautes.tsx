@@ -1,3 +1,5 @@
+
+// components/catalog/section-nouveates.tsx
 /**
  * =============================================================================
  * SECTION NOUVEAUTÉS - Boutiquecogi3

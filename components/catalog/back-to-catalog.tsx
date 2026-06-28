@@ -1,3 +1,4 @@
+// components/catalog/back-to-catalog.tsx
 /**
  * =============================================================================
  * BACK TO CATALOG LINK

@@ -1,3 +1,4 @@
+// components/catalog/error-state.tsx
 /**
  * =============================================================================
  * ERROR STATE
@@ -19,7 +20,7 @@ interface ErrorStateProps {
  */
 export function ErrorState({
   message,
-  subMessage = "Si le problème persiste, contactez notre support.",
+  subMessage = "Si le problème persiste, contactez-nous pour un support technique.",
 }: ErrorStateProps) {
   return (
     <div className="text-center py-16 border border-red-200 bg-red-50 rounded-xl">

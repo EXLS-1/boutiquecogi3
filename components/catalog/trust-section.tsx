@@ -1,3 +1,4 @@
+// components/catalog/trust-section.tsx
 /**
  * =============================================================================
  * TRUST SECTION + TRUST CARD

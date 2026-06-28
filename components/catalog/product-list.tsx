@@ -1,3 +1,4 @@
+// components/catalog/product-list.tsx
 /**
  * =============================================================================
  * PRODUCT LIST - Molécule - Boutiquecogi3

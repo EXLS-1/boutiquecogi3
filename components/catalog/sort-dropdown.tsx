@@ -1,3 +1,4 @@
+// components/catalog/sort-dropdown.tsx
 /**
  * =============================================================================
  * SORT DROPDOWN (Client Component)

@@ -1,3 +1,4 @@
+// components/catalog/catalog-breadcrumb.tsx
 /**
  * =============================================================================
  * CATEGORY BREADCRUMB

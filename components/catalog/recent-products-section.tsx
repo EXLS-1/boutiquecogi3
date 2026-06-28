@@ -1,3 +1,4 @@
+// components/catalog/recent-products-section.tsx
 /**
  * =============================================================================
  * RECENT PRODUCTS SECTION

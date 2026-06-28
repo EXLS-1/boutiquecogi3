@@ -1,3 +1,4 @@
+// components/catalog/pagination.tsx
 /**
  * =============================================================================
  * PAGINATION (Client Component)

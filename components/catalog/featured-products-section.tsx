@@ -1,3 +1,4 @@
+// components/catalog/featured-products-section.tsx
 /**
  * =============================================================================
  * FEATURED PRODUCTS SECTION

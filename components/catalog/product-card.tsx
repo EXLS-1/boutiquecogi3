@@ -1,3 +1,4 @@
+// components/catalog/product-card.tsx
 /**
  * =============================================================================
  * PRODUCT CARD - Atome - Boutiquecogi3

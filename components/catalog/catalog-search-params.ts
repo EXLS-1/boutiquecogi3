@@ -1,3 +1,4 @@
+// components/catalog/catalog-search-params.ts
 /**
  * =============================================================================
  * PRODUCT SEARCH PARAMS (nuqs) — Boutiquecogi3

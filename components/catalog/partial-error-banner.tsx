@@ -1,3 +1,4 @@
+// components/catalog/partial-error-banner.tsx
 /**
  * =============================================================================
  * PARTIAL ERROR BANNER
