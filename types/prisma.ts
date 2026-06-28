@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from '@prisma/client';
 
 /**
  * Arguments de sélection pour le modèle Product utilisé dans le Dashboard.
@@ -10,7 +10,7 @@ export const dashboardProductArgs = {
     variants: { select: { id: true } },
     _count: { select: { reviews: true, orderItems: true } },
   },
-} as const satisfies Prisma.ProductDefaultArgs;
+} as const;
 
 export type DashboardProductWithRelations = Prisma.ProductGetPayload<
   typeof dashboardProductArgs

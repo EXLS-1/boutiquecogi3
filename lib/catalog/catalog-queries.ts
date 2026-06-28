@@ -385,6 +385,61 @@ export async function getProductCountsByStatus() {
   return { published, archived, outOfStock, total };
 }
 
+// ─── Query : Produits en Vedette (Featured) ─────────────────────────────────
+
+/**
+ * Récupère les produits en vedette (isPromoted = true).
+ * Utilisé pour la section "Nos coups de cœur" sur la homepage.
+ *
+ * Tag: CACHE_TAGS.CATALOG_PROMOTIONS
+ * Durée: CACHE_DURATIONS.PROMOTIONS (3 min)
+ */
+export const getFeaturedProducts = cache(
+  withCatalogCache(
+    async (limit: number = 6) => {
+      const products = await prisma.product.findMany({
+        where: {
+          ...buildBaseWhere(),
+          isPromoted: true,
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
+        include: buildBaseInclude(),
+      });
+
+      return mapCatalogProducts(normalizeProducts(products));
+    },
+    [CACHE_TAGS.CATALOG_PROMOTIONS],
+    CACHE_DURATIONS.PROMOTIONS,
+  ),
+);
+
+// ─── Query : Catégories du Catalogue ─────────────────────────────────────────
+
+/**
+ * Récupère les catégories actives pour le catalogue.
+ * Non caché : les catégories changent rarement mais doivent être fraîches.
+ */
+export async function getCatalogCategories(): Promise<
+  readonly { id: string; name: string; slug: string; imageUrl: string | null }[]
+> {
+  const categories = await prisma.category.findMany({
+    where: {
+      isActive: true,
+      isDeleted: false,
+    },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      imageUrl: true,
+    },
+  });
+
+  return Object.freeze(categories);
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 4: CONSTANTES LOCALES
 // ═════════════════════════════════════════════════════════════════════════════

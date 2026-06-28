@@ -79,4 +79,4 @@ function CategorySectionComponent({
   );
 }
 
-export default memo(CategorySectionComponent);
+export default memo(CatalogSectionComponent);
