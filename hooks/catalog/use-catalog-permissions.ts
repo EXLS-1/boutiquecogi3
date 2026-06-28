@@ -1,10 +1,6 @@
+// hooks/use-catalog-permissions.ts
 /**
- * =============================================================================
- * USE CATALOG PERMISSIONS — Boutiquecogi3
- * =============================================================================
- * Hook RBAC pour filtrer les produits visibles côté client.
- * 
- * Problème audit #5: Mis à jour pour utiliser ProductAccessPolicy complète.
+ * Expliquer en detail ce que fait ce fichier
  */
 
 "use client";

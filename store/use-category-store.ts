@@ -1,9 +1,6 @@
+// store/use-category-store.ts
 /**
- * =============================================================================
- * CATEGORY STORE (Zustand) - Boutiquecogi3
- * =============================================================================
- * État global pour la gestion des catégories côté client.
- * Persistance optionnelle, sélection active, etc.
+ * Expliquer en detail ce que fait ce fichier
  */
 
 "use client";

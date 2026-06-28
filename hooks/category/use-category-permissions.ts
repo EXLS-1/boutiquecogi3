@@ -1,11 +1,6 @@
+// hooks/use-category-permissions.ts
 /**
- * =============================================================================
- * USE CATEGORY PERMISSIONS — Boutiquecogi3
- * =============================================================================
- * Hook centralisant la logique RBAC pour les catégories.
- * Gère les sessions libres (GUEST = Level 7) et authentifiées.
- * 
- * Aligné avec le système RBAC Level 1-7.
+ * Expliquer en detail ce que fait ce fichier
  */
 
 "use client";

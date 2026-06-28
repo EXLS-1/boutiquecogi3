@@ -1,7 +1,8 @@
-// ============================================================
-// 3. useProductTypeRBAC - Type produit
-// ============================================================
 // hooks/rbac/use-product-type-rbac.ts
+/**
+ * Expliquer en detail ce que fait ce fichier
+ */
+
 "use client";
 
 import { useMemo } from "react";

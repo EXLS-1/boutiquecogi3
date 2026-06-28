@@ -1,9 +1,8 @@
+// store/use-catalog-store.ts
 /**
- * =============================================================================
- * CATALOG STORE (Zustand) - Boutiquecogi3
- * =============================================================================
- * État global client pour le catalog : filtres, panier rapide, wishlist.
+ * Expliquer en detail ce que fait ce fichier
  */
+
 "use client";
 
 import { create } from "zustand";

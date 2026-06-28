@@ -1,4 +1,8 @@
 // stores/rbac-store.ts
+/**
+ * Expliquer en detail ce que fait ce fichier
+ */
+
 import { create } from "zustand";
 import { Permission, RoleLevel, RBACSession } from "@/types/rbac";
 
