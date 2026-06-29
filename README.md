@@ -4,7 +4,8 @@ Bienvenue sur **Boutique COGI**, une plateforme e-commerce moderne et performant
 
 ## VISION GENERALE DU PROJET
 
-Mon projet consiste à créer une plateforme web e-commerce pour la vente de produits de mode. Basé principalement sur "NEXT.JS", la conception du site https://boutiquecogi.com/ (ayant des fonctionnalités améliorées et une interface plus moderne), va également s'appuyer sur "JAVASCRIPT + NODE.JS + REACT + REACTDOM + NEXT.JS + POSTGRESQL + PRISMA + TAILWINDCSS + BETTER-AUTH". Fermement attaché à la logique 'DRY'(Do not repeat yourself), j'ai pour devoir de veuiller à:
+Mon projet consiste à créer une plateforme web e-commerce pour la vente de produits de mode. Basé principalement sur "NEXT.JS", la conception du site <https://boutiquecogi.com/> (ayant des fonctionnalités améliorées et une interface plus moderne), va également s'appuyer sur "JAVASCRIPT + NODE.JS + REACT + REACTDOM + NEXT.JS + POSTGRESQL + PRISMA + TAILWINDCSS + BETTER-AUTH". Fermement attaché à la logique 'DRY'(Do not repeat yourself), j'ai pour devoir de veuiller à:
+
 - rendre les pages dans 'app' aussi minimalistes que possible
 - rendre les composants dans 'components' aussi atomiques que possible, réutilisables et flexibles.
 - rendre la logique metier aussi claire que possible et suivant le cas dans 'lib', 'hooks' et 'store'.
@@ -17,6 +18,8 @@ Mon projet consiste à créer une plateforme web e-commerce pour la vente de pro
 - rendre le code richement commenté.
 - rendre le code optimisé pour le référencement (seo).
 - pas de code en dur sauf pour les constantes
+- Corriger les erreurs TypeScript existantes
+-Corriger les erreurs de typage et de compilation dans le projet
 
 Le projet utilise le package 'npm' et est divisé en deux parties suivant les principes rigoureux de "Next.JS":
 
@@ -99,30 +102,37 @@ Voici les differentes versions des dependances utilisées:
     "typescript": "^6.0.3"
   },
 
-https://github.com/boutiquecogi/next.js-typescript-fastapi
+<https://github.com/boutiquecogi/next.js-typescript-fastapi>
 
 ## EBAUCHE DU PROJET
-  - page.tsx
-  - layout.tsx
-  - global.css
+
+- page.tsx
+- layout.tsx
+- global.css
   
 ### app
+
 ### components
+
 ### data
+
 ### hooks
+
 ### lib
+
 ### store
+
 ### types
 
 ## Fonctionnalités Clés
 
-*   **Gestion des Produits :** Catalogue de produits structuré par catégories (femme, homme, enfant, chaussures, sacs, accessoires).
-*   **Authentification Sécurisée :** Système d'authentification robuste basé sur Better-Auth, incluant la gestion des mots de passe oubliés.
-*   **Panier d'Achat :** Fonctionnalité de panier pour une expérience d'achat complète.
-*   **Gestion des Favoris :** Les utilisateurs peuvent sauvegarder leurs produits préférés.
-*   **Journal d'Audit :** Suivi détaillé des actions administrateur pour une meilleure traçabilité et sécurité.
-*   **Upload d'Images Sécurisé :** Gestion des images produits via Supabase Storage avec validation stricte.
-*   **Interface Utilisateur Réactive :** Design moderne et adaptatif grâce à Tailwind CSS v4.
+- **Gestion des Produits :** Catalogue de produits structuré par catégories (femme, homme, enfant, chaussures, sacs, accessoires).
+- **Authentification Sécurisée :** Système d'authentification robuste basé sur Better-Auth, incluant la gestion des mots de passe oubliés.
+- **Panier d'Achat :** Fonctionnalité de panier pour une expérience d'achat complète.
+- **Gestion des Favoris :** Les utilisateurs peuvent sauvegarder leurs produits préférés.
+- **Journal d'Audit :** Suivi détaillé des actions administrateur pour une meilleure traçabilité et sécurité.
+- **Upload d'Images Sécurisé :** Gestion des images produits via Supabase Storage avec validation stricte.
+- **Interface Utilisateur Réactive :** Design moderne et adaptatif grâce à Tailwind CSS v4.
 
 ## Installation et Démarrage
 
@@ -130,10 +140,10 @@ Suivez ces étapes pour configurer et exécuter le projet en local.
 
 ### Prérequis
 
-*   Node.js (version 18 ou supérieure recommandée)
-*   npm ou Yarn
-*   Une instance PostgreSQL
-*   Un compte Supabase pour le stockage des images
+- Node.js (version 18 ou supérieure recommandée)
+- npm
+- Une instance PostgreSQL
+- Un compte Supabase pour le stockage des images
 
 ### 1. Cloner le dépôt
 
@@ -194,4 +204,4 @@ Sous réserve d'acceptation par le créateur, les contributions sont les bienven
 
 ## Licence
 
-Ce projet est sous licence propriétaire. 
+Ce projet est sous licence propriétaire.

@@ -28,16 +28,16 @@ function CategorySectionComponent({
   isAuthenticated = false,
 }: CategorySectionProps) {
   return (
-    <section 
-      className="py-20 bg-gray-50" 
+    <section
+      className="py-20 bg-gray-50"
       id="boutique"
       aria-labelledby="boutique-heading"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* ─── Header ─────────────────────────────────────────────────────── */}
         <div className="text-center mb-16">
-          <h2 
+          <h2
             id="boutique-heading"
             className="font-playfair text-3xl md:text-5xl font-bold text-gray-900 uppercase tracking-wider mb-4"
           >
@@ -56,13 +56,13 @@ function CategorySectionComponent({
           }}
         >
           {/* Catégories promotionnelles (prioritaires) */}
-          <NewProductCategory 
-            userRbacLevel={userRbacLevel} 
-            isAuthenticated={isAuthenticated} 
+          <NewProductCategory
+            userRbacLevel={userRbacLevel}
+            isAuthenticated={isAuthenticated}
           />
-          <PromotionProductCategory 
-            userRbacLevel={userRbacLevel} 
-            isAuthenticated={isAuthenticated} 
+          <PromotionProductCategory
+            userRbacLevel={userRbacLevel}
+            isAuthenticated={isAuthenticated}
           />
 
           {/* Catégories statiques */}
@@ -79,4 +79,4 @@ function CategorySectionComponent({
   );
 }
 
-export default memo(CatalogSectionComponent);
+export default memo(CategorySectionComponent);

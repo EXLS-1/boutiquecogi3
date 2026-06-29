@@ -19,7 +19,7 @@ import { generateUUIDv7 } from "@/lib/uuid";
 import { ROLES, LEVELS } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/prisma";
 
-async function main() {
+async function main(prisma: unknown) {
   console.log("🚀 [BOUTIQUE COGI] Démarrage du seed atomique RBAC...");
 
   // ═══════════════════════════════════════════

@@ -1,7 +1,7 @@
-import { prisma } from './seed-client'
+import { prisma } from '@/prisma/seed-client'
 
 async function main() {
-  const { main: seedMain } = await import('./seed/index')
+  const { main: seedMain } = await import('@/prisma/seed/index')
   await seedMain(prisma)
 }
 
