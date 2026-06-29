@@ -1,4 +1,4 @@
-//
+// data/constants/currency.constants.ts
 
 export const SUPPORTED_CURRENCIES = {
   USD: { code: "USD", symbol: "$", decimals: 2 },

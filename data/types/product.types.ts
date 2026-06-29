@@ -1,3 +1,5 @@
+// data/types/product.types.ts
+
 import { CategoryId } from "./category.types";
 import { Price, ProductImage } from "./common.types";
 

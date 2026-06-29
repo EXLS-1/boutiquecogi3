@@ -1,4 +1,6 @@
+// data/types/common.types.ts
 // Base commune pour tout le système
+
 export interface Price {
   amount: number;
   currencyCode: string;

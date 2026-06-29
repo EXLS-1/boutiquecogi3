@@ -41,7 +41,7 @@ export function Price({
 
     // Logique de conversion : USD (cents) -> CDF
     if (activeCurrency === "CDF") {
-      // On multiplie par le taux (ex: 2800) et on arrondit à l'unité
+      // On multiplie par le taux (ex: 2400) et on arrondit à l'unité
       finalAmount = (amount / 100) * exchangeRate;
     } else {
       // USD : on repasse des cents aux dollars

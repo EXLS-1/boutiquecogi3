@@ -1,4 +1,6 @@
+// data/types/category.types.ts
 // La Category ne contient QUE la logique de rangement
+
 export type CategoryId =
   | "femme"
   | "homme"
