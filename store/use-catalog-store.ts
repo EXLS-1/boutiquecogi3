@@ -38,7 +38,7 @@ const initialFilters: Partial<CatalogQueryParams> = {
   sortOrder: "desc",
 };
 
-export const useCatalogStore = create<CatalogState>()(
+export const useCatalog = create<CatalogState>()(
   persist(
     (set, get) => ({
       activeFilters: initialFilters,
