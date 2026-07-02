@@ -15,7 +15,7 @@ import { NEW_ARRIVAL_CATEGORIES } from "@/lib/category/category-constants";
 import { useFilteredCategories } from "@/hooks/category/use-category-permissions";
 
 interface NewProductCategoryProps {
-  readonly userRbacLevel?: number;
+  readonly userRbacLevel: unknown;
   readonly isAuthenticated: boolean;
 }
 
