@@ -1,3 +1,4 @@
+// app/products/page.tsx
 /**
  * =============================================================================
  * PRODUCTS PAGE - Boutiquecogi3 (Réécriture)
@@ -17,6 +18,7 @@
  */
 
 import { Suspense } from "react";
+import Link from "next/link";
 // Avoid importing `Metadata` type from 'next' to prevent issues with
 // local ambient declaration files (next.d.ts not being a module).
 // Use a generic any for metadata to keep typing loose in this file.
@@ -49,13 +51,30 @@ interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+interface ProductsPageMetadata {
+  title: string;
+  description: string;
+  robots: {
+    index: boolean;
+    follow: boolean;
+  };
+  openGraph: {
+    title: string;
+    description: string;
+    type: "website";
+  };
+  alternates: {
+    canonical?: string;
+  };
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // MÉTADONNÉES DYNAMIQUES
 // ═════════════════════════════════════════════════════════════════════════════
 
 export async function generateMetadata({
   searchParams,
-}: ProductsPageProps): Promise<any> {
+}: ProductsPageProps): Promise<ProductsPageMetadata> {
   const raw = await searchParams;
   const parsed = searchParamsCache.parse(raw);
 
@@ -226,8 +245,12 @@ async function ProductCatalogFetcher({
   minPrice,
   maxPrice,
 }: FetcherProps) {
+  let products: Awaited<ReturnType<typeof searchCatalogProducts>>["products"];
+  let totalCount: Awaited<ReturnType<typeof searchCatalogProducts>>["totalCount"];
+  let hasError = false;
+
   try {
-    const { products, totalCount } = await searchCatalogProducts({
+    const result = await searchCatalogProducts({
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
       categorySlug: category === "all" ? undefined : category,
@@ -238,25 +261,15 @@ async function ProductCatalogFetcher({
       maxPrice,
     });
 
-    // Titre dynamique selon le contexte
-    const title =
-      category === "all"
-        ? "Nos Produits"
-        : category.charAt(0).toUpperCase() + category.slice(1);
-
-    return (
-      <ProductCatalog
-        products={products}
-        totalCount={totalCount}
-        categories={[...VALID_CATEGORIES]}
-        title={title}
-        pageSize={PAGE_SIZE}
-      />
-    );
+    products = result.products;
+    totalCount = result.totalCount;
   } catch (error) {
     // En production : envoyer vers votre système de logs (Sentry, etc.)
     console.error("[ProductCatalogFetcher] Erreur de chargement:", error);
+    hasError = true;
+  }
 
+  if (hasError) {
     return (
       <div className="text-center py-20 md:py-32">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
@@ -269,13 +282,28 @@ async function ProductCatalogFetcher({
           Une erreur est survenue lors du chargement du catalogue. Veuillez
           rafraîchir la page ou réessayer plus tard.
         </p>
-        <a
+        <Link
           href="/products"
           className="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
         >
           Réessayer
-        </a>
+        </Link>
       </div>
     );
   }
+
+  const title =
+    category === "all"
+      ? "Nos Produits"
+      : category.charAt(0).toUpperCase() + category.slice(1);
+
+  return (
+    <ProductCatalog
+      products={products!}
+      totalCount={totalCount!}
+      categories={[...VALID_CATEGORIES]}
+      title={title}
+      pageSize={PAGE_SIZE}
+    />
+  );
 }
