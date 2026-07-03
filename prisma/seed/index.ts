@@ -87,19 +87,22 @@ async function main(prisma: unknown) {
     const slug = slugify(`${name}-${raw.id}`);
     const basePrice = Math.round(Number(raw.price || 0) * 100);
     const image = normalizeImage(String(raw.image || ""));
+    const priceDecimal = (basePrice / 100).toFixed(2);
 
     const product = await prisma.product.upsert({
       where: { slug },
       update: {
         name, description: String(raw.description || ""),
-        basePrice, images: image ? [image] : [], categoryId,
+        basePrice, price: priceDecimal, images: image ? [image] : [], categoryId, status: 'PUBLISHED',
       },
       create: {
         id: generateUUIDv7(), name, slug,
         description: String(raw.description || ""),
-        basePrice, currency: "USD",
+        basePrice, price: priceDecimal, currency: "USD",
+        status: 'PUBLISHED',
         images: image ? [image] : [], categoryId,
         isFeatured: false, isArchived: false,
+        userId: (admin as any).id,
       },
     });
 

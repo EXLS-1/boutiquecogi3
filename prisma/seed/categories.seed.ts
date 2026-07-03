@@ -73,6 +73,8 @@ export async function seedCategories(prisma: PrismaClient) {
         name: item.name,
         slug: item.slug,
         description: item.description || `Collection exclusive ${item.name}`,
+        subtitle: (item as any).subtitle ?? '',
+        OrderBy: (item as any).orderBy ?? 'displayOrder',
       },
     });
     categoryMap.set(item.slug, category.id);

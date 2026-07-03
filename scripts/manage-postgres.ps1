@@ -88,7 +88,25 @@ function Do-Seed {
     Push-Location $repoRoot
     try {
         Write-Output "Running 'npm run db:seed' in $repoRoot"
-        $proc = Start-Process -FilePath npm -ArgumentList 'run','db:seed' -NoNewWindow -Wait -PassThru -WorkingDirectory $repoRoot
+
+        # Load .env into the process environment so the seed can read required variables
+        $envFile = Join-Path $repoRoot '.env'
+        if (Test-Path $envFile) {
+            Get-Content $envFile | ForEach-Object {
+                $line = $_.Trim()
+                if ($line -and -not $line.StartsWith('#')) {
+                    $parts = $line -split '=',2
+                    if ($parts.Length -eq 2) {
+                        $key = $parts[0].Trim()
+                        $val = $parts[1].Trim().Trim('"')
+                        [System.Environment]::SetEnvironmentVariable($key, $val, 'Process')
+                    }
+                }
+            }
+        }
+
+        # Use cmd.exe to ensure npm/.cmd wrappers are resolved correctly on Windows
+        $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','npm run db:seed' -NoNewWindow -Wait -PassThru -WorkingDirectory $repoRoot
         if ($proc.ExitCode -eq 0) { Write-Output "Seed completed successfully." } else { Write-Warning "Seed process exited with code $($proc.ExitCode)" }
     } catch {
         Write-Error "Failed to run seed: $_"

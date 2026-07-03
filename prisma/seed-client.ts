@@ -4,9 +4,8 @@ import { PrismaClient } from '@prisma/client'
 
 const pool = new Pool({
   connectionString: process.env.DIRECT_URL,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true }
-    : { rejectUnauthorized: false }, // Accepte certificat auto-signé en dev
+  // Only enable SSL in production. In development, set ssl to false so local Postgres without TLS works.
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
 })
 
 const adapter = new PrismaPg(pool)
