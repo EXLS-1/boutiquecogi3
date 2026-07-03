@@ -446,8 +446,13 @@ model Product {
   inventoryLedger        InventoryTransaction[]
   inventorySnapshots     InventorySnapshot[]
   availabilityProjection Product_Availability_Projection?
-  productPrices          ProductPrice[]
-  productViews           ProductView[]
+
+  // Promotion directe (1 coupon -> N produits)
+  couponId String? @db.Uuid
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
+  productPrices ProductPrice[]
+  productViews  ProductView[]
 
   @@index([createdBy])
   @@index([updatedBy])
@@ -477,7 +482,7 @@ model ProductVariant {
 
 model ProductImage {
   id        String  @id @db.Uuid
-  productId String
+  productId String  @db.Uuid
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   url       String
   alt       String?
@@ -489,7 +494,7 @@ model ProductImage {
 
 model ProductOption {
   id        String  @id @db.Uuid
-  productId String
+  productId String  @db.Uuid
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   name      String
   value     String
@@ -510,9 +515,9 @@ model Tag {
 }
 
 model ProductTag {
-  productId String
+  productId String  @db.Uuid
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  tagId     String
+  tagId     String  @db.Uuid
   tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([productId, tagId])
@@ -531,9 +536,9 @@ model ProductAttribute {
 
 model ProductAttributeValue {
   id          String           @id @db.Uuid
-  productId   String
+  productId   String           @db.Uuid
   product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
-  attributeId String
+  attributeId String           @db.Uuid
   attribute   ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   value       String
 
@@ -1107,7 +1112,7 @@ model Shipment {
   id               String          @id @db.Uuid
   orderId          String          @unique @db.Uuid
   order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  carrierId        String?
+  carrierId        String?         @db.Uuid
   carrier          Carrier?        @relation(fields: [carrierId], references: [id])
   shippingMethodId String?         @db.Uuid
   shippingMethod   ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
@@ -1135,7 +1140,7 @@ enum ShipmentStatus {
 
 model Payment {
   id            String            @id @db.Uuid
-  orderId       String            @unique
+  orderId       String            @unique @db.Uuid
   order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount        Int
   currency      String            @default("USD") @db.VarChar(3)
@@ -1293,7 +1298,7 @@ model ReturnItem {
   id             String        @id @db.Uuid
   returnId       String        @db.Uuid
   return         Return        @relation(fields: [returnId], references: [id], onDelete: Cascade)
-  orderItemId    String
+  orderItemId    String        @db.Uuid
   orderItem      OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
   quantity       Int           @default(1)
   reason         String
@@ -1375,6 +1380,9 @@ model Coupon {
   orders       Order[]
   couponUsages CouponUsage[]
 
+  // Promotion directe appliquée aux produits (1 coupon -> N produits)
+  products Product[]
+
   @@map("coupon")
 }
 
@@ -1446,7 +1454,7 @@ model WishlistItem {
   id         String   @id @db.Uuid
   wishlistId String   @db.Uuid
   wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  productId  String
+  productId  String   @db.Uuid
   product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   addedAt    DateTime @default(now())
 
@@ -1538,9 +1546,9 @@ model Supplier {
 
 model PurchaseOrder {
   id          String    @id @db.Uuid
-  supplierId  String
+  supplierId  String    @db.Uuid
   supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  warehouseId String
+  warehouseId String    @db.Uuid
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

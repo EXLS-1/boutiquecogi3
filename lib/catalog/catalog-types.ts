@@ -187,6 +187,14 @@ export const SORTABLE_FIELDS = [
 
 export type SortableField = (typeof SORTABLE_FIELDS)[number];
 
+export const CATALOG_OPTIONS = [
+  "generale",
+  "nouveautes",
+  "promotions",
+] as const;
+
+export type CatalogOption = (typeof CATALOG_OPTIONS)[number];
+
 export interface CatalogQueryParams {
   readonly limit: number;
   readonly offset?: number;
@@ -200,7 +208,9 @@ export interface CatalogQueryParams {
   readonly searchQuery?: string;
   readonly sortBy?: SortableField;
   readonly sortOrder?: "asc" | "desc";
+  readonly catalogOption?: CatalogOption;
 }
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 8: RÉSULTAT PAGINÉ
@@ -276,12 +286,15 @@ export const catalogQueryParamsSchema = z.object({
   isAvailable: z.boolean().optional(),
   isPromoted: z.boolean().optional(),
   isNewArrival: z.boolean().optional(),
+  catalogOption: z.enum(CATALOG_OPTIONS).optional(),
   minPrice: z.number().nonnegative().optional(),
   maxPrice: z.number().nonnegative().optional(),
   searchQuery: z.string().max(100).optional(),
   sortBy: z.enum(SORTABLE_FIELDS).optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
+
+
 
 export type CatalogProductValidated = z.infer<typeof catalogProductSchema>;
 export type CatalogQueryParamsValidated = z.infer<typeof catalogQueryParamsSchema>;

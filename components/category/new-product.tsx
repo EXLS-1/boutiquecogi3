@@ -14,8 +14,10 @@ import { CategoryCard } from "./category-card";
 import { NEW_ARRIVAL_CATEGORIES } from "@/lib/category/category-constants";
 import { useFilteredCategories } from "@/hooks/category/use-category-permissions";
 
+import type { RbacLevel } from "@/hooks/category/use-category-permissions";
+
 interface NewProductCategoryProps {
-  readonly userRbacLevel: unknown;
+  readonly userRbacLevel?: RbacLevel;
   readonly isAuthenticated: boolean;
 }
 

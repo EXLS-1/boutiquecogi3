@@ -15,6 +15,7 @@ import {
   getFeaturedProducts,
   getCatalogCategories,
   getProductsByCategory,
+  searchCatalogProducts,
 } from "@/lib/catalog/catalog-queries";
 import {
   mapCatalogProducts,
@@ -28,6 +29,7 @@ import type {
   PartialError,
 } from "./catalog-page-types";
 import { resolveRbacContext } from "./catalog-rbac";
+
 
 // ─── Helpers privés ─────────────────────────────────────────────────────────
 
@@ -121,11 +123,17 @@ export async function getCategoryInfoBySlug(
  * Récupère toutes les données nécessaires à une page de catégorie.
  * Inclut la parallélisation, le filtrage RBAC, et la pagination.
  */
+import type { CatalogOption, SortableField } from "./catalog-types";
+
 export async function fetchCategoryPageData(
   categorySlug: string,
   page: number = 1,
-  sortBy: string = "newest"
+  sortBy: SortableField = "createdAt",
+  catalogOption?: CatalogOption
 ): Promise<CatalogCategoryData> {
+
+
+
   const partialErrors: PartialError[] = [];
   const limit = CATALOG_PAGE_SIZE;
   const offset = (page - 1) * limit;
@@ -137,11 +145,29 @@ export async function fetchCategoryPageData(
       return null;
     }),
 
-    getProductsByCategory(categorySlug, limit + offset).catch((err: unknown) => {
-      partialErrors.push(createPartialError("products", err));
-      return [] as Awaited<ReturnType<typeof getProductsByCategory>>;
-    }),
+    (async () => {
+      try {
+        if (catalogOption) {
+          const { products } = await searchCatalogProducts({
+            limit: limit + offset,
+            offset: 0,
+            categorySlug,
+            sortBy,
+            sortOrder: "desc",
+            catalogOption,
+          });
+          return products;
+        }
+
+        return await getProductsByCategory(categorySlug, limit + offset);
+
+      } catch (err) {
+        partialErrors.push(createPartialError("products", err));
+        return [];
+      }
+    })(),
   ]);
+
 
   // Catégorie inexistante → retourne un fetchError pour déclencher notFound()
   if (!categoryInfo) {

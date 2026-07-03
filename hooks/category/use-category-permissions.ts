@@ -6,11 +6,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { 
-  CategoryDefinition, 
-  RbacLevel, 
-  RBAC_LEVELS 
+import {
+  CategoryDefinition,
+  RbacLevel,
+  RBAC_LEVELS,
 } from "@/lib/category/category-types";
+
+export type { RbacLevel } from "@/lib/category/category-types";
 
 interface UseCategoryPermissionsOptions {
   readonly userRbacLevel?: RbacLevel;
@@ -25,7 +27,7 @@ interface UseCategoryPermissionsReturn {
 
 /**
  * Filtre les catégories selon les permissions RBAC de l'utilisateur.
- * 
+ *
  * Règles :
  * - GUEST (Level 7, non authentifié) : accès minimal
  * - Authentifié : niveau déterminé par le système RBAC
@@ -36,7 +38,6 @@ export function useCategoryPermissions({
   userRbacLevel = RBAC_LEVELS.GUEST,
   isAuthenticated,
 }: UseCategoryPermissionsOptions): UseCategoryPermissionsReturn {
-
   const canViewCategory = useMemo(() => {
     return (category: CategoryDefinition): boolean => {
       // Si la catégorie nécessite une authentification et l'utilisateur ne l'est pas
@@ -52,7 +53,7 @@ export function useCategoryPermissions({
 
   const filteredCategories = useMemo(() => {
     // Cette logique sera utilisée par le composant parent qui reçoit les catégories
-    return (categories: readonly CategoryDefinition[]) => 
+    return (categories: readonly CategoryDefinition[]) =>
       categories.filter(canViewCategory);
   }, [canViewCategory]);
 
@@ -76,3 +77,4 @@ export function useFilteredCategories(
     return categories.filter(canViewCategory);
   }, [categories, canViewCategory]);
 }
+

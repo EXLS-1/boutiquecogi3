@@ -29,8 +29,8 @@ import {
   type CatalogQueryParams,
   normalizeProducts,
   normalizeProduct,
+  catalogQueryParamsSchema,
 } from "./catalog-types";
-import { catalogQueryParamsSchema } from "./catalog-types";
 import { mapCatalogProduct, mapCatalogProducts } from "./catalog-mappers";
 
 // ─── Type local pour le produit brut Prisma ─────────────────────────────────
@@ -99,15 +99,17 @@ function buildBaseInclude() {
  * @param tags - Tags de revalidation
  * @param duration - Durée de cache en secondes
  */
-function withCatalogCache<T extends (...args: any[]) => Promise<any>>(
+function withCatalogCache<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   tags: string[],
   duration: number,
 ): T {
-  return unstable_cache(fn, undefined, {
+
+  return unstable_cache(fn as (...args: unknown[]) => Promise<unknown>, undefined, {
     tags,
     revalidate: duration,
   }) as T;
+
 }
 
 /**
@@ -196,6 +198,11 @@ export const getProductsByCategory = cache(
  * Tag: CACHE_TAGS.CATALOG_PROMOTIONS
  * Durée: CACHE_DURATIONS.PROMOTIONS (3 min)
  */
+// NOTE: Les fonctions legacy getPromotionalProducts/getNewArrivalProducts
+// sont maintenues pour compatibilité, mais la logique principale est désormais
+// pilotée par searchCatalogProducts(..., { catalogOption }).
+// Elles pourront être supprimées après migration UI complète.
+
 export const getPromotionalProducts = cache(
   withCatalogCache(
     async (limit: number = CATALOG_PAGE_SIZE) => {
@@ -216,24 +223,16 @@ export const getPromotionalProducts = cache(
   ),
 );
 
-// ─── Query : Nouveautés ─────────────────────────────────────────────────────
-
-/**
- * Récupère les nouveautés (isNewArrival = true OU créés récemment).
- *
- * Tag: CACHE_TAGS.CATALOG_NOUVEAUTES
- * Durée: CACHE_DURATIONS.NOUVEAUTES (3 min)
- */
 export const getNewArrivalProducts = cache(
   withCatalogCache(
     async (limit: number = CATALOG_PAGE_SIZE) => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
       const products = await prisma.product.findMany({
         where: {
           ...buildBaseWhere(),
-          OR: [{ isNewArrival: true }, { createdAt: { gte: thirtyDaysAgo } }],
+          OR: [{ isNewArrival: true }, { createdAt: { gte: ninetyDaysAgo } }],
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
@@ -246,6 +245,7 @@ export const getNewArrivalProducts = cache(
     CACHE_DURATIONS.NOUVEAUTES,
   ),
 );
+
 
 // ─── Query : Recherche Avancée (Paginée) ───────────────────────────────────
 
@@ -263,6 +263,16 @@ export async function searchCatalogProducts(
 }> {
   // Validation des paramètres
   const validated = catalogQueryParamsSchema.parse(params);
+
+  // catalogOption → conditions métier (approx)
+  // - generale: aucune condition spécifique
+  // - promotions: réduction en % (isPromoted=true OU discountPercent>0)
+  // - nouveautes: moins de 90 jours dans le stock (approx: créé récemment)
+  //   ⚠️ sans jointure inventaire, on utilise createdAt >= now-90 jours.
+  const now = new Date();
+  const ninetyDaysAgo = new Date(now);
+  ninetyDaysAgo.setDate(now.getDate() - 90);
+
 
   // Problème audit #9: Validation du champ de tri
   const sortField = validated.sortBy ?? "createdAt";
@@ -283,12 +293,22 @@ export async function searchCatalogProducts(
     ...(validated.isAvailable !== undefined && {
       availabilityProjection: { isAvailable: validated.isAvailable },
     }),
+    // Conditions legacy directes (si explicitement passées)
     ...(validated.isPromoted !== undefined && {
       isPromoted: validated.isPromoted,
     }),
     ...(validated.isNewArrival !== undefined && {
       isNewArrival: validated.isNewArrival,
     }),
+
+    // Conditions catalogOption (prioritaires sur legacy si défini)
+    ...(validated.catalogOption === "promotions" && {
+      OR: [{ isPromoted: true }, { discountPercent: { gt: 0 } }],
+    }),
+    ...(validated.catalogOption === "nouveautes" && {
+      OR: [{ isNewArrival: true }, { createdAt: { gte: ninetyDaysAgo } }],
+    }),
+
     ...(validated.minPrice !== undefined && {
       basePrice: { gte: new Prisma.Decimal(validated.minPrice) },
     }),
@@ -311,7 +331,8 @@ export async function searchCatalogProducts(
         },
       ],
     }),
-  };
+  }; 
+
 
   const [products, totalCount] = await Promise.all([
     prisma.product.findMany({

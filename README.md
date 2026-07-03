@@ -176,6 +176,24 @@ AUTH_SECRET="YOUR_AUTH_SECRET_VERY_LONG_AND_RANDOM"
 AUTH_URL="http://localhost:3000" # Ou l'URL de déploiement
 ```
 
+> Pour une installation PostgreSQL locale sur Windows, vous pouvez utiliser `winget` ou `choco`.
+>
+> - `winget install --id PostgreSQL.PostgreSQL.18 -e --accept-package-agreements --accept-source-agreements`
+> - Si `winget` n’est pas disponible ou si vous préférez Chocolatey, ouvrez PowerShell en administrateur puis exécutez : `choco install postgresql18 --yes`
+>
+> Après installation, vérifiez :
+>
+> - `psql --version`
+> - `Get-Service -Name postgresql*`
+>
+> Si vous souhaitez utiliser WSL, installez d’abord WSL (`wsl --install`), puis dans la distribution Ubuntu :
+>
+> ```bash
+> sudo apt update
+> sudo apt install postgresql postgresql-contrib
+> sudo service postgresql start
+> ```
+
 ### 4. Initialisation de la base de données
 
 Appliquez les migrations Prisma et générez le client Prisma :

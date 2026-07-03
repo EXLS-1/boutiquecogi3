@@ -14,7 +14,9 @@ import {
   CategoryDefinition,
   RBAC_LEVELS,
   CATEGORY_TYPES,
+  type CategoryGridConfig,
 } from "./category-types";
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 1: CONFIGURATION GRID

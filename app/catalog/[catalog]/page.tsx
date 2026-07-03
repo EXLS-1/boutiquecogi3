@@ -88,7 +88,16 @@ export default async function CatalogCategoryPage({
     : "newest";
 
   // Récupération des données
-  const data = await fetchCategoryPageData(catalog, page, sortBy);
+  const rawCatalogOption = resolvedSearchParams.catalogOption ?? undefined;
+
+  const data = await fetchCategoryPageData(
+    catalog,
+    page,
+    sortBy,
+    rawCatalogOption
+  );
+
+
 
   // Catégorie inexistante → 404
   if (!data.category || data.fetchError?.message?.includes("introuvable")) {
