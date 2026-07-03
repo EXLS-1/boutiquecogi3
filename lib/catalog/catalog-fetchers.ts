@@ -1,3 +1,4 @@
+// lib/catalog/catalog-fetchers.ts
 /**
  * =============================================================================
  * DATA FETCHERS — Pages Catalogue
@@ -18,7 +19,6 @@ import {
   searchCatalogProducts,
 } from "@/lib/catalog/catalog-queries";
 import {
-  mapCatalogProducts,
   filterProductsByAccessPolicy,
 } from "@/lib/catalog/catalog-mappers";
 import type {
@@ -28,6 +28,7 @@ import type {
   CategoryInfo,
   PartialError,
 } from "./catalog-page-types";
+import type { CatalogProduct } from "./catalog-types";
 import { resolveRbacContext } from "./catalog-rbac";
 
 
@@ -68,7 +69,11 @@ export async function fetchCatalogIndexData(): Promise<CatalogIndexData> {
       partialErrors.push(createPartialError("categories", err));
       return [] as CatalogCategory[];
     }),
-  ]);
+  ]) as [
+    readonly CatalogProduct[],
+    readonly CatalogProduct[],
+    readonly CatalogCategory[],
+  ];
 
   const fetchError =
     recentProductsRaw.length === 0 &&

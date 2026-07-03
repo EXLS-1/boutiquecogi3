@@ -104,12 +104,16 @@ function withCatalogCache<T extends (...args: unknown[]) => Promise<unknown>>(
   tags: string[],
   duration: number,
 ): T {
+  const cached = unstable_cache(
+    fn,
+    undefined,
+    {
+      tags,
+      revalidate: duration,
+    },
+  );
 
-  return unstable_cache(fn as (...args: unknown[]) => Promise<unknown>, undefined, {
-    tags,
-    revalidate: duration,
-  }) as T;
-
+  return cached as T;
 }
 
 /**
