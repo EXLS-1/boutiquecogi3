@@ -33,7 +33,7 @@ export function Price({
 }: PriceProps) {
   const currencyStore = useCurrencyStore();
   const storeCurrency = currencyStore.currency;
-  const exchangeRate = (currencyStore as any).exchangeRate ?? 1;
+  const exchangeRate = (currencyStore as { exchangeRate?: number }).exchangeRate ?? 1;
   const activeCurrency = forcedCurrency || storeCurrency;
 
   const formattedPrice = useMemo(() => {

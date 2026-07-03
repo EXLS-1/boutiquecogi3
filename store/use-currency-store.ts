@@ -1,6 +1,8 @@
 // store/use-currency-store.ts
 /**
- * Expliquer en detail ce que fait ce fichier
+ * Store Zustand pour la gestion de la devise d'affichage (USD/CDF) et du taux de change.
+ * 
+ * Fonctionnalités :  
  */
 
 "use client";
