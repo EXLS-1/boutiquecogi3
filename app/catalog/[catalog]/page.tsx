@@ -1,3 +1,4 @@
+// app/catalog/[catalog]/page.tsx
 /**
  * =============================================================================
  * CATALOG CATEGORY PAGE — Boutiquecogi3 (Allégée)
