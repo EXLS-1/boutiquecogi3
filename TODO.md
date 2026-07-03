@@ -1,6 +1,6 @@
-# TODO — TypeScript catalog-fetchers unknown
+- [x] Analyser le fichier concerné (ThemeProvider) et comprendre pourquoi l’ESLint/TS signale setState dans un effect
+- [x] Proposer un plan de correction (éviter setState synchronously dans l’effet)
+- [ ] Mettre à jour components/providers/theme-provider.tsx selon le plan
+- [ ] Vérifier le build/lint (commande npm)
 
-- [ ] 1) Rendre `withCatalogCache` générique et typé correctement dans `lib/catalog/catalog-queries.ts` afin d’éviter `unknown` dans `catalog-fetchers.ts`.
-- [ ] 2) Vérifier les types des retours de `getRecentProducts`, `getFeaturedProducts`, `getProductsByCategory` et `searchCatalogProducts`.
-- [ ] 3) Recompiler / vérifier que les erreurs TS18046 et TS2345 sont supprimées.
 

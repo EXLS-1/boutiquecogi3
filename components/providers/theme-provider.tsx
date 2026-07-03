@@ -1,7 +1,8 @@
 // components/providers/theme-provider.tsx
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+
 
 export type Theme = "light" | "dark" | "system";
 
@@ -26,16 +27,36 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [mounted, setMounted] = useState(false);
 
+  const markMounted = useCallback(() => {
+    setMounted(true);
+  }, []);
+
+
   // Récupération sécurisée du thème stocké après le montage client
   useEffect(() => {
-    const storedTheme = localStorage.getItem(storageKey) as Theme;
-    if (storedTheme) {
-      setThemeState(storedTheme);
+    const storedTheme = localStorage.getItem(storageKey);
+
+    // Validation simple (évite d'appliquer des valeurs non prévues)
+    const isValidTheme =
+      storedTheme === "light" || storedTheme === "dark" || storedTheme === "system";
+
+    // Déférer les mises à jour pour éviter un setState synchronously dans le body de l'effet
+    if (isValidTheme) {
+      const themeValue = storedTheme as Theme;
+      queueMicrotask(() => {
+        setThemeState(themeValue);
+        setMounted(true);
+      });
+    } else {
+      queueMicrotask(() => {
+        markMounted();
+      });
     }
-    setMounted(true);
-  }, [storageKey]);
+
+  }, [storageKey, markMounted]);
 
   // Mutation synchrone du DOM pour appliquer la classe CSS globale
+
   useEffect(() => {
     if (!mounted) return;
 
@@ -53,12 +74,15 @@ export function ThemeProvider({
     root.classList.add(theme);
   }, [theme, mounted]);
 
-  const setTheme = (newTheme: Theme) => {
-    localStorage.setItem(storageKey, newTheme);
-    setThemeState(newTheme);
-  };
+  const setTheme = useCallback(
+    (newTheme: Theme) => {
+      localStorage.setItem(storageKey, newTheme);
+      setThemeState(newTheme);
+    },
+    [storageKey]
+  );
 
-  const value = useMemo(() => ({ theme, setTheme }), [theme]);
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
 
   return (
     <ThemeProviderContext.Provider value={value}>
