@@ -9,8 +9,8 @@
 
 import { Suspense } from "react";
 import { getNewArrivalProducts } from "@/lib/catalog/catalog-queries";
-import { ProductList } from "@/components/catalog/product-list";
-import { ProductListSkeleton } from "@/components/catalog/product-list";
+import { ProductList } from "@/components/product/product-list";
+import { ProductListSkeleton } from "@/components/product/product-list";
 import { HOME_PRODUCTS_LIMIT } from "@/lib/catalog/catalog-constants";
 
 export async function SectionNouveautes() {

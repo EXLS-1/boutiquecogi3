@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { Hero } from "@/components/hero/hero";
 import Category from "@/components/category/category";
-import { ProductList } from "@/components/catalog/product-list";
+import { ProductList } from "@/components/product/product-list";
 import VideosCart from "@/components/video-show/videos-cart";
 import SocialNetworks from "@/components/Social/social-network";
 import { NewsletterForm } from "@/components/newsletter/newsletter-form.client";

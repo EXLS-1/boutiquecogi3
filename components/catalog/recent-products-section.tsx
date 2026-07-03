@@ -8,8 +8,8 @@
  */
 
 import { Suspense } from "react";
-import { ProductList } from "@/components/catalog/product-list";
-import { ProductListSkeleton } from "./product-list-skeleton";
+import { ProductList } from "@/components/product/product-list";
+import { ProductListSkeleton } from "../product/product-list-skeleton";
 import { EmptyState } from "./empty-state";
 import { ErrorState } from "./error-state";
 import type { CatalogProduct } from "@/lib/catalog/catalog-types";

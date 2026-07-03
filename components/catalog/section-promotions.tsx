@@ -8,8 +8,8 @@
 
 import { Suspense } from "react";
 import { getPromotionalProducts } from "@/lib/catalog/catalog-queries";
-import { ProductList } from "./product-list";
-import { ProductListSkeleton } from "./product-list-skeleton";
+import { ProductList } from "../product/product-list";
+import { ProductListSkeleton } from "../product/product-list-skeleton";
 import { HOME_PRODUCTS_LIMIT } from "@/lib/catalog/catalog-constants";
 
 export async function SectionPromotions() {

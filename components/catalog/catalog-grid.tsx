@@ -2,7 +2,7 @@
  * =============================================================================
  * CATEGORY GRID - Molécule - Boutiquecogi3
  * =============================================================================
- * Grille responsive pour l'affichage des cartes de catégories.
+ * Grille responsive pour l'affichage des cartes de produit suivant les categories,
  * Gère la disposition, le spacing et les breakpoints.
  */
 

@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 
-import { ProductDetail } from "@/components/product/product-detail";
+import { ProductCard } from "@/components/product/product-card";
 import { ProductNotFound } from "./products-not-found";
 
 import {
@@ -142,7 +142,7 @@ export default async function ProductPage({
     return (
       <main className="min-h-screen pt-20 bg-background">
         <div className="container mx-auto px-4">
-          <ProductDetail
+          <ProductCard
             product={product}
           />
         </div>

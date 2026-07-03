@@ -11,12 +11,12 @@
 import { Metadata, ResolvingMetadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ProductList } from "@/components/catalog/product-list";
+import { ProductList } from "@/components/product/product-list";
 import { CategoryBreadcrumb } from "@/components/catalog/category-breadcrumb";
 import { CategoryHeaderSection } from "@/components/catalog/category-header-section";
 import { CategoryControlsSection } from "@/components/catalog/category-controls-section";
 import { Pagination } from "@/components/catalog/pagination";
-import { ProductListSkeleton } from "@/components/catalog/product-list-skeleton";
+import { ProductListSkeleton } from "@/components/product/product-list-skeleton";
 import { PartialErrorBanner } from "@/components/catalog/partial-error-banner";
 import { EmptyState } from "@/components/catalog/empty-state";
 import { ErrorState } from "@/components/catalog/error-state";
