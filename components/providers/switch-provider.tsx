@@ -112,6 +112,8 @@ export function SwitchProvider({
     });
   }, []);
 
+  const stopAuditRef = useRef<() => void>(() => {});
+
   const startAudit = useCallback(async (targetRole: Role, approvalToken?: string) => {
     const targetLevel = CLIENT_ROLE_LEVELS[targetRole];
 
@@ -139,7 +141,7 @@ export function SwitchProvider({
       const msUntilExpiry = validation.request.expiresAt.getTime() - Date.now();
       if (msUntilExpiry > 0) {
         expiryTimerRef.current = setTimeout(() => {
-          stopAudit();
+          stopAuditRef.current();
           setAuditState({ status: "idle" });
         }, msUntilExpiry);
       }
@@ -168,15 +170,18 @@ export function SwitchProvider({
     });
   }, [realLevel, requiresApproval, clearExpiryTimer]);
 
+  const initialPermissionsRef = useRef(initialPermissions);
+  const initialRestrictionsRef = useRef(initialRestrictions);
+
   const stopAudit = useCallback(() => {
     clearExpiryTimer();
     startTransition(() => {
       setActiveRole(realRole);
-      setActivePermissions(initialPermissions);
-      setActiveRestrictions(initialRestrictions);
+      setActivePermissions(initialPermissionsRef.current);
+      setActiveRestrictions(initialRestrictionsRef.current);
       setAuditState({ status: "idle" });
     });
-  }, [realRole, initialPermissions, initialRestrictions, clearExpiryTimer]);
+  }, [realRole, clearExpiryTimer]);
 
   const contextValue = useMemo<SwitchContextType>(() => ({
     realRole,
