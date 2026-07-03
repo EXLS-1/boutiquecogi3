@@ -25,8 +25,7 @@ export default function ForbiddenPage() {
       {/* Texte principal */}
       <h1 className="text-4xl font-semibold text-red-600 mb-4">403 - Accès interdit</h1>
       <p className="text-lg text-zinc-700 mb-6 text-center max-w-md">
-        Vous n’avez pas les permissions nécessaires pour accéder à cette page.
-        Si vous pensez qu’il s’agit d’une erreur, contactez un administrateur.
+        Vous n’etes pas autoriser à accéder à cette page.
       </p>
 
       {/* Bouton retour */}
