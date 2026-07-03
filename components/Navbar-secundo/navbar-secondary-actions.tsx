@@ -7,7 +7,7 @@
 import React from "react";
 import { cn } from "@/lib/utils/utils";
 import { CartBadge } from "@/components/cart/cart-badge";
-import { Price } from "@/components/price-currency/price";
+import { Price } from "@/components/product-price/price";
 import useCart from "@/store/use-cart";
 
 type NavbarActionsProps = {

@@ -82,7 +82,7 @@ const getProductData = cache(
       return null;
     }
 
-    return mapCatalogProduct(product);
+    return mapCatalogProduct(product.id, product.name);
   },
 );
 
@@ -129,31 +129,27 @@ export async function generateMetadata({
 export default async function ProductPage({
   params,
 }: ProductPageProps) {
+  const { id } = await params;
+
+  let product = null;
+
   try {
-    const { id } = await params;
-
-    const product =
-      await getProductData(id);
-
-    if (!product) {
-      notFound();
-    }
-
-    return (
-      <main className="min-h-screen pt-20 bg-background">
-        <div className="container mx-auto px-4">
-          <ProductCard
-            product={product}
-          />
-        </div>
-      </main>
-    );
+    product = await getProductData(id);
   } catch (error) {
-    console.error(
-      "Product page error:",
-      error,
-    );
+    console.error("Product page error:", error);
 
     return <ProductNotFound />;
   }
+
+  if (!product) {
+    notFound();
+  }
+
+  return (
+    <main className="min-h-screen pt-20 bg-background">
+      <div className="container mx-auto px-4">
+        <ProductCard product={product} />
+      </div>
+    </main>
+  );
 }

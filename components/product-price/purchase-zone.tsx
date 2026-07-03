@@ -8,7 +8,7 @@
 import React, { useState } from "react";
 import { ShoppingBag, CreditCard, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Price } from "@/components/price-currency/price";
+import { Price } from "@/components/product-price/price";
 import useCart from "@/store/use-cart";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
