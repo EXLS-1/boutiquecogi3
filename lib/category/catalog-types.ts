@@ -30,7 +30,7 @@ export type RbacLevel = typeof RBAC_LEVELS[keyof typeof RBAC_LEVELS];
 // SECTION 2: TYPES DE CATÉGORIES
 // ═════════════════════════════════════════════════════════════════════════════
 
-export const CATEGORY_TYPES = {
+export const CATALOG_TYPES = {
   STATIC: "static",           // Catégories fixes (femme, homme, enfant...)
   DYNAMIC: "dynamic",         // Catégories générées dynamiquement
   PROMOTIONAL: "promotional", // Promotions
@@ -38,13 +38,13 @@ export const CATEGORY_TYPES = {
   SEASONAL: "seasonal",       // Saisons (optionnel futur)
 } as const;
 
-export type CategoryType = typeof CATEGORY_TYPES[keyof typeof CATEGORY_TYPES];
+export type CatalogType = typeof CATALOG_TYPES[keyof typeof CATALOG_TYPES];
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SECTION 3: INTERFACE CORE CATEGORY
+// SECTION 3: INTERFACE CORE CATALOG
 // ═════════════════════════════════════════════════════════════════════════════
 
-export interface CategoryDefinition {
+export interface CatalogDefinition {
   readonly id: string;                    // UUID v7 recommandé
   readonly slug: string;
   readonly title: string;
@@ -61,10 +61,10 @@ export interface CategoryDefinition {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SECTION 4: PROPS DU CATEGORY CARD
+// SECTION 4: PROPS DU CATALOG CARD
 // ═════════════════════════════════════════════════════════════════════════════
 
-export interface CategoryCardProps {
+export interface CatalogCardProps {
   readonly title: string;
   readonly subtitle: string;
   readonly imageSrc: string;
@@ -79,7 +79,7 @@ export interface CategoryCardProps {
 // SECTION 5: CONFIGURATION DU GRID
 // ═════════════════════════════════════════════════════════════════════════════
 
-export interface CategoryGridConfig {
+export interface CatalogGridConfig {
   readonly columns: {
     readonly mobile: number;
     readonly tablet: number;

@@ -14,7 +14,7 @@ import {
   CategoryDefinition,
   RBAC_LEVELS,
   CATEGORY_TYPES,
-} from "./category-types";
+} from "./catalog-types";
 
 /**
  * Récupère les catégories actives depuis la base de données.

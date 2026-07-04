@@ -10,9 +10,9 @@ import {
   CategoryDefinition,
   RbacLevel,
   RBAC_LEVELS,
-} from "@/lib/category/category-types";
+} from "@/lib/category/catalog-types";
 
-export type { RbacLevel } from "@/lib/category/category-types";
+export type { RbacLevel } from "@/lib/category/catalog-types";
 
 interface UseCategoryPermissionsOptions {
   readonly userRbacLevel?: RbacLevel;

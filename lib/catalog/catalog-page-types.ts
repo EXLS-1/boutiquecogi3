@@ -6,7 +6,7 @@
  * Centralisation pour éviter la duplication et garantir la cohérence.
  */
 
-import type { RbacLevel } from "@/lib/category/category-types";
+import type { RbacLevel } from "@/lib/category/catalog-types";
 import type { CatalogProduct } from "@/lib/catalog/catalog-types";
 
 // ─── RBAC ───────────────────────────────────────────────────────────────────

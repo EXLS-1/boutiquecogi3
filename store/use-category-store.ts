@@ -7,7 +7,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CategoryDefinition, CategoryType } from "@/lib/category/category-types";
+import { CategoryDefinition, CategoryType } from "@/lib/category/catalog-types";
 
 interface CategoryState {
   // ─── État ─────────────────────────────────────────────────────────────────

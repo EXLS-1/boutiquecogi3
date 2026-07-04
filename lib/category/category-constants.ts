@@ -15,7 +15,7 @@ import {
   RBAC_LEVELS,
   CATEGORY_TYPES,
   type CategoryGridConfig,
-} from "./category-types";
+} from "./catalog-types";
 
 
 // ═════════════════════════════════════════════════════════════════════════════
