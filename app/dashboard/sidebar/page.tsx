@@ -7,8 +7,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Role, Permission, RoleLevel } from "@/types/rbac";
+import { cn } from "@/lib/utils/cn";
+import { Role, Permission, RoleLevel } from "@/lib/auth/rbac";
 
 import {
   LayoutDashboard,

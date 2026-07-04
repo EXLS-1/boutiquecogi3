@@ -1,10 +1,15 @@
 // stores/rbac-store.ts
-/**
- * Expliquer en detail ce que fait ce fichier
- */
+// Gestion de l'état global RBAC avec Zustand
+// 
 
 import { create } from "zustand";
-import { Permission, RoleLevel, RBACSession } from "@/types/rbac";
+import { Permission } from "@/lib/auth/rbac";
+
+// Local RBAC session shape (module does not export RBACSession)
+interface RBACSession {
+  isAuthenticated: boolean;
+  effectivePermissions: Set<Permission> | null;
+}
 
 interface RBACState {
   session: RBACSession | null;
@@ -38,14 +43,16 @@ export const useRBACStore = create<RBACState>((set, get) => ({
     const { session } = get();
     if (!session?.isAuthenticated || !session.effectivePermissions)
       return false;
-    return permissions.some((p) => session.effectivePermissions.has(p));
+    const perms = session.effectivePermissions;
+    return permissions.some((p) => perms.has(p));
   },
 
   hasAllPermissions: (permissions: Permission[]) => {
     const { session } = get();
     if (!session?.isAuthenticated || !session.effectivePermissions)
       return false;
-    return permissions.every((p) => session.effectivePermissions.has(p));
+    const perms = session.effectivePermissions;
+    return permissions.every((p) => perms.has(p));
   },
 }));
 
