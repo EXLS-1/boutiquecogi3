@@ -11,6 +11,16 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"; // ✅ Singleton — JAMAIS réinstancié
 
+import {
+  Crown,
+  Shield,
+  UserCog,
+  UserCheck,
+  Store,
+  User,
+  Users
+} from "lucide-react";
+
 // ───────────────────────────────────────────
 // 1. TYPES & CONSTANTS
 // ───────────────────────────────────────────
@@ -47,6 +57,26 @@ const ROLE_TO_LEVEL: Record<Role, number> = {
   [ROLES.SUPERVISOR]: LEVELS.LEVEL_5,
   [ROLES.USER]: LEVELS.LEVEL_6,
   [ROLES.GUEST]: LEVELS.LEVEL_7,
+};
+
+export const RoleLevel = {
+  SUPER_ADMIN: 1,
+  ADMIN: 2,
+  MANAGER: 3,
+  EDITOR: 4,
+  SUPERVISOR: 5,
+  USER: 6,
+  GUEST: 7,
+} as const;
+
+export const RoleLevelConfig: Record<number, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  1: { label: "SUPER_ADMIN", icon: Crown, color: "#dc2626" },
+  2: { label: "ADMIN", icon: Shield, color: "#ea580c" },
+  3: { label: "MANAGER", icon: UserCog, color: "#ca8a04" },
+  4: { label: "EDITOR", icon: UserCheck, color: "#16a34a" },
+  5: { label: "SUPERVISOR", icon: Store, color: "#2563eb" },
+  6: { label: "USER", icon: User, color: "#6b7280" },
+  7: { label: "GUEST", icon: Users, color: "#9ca3af" },
 };
 
 const LEVEL_TO_ROLE: Record<number, Role> = {
@@ -168,7 +198,7 @@ function createRestrictions(
   return { ...base, ...overrides };
 }
 
-const DEFAULT_ROLE_CONFIG: Record<
+export const DEFAULT_ROLE_CONFIG: Record<
   Role,
   {
     level: Level;

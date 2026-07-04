@@ -1,3 +1,3 @@
 
-corriger cette erreur typescript redondande et reccurente dans "hooks/rbac/use-rbac.ts":
-Unexpected any. Specify a different type.eslint@typescript-eslint/no-explicit-any
+
+Eliminer seulement (et rien que) la logique dupliquée et tronquée de rbac dans cette page "@/app" de catalog et substitue-la par toutes les exports equivalents provenant de "@.lib/auth/rbac" pour satisfaire au principe de DRY (Do not Repeat Youself)

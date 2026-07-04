@@ -8,9 +8,9 @@
  */
 
 import { memo } from "react";
-import { CategoryGrid } from "../catalog/category-grid";
+import { CategoryGrid } from "../catalog/catalog-grid";
 import { NewProductCategory } from "./new-product";
-import { PromotionProductCategory } from "./promotion-product";
+import { SectionPromotion } from "./promotion-product";
 import Femme from "./femme";
 import Homme from "./homme";
 import Enfant from "./enfant";

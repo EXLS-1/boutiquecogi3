@@ -1,14 +1,17 @@
-// components/dashboard/dashboard-sidebar.tsx
-// Sidebar avec navigation conditionnée par niveau RBAC (1-6)
-// HIÉRARCHIE DESCENDANTE : Level 1 = SUPER_ADMIN → Level 6 = CLIENT
+// 
+// Server wrapper for dashboard sidebar. Performs RBAC filtering server-side
+// and renders the client navigation component for interactive UI.
 
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils/cn";
-import { Role, Permission, getRoleLevel } from "@/lib/auth/rbac";
+import SidebarClient, { type SidebarItem } from "./sidebar-client";
+import {
+  getCurrentUserWithRole,
+  getClientPermissions,
+  hasAllPermissions,
+  hasAnyPermission,
+  RoleLevel,
+  type Role,
+  type Permission,
+} from "@/lib/auth/rbac";
 
 import {
   LayoutDashboard,
@@ -19,6 +22,7 @@ import {
   Video,
   Heart,
   CreditCard,
+  BadgeCheck,
   Landmark,
   ShieldCheck,
   FileText,
@@ -29,54 +33,19 @@ import {
   ChevronRight,
   Crown,
   Shield,
-  UserCog,
-  UserCheck,
-  Store,
-  User,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+type RoleLevelValue = typeof RoleLevel[keyof typeof RoleLevel];
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-interface SidebarItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  minLevel: RoleLevel;      // Niveau MINIMUM requis (1 = Super Admin)
-  maxLevel?: RoleLevel;     // Niveau MAXIMUM autorisé (optionnel)
-  permissions?: Permission[];
-  requireAll?: boolean;
-  badge?: string;
-  children?: SidebarItem[];
-}
-
-interface DashboardSidebarProps {
-  userRole: Role;
-  userLevel: RoleLevel;
-  permissions: Permission[];
-}
-
-// =============================================================================
-// CONFIGURATION DE NAVIGATION RBAC - HIÉRARCHIE DESCENDANTE
-// =============================================================================
-// Level 1 = SUPER_ADMIN  (accès total)
-// Level 2 = ADMIN        (gestion système)
-// Level 3 = MANAGER      (analytics, trésorerie)
-// Level 4 = MODERATOR    (modération contenu)
-// Level 5 = SELLER       (produits, médias)
-// Level 6 = CUSTOMER     (commandes, wishlist)
-
+// Navigation model (kept server-side for RBAC filtering)
 const NAVIGATION_ITEMS: SidebarItem[] = [
   // ================================================================
   // LEVEL 1 : SUPER ADMIN (accès total)
@@ -86,7 +55,6 @@ const NAVIGATION_ITEMS: SidebarItem[] = [
     href: "/dashboard/settings/system",
     icon: Crown,
     minLevel: 1,
-    permissions: ["settings:system_config"],
     badge: "Super",
   },
   {
@@ -101,7 +69,9 @@ const NAVIGATION_ITEMS: SidebarItem[] = [
     href: "/dashboard/users/roles",
     icon: Shield,
     minLevel: 1,
-    permissions: ["settings:manage_roles", "settings:manage_permissions"],
+    // force-cast via unknown to satisfy TS when Permission union doesn't directly match these literals
+    permissions: ["audit:switch-self", "audit:switch-others"],
+
     badge: "Admin",
   },
 
@@ -351,248 +321,58 @@ const NAVIGATION_ITEMS: SidebarItem[] = [
     permissions: ["products:read"],
   },
 ];
-
-// =============================================================================
-// FILTRAGE RBAC - HIÉRARCHIE DESCENDANTE
-// =============================================================================
-// userLevel doit être <= minLevel (plus petit = plus haut)
-
-function filterNavigation(
+// Server-side RBAC navigation filtering
+async function filterNavigationServer(
   items: SidebarItem[],
-  userLevel: RoleLevel,
-  userPermissions: Permission[]
-): SidebarItem[] {
-  const permSet = new Set(userPermissions);
+  role: Role,
+  userLevel: number,
+): Promise<SidebarItem[]> {
+  const results = await Promise.all(
+    items.map(async (item) => {
+      // niveau : userLevel doit être <= minLevel (1 = plus haut)
+      if (userLevel > item.minLevel) return null;
 
-  return items
-    .filter((item) => {
-      // Vérifier niveau : userLevel doit être <= minLevel (1 = plus haut)
-      if (userLevel > item.minLevel) return false;
+      if (item.maxLevel && userLevel < item.maxLevel) return null;
 
-      // Vérifier maxLevel si défini
-      if (item.maxLevel && userLevel < item.maxLevel) return false;
-
-      // Vérifier permissions si définies
       if (item.permissions && item.permissions.length > 0) {
         const requireAll = item.requireAll ?? true;
-
-        if (requireAll) {
-          return item.permissions.every((p) => permSet.has(p));
-        } else {
-          return item.permissions.some((p) => permSet.has(p));
-        }
+        const ok = requireAll
+          ? await hasAllPermissions(role, item.permissions as Permission[])
+          : await hasAnyPermission(role, item.permissions as Permission[]);
+        if (!ok) return null;
       }
 
-      return true;
-    })
-    .map((item) => ({
-      ...item,
-      children: item.children
-        ? filterNavigation(item.children, userLevel, userPermissions)
-        : undefined,
-    }))
-    .filter((item) => !item.children || item.children.length > 0);
+      const children = item.children
+        ? await filterNavigationServer(item.children, role, userLevel)
+        : undefined;
+
+      if (item.children && children && children.length === 0) return null;
+
+      return { ...item, children } as SidebarItem;
+    }),
+  );
+
+  return results.filter(Boolean) as SidebarItem[];
 }
 
-// =============================================================================
-// COMPOSANTS
-// =============================================================================
+export default async function DashboardSidebar() {
+  const userData = await getCurrentUserWithRole();
+  const role = (userData?.role ?? ("USER" as Role)) as Role;
+  const userLevel = userData?.level ?? RoleLevel.USER;
 
-function SidebarLink({
-  item,
-  isActive,
-  depth = 0,
-}: {
-  item: SidebarItem;
-  isActive: boolean;
-  depth?: number;
-}) {
-  const Icon = item.icon;
+  const [permissions, filteredNav] = await Promise.all([
+    getClientPermissions(role),
+    filterNavigationServer(NAVIGATION_ITEMS as SidebarItem[], role, userLevel),
+  ]);
 
   return (
-    <Link
-      href={item.href}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-        "hover:bg-accent hover:text-accent-foreground",
-        isActive && "bg-accent text-accent-foreground",
-        depth > 0 && "pl-9"
-      )}
-    >
-      {depth === 0 && <Icon className="h-4 w-4" />}
-      <span className="flex-1">{item.label}</span>
-      {item.badge && (
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-          {item.badge}
-        </span>
-      )}
-    </Link>
+    <SidebarClient
+      userRole={{ role }}
+      userLevel={userLevel}
+      permissions={permissions}
+      filteredNav={filteredNav}
+      navigationItems={NAVIGATION_ITEMS as SidebarItem[]}
+    />
   );
 }
 
-function SidebarGroup({
-  item,
-  userLevel,
-  userPermissions,
-}: {
-  item: SidebarItem;
-  userLevel: RoleLevel;
-  userPermissions: Permission[];
-}) {
-  const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(pathname.startsWith(item.href));
-  const Icon = item.icon;
-  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-
-  const filteredChildren = item.children
-    ? filterNavigation(item.children, userLevel, userPermissions)
-    : [];
-
-  if (filteredChildren.length === 0 && item.children) {
-    return <SidebarLink item={item} isActive={isActive} />;
-  }
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <button
-          className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            "hover:bg-accent hover:text-accent-foreground",
-            isActive && "bg-accent text-accent-foreground"
-          )}
-        >
-          <Icon className="h-4 w-4" />
-          <span className="flex-1 text-left">{item.label}</span>
-          {item.badge && (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-              {item.badge}
-            </span>
-          )}
-          {isOpen ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-1 pt-1">
-        {filteredChildren.map((child) => (
-          <SidebarLink
-            key={child.href}
-            item={child}
-            isActive={pathname === child.href}
-            depth={1}
-          />
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
-// =============================================================================
-// MAPPING NIVEAU → LABEL ET ICÔNE
-// =============================================================================
-
-const LEVEL_CONFIG: Record<RoleLevel, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  1: { label: "Super Admin", icon: Crown, color: "#dc2626" },
-  2: { label: "Admin", icon: Shield, color: "#ea580c" },
-  3: { label: "Manager", icon: UserCog, color: "#ca8a04" },
-  4: { label: "Modérateur", icon: UserCheck, color: "#16a34a" },
-  5: { label: "Vendeur", icon: Store, color: "#2563eb" },
-  6: { label: "Client", icon: User, color: "#6b7280" },
-};
-
-// =============================================================================
-// COMPOSANT PRINCIPAL
-// =============================================================================
-
-export function DashboardSidebar({
-  userRole,
-  userLevel,
-  permissions,
-}: DashboardSidebarProps) {
-  const filteredNav = filterNavigation(NAVIGATION_ITEMS, userLevel, permissions);
-  const levelConfig = LEVEL_CONFIG[userLevel];
-  const LevelIcon = levelConfig.icon;
-
-  return (
-    <aside className="hidden w-64 flex-col border-r bg-card lg:flex">
-      {/* Header sidebar */}
-      <div className="flex h-14 items-center border-b px-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <div
-            className="h-6 w-6 rounded-md"
-            style={{ backgroundColor: userRole.color }}
-          />
-          <span>Boutiquecogi3</span>
-        </Link>
-      </div>
-
-      <ScrollArea className="flex-1 py-2">
-        <nav className="space-y-1 px-2">
-          {/* Vue d'ensemble accessible à tous */}
-          <Link
-            href="/dashboard"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              "hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span>Vue d&apos;ensemble</span>
-          </Link>
-
-          <Separator className="my-2" />
-
-          {filteredNav.map((item) =>
-            item.children ? (
-              <SidebarGroup
-                key={item.href}
-                item={item}
-                userLevel={userLevel}
-                userPermissions={permissions}
-              />
-            ) : (
-              <SidebarLink
-                key={item.href}
-                item={item}
-                isActive={false}
-              />
-            )
-          )}
-        </nav>
-
-        <Separator className="my-4" />
-
-        {/* Info rôle */}
-        <div className="px-4 py-2">
-          <div className="rounded-lg border bg-muted/50 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <LevelIcon className="h-4 w-4" style={{ color: levelConfig.color }} />
-              <p className="text-xs font-medium text-muted-foreground">Rôle actuel</p>
-            </div>
-            <p className="text-sm font-semibold" style={{ color: levelConfig.color }}>
-              {userRole.name}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {levelConfig.label} · Level {userLevel}
-            </p>
-            <div className="mt-2 flex gap-1">
-              {Array.from({ length: 6 }, (_, i) => (
-                <div
-                  key={i}
-                  className="h-1.5 flex-1 rounded-full"
-                  style={{
-                    backgroundColor: i + 1 >= userLevel ? levelConfig.color : "#e5e7eb",
-                    opacity: i + 1 >= userLevel ? 1 : 0.3,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </ScrollArea>
-    </aside>
-  );
-}
