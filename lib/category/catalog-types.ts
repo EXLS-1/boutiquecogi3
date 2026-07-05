@@ -2,7 +2,7 @@
  * =============================================================================
  * CATEGORY TYPES — Boutiquecogi3
  * =============================================================================
- * Définitions strictes pour l'ensemble du système de catégories.
+ * Définitions strictes pour l'ensemble du système de catalog.
  * Atomicité : chaque type a une responsabilité unique.
  * 
  * Aligné avec le système RBAC Level 1-7 (GUEST = Level 7).
@@ -15,17 +15,16 @@ import { RoleLevel } from "@/lib/auth/rbac";
 // SECTION 1: NIVEAUX DE PRIVILÈGE RBAC (alignés lib/auth/rbac.ts)
 // ═════════════════════════════════════════════════════════════════════════════
 
-
-
 export type Role_Level = typeof RoleLevel[keyof typeof RoleLevel];
+export type RbacLevel = Role_Level;
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SECTION 2: TYPES DE CATÉGORIES
+// SECTION 2: TYPES DE catalog
 // ═════════════════════════════════════════════════════════════════════════════
 
 export const CATALOG_TYPES = {
-  STATIC: "static",           // Catégories fixes (femme, homme, enfant...)
-  DYNAMIC: "dynamic",         // Catégories générées dynamiquement
+  STATIC: "static",           // catalog fixes (femme, homme, enfant...)
+  DYNAMIC: "dynamic",         // catalog générées dynamiquement
   PROMOTIONAL: "promotional", // Promotions
   NEW_ARRIVAL: "new_arrival", // Nouveautés
   SEASONAL: "seasonal",       // Saisons (optionnel futur)

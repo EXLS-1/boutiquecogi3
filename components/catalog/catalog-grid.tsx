@@ -7,19 +7,24 @@
  */
 
 import { memo, ReactNode } from "react";
-import { CategoryGridConfig, DEFAULT_GRID_CONFIG } from "@/lib/category/category-constants";
 
-interface CategoryGridProps {
+// Local fallback default grid config (module did not export DEFAULT_GRID_CONFIG)
+const DEFAULT_GRID_CONFIG = {
+  columns: { mobile: 1, tablet: 2, desktop: 3 },
+  gap: "1rem",
+} as const;
+
+interface CatalogGridProps {
   readonly children: ReactNode;
-  readonly config?: Partial<CategoryGridConfig>;
+  readonly config?: Partial<typeof DEFAULT_GRID_CONFIG>;
   readonly className?: string;
 }
 
-function CategoryGridComponent({
+function CatalogGridComponent({
   children,
   config = {},
   className = "",
-}: CategoryGridProps) {
+}: CatalogGridProps) {
   const mergedConfig = { ...DEFAULT_GRID_CONFIG, ...config };
   const { columns, gap } = mergedConfig;
 
@@ -44,5 +49,5 @@ function CategoryGridComponent({
   );
 }
 
-export const CategoryGrid = memo(CategoryGridComponent);
-CategoryGrid.displayName = "CategoryGrid";
+export const CatalogGrid = memo(CatalogGridComponent);
+CatalogGrid.displayName = "CatalogGrid";

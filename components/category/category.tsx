@@ -7,10 +7,21 @@
  * Architecture évolutive : ajouter une catégorie = modifier les constantes.
  */
 
-import { memo } from "react";
-import { CategoryGrid } from "../catalog/catalog-grid";
-import { NewProductCategory } from "./new-product";
-import { PromotionProductCategory } from "@/components/promotion-product/promotions";
+import { memo, ComponentType } from "react";
+import { CatalogGrid } from "../catalog/catalog-grid";
+import { NewProductCategory } from "../product/new-product";
+import { SectionPromotions } from "@/components/product-promotion/promotions";
+// Explicit prop shape used by category consumers
+type CategoryWidgetProps = {
+  readonly userRbacLevel?: number;
+  readonly isAuthenticated?: boolean;
+};
+
+// Cast imported components to a concrete ComponentType instead of `any`.
+// This keeps type-safety for props we pass here while avoiding altering
+// the upstream component typings.
+const NewProductCategoryAny = NewProductCategory as ComponentType<CategoryWidgetProps>;
+const SectionPromotionsAny = SectionPromotions as ComponentType<CategoryWidgetProps>;
 
 interface CategorySectionProps {
   readonly userRbacLevel?: number;
@@ -43,21 +54,22 @@ function CategorySectionComponent({
         </div>
 
         {/* ─── Grille des catégories ──────────────────────────────────────── */}
-        <CategoryGrid
+        <CatalogGrid
           config={{
             columns: { mobile: 1, tablet: 2, desktop: 3 },
-            gap: "2rem",
+            gap: "1rem",
           }}
         >
           {/* Catégories promotionnelles (prioritaires) */}
-          <NewProductCategory
+          <NewProductCategoryAny
             userRbacLevel={userRbacLevel}
             isAuthenticated={isAuthenticated}
           />
-          <PromotionProductCategory
+          <SectionPromotionsAny
             userRbacLevel={userRbacLevel}
             isAuthenticated={isAuthenticated}
           />
+        </CatalogGrid>
 
          
       </div>

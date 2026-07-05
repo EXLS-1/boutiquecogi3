@@ -7,7 +7,7 @@
  */
 
 import { memo, type ComponentProps } from "react";
-import { ProductCard } from "@/components/catalog/product-card";
+import { ProductCard } from "@/components/product/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Product = ComponentProps<typeof ProductCard>["product"];
