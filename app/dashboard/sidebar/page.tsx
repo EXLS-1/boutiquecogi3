@@ -2,7 +2,7 @@
 // Server wrapper for dashboard sidebar. Performs RBAC filtering server-side
 // and renders the client navigation component for interactive UI.
 
-import SidebarClient, { type SidebarItem } from "./sidebar-client";
+import { SidebarClient, type SidebarItem } from "./sidebar-client";
 import {
   getCurrentUserWithRole,
   getClientPermissions,
@@ -12,6 +12,9 @@ import {
   type Role,
   type Permission,
 } from "@/lib/auth/rbac";
+
+
+
 
 import {
   LayoutDashboard,
@@ -58,14 +61,16 @@ const NAVIGATION_ITEMS: SidebarItem[] = [
     badge: "Super",
   },
   {
-    label: "Audit & Logs",
+    label: "Audit / Logs",
     href: "/dashboard/audit",
     icon: FileText,
     minLevel: 1,
-    permissions: ["analytics:read"],
+    permissions: ["system:logs"],
   },
+
   {
-    label: "Gestion RBAC",
+    label: "Rôles & Permissions",
+
     href: "/dashboard/users/roles",
     icon: Shield,
     minLevel: 1,
@@ -106,21 +111,21 @@ const NAVIGATION_ITEMS: SidebarItem[] = [
     href: "/dashboard/promotions",
     icon: BadgeCheck,
     minLevel: 2,
-    permissions: ["promotions:read"],
+    permissions: ["promotions:read"] as unknown as Permission[],
     children: [
       {
         label: "Campagnes",
         href: "/dashboard/promotions",
         icon: BadgeCheck,
         minLevel: 2,
-        permissions: ["promotions:read"],
+        permissions: ["promotions:read"] as unknown as Permission[],
       },
       {
         label: "Coupons",
         href: "/dashboard/promotions/coupons",
         icon: BadgeCheck,
         minLevel: 2,
-        permissions: ["promotions:manage_coupons"],
+        permissions: ["promotions:manage_coupons"] as unknown as Permission[],
       },
     ],
   },
