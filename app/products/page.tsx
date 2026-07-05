@@ -25,7 +25,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { searchParamsCache } from "@/components/catalog/catalog-search-params";
 import { searchCatalogProducts } from "@/lib/catalog/catalog-queries";
-import ProductCatalog from "@/components/product/product-catalog";
+import ProductCatalog from "../../components/product/product-catalog";
 import { ProductListSkeleton } from "@/components/product/product-list-skeleton";
 import { SortableField, SORTABLE_FIELDS } from "@/lib/catalog/catalog-types";
 

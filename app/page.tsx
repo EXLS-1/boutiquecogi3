@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Hero } from "@/components/hero/hero";
-import Category from "@/components/category/category";
+import Category from "@/components/product-category/category";
 import { ProductList } from "@/components/product/product-list";
 import VideosCart from "@/components/video-show/videos-cart";
 import SocialNetworks from "@/components/Social/social-network";
