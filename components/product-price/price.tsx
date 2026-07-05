@@ -25,7 +25,7 @@ interface PriceProps {
 export default function Price({
   amount,
   // props historique: la devise affichée est prise en charge par le store
-  currency: _currency,
+  // legacy prop `currency` is ignored in favor of store-managed currency
   className,
   originalAmount,
   size = "md",

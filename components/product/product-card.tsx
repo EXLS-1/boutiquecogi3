@@ -93,7 +93,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
         {/* Prix */}
         <div className="mt-auto pt-3 flex items-baseline gap-2">
           <span className="text-lg font-bold text-slate-900">
-            <Price amount={displayPriceUSD} />
+            <Price amount={product.price} currency={product.currency} />
           </span>
           {product.discountPercent > 0 }
         </div>
