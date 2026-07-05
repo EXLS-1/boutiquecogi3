@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { BadgeProductStatus } from "./badge";
 import { CatalogProduct } from "@/lib/catalog/catalog-types";
 import { useCatalog } from "@/store/use-catalog-store";
+import Price from "@/components/product-price/price";
 
 interface ProductCardProps {
   readonly product: CatalogProduct;
@@ -25,15 +26,6 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
   const { toggleWishlist, isInWishlist, setQuickViewProduct } = useCatalog();
 
   const isWishlisted = isInWishlist(product.id);
-
-  // Prix affiché (avec promo si applicable)
-  const displayPriceUSD = product.discountPercent > 0
-    ? product.basePriceUSD * (1 - product.discountPercent / 100)
-    : product.basePriceUSD;
-
-  const displayPriceCDF = product.discountPercent > 0
-    ? product.basePriceCDF * (1 - product.discountPercent / 100)
-    : product.basePriceCDF;
 
   return (
     <article className="group relative flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm 
@@ -101,13 +93,9 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
         {/* Prix */}
         <div className="mt-auto pt-3 flex items-baseline gap-2">
           <span className="text-lg font-bold text-slate-900">
-            {displayPriceCDF.toLocaleString("fr-CD")} FC
+            <Price amount={displayPriceUSD} />
           </span>
-          {product.discountPercent > 0 && (
-            <span className="text-sm text-slate-400 line-through">
-              {product.basePriceCDF.toLocaleString("fr-CD")} FC
-            </span>
-          )}
+          {product.discountPercent > 0 }
         </div>
 
         {/* CTA */}

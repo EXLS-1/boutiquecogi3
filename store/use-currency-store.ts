@@ -2,7 +2,9 @@
 /**
  * Store Zustand pour la gestion de la devise d'affichage (USD/CDF) et du taux de change.
  * 
- * Fonctionnalités :  
+ * Fonctionnalités :
+ * - Stocke la devise active (USD ou CDF) et le taux de change actuel.
+ * - Persiste la devise dans le localStorage pour conserver la préférence utilisateur.
  */
 
 "use client";

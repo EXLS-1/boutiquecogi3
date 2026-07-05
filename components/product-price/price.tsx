@@ -1,61 +1,46 @@
 // components/price/price.tsx
-// ce composant gère l'affichage du prix en fonction de la devise active (USD ou CDF) et du taux de change. Il utilise Intl.NumberFormat pour un formatage robuste et localisé, et prend en charge les prix originaux pour les promotions. La conversion est effectuée en fonction de la devise active, avec une logique claire pour passer des cents aux unités de base et vice versa.
+// ce composant gère l'affichage du prix en fonction de la devise active (USD ou CDF) et du taux de change.
 
 "use client";
 
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils/utils";
 import { useCurrencyStore } from "@/store/use-currency-store";
+import {
+  computeConvertedAmountForOriginal,
+  formatPriceFromUsdCents,
+} from "@/lib/currency/price-format";
 
 interface PriceProps {
-  /** Montant en unité de base (Cents pour USD, Unité pour CDF) */
+  /** Montant en unité de base (Cents pour USD) */
   amount: number;
-  /** Devise forcée ou calculée selon le store si absent */
-  currency?: "USD" | "CDF";
-  /** Style optionnel */
+  /** Devise selon le store (conservée pour compatibilité props historiques) */
+  currency: "USD" | "CDF";
   className?: string;
-  /** Affiche le prix original si promo (en cents) */
+  /** Affiche le prix original si promo (en cents USD) */
   originalAmount?: number;
-  /** Taille du texte */
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-/**
- * Composant Price : Gère la conversion USD/CDF et le formatage local.
- * Utilise la précision Intl pour la robustesse financière.
- */
-export function Price({
+export default function Price({
   amount,
-  currency: forcedCurrency,
+  // props historique: la devise affichée est prise en charge par le store
+  currency: _currency,
   className,
   originalAmount,
   size = "md",
 }: PriceProps) {
   const currencyStore = useCurrencyStore();
-  const storeCurrency = currencyStore.currency;
-  const exchangeRate = (currencyStore as { exchangeRate?: number }).exchangeRate ?? 1;
-  const activeCurrency = forcedCurrency || storeCurrency;
+  const activeCurrency = currencyStore.currency;
 
   const formattedPrice = useMemo(() => {
-    let finalAmount = amount;
+    return formatPriceFromUsdCents(
+      { amountInUsdCents: amount, rate: currencyStore.rate },
+      activeCurrency
+    );
+  }, [amount, activeCurrency, currencyStore.rate]);
 
-    // Logique de conversion : USD (cents) -> CDF
-    if (activeCurrency === "CDF") {
-      // On multiplie par le taux (ex: 2400) et on arrondit à l'unité
-      finalAmount = (amount / 100) * exchangeRate;
-    } else {
-      // USD : on repasse des cents aux dollars
-      finalAmount = amount / 100;
-    }
-
-    return new Intl.NumberFormat(activeCurrency === "CDF" ? "fr-CD" : "en-US", {
-      style: "currency",
-      currency: activeCurrency,
-      minimumFractionDigits: activeCurrency === "CDF" ? 0 : 2,
-    }).format(finalAmount);
-  }, [amount, activeCurrency, exchangeRate]);
-
-  const sizeClasses = {
+  const sizeClasses: Record<NonNullable<PriceProps["size"]>, string> = {
     sm: "text-sm",
     md: "text-base font-semibold",
     lg: "text-xl font-bold",
@@ -67,16 +52,25 @@ export function Price({
       <span className={cn("text-cyan-900 dark:text-cyan-100", sizeClasses[size])}>
         {formattedPrice}
       </span>
-      
+
       {originalAmount && originalAmount > amount && (
         <span className="text-sm text-rose-500 line-through opacity-70">
-          {new Intl.NumberFormat(activeCurrency === "CDF" ? "fr-CD" : "en-US", {
-            style: "currency",
-            currency: activeCurrency,
-            minimumFractionDigits: activeCurrency === "CDF" ? 0 : 2,
-          }).format(activeCurrency === "CDF" ? (originalAmount / 100) * exchangeRate : originalAmount / 100)}
+          {(() => {
+            const converted = computeConvertedAmountForOriginal(
+              { amountInUsdCents: amount, rate: currencyStore.rate },
+              activeCurrency,
+              originalAmount
+            );
+
+            return new Intl.NumberFormat(activeCurrency === "USD" ? "en-US" : "fr-CD", {
+              style: "currency",
+              currency: activeCurrency,
+              minimumFractionDigits: activeCurrency === "USD" ? 2 : 0,
+            }).format(converted);
+          })()}
         </span>
       )}
     </div>
   );
 }
+
