@@ -1,4 +1,4 @@
-// components/catalog/product-card.tsx
+// components/product/product-card.tsx
 /**
  * =============================================================================
  * PRODUCT CARD - Atome - Boutiquecogi3
@@ -10,10 +10,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
 import { Heart, Eye, ShoppingBag } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BadgeProductStatus } from "./badge";
 import { CatalogProduct } from "@/lib/catalog/catalog-types";
-import { useCatalogStore } from "@/store/use-catalog-store";
+import { useCatalog } from "@/store/use-catalog-store";
 
 interface ProductCardProps {
   readonly product: CatalogProduct;
@@ -22,7 +22,8 @@ interface ProductCardProps {
 }
 
 function ProductCardComponent({ product, showBadge = true, priority = false }: ProductCardProps) {
-  const { toggleWishlist, isInWishlist, setQuickViewProduct } = useCatalogStore();
+  const { toggleWishlist, isInWishlist, setQuickViewProduct } = useCatalog();
+
   const isWishlisted = isInWishlist(product.id);
 
   // Prix affiché (avec promo si applicable)
@@ -53,16 +54,8 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
 
         {/* Badges */}
         {showBadge && (
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-            {product.isNewArrival && (
-              <Badge className="bg-emerald-500 text-white hover:bg-emerald-600">Nouveau</Badge>
-            )}
-            {product.discountPercent > 0 && (
-              <Badge variant="destructive">-{product.discountPercent}%</Badge>
-            )}
-            {!product.isAvailable && (
-              <Badge variant="secondary" className="bg-slate-800 text-white">Épuisé</Badge>
-            )}
+          <div className="absolute top-3 left-3">
+            <BadgeProductStatus product={product} />
           </div>
         )}
 
