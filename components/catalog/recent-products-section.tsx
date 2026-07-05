@@ -21,13 +21,6 @@ interface RecentProductsSectionProps {
   readonly errorMessage?: string;
 }
 
-/**
- * Section nouveautés avec gestion complète des états.
- * @param products — Produits récents à afficher
- * @param pageSize — Nombre de produits par page
- * @param hasError — Indique si une erreur de fetching s'est produite
- * @param errorMessage — Message d'erreur optionnel
- */
 export function RecentProductsSection({
   products,
   pageSize,

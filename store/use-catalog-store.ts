@@ -1,14 +1,14 @@
 // store/use-catalog-store.ts
 /**
- * Expliquer en detail ce que fait ce fichier
+ * ce fichier contient le store zustand pour la gestion des filtres,
+ * de la wishlist et du quick view dans le catalogue.
  */
-// 
+
 "use client";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
-  CatalogProduct,
   CatalogQueryParams,
 } from "@/lib/catalog/catalog-types";
 

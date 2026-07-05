@@ -1,3 +1,4 @@
+// components/catalog/catalog-grid.tsx
 /**
  * =============================================================================
  * CATEGORY GRID - Molécule - Boutiquecogi3

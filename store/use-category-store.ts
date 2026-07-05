@@ -1,13 +1,13 @@
 // store/use-category-store.ts
 /**
- * Expliquer en detail ce que fait ce fichier
+ * ce fichier contient le store zustand pour la gestion de l'état des catégories et
+ * des filtres dans le catalogue.
  */
 
 "use client";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CategoryDefinition, CategoryType } from "@/lib/category/catalog-types";
 
 interface CategoryState {
   // ─── État ─────────────────────────────────────────────────────────────────
