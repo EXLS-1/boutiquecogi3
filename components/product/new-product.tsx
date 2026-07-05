@@ -4,50 +4,57 @@
  * =============================================================================
  * Composant dédié à l'affichage de la catégorie "Nouveautés".
  * Badge "Nouveau" intégré, style distinctif.
+ * 
  */
 
 "use client";
 
 import { memo } from "react";
 import { ProductCard } from "@/components/product/product-card";
-import { NEW_ARRIVAL_CATEGORIES } from "@/lib/category/category-constants";
 import { useCatalogPermissions } from "@/hooks/catalog/use-catalog-permissions";
+import type { CatalogProduct } from "@/lib/catalog/catalog-types";
 
-interface NewProductCategoryProps {
+interface RecentProductsProps {
   readonly isAuthenticated: boolean;
-  readonly products: readonly any[];
+  readonly products?: readonly CatalogProduct[];
 }
 
-function NewProductCategoryComponent({
+function RecentProductsComponent({
   isAuthenticated,
   products = [],
-}: NewProductCategoryProps) {
-  // Filtrage RBAC
+}: RecentProductsProps) {
   const { filterProducts } = useCatalogPermissions({
     isAuthenticated,
   });
 
   const visibleProducts = filterProducts(products);
+  const now = new Date();
+  const ninetyDaysAgo = new Date(now);
+  ninetyDaysAgo.setDate(now.getDate() - 90);
 
-  const newArrivalProducts = visibleProducts.filter((product) =>
-    NEW_ARRIVAL_CATEGORIES.includes((product as any).category),
-  );
+  const recentProducts = visibleProducts.filter((product) => {
+    const createdAt = new Date(product.createdAt);
+    return createdAt >= ninetyDaysAgo && createdAt <= now;
+  });
 
-  if (newArrivalProducts.length === 0) return null;
-
-  const product = newArrivalProducts[0]; // Un seul produit nouveauté
+  if (recentProducts.length === 0) return null;
 
   return (
-    <ProductCard
-      product={product}
-      badge="NOUVEAU"
-      badgeVariant="default"
-      priority={true} // LCP critique
-      aspectRatio="16/9" // Format plus large pour mettre en valeur
-      className="border-amber-200 hover:border-amber-400/50"
-    />
+    <>
+      {recentProducts.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          priority={true}
+        />
+      ))}
+    </>
   );
 }
 
-export const NewProductCategory = memo(NewProductCategoryComponent);
-NewProductCategory.displayName = "NewProductCategory";
+export const RecentProducts = memo(RecentProductsComponent);
+RecentProducts.displayName = "RecentProducts";
+
+export const NewProductCategory = RecentProducts;
+
+export default RecentProducts;

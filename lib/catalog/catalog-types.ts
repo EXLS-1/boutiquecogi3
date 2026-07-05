@@ -174,7 +174,6 @@ export interface RawCatalogProduct {
   readonly availabilityProjection?: {
     readonly isAvailable: boolean;
     readonly status?: AvailabilityStatus;
-    readonly stockQuantity: number;  // ← CHAMP REQUIS (était manquant)
   } | null;
   readonly productImages?: readonly {
     readonly url: string;

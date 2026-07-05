@@ -1,7 +1,8 @@
 // lib/prisma.ts
+
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { Pool, type PoolConfig } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -9,11 +10,21 @@ const globalForPrisma = globalThis as unknown as {
 
 // Use DIRECT_URL for the adapter (bypasses PgBouncer which is incompatible
 // with Prisma's driver adapter). Fall back to DATABASE_URL if not set.
-const poolOptions: any = {
-  connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL,
-  max: 10, // Optimisation : limite les connexions simultanées
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+const poolOptions: PoolConfig = {
+
+  connectionString:
+    process.env.DIRECT_URL ?? process.env.DATABASE_URL,
+
+  // Connexion acquisition timeout (ms).
+  // Valeur précédente: 2000ms (trop agressif sur certains réseaux/infra).
+  connectionTimeoutMillis:
+    Number(process.env.DATABASE_CONNECTION_TIMEOUT_MS) || 10_000,
+
+  // Limite le nombre de connexions simultanées du pool.
+  max: Number(process.env.PG_POOL_MAX) || 10,
+
+  // Temps max d'inactivité d'une connexion avant fermeture.
+  idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS) || 30_000,
 };
 
 // If the remote Postgres requires SSL, allow opt-in via env var `DATABASE_SSL=true`
@@ -22,6 +33,7 @@ const poolOptions: any = {
 // Some managed Postgres providers (and certain network setups) require SSL but do not
 // always set PGSSLMODE for us. In that case, enabling SSL prevents runtime crashes
 // with: "(ESSLREQUIRED) SSL connection is required for user: postgres".
+
 //
 // We set `rejectUnauthorized: false` to support managed providers that use
 // self-signed certificates (common in staging environments).

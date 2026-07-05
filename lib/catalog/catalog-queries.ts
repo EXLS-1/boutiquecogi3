@@ -1,3 +1,4 @@
+// lib/catalog/catalog-queries.ts
 /**
  * =============================================================================
  * CATALOG QUERIES — Boutiquecogi3
@@ -27,16 +28,12 @@ import {
   SORTABLE_FIELDS,
   type SortableField,
   type CatalogQueryParams,
+  type RawCatalogProduct,
   normalizeProducts,
   normalizeProduct,
   catalogQueryParamsSchema,
 } from "./catalog-types";
 import { mapCatalogProduct, mapCatalogProducts } from "./catalog-mappers";
-
-// ─── Type local pour le produit brut Prisma ─────────────────────────────────
-type PrismaProductWithRelations = Prisma.ProductGetPayload<{
-  include: typeof buildBaseInclude;
-}>;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 1: BASE QUERY BUILDER (DRY)
@@ -99,29 +96,27 @@ function buildBaseInclude() {
  * @param tags - Tags de revalidation
  * @param duration - Durée de cache en secondes
  */
-function withCatalogCache<T extends (...args: unknown[]) => Promise<unknown>>(
-  fn: T,
+function withCatalogCache<Args extends readonly unknown[], Return>(
+  fn: (...args: Args) => Promise<Return>,
   tags: string[],
   duration: number,
-): T {
-  const cached = unstable_cache(
-    fn,
-    undefined,
-    {
-      tags,
-      revalidate: duration,
-    },
-  );
-
-  return cached as T;
+): (...args: Args) => Promise<Return> {
+  return unstable_cache(fn, undefined, {
+    tags,
+    revalidate: duration,
+  }) as (...args: Args) => Promise<Return>;
 }
 
 /**
  * Invalide le cache catalog pour un tag spécifique.
  * À appeler après mutation (create/update/delete).
  */
+const revalidateCatalogTag = (tag: string): void => {
+  revalidateTag(tag, "default");
+};
+
 export async function invalidateCatalogCache(tag: string): Promise<void> {
-  revalidateTag(tag);
+  revalidateCatalogTag(tag);
 }
 
 /**
@@ -129,7 +124,7 @@ export async function invalidateCatalogCache(tag: string): Promise<void> {
  * À utiliser avec parcimonie (ex: après import massif).
  */
 export async function invalidateAllCatalogCaches(): Promise<void> {
-  Object.values(CACHE_TAGS).forEach((tag) => revalidateTag(tag));
+  Object.values(CACHE_TAGS).forEach((tag) => revalidateCatalogTag(tag));
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -146,18 +141,42 @@ export async function invalidateAllCatalogCaches(): Promise<void> {
  * Tag: CACHE_TAGS.CATALOG_RECENT
  * Durée: CACHE_DURATIONS.HOME_PRODUCTS (5 min)
  */
+// ─── Query : Produits Récents (Homepage) ────────────────────────────────────
+
+/**
+ * Récupère les produits récents pour la homepage.
+ * Un produit est considéré comme récent s'il a été créé il y a moins de 90 jours.
+ * 
+ * Cache React pour deduplication intra-requête.
+ * Cache Next.js avec revalidation tag.
+ *
+ * Tag: CACHE_TAGS.CATALOG_RECENT
+ * Durée: CACHE_DURATIONS.HOME_PRODUCTS (5 min)
+ */
 export const getRecentProducts = cache(
   withCatalogCache(
     async (limit: number = HOME_PRODUCTS_LIMIT) => {
+      // Calcul de la date limite (90 jours)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
       const products = await prisma.product.findMany({
-        where: buildBaseWhere(),
+        where: {
+          ...buildBaseWhere(),
+          // ✅ Filtre : produits créés il y a moins de 90 jours
+          createdAt: {
+            gte: ninetyDaysAgo,
+          },
+        },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
         include: buildBaseInclude(),
       });
 
       // Sérialisation des Decimals + mapping domaine
-      return mapCatalogProducts(normalizeProducts(products));
+      return mapCatalogProducts(
+        normalizeProducts(products as unknown as RawCatalogProduct[]),
+      );
     },
     [CACHE_TAGS.CATALOG_RECENT],
     CACHE_DURATIONS.HOME_PRODUCTS,
@@ -187,7 +206,9 @@ export const getProductsByCategory = cache(
         include: buildBaseInclude(),
       });
 
-      return mapCatalogProducts(normalizeProducts(products));
+      return mapCatalogProducts(
+        normalizeProducts(products as unknown as RawCatalogProduct[]),
+      );
     },
     [CACHE_TAGS.CATALOG_CATEGORY],
     CACHE_DURATIONS.CATALOG_LIST,
@@ -213,14 +234,16 @@ export const getPromotionalProducts = cache(
       const products = await prisma.product.findMany({
         where: {
           ...buildBaseWhere(),
-          OR: [{ isPromoted: true }, { discountPercent: { gt: 0 } }],
+          OR: [{ isFeatured: true }, { salePrice: { not: null } }],
         },
-        orderBy: [{ discountPercent: "desc" }, { createdAt: "desc" }],
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
         include: buildBaseInclude(),
       });
 
-      return mapCatalogProducts(normalizeProducts(products));
+      return mapCatalogProducts(
+        normalizeProducts(products as unknown as RawCatalogProduct[]),
+      );
     },
     [CACHE_TAGS.CATALOG_PROMOTIONS],
     CACHE_DURATIONS.PROMOTIONS,
@@ -236,14 +259,16 @@ export const getNewArrivalProducts = cache(
       const products = await prisma.product.findMany({
         where: {
           ...buildBaseWhere(),
-          OR: [{ isNewArrival: true }, { createdAt: { gte: ninetyDaysAgo } }],
+          OR: [{ createdAt: { gte: ninetyDaysAgo } }],
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
         include: buildBaseInclude(),
       });
 
-      return mapCatalogProducts(normalizeProducts(products));
+      return mapCatalogProducts(
+        normalizeProducts(products as unknown as RawCatalogProduct[]),
+      );
     },
     [CACHE_TAGS.CATALOG_NOUVEAUTES],
     CACHE_DURATIONS.NOUVEAUTES,
@@ -299,18 +324,18 @@ export async function searchCatalogProducts(
     }),
     // Conditions legacy directes (si explicitement passées)
     ...(validated.isPromoted !== undefined && {
-      isPromoted: validated.isPromoted,
+      isFeatured: validated.isPromoted,
     }),
     ...(validated.isNewArrival !== undefined && {
-      isNewArrival: validated.isNewArrival,
+      createdAt: { gte: ninetyDaysAgo },
     }),
 
     // Conditions catalogOption (prioritaires sur legacy si défini)
     ...(validated.catalogOption === "promotions" && {
-      OR: [{ isPromoted: true }, { discountPercent: { gt: 0 } }],
+      OR: [{ isFeatured: true }, { salePrice: { not: null } }],
     }),
     ...(validated.catalogOption === "nouveautes" && {
-      OR: [{ isNewArrival: true }, { createdAt: { gte: ninetyDaysAgo } }],
+      OR: [{ createdAt: { gte: ninetyDaysAgo } }],
     }),
 
     ...(validated.minPrice !== undefined && {
@@ -350,7 +375,9 @@ export async function searchCatalogProducts(
   ]);
 
   return {
-    products: mapCatalogProducts(normalizeProducts(products)),
+    products: mapCatalogProducts(
+      normalizeProducts(products as unknown as RawCatalogProduct[]),
+    ),
     totalCount,
   };
 }
@@ -379,7 +406,9 @@ export const getProductBySlug = cache(
 
       if (!product) return null;
 
-      return mapCatalogProduct(normalizeProduct(product)!);
+      return mapCatalogProduct(
+        normalizeProduct(product as unknown as RawCatalogProduct)!,
+      );
     },
     [CACHE_TAGS.CATALOG_PRODUCTS],
     CACHE_DURATIONS.PRODUCT_DETAIL,
@@ -425,14 +454,16 @@ export const getFeaturedProducts = cache(
       const products = await prisma.product.findMany({
         where: {
           ...buildBaseWhere(),
-          isPromoted: true,
+          isFeatured: true,
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
         include: buildBaseInclude(),
       });
 
-      return mapCatalogProducts(normalizeProducts(products));
+      return mapCatalogProducts(
+        normalizeProducts(products as unknown as RawCatalogProduct[]),
+      );
     },
     [CACHE_TAGS.CATALOG_PROMOTIONS],
     CACHE_DURATIONS.PROMOTIONS,
@@ -450,19 +481,25 @@ export async function getCatalogCategories(): Promise<
 > {
   const categories = await prisma.category.findMany({
     where: {
-      isActive: true,
-      isDeleted: false,
+      isNavigable: true,
+      deletedAt: null,
     },
     orderBy: { name: "asc" },
     select: {
       id: true,
       name: true,
       slug: true,
-      imageUrl: true,
     },
   });
 
-  return Object.freeze(categories);
+  return Object.freeze(
+    categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      imageUrl: null,
+    })),
+  );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

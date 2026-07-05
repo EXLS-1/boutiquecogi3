@@ -7,7 +7,7 @@ import React, { Suspense } from "react";
 import { NavbarSearch } from "@/components/navbar-primo/navbar-search";
 import { NavbarShell } from "@/components/navbar-primo/navbar-shell";
 import { NavbarBrand } from "@/components/Navbar-secundo/navbar-secondary-brand";
-import { CurrencySwitcher } from "@/components/product-price/currency-selector";
+import CurrencySelector from "@/components/product-price/currency-selector";
 import CartIcon from "../cart/cart-icon";
 import { NavbarProfileButton } from "./navbar-profile-button";
 import { WishlistBadge } from "../wishlist/wishlist-badge";
@@ -27,7 +27,7 @@ export function Navbar({
 
       <div className="flex justify-center gap-7 px-4 w-xl mx-auto border-cyan-700">
         <NavbarSearch />
-        <CurrencySwitcher />
+        <CurrencySelector />
         <Suspense fallback={<div className="h-6 w-6 rounded-full bg-cyan-200 animate-pulse" aria-label="Loading cart" />}>
           <CartIcon />
         </Suspense>
