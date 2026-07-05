@@ -4,6 +4,11 @@
  * PRODUCT LIST - Molécule - Boutiquecogi3
  * =============================================================================
  * Grille de produits avec gestion vide, skeleton, et pagination.
+ * -- Affiche les produits sous forme de cartes avec badges et prix.
+ * -- Skeleton intégré pour le chargement.
+ * -- Gestion de l'état vide avec message et icône.
+ * -- Accessible : rôle "list" et "listitem" pour les lecteurs d'écran.
+ * -- Pagination et tri peuvent être ajoutés via props.
  */
 
 import { memo, type ComponentProps } from "react";

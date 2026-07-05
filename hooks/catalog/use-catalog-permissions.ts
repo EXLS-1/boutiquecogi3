@@ -1,6 +1,10 @@
 // hooks/use-catalog-permissions.ts
 /**
- * Expliquer en detail ce que fait ce fichier
+ * Ce hook permet de filtrer les produits du catalogue en fonction des permissions RBAC de l'utilisateur.
+ * Il prend en compte :
+ * - Le niveau RBAC de l'utilisateur (userRbacLevel)
+ * - Si l'utilisateur est authentifié (isAuthenticated)
+ * - Les permissions spécifiques de l'utilisateur (userPermissions)
  */
 
 "use client";

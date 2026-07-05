@@ -11,30 +11,35 @@
 import { memo } from "react";
 import { ProductCard } from "@/components/product/product-card";
 import { NEW_ARRIVAL_CATEGORIES } from "@/lib/category/category-constants";
-import { useFilteredCategories } from "@/hooks/category/use-category-permissions";
+import { useCatalogPermissions } from "@/hooks/catalog/use-catalog-permissions";
 
 interface NewProductCategoryProps {
-  readonly userRbacLevel?: unknown;
   readonly isAuthenticated: boolean;
+  readonly products: readonly any[];
 }
 
 function NewProductCategoryComponent({
-  userRbacLevel,
   isAuthenticated,
+  products = [],
 }: NewProductCategoryProps) {
   // Filtrage RBAC
-  const visibleCategories = useFilteredCategories(
-    NEW_ARRIVAL_CATEGORIES,
-    { userRbacLevel: userRbacLevel as any, isAuthenticated }
+  const { filterProducts } = useCatalogPermissions({
+    isAuthenticated,
+  });
+
+  const visibleProducts = filterProducts(products);
+
+  const newArrivalProducts = visibleProducts.filter((product) =>
+    NEW_ARRIVAL_CATEGORIES.includes((product as any).category),
   );
 
-  if (visibleCategories.length === 0) return null;
+  if (newArrivalProducts.length === 0) return null;
 
-  const category = visibleCategories[0]; // Une seule catégorie nouveauté
+  const product = newArrivalProducts[0]; // Un seul produit nouveauté
 
   return (
     <ProductCard
-      product={catalogProductFromCategory(category)}
+      product={product}
       badge="NOUVEAU"
       badgeVariant="default"
       priority={true} // LCP critique
