@@ -10,13 +10,7 @@
 import { memo } from "react";
 import { CategoryGrid } from "../catalog/catalog-grid";
 import { NewProductCategory } from "./new-product";
-import { SectionPromotion } from "./promotion-product";
-import Femme from "./femme";
-import Homme from "./homme";
-import Enfant from "./enfant";
-import Sac from "./sac";
-import Chaussure from "./chaussure";
-import Accessoire from "./accessoire";
+import { PromotionProductCategory } from "@/components/promotion-product/promotions";
 
 interface CategorySectionProps {
   readonly userRbacLevel?: number;
@@ -65,15 +59,7 @@ function CategorySectionComponent({
             isAuthenticated={isAuthenticated}
           />
 
-          {/* Catégories statiques */}
-          <Femme />
-          <Homme />
-          <Enfant />
-          <Sac />
-          <Chaussure />
-          <Accessoire />
-        </CategoryGrid>
-
+         
       </div>
     </section>
   );
