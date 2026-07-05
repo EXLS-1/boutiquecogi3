@@ -11,10 +11,9 @@
  */
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
-import { 
-  STOCK_THRESHOLDS, 
-  PRODUCT_ACCESS_POLICY,
+import { ProductStatus as PrismaProductStatus } from "@prisma/client";
+import {
+  STOCK_THRESHOLDS,
   DEFAULT_PRODUCT_RBAC,
 } from "./catalog-constants";
 
@@ -46,8 +45,6 @@ export type RbacLevel = (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS];
 // Problème audit #7: Les enums métier étaient dupliquées côté Prisma et domaine.
 // Désormais, on importe DIRECTEMENT depuis @prisma/client pour garantir
 // la synchronisation. Les types domaine sont des alias type-safe.
-
-import { ProductStatus as PrismaProductStatus } from "@prisma/client";
 
 export type ProductStatus = PrismaProductStatus;
 
@@ -106,10 +103,23 @@ export interface CatalogProduct {
   readonly name: string;
   readonly slug: string;
   readonly description: string | null;
+
+  /**
+   * Prix monétaire (héritage UI)
+   * NOTE: `components/product-price/price.tsx` attend des montants en cents USD
+   * (amount) et une devise explicite (currency).
+   *
+   * Ces champs sont conservés pour compatibilité avec ProductCard.
+   */
+  readonly price: number; // amount en cents USD
+  readonly currency: "USD" | "CDF";
+
+  // Champs domaine actuels
   readonly basePrice: number;
   readonly image: string;
   readonly basePriceUSD: number;
   readonly basePriceCDF: number;
+
   readonly isAvailable: boolean;
   readonly availabilityStatus: AvailabilityStatus;
   readonly categoryName: string | null;
@@ -117,13 +127,16 @@ export interface CatalogProduct {
   readonly status: ProductStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+
   // RBAC
   readonly accessPolicy: ProductAccessPolicy;
+
   // Promotions
   readonly isPromoted: boolean;
   readonly isNewArrival: boolean;
   readonly discountPercent: number;
 }
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 6: INTERFACE PRODUIT BRUT (Prisma — avec sérialisation)
@@ -261,6 +274,11 @@ export const catalogProductSchema = z.object({
   name: z.string().min(1).max(200),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   description: z.string().max(5000).nullable(),
+
+  // Compat UI: montants attendus par components/product-price/price.tsx
+  price: z.number().nonnegative(),
+  currency: z.enum(["USD", "CDF"]),
+
   basePrice: z.number().nonnegative().max(100_000_000),
   image: z.string().min(1),
   basePriceUSD: z.number().nonnegative(),
@@ -277,6 +295,7 @@ export const catalogProductSchema = z.object({
   isNewArrival: z.boolean(),
   discountPercent: z.number().int().min(0).max(100),
 });
+
 
 export const catalogQueryParamsSchema = z.object({
   limit: z.number().int().min(1).max(100).default(12),

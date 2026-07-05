@@ -15,8 +15,6 @@ import { usdToCdf } from "@/lib/currency/exchange-rate-convert";
 import {
   PRODUCT_PLACEHOLDER,
   DEFAULT_PRODUCT_RBAC,
-  STOCK_THRESHOLDS,
-  PRODUCT_ACCESS_POLICY,
 } from "./catalog-constants";
 import {
   RawCatalogProduct,
@@ -25,7 +23,6 @@ import {
   AVAILABILITY_STATUS,
   RBAC_LEVELS,
   type ProductAccessPolicy,
-  DEFAULT_ACCESS_POLICY,
   catalogProductSchema,
 } from "./catalog-types";
 
@@ -116,6 +113,13 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
     name: raw.name,
     slug: raw.slug,
     description: raw.description,
+
+    // Compat UI: ProductCard utilise `price` (amount en cents USD)
+    // et `currency`.
+    // Le store Price choisit ensuite la devise active.
+    price: Math.round(basePriceUSD),
+    currency: "USD",
+
     basePrice: raw.basePrice,
     image,
     basePriceUSD,
@@ -132,6 +136,7 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
     isNewArrival,
     discountPercent,
   };
+
 
   // Validation runtime (dev only, stripped en production)
   if (process.env.NODE_ENV === "development") {
