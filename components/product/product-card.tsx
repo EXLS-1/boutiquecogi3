@@ -6,6 +6,8 @@
  * Carte produit réutilisable avec badges, prix CDF/USD, et états.
  */
 
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { memo } from "react";
