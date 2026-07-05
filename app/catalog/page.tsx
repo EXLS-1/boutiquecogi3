@@ -9,7 +9,7 @@
 import { Metadata, ResolvingMetadata } from "next";
 import Category from "@/components/product-category/category";
 import { FeaturedProductsSection } from "@/components/catalog/featured-products-section";
-import { RecentProductsSection } from "@/components/catalog/recent-products-section";
+import { RecentProductsSection } from "@/components/product-new/recent-products-section";
 import { TrustSection } from "@/components/catalog/trust-section";
 import { PartialErrorBanner } from "@/components/catalog/partial-error-banner";
 import {
