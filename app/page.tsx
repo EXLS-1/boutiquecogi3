@@ -6,22 +6,12 @@ import Category from "@/components/product-category/category";
 import { ProductList } from "@/components/product/product-list";
 import VideosCart from "@/components/video-show/videos-cart";
 import SocialNetworks from "@/components/Social/social-network";
-import { NewsletterForm } from "@/components/newsletter/newsletter-form.client";
-
+import  Newsletter from "@/components/newsletter/newsletter";
 import { HOME_PRODUCTS_LIMIT } from "@/lib/catalog/catalog-constants";
 import { getRecentProducts } from "@/lib/catalog/catalog-queries";
+import { handleSubscribe } from "@/app/actions/newsletter-fallback";
 
 export const revalidate = 300;
-
-async function handleSubscribe(email: string) {
-  // Fallback temporaire: évite de casser la compilation tant que l'action backend newsletter n'est pas branchée.
-  // Signature alignée avec components/newsletter/newsletter-form.client.tsx
-  // Utilise `email` pour éviter l'avertissement de variable non utilisée.
-  return Promise.resolve({
-    success: false,
-    message: `Service newsletter indisponible pour le moment pour l'adresse ${email}. Réessayez plus tard.`,
-  });
-}
 
 export default async function Home() {
   const recentProducts = await getRecentProducts();
@@ -69,9 +59,8 @@ export default async function Home() {
             <h2 className="text-3xl font-playfair font-bold uppercase mb-6">
               NEWSLETTER
             </h2>
-            <NewsletterForm 
-              onSubscribe={handleSubscribe}
-            />
+            <Newsletter />
+
           </div>
         </div>
       </section>

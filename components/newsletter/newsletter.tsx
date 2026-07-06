@@ -16,6 +16,7 @@ export interface NewsletterProps {
   afterForm?: React.ReactNode;
 }
 
+
 /**
  * Composant Newsletter Wrapper.
  * Peut être utilisé côté serveur.
