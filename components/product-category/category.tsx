@@ -9,7 +9,7 @@
 
 import { memo, ComponentType } from "react";
 import { CatalogGrid } from "../catalog/catalog-grid";
-import { NewProductCategory } from "../product-new/new-product";
+import { NewProductCategory } from "@/components/product-recent/product-recent";
 import { SectionPromotions } from "@/components/product-promotion/promotions";
 // Explicit prop shape used by category consumers
 type CategoryWidgetProps = {

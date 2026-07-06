@@ -31,7 +31,7 @@ export async function subscribeToNewsletter(
   try {
     // Vérification de l'existence préalable
     const existing = await prisma.newsletterSubscriber.findUnique({
-      where: { email },
+      where: { email: cleanEmail },
     });
 
     if (existing) {
@@ -45,7 +45,7 @@ export async function subscribeToNewsletter(
     await prisma.newsletterSubscriber.create({
       data: {
         id: generateUUIDv7(),
-        email,
+        email: cleanEmail,
       },
     });
 

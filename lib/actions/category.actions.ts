@@ -1,4 +1,9 @@
 // lib/actions/category.actions.ts
+/**
+ * Actions liées aux catégories.
+ * Ces actions sont utilisées pour gérer les catégories dans l'application.
+ * Elles incluent la récupération des catégories et la mise à jour d'une catégorie existante.
+ */
 
 "use server";
 
@@ -6,8 +11,8 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { requirePermission } from "@/lib/auth/server";
-import { PERMISSIONS } from "@/lib/auth/rbac/constants";
+import { guardPermission } from "@/lib/auth/server";
+import { PERMISSIONS } from "@/lib/auth/rbac";
 
 export type ActionResponse<T> =
   | { success: true; data: T }
@@ -57,10 +62,12 @@ export const getCategories = cache(
 export async function updateCategoryAction(
   id: string,
   data: CategoryUpdateInput,
-): Promise<ActionResponse<any>> {
+): Promise<
+  ActionResponse<Awaited<ReturnType<typeof prisma.category.update>>>
+> {
   try {
     // 1. Vérification de sécurité (Admin uniquement)
-    await requirePermission(PERMISSIONS.ADMIN_DASHBOARD);
+    await guardPermission(PERMISSIONS.CATEGORIES_UPDATE);
 
     // 2. Validation des données
     const validatedData = CategoryUpdateSchema.parse(data);
