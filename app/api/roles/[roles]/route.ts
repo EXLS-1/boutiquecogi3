@@ -81,7 +81,7 @@ function sanitizeRoleInput(role: string): string {
 // ───────────────────────────────────────────
 
 interface RouteParams {
-  params: Promise<{ role: string }>;
+  params: Promise<{ roles: string }>;
 }
 
 // ───────────────────────────────────────────
@@ -91,8 +91,8 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     return await actionRequireAdmin(async (context) => {
-      const { role } = await params;
-      const sanitizedRole = sanitizeRoleInput(role);
+      const { roles } = await params;
+      const sanitizedRole = sanitizeRoleInput(roles);
 
       const roleConfig = await prisma.roleConfig.findUnique({
         where: { role: sanitizedRole },
@@ -176,8 +176,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     return await actionRequireSuperAdmin(async (context) => {
-      const { role } = await params;
-      const sanitizedRole = sanitizeRoleInput(role);
+      const { roles } = await params;
+      const sanitizedRole = sanitizeRoleInput(roles);
 
       const body = await request.json();
       const parsed = UpdateRoleFullSchema.safeParse(body);
@@ -271,8 +271,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     return await actionRequireSuperAdmin(async (context) => {
-      const { role } = await params;
-      const sanitizedRole = sanitizeRoleInput(role);
+      const { roles } = await params;
+      const sanitizedRole = sanitizeRoleInput(roles);
 
       const existing = await prisma.roleConfig.findUnique({
         where: { role: sanitizedRole },

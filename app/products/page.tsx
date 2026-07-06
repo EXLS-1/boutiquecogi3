@@ -19,13 +19,11 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-// Avoid importing `Metadata` type from 'next' to prevent issues with
-// local ambient declaration files (next.d.ts not being a module).
-// Use a generic any for metadata to keep typing loose in this file.
 import { notFound } from "next/navigation";
 import { searchParamsCache } from "@/components/catalog/catalog-search-params";
 import { searchCatalogProducts } from "@/lib/catalog/catalog-queries";
 import { ProductListSkeleton } from "@/components/product/product-list-skeleton";
+import { ProductList } from "@/components/product/product-list";
 import { SortableField, SORTABLE_FIELDS } from "@/lib/catalog/catalog-types";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -120,32 +118,10 @@ function validateCategory(category: string): asserts category is ValidCategory {
   }
 }
 
-/**
- * Rétrocompatibilité + mapping vers le nouveau système nuqs.
- * Anciens formats supportés : price-asc, price-desc, name-asc, name-desc, newest.
- * Nouveaux formats : basePrice, name, createdAt, updatedAt + paramètre `order`.
- */
 function buildSortConfig(
-  sort: SortableField,
-  rawOrder?: string | string[]
+  sort: string | undefined,
+  explicitOrder: string | string[] | undefined
 ): { sortBy: SortableField; sortOrder: "asc" | "desc" } {
-  // Fallback si order est passé manuellement dans l'URL (hors nuqs)
-  const explicitOrder =
-    typeof rawOrder === "string" && rawOrder === "desc" ? "desc" : "asc";
-
-  // Ancien mapping (pour ne pas casser les URLs bookmarkées)
-  const legacyMap: Record<string, { sortBy: SortableField; sortOrder: "asc" | "desc" }> = {
-    newest: { sortBy: "createdAt", sortOrder: "desc" },
-    "price-asc": { sortBy: "basePrice", sortOrder: "asc" },
-    "price-desc": { sortBy: "basePrice", sortOrder: "desc" },
-    "name-asc": { sortBy: "name", sortOrder: "asc" },
-    "name-desc": { sortBy: "name", sortOrder: "desc" },
-  };
-
-  if (sort in legacyMap) {
-    return legacyMap[sort];
-  }
-
   // Nouveau système : le champ est directement un SortableField
   // Par défaut createdAt → desc (plus récent d'abord), le reste → asc
   const defaultOrder: Record<SortableField, "asc" | "desc"> = {
@@ -155,9 +131,22 @@ function buildSortConfig(
     name: "asc",
   };
 
+  const normalizedOrder = Array.isArray(explicitOrder)
+    ? explicitOrder[0]
+    : explicitOrder;
+
+  const sortBy = SORTABLE_FIELDS.includes(sort as SortableField)
+    ? (sort as SortableField)
+    : "createdAt";
+
+  const sortOrder =
+    normalizedOrder === "asc" || normalizedOrder === "desc"
+      ? normalizedOrder
+      : defaultOrder[sortBy] || "asc";
+
   return {
-    sortBy: SORTABLE_FIELDS.includes(sort) ? sort : "createdAt",
-    sortOrder: explicitOrder || defaultOrder[sort] || "asc",
+    sortBy,
+    sortOrder,
   };
 }
 
@@ -296,13 +285,22 @@ async function ProductCatalogFetcher({
       ? "Nos Produits"
       : category.charAt(0).toUpperCase() + category.slice(1);
 
-  return (
-    <Productlist
-      products={products!}
-      totalCount={totalCount!}
-      categories={[...VALID_CATEGORIES]}
-      title={title}
-      pageSize={PAGE_SIZE}
-    />
-  );
+  // Typage explicite des props transmises à ProductList
+  type ProductsResult = Awaited<ReturnType<typeof searchCatalogProducts>>;
+
+  interface ProductListProps {
+    products: ProductsResult["products"];
+    totalCount: ProductsResult["totalCount"];
+    title: string;
+    pageSize: number;
+  }
+
+  const props: ProductListProps = {
+    products: products!,
+    totalCount: totalCount!,
+    title,
+    pageSize: PAGE_SIZE,
+  };
+
+  return <ProductList {...props} />;
 }
