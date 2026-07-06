@@ -13,7 +13,7 @@ Ce document décrit les stratégies d'optimisation des performances mises en œu
 
 Le projet bénéficie déjà de plusieurs optimisations grâce aux choix technologiques :
 
-1.  **Next.js 16.2.6 (App Router) :**
+1.  **Next.js 16.2.9 (App Router) :**
     *   **Server Components :** Utilisation des Server Components pour réduire la quantité de JavaScript envoyée au client, améliorer le temps de chargement initial et le SEO.
     *   **Rendu Statique (SSG) / Rendu Côté Serveur (SSR) :** Next.js permet de choisir la stratégie de rendu la plus adaptée à chaque page, optimisant ainsi le chargement des données.
     *   **Optimisation des Images :** Le composant `next/image` est utilisé pour le redimensionnement automatique, l'optimisation des formats (WebP, AVIF) et le lazy loading des images.
