@@ -1,10 +1,14 @@
+// components/auth/sign-up-button.tsx
+
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth/auth-client";
+
 
 /**
  * Composant SignUpButton
@@ -13,9 +17,14 @@ import { authClient } from "@/lib/auth/auth-client";
  */
 export default function SignUpButton() {
   const { data: session, isPending } = authClient.useSession();
+  const [mounted, setMounted] = useState(false);
 
-  // Skeleton aligné sur les dimensions du bouton CTA
-  if (isPending) return <Skeleton className="h-10 w-32 rounded-md" />;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Evite les erreurs d'hydratation en rendant un skeleton jusqu'à ce que le client soit monté
+  if (!mounted || isPending) return <Skeleton className="h-10 w-32 rounded-md" />;
 
   // Masquage si session existante
   if (session) return null;

@@ -8,11 +8,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import {
-  getFastUSDToCDFRate,
-  forceRefreshExchangeRate,
-} from "@/lib/exchange-rate/exchange-rate-service";
+
 import { ExchangeRateApiResponse } from "@/lib/currency/exchange-rate-types";
+import { forceRefreshExchangeRate, getFastUSDToCDFRate } from "@/lib/currency";
 
 // ─── RBAC & Authentification ──────────────────────────────────────────────────
 
@@ -23,6 +21,28 @@ interface AuthContext {
   readonly isAuthenticated: boolean;
   readonly privilegeLevel: PrivilegeLevel;
   readonly userId?: string;
+}
+
+function getPrivilegeLevelFromRole(role?: string): PrivilegeLevel {
+  switch (role) {
+    case "SUPER_ADMIN":
+    case "SUPERADMIN":
+    case "SUPER-ADMIN":
+      return 1;
+    case "ADMIN":
+      return 2;
+    case "MANAGER":
+      return 3;
+    case "EDITOR":
+      return 4;
+    case "SUPERVISOR":
+      return 5;
+    case "USER":
+      return 6;
+    case "GUEST":
+    default:
+      return 7;
+  }
 }
 
 /**
@@ -37,11 +57,11 @@ async function getAuthContext(request: NextRequest): Promise<AuthContext> {
       return { isAuthenticated: false, privilegeLevel: 7 };
     }
 
-    const privilegeLevel = (session.user.level as number | undefined) ?? 7;
+    const privilegeLevel = getPrivilegeLevelFromRole(session.user.role);
 
     return {
       isAuthenticated: true,
-      privilegeLevel: privilegeLevel as PrivilegeLevel,
+      privilegeLevel,
       userId: session.user.id,
     };
   } catch {
@@ -138,6 +158,7 @@ export async function GET(request: NextRequest) {
       }
 
       const duration = Math.round(performance.now() - startTime);
+      console.log(`[API_EXCHANGE_RATE] GET refresh répondu en ${duration}ms`);
       return successResponse({
         rate: rate.toString(),
         currency: "CDF",
