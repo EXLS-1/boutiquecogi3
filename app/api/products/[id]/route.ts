@@ -39,7 +39,7 @@ export async function GET(
         id: product.variants[0]?.sku ?? product.id,
         name: product.name,
         description: product.description,
-        price: Math.round(product.basePrice / 100),
+        price: Math.round(Number(product.basePrice) / 100),
         images: product.images,
         category: product.category?.slug ?? "femme",
         isFeatured: product.isFeatured,

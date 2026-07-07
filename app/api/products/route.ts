@@ -87,30 +87,34 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        basePrice: true,
-        images: true,
-        isFeatured: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
         category: { select: { slug: true, name: true } },
-        variants: { select: { sku: true }, take: 1 },
+        variants: true,
       },
     });
+
+    type Product = {
+      id: string;
+      name: string;
+      description: string | null;
+      basePrice: number;
+      images: string[] | null;
+      category?: { slug?: string } | null;
+      isFeatured: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+      variants?: Array<{ sku?: string }> | null;
+    };
 
     return NextResponse.json({
       status: "success",
       data: {
-        products: products.map((p) => ({
-          id: p.variants[0]?.sku ?? p.id,
+        products: products.map((p: Product) => ({
+          id: p.variants?.[0]?.sku ?? p.id,
           name: p.name,
           description: p.description,
           price: Math.round(p.basePrice / 100),
-          images: p.images,
+          images: p.images ?? [],
           category: p.category?.slug ?? "femme",
           isFeatured: p.isFeatured,
           createdAt: p.createdAt,
@@ -162,7 +166,9 @@ export async function POST(request: NextRequest) {
         description: String(description || ""),
         basePrice,
         images: Array.isArray(images) ? images : [],
-        categoryId: categoryRecord?.id,
+        ...(categoryRecord
+          ? { category: { connect: { id: categoryRecord.id } } }
+          : {}),
         isFeatured: isFeatured === true,
         variants: {
           create: {

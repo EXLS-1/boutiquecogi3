@@ -23,6 +23,8 @@ const VALID_BULK_ACTIONS = [
   "export",
 ] as const;
 
+type BulkAction = (typeof VALID_BULK_ACTIONS)[number];
+
 export async function POST(request: NextRequest) {
   try {
     const role = await getCurrentUserRole();
@@ -40,7 +42,10 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Permission check par action ──
-    const permissionMap: Record<string, typeof PERMISSIONS[keyof typeof PERMISSIONS]> = {
+    const permissionMap: Record<
+      BulkAction,
+      typeof PERMISSIONS[keyof typeof PERMISSIONS]
+    > = {
       delete: PERMISSIONS.PRODUCTS_DELETE,
       activate: PERMISSIONS.PRODUCTS_UPDATE,
       deactivate: PERMISSIONS.PRODUCTS_UPDATE,
@@ -49,7 +54,9 @@ export async function POST(request: NextRequest) {
       export: PERMISSIONS.PRODUCTS_EXPORT,
     };
 
-    if (!(await hasPermission(role, permissionMap[action] as any))) {
+    const actionKey = action as BulkAction;
+
+    if (!(await hasPermission(role, permissionMap[actionKey]))) {
       return NextResponse.json(
         { error: "Forbidden", code: "INSUFFICIENT_PERMISSIONS" },
         { status: 403 },
