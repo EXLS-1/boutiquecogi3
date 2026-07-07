@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
           include: {
             items: {
               include: {
-                productVariant: {
+                variant: {
                   include: { inventoryTransactions: true }, // Pour vérifier doublon stock
                 },
               },
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
 
         // ── E. Décrémentation stock (avec garde anti-doublon) ──────────
         for (const item of order.items) {
-          const variant = item.productVariant;
+          const variant = item.variant;
           if (!variant?.id) {
             throw Object.assign(
               new Error(`Missing product variant for item ${item.id}`),
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
 
           // Vérifier qu'on n'a pas déjà un ledger pour cette commande
           const alreadyRecorded = variant.inventoryTransactions.some(
-            (t) => t.reference === `ORDER_${order.orderNumber}`
+            (t) => t.referenceId === `ORDER_${order.orderNumber}`
           );
           if (alreadyRecorded) {
             logWebhook(
@@ -260,7 +260,7 @@ export async function POST(req: NextRequest) {
               productVariantId: variant.id,
               quantity: -Math.abs(item.quantity), // Toujours négatif, jamais positif
               type: "SALE",
-              reference: `ORDER_${order.orderNumber}`,
+              referenceId: `ORDER_${order.orderNumber}`,
               metadata: {
                 orderId: order.id,
                 transactionId: cpm_trans_id,
@@ -304,8 +304,9 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         fromCache: result.fromCache,
-        orderId: (result.value as { orderId?: string })?.orderId,
+        orderId: (result.data as { orderId?: string } | undefined)?.orderId,
       },
+
       { status: 200 }
     );
 
