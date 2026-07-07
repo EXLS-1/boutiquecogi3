@@ -5,6 +5,12 @@
 // GET    : Récupère les détails complets d'un rôle
 // PUT    : Remplace entièrement la configuration d'un rôle
 // DELETE : Supprime définitivement un rôle personnalisé (hard-delete)
+//
+// PRINCIPES :
+//   - Guards : actionRequireAdmin / actionRequireSuperAdmin (auth unique)
+//   - Audit  : logAudit() fire-and-forget, jamais bloquant
+//   - Cache  : invalidateRBACCache après mutation
+//   - Aucune wrapper d'audit (withAudit, withAuditContext) — supprimées
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -15,7 +21,6 @@ import {
   RESTRICTIONS,
   type Permission,
   type Restriction,
-  type ToggleState,
   type Role,
   invalidateRBACCache,
 } from "@/lib/auth/rbac";
@@ -23,7 +28,7 @@ import {
   actionRequireSuperAdmin,
   actionRequireAdmin,
   AuthorizationError,
-  withAudit,
+  logAudit
 } from "@/lib/auth/server";
 
 // ───────────────────────────────────────────
@@ -76,12 +81,16 @@ function sanitizeRoleInput(role: string): string {
     .replace(/[^A-Z0-9_]/g, "");
 }
 
+function isValidRole(role: string): role is Role {
+  return Object.values(ROLES).includes(role as Role);
+}
+
 // ───────────────────────────────────────────
 // 3. PARAMÈTRES DE ROUTE
 // ───────────────────────────────────────────
 
 interface RouteParams {
-  params: Promise<{ roles: string }>;
+  params: Promise<{ role: string }>;
 }
 
 // ───────────────────────────────────────────
@@ -91,8 +100,16 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     return await actionRequireAdmin(async (context) => {
-      const { roles } = await params;
-      const sanitizedRole = sanitizeRoleInput(roles);
+      const { role: roleParam } = await params;
+      const sanitizedRole = sanitizeRoleInput(roleParam);
+
+      if (!isValidRole(sanitizedRole)) {
+        return createErrorResponse(
+          `Le rôle '${sanitizedRole}' n'est pas valide.`,
+          "INVALID_ROLE",
+          400,
+        );
+      }
 
       const roleConfig = await prisma.roleConfig.findUnique({
         where: { role: sanitizedRole },
@@ -119,7 +136,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       if (!roleConfig) {
         return createErrorResponse(
-          `Le rôle '${sanitizedRole}' n'existe pas.`,
+          `Le rôle '${sanitizedRole}' n'existe pas en base de données.`,
           "ROLE_NOT_FOUND",
           404,
         );
@@ -127,11 +144,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       const isSuperAdmin = context.user.role === ROLES.SUPER_ADMIN;
 
-      // Masque les données sensibles pour les non-SUPER_ADMIN
       const sanitizedResponse = {
         ...roleConfig,
         permissions: isSuperAdmin
-          ? roleConfig.permissions
+          ? (roleConfig.permissions as Record<string, unknown>)
           : Object.keys(
               roleConfig.permissions as Record<string, unknown>,
             ).reduce(
@@ -142,7 +158,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               {} as Record<string, string>,
             ),
         restrictions: isSuperAdmin
-          ? roleConfig.restrictions
+          ? (roleConfig.restrictions as Record<string, unknown>)
           : Object.keys(
               roleConfig.restrictions as Record<string, unknown>,
             ).reduce(
@@ -176,12 +192,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     return await actionRequireSuperAdmin(async (context) => {
-      const { roles } = await params;
-      const sanitizedRole = sanitizeRoleInput(roles);
+      const { role: roleParam } = await params;
+      const sanitizedRole = sanitizeRoleInput(roleParam);
 
-      const body = await request.json();
+      if (!isValidRole(sanitizedRole)) {
+        return createErrorResponse(
+          `Le rôle '${sanitizedRole}' n'est pas valide.`,
+          "INVALID_ROLE",
+          400,
+        );
+      }
+
+      let body: unknown;
+      try {
+        body = await request.json();
+      } catch {
+        return createErrorResponse(
+          "Corps de requête JSON invalide.",
+          "INVALID_JSON",
+          400,
+        );
+      }
+
       const parsed = UpdateRoleFullSchema.safeParse(body);
-
       if (!parsed.success) {
         return createErrorResponse(
           "Données invalides.",
@@ -203,10 +236,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Protection des rôles système
       if (existing.isSystem) {
         return createErrorResponse(
-          `Le rôle système '${sanitizedRole}' ne peut pas être modifié via cette API.`,
+          `Le rôle système '${sanitizedRole}' est protégé et ne peut pas être modifié.`,
           "SYSTEM_ROLE_PROTECTED",
           403,
         );
@@ -225,21 +257,36 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       updateData.updatedBy = context.user.id;
 
-      const updated = await prisma.roleConfig.update({
-        where: { role: sanitizedRole },
-        data: updateData,
+      let updated;
+      try {
+        updated = await prisma.roleConfig.update({
+          where: { role: sanitizedRole },
+          data: updateData,
+        });
+      } catch (dbError) {
+        logAudit({
+          userId: context.user.id,
+          role: context.user.role,
+          action: "ROLE_UPDATE",
+          resource: "role_config",
+          resourceId: existing.id,
+          success: false,
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        });
+        throw dbError;
+      }
+
+      logAudit({
+        userId: context.user.id,
+        role: context.user.role,
+        action: "ROLE_UPDATE",
+        resource: "role_config",
+        resourceId: updated.id,
+        success: true,
+        details: JSON.stringify({ updatedRole: sanitizedRole }),
       });
 
-      // Audit log
-      await withAudit(
-        "ROLE_UPDATE",
-        "role_config",
-        async () => ({ updatedRole: sanitizedRole }),
-        updated.id,
-      );
-
-      // Invalidation cache
-      invalidateRBACCache(sanitizedRole as Role);
+      invalidateRBACCache(sanitizedRole);
 
       return createSuccessResponse({
         id: updated.id,
@@ -271,8 +318,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     return await actionRequireSuperAdmin(async (context) => {
-      const { roles } = await params;
-      const sanitizedRole = sanitizeRoleInput(roles);
+      const { role: roleParam } = await params;
+      const sanitizedRole = sanitizeRoleInput(roleParam);
+
+      if (!isValidRole(sanitizedRole)) {
+        return createErrorResponse(
+          `Le rôle '${sanitizedRole}' n'est pas valide.`,
+          "INVALID_ROLE",
+          400,
+        );
+      }
 
       const existing = await prisma.roleConfig.findUnique({
         where: { role: sanitizedRole },
@@ -286,43 +341,54 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Protection des rôles système
       if (existing.isSystem) {
         return createErrorResponse(
-          `Le rôle système '${sanitizedRole}' ne peut pas être supprimé.`,
+          `Le rôle système '${sanitizedRole}' est protégé et ne peut pas être supprimé.`,
           "SYSTEM_ROLE_PROTECTED",
           403,
         );
       }
 
-      // Vérifie qu'il n'y a pas d'utilisateurs avec ce rôle
       const userCount = await prisma.user.count({
         where: { role: sanitizedRole },
       });
 
       if (userCount > 0) {
         return createErrorResponse(
-          `Impossible de supprimer le rôle '${sanitizedRole}' : ${userCount} utilisateur(s) associé(s).`,
+          `Impossible de supprimer : ${userCount} utilisateur(s) associé(s) au rôle '${sanitizedRole}'.`,
           "ROLE_IN_USE",
           409,
         );
       }
 
-      // Suppression définitive
-      await prisma.roleConfig.delete({
-        where: { role: sanitizedRole },
+      try {
+        await prisma.roleConfig.delete({
+          where: { role: sanitizedRole },
+        });
+      } catch (dbError) {
+        logAudit({
+          userId: context.user.id,
+          role: context.user.role,
+          action: "ROLE_HARD_DELETE",
+          resource: "role_config",
+          resourceId: existing.id,
+          success: false,
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        });
+        throw dbError;
+      }
+
+      logAudit({
+        userId: context.user.id,
+        role: context.user.role,
+        action: "ROLE_HARD_DELETE",
+        resource: "role_config",
+        resourceId: existing.id,
+        success: true,
+        details: JSON.stringify({ deletedRole: sanitizedRole }),
       });
 
-      // Audit log
-      await withAudit(
-        "ROLE_HARD_DELETE",
-        "role_config",
-        async () => ({ deletedRole: sanitizedRole }),
-        existing.id,
-      );
-
-      // Invalidation cache
-      invalidateRBACCache(sanitizedRole as Role);
+      invalidateRBACCache(sanitizedRole);
 
       return createSuccessResponse({
         message: `Le rôle '${sanitizedRole}' a été supprimé définitivement.`,

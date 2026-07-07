@@ -5,20 +5,21 @@
 // Endpoint spécifique pour le déblocage (restauration) d'un rôle.
 // Méthode : POST (idempotent)
 //
-// Règles :
-//   - SUPER_ADMIN uniquement
-//   - Vérifie que le rôle est bien bloqué
-//   - Audit log automatique
-//   - Invalidation du cache RBAC
+// PRINCIPES :
+//   - SUPER_ADMIN uniquement (guard unique)
+//   - Audit : logAudit() fire-and-forget, jamais bloquant
+//   - Types : isValidRole() type guard, aucun cast 'as Role'
+//   - Cache : invalidateRBACCache après mutation
+//   - Aucune wrapper d'audit (withAudit, withAuditContext) — supprimées
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { type Role, invalidateRBACCache } from "@/lib/auth/rbac";
+import { ROLES, type Role, invalidateRBACCache } from "@/lib/auth/rbac"; // ← AJOUTÉ: ROLES
 import {
   actionRequireSuperAdmin,
   AuthorizationError,
-  withAudit,
+  logAudit
 } from "@/lib/auth/server";
 
 // ───────────────────────────────────────────
@@ -63,6 +64,14 @@ function sanitizeRoleInput(role: string): string {
     .replace(/[^A-Z0-9_]/g, "");
 }
 
+/**
+ * Type guard : vérifie si une string est un Role valide du système RBAC.
+ * ← AJOUTÉ: alignement avec route.ts et block/route.ts corrigés
+ */
+function isValidRole(role: string): role is Role {
+  return Object.values(ROLES).includes(role as Role);
+}
+
 // ───────────────────────────────────────────
 // 3. POST — Déblocage d'un rôle
 // ───────────────────────────────────────────
@@ -70,7 +79,18 @@ function sanitizeRoleInput(role: string): string {
 export async function POST(request: NextRequest) {
   try {
     return await actionRequireSuperAdmin(async (context) => {
-      const body = await request.json();
+      // ← AJOUTÉ: validation JSON parse
+      let body: unknown;
+      try {
+        body = await request.json();
+      } catch {
+        return createErrorResponse(
+          "Corps de requête JSON invalide.",
+          "INVALID_JSON",
+          400,
+        );
+      }
+
       const parsed = UnblockRoleSchema.safeParse(body);
 
       if (!parsed.success) {
@@ -84,6 +104,15 @@ export async function POST(request: NextRequest) {
 
       const { role, reason } = parsed.data;
       const sanitizedRole = sanitizeRoleInput(role);
+
+      // ← AJOUTÉ: validation stricte du rôle
+      if (!isValidRole(sanitizedRole)) {
+        return createErrorResponse(
+          `Le rôle '${sanitizedRole}' n'est pas valide.`,
+          "INVALID_ROLE",
+          400,
+        );
+      }
 
       // ── Vérification existence ──
       const existing = await prisma.roleConfig.findUnique({
@@ -107,36 +136,52 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // ── Déblocage effectif ──
-      const unblocked = await prisma.roleConfig.update({
-        where: { role: sanitizedRole },
-        data: {
-          isActive: true,
-          blockedAt: null,
-          blockedReason: null,
-          blockedBy: null,
-          unblockedAt: new Date(),
-          unblockedBy: context.user.id,
-          unblockedReason: reason ?? "Débloqué par décision administrative",
-          updatedBy: context.user.id,
-        },
+      // ── Déblocage effectif avec audit d'échec ──
+      let unblocked;
+      try {
+        unblocked = await prisma.roleConfig.update({
+          where: { role: sanitizedRole },
+          data: {
+            isActive: true,
+            blockedAt: null,
+            blockedReason: null,
+            blockedBy: null,
+            unblockedAt: new Date(),
+            unblockedBy: context.user.id,
+            unblockedReason: reason ?? "Débloqué par décision administrative",
+            updatedBy: context.user.id,
+          },
+        });
+      } catch (dbError) {
+        // ← AJOUTÉ: audit explicite de l'échec DB
+        logAudit({
+          userId: context.user.id,
+          role: context.user.role,
+          action: "ROLE_UNBLOCK",
+          resource: "role_config",
+          resourceId: existing.id,
+          success: false,
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        });
+        throw dbError;
+      }
+
+      // ── Audit log succès (fire-and-forget) ──
+      logAudit({
+        userId: context.user.id,
+        role: context.user.role,
+        action: "ROLE_UNBLOCK",
+        resource: "role_config",
+        resourceId: unblocked.id,
+        success: true,
+        details: JSON.stringify({
+          unblockedRole: sanitizedRole,
+          reason: reason ?? "Débloqué par décision administrative",
+        }),
       });
 
-      // ── Audit log ──
-      await withAudit(
-        "ROLE_UNBLOCK",
-        "role_config",
-        async () => {
-          return {
-            unblockedRole: sanitizedRole,
-            reason: reason ?? "Débloqué par décision administrative",
-          };
-        },
-        unblocked.id,
-      );
-
       // ── Invalidation cache RBAC ──
-      invalidateRBACCache(sanitizedRole as Role);
+      invalidateRBACCache(sanitizedRole); // ← CORRIGÉ: pas de 'as Role'
 
       return createSuccessResponse({
         id: unblocked.id,

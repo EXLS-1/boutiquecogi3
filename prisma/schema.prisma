@@ -53,6 +53,8 @@ model Permission {
   id    String           @id @db.Uuid
   name  String           @unique
   roles RolePermission[]
+
+  @@map("permission")
 }
 
 model RolePermission {
@@ -69,7 +71,7 @@ model RolePermission {
 
 model User {
   id               String           @id @unique @db.Uuid
-  role             Role // SUPER_ADMIN | ADMIN | MANAGER | EDITOR | SUPERVISOR | USER
+  role             Role // SUPER_ADMIN | ADMIN | MANAGER | EDITOR | SUPERVISOR | USER | GUEST
   roleConfigId     String?          @db.Uuid
   sessions         Session[]
   name             String?
@@ -191,6 +193,7 @@ enum Role {
   EDITOR
   SUPERVISOR
   USER
+  GUEST
 }
 
 model VerificationToken {

@@ -5,12 +5,12 @@
 // Endpoint spécifique pour le blocage d'un rôle avec audit complet.
 // Méthode : POST (idempotent)
 //
-// Règles :
-//   - SUPER_ADMIN uniquement
-//   - Rôles système protégés (non bloquables)
-//   - Vérification des utilisateurs actifs avant blocage
-//   - Audit log automatique
-//   - Invalidation du cache RBAC
+// PRINCIPES :
+//   - SUPER_ADMIN uniquement (guard unique, pas de double auth)
+//   - Audit : logAudit() fire-and-forget, jamais bloquant
+//   - Types : isValidRole() type guard, aucun cast 'as Role'
+//   - Cache : invalidateRBACCache après mutation
+//   - Aucune wrapper d'audit (withAudit, withAuditContext) — supprimées
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -19,7 +19,7 @@ import { ROLES, type Role, invalidateRBACCache } from "@/lib/auth/rbac";
 import {
   actionRequireSuperAdmin,
   AuthorizationError,
-  withAudit,
+  logAudit
 } from "@/lib/auth/server";
 
 // ───────────────────────────────────────────
@@ -42,7 +42,8 @@ const BlockRoleSchema = z.object({
     .min(2)
     .max(32)
     .optional()
-    .refine((val) => !val || Object.values(ROLES).includes(val as Role), {
+    .refine((val) => !val || Object.values(ROLES).includes(val), {
+      // ← CORRIGÉ: suppression du cast 'as Role' inutile
       message: "Le rôle de réassignation doit être un rôle système valide.",
     }),
 });
@@ -74,6 +75,14 @@ function sanitizeRoleInput(role: string): string {
     .replace(/[^A-Z0-9_]/g, "");
 }
 
+/**
+ * Type guard : vérifie si une string est un Role valide du système RBAC.
+ * ← AJOUTÉ: alignement avec route.ts corrigé
+ */
+function isValidRole(role: string): role is Role {
+  return Object.values(ROLES).includes(role as Role);
+}
+
 // ───────────────────────────────────────────
 // 3. POST — Blocage d'un rôle avec audit
 // ───────────────────────────────────────────
@@ -81,7 +90,17 @@ function sanitizeRoleInput(role: string): string {
 export async function POST(request: NextRequest) {
   try {
     return await actionRequireSuperAdmin(async (context) => {
-      const body = await request.json();
+      let body: unknown;
+      try {
+        body = await request.json();
+      } catch {
+        return createErrorResponse(
+          "Corps de requête JSON invalide.",
+          "INVALID_JSON",
+          400,
+        );
+      }
+
       const parsed = BlockRoleSchema.safeParse(body);
 
       if (!parsed.success) {
@@ -95,6 +114,15 @@ export async function POST(request: NextRequest) {
 
       const { role, reason, force, reassignTo } = parsed.data;
       const sanitizedRole = sanitizeRoleInput(role);
+
+      // ── Validation stricte du rôle cible ──
+      if (!isValidRole(sanitizedRole)) {
+        return createErrorResponse(
+          `Le rôle '${sanitizedRole}' n'est pas valide.`,
+          "INVALID_ROLE",
+          400,
+        );
+      }
 
       // ── Vérification existence ──
       const existing = await prisma.roleConfig.findUnique({
@@ -149,6 +177,8 @@ export async function POST(request: NextRequest) {
 
       // ── Réassignation forcée si demandée ──
       let reassignedCount = 0;
+      let targetRole: Role | null = null;
+
       if (force && activeUsers.length > 0) {
         if (!reassignTo) {
           return createErrorResponse(
@@ -158,14 +188,33 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const targetRole = sanitizeRoleInput(reassignTo);
+        const sanitizedReassign = sanitizeRoleInput(reassignTo);
+
+        // ← AJOUTÉ: validation stricte du rôle de réassignation
+        if (!isValidRole(sanitizedReassign)) {
+          return createErrorResponse(
+            `Le rôle de réassignation '${sanitizedReassign}' n'est pas valide.`,
+            "INVALID_REASSIGNMENT_ROLE",
+            400,
+          );
+        }
+
+        // ← AJOUTÉ: empêcher la réassignation vers le même rôle
+        if (sanitizedReassign === sanitizedRole) {
+          return createErrorResponse(
+            "Le rôle de réassignation ne peut pas être identique au rôle bloqué.",
+            "SELF_REASSIGNMENT_FORBIDDEN",
+            400,
+          );
+        }
+
         const targetRoleConfig = await prisma.roleConfig.findUnique({
-          where: { role: targetRole },
+          where: { role: sanitizedReassign },
         });
 
         if (!targetRoleConfig || !targetRoleConfig.isActive) {
           return createErrorResponse(
-            `Le rôle de réassignation '${targetRole}' n'existe pas ou est inactif.`,
+            `Le rôle de réassignation '${sanitizedReassign}' n'existe pas ou est inactif.`,
             "INVALID_REASSIGNMENT_ROLE",
             400,
           );
@@ -174,45 +223,64 @@ export async function POST(request: NextRequest) {
         // Réassigne tous les utilisateurs
         const updateResult = await prisma.user.updateMany({
           where: { role: sanitizedRole },
-          data: { role: targetRole },
+          data: { role: sanitizedReassign },
         });
 
         reassignedCount = updateResult.count;
+        targetRole = sanitizedReassign;
 
         // Invalide le cache pour les rôles concernés
-        invalidateRBACCache(sanitizedRole as Role);
-        invalidateRBACCache(targetRole as Role);
+        invalidateRBACCache(sanitizedRole); // ← CORRIGÉ: pas de 'as Role'
+        invalidateRBACCache(sanitizedReassign); // ← CORRIGÉ: pas de 'as Role'
       }
 
       // ── Blocage effectif ──
-      const blocked = await prisma.roleConfig.update({
-        where: { role: sanitizedRole },
-        data: {
-          isActive: false,
-          blockedAt: new Date(),
-          blockedReason: reason ?? "Bloqué par décision administrative",
-          blockedBy: context.user.id,
-          updatedBy: context.user.id,
-        },
+      let blocked;
+      try {
+        blocked = await prisma.roleConfig.update({
+          where: { role: sanitizedRole },
+          data: {
+            isActive: false,
+            blockedAt: new Date(),
+            blockedReason: reason ?? "Bloqué par décision administrative",
+            blockedBy: context.user.id,
+            updatedBy: context.user.id,
+          },
+        });
+      } catch (dbError) {
+        // ← AJOUTÉ: audit explicite de l'échec DB
+        logAudit({
+          userId: context.user.id,
+          role: context.user.role,
+          action: "ROLE_BLOCK",
+          resource: "role_config",
+          resourceId: existing.id,
+          success: false,
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        });
+        throw dbError;
+      }
+
+      // ── Audit log succès (fire-and-forget) ──
+      logAudit({
+        userId: context.user.id,
+        role: context.user.role,
+        action: "ROLE_BLOCK",
+        resource: "role_config",
+        resourceId: blocked.id,
+        success: true,
+        details: JSON.stringify({
+          blockedRole: sanitizedRole,
+          reason: reason ?? "Bloqué par décision administrative",
+          reassignedUsers: reassignedCount,
+          reassignTo: targetRole,
+        }),
       });
 
-      // ── Audit log ──
-      await withAudit(
-        "ROLE_BLOCK",
-        "role_config",
-        async () => {
-          return {
-            blockedRole: sanitizedRole,
-            reason: reason ?? "Bloqué par décision administrative",
-            reassignedUsers: reassignedCount,
-            reassignTo: reassignTo ?? null,
-          };
-        },
-        blocked.id,
-      );
-
-      // ── Invalidation cache RBAC ──
-      invalidateRBACCache(sanitizedRole as Role);
+      // ── Invalidation cache RBAC (si pas déjà fait dans réassignation) ──
+      if (!targetRole) {
+        invalidateRBACCache(sanitizedRole); // ← CORRIGÉ: pas de 'as Role'
+      }
 
       return createSuccessResponse({
         id: blocked.id,
@@ -222,8 +290,8 @@ export async function POST(request: NextRequest) {
         blockedAt: blocked.blockedAt,
         blockedReason: blocked.blockedReason,
         reassignedUsers: reassignedCount,
-        reassignTo: reassignTo ?? null,
-        message: `Le rôle '${sanitizedRole}' a été bloqué avec succès.${reassignedCount > 0 ? ` ${reassignedCount} utilisateur(s) réassigné(s) vers '${reassignTo}'.` : ""}`,
+        reassignTo: targetRole,
+        message: `Le rôle '${sanitizedRole}' a été bloqué avec succès.${reassignedCount > 0 ? ` ${reassignedCount} utilisateur(s) réassigné(s) vers '${targetRole}'.` : ""}`,
       });
     });
   } catch (error) {
