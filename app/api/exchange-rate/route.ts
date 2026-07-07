@@ -26,8 +26,6 @@ interface AuthContext {
 function getPrivilegeLevelFromRole(role?: string): PrivilegeLevel {
   switch (role) {
     case "SUPER_ADMIN":
-    case "SUPERADMIN":
-    case "SUPER-ADMIN":
       return 1;
     case "ADMIN":
       return 2;
