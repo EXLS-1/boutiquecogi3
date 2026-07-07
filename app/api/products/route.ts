@@ -3,6 +3,7 @@
 // La route GET /api/products supporte la pagination, les filtres par catégorie, recherche textuelle, produits en vedette et filtrage par prix.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { slugify } from "@/lib/utils/slug";
 import { generateUUIDv7 } from "@/lib/uuid";
 
@@ -93,11 +94,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Prisma renvoie `Decimal` pour les champs numériques (basePrice).
+    // On évite un typage strict `number` pour supprimer l'erreur TS.
     type Product = {
       id: string;
       name: string;
       description: string | null;
-      basePrice: number;
+      basePrice: unknown; // Prisma.Decimal
       images: string[] | null;
       category?: { slug?: string } | null;
       isFeatured: boolean;
@@ -106,6 +109,7 @@ export async function GET(request: NextRequest) {
       variants?: Array<{ sku?: string }> | null;
     };
 
+
     return NextResponse.json({
       status: "success",
       data: {
@@ -113,7 +117,9 @@ export async function GET(request: NextRequest) {
           id: p.variants?.[0]?.sku ?? p.id,
           name: p.name,
           description: p.description,
-          price: Math.round(p.basePrice / 100),
+          // Ensure Prisma Decimal from Prisma is converted to number
+          price: Math.round(Number(p.basePrice) / 100),
+
           images: p.images ?? [],
           category: p.category?.slug ?? "femme",
           isFeatured: p.isFeatured,
@@ -156,7 +162,7 @@ export async function POST(request: NextRequest) {
     });
 
     const slug = slugify(`${name}-${Date.now()}`);
-    const basePrice = Math.round(parseFloat(price) * 100);
+    const basePrice = Math.round(Number(price) * 100);
 
     const product = await prisma.product.create({
       data: {
@@ -178,9 +184,10 @@ export async function POST(request: NextRequest) {
             priceOffset: 0,
           },
         },
-      },
+      } as Prisma.ProductCreateInput,
       include: { category: true, variants: true },
     });
+
 
     return NextResponse.json(
       { status: "success", data: product },
