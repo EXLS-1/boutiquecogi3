@@ -6,7 +6,7 @@
  * TODO: Intégrer Better-Auth quand l'authentification sera activée.
  */
 
-import { RBAC_LEVELS, type RbacLevel } from "@/lib/category/catalog-types";
+import { RBAC_LEVELS, type RbacLevel } from "@/lib/product-category/category-types";
 import type { RbacContext } from "./catalog-page-types";
 
 export const FALLBACK_RBAC: RbacContext = {

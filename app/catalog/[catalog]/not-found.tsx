@@ -17,8 +17,8 @@
 import Link from "next/link";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { PackageSearch, ArrowLeft, Home, Grid3X3 } from "lucide-react";
-import { getCatalogCategories } from "@/lib/catalog/catalog-queries";
-import { PRODUCT_PLACEHOLDER } from "@/lib/catalog/catalog-constants";
+import { getCatalogCategories } from "@/lib/product-catalog/catalog-queries";
+import { PRODUCT_PLACEHOLDER } from "@/lib/product-catalog/catalog-constants";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface SuggestedCategory {
@@ -63,7 +63,7 @@ export default async function CatalogNotFound() {
   return (
     <main className="container mx-auto px-4 py-12 bg-background min-h-screen">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* ─── Illustration & Message principal ─────────────────────────── */}
         <div className="text-center mb-16">
           <div className="relative w-48 h-48 mx-auto mb-8">

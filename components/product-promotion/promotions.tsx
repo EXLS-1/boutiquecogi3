@@ -7,10 +7,10 @@
  */
 
 import { Suspense } from "react";
-import { getPromotionalProducts } from "@/lib/catalog/catalog-queries";
+import { getPromotionalProducts } from "@/lib/product-catalog/catalog-queries";
 import { ProductList } from "../product/product-list";
 import { ProductListSkeleton } from "../product/product-list-skeleton";
-import { HOME_PRODUCTS_LIMIT } from "@/lib/catalog/catalog-constants";
+import { HOME_PRODUCTS_LIMIT } from "@/lib/product-catalog/catalog-constants";
 
 export async function SectionPromotions() {
   const products: readonly unknown[] = (await getPromotionalProducts(HOME_PRODUCTS_LIMIT)) as readonly unknown[];

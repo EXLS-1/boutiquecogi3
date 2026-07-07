@@ -8,11 +8,11 @@
  */
 
 import { memo, ComponentType } from "react";
-import { CatalogGrid } from "../catalog/catalog-grid";
+import { CatalogGrid } from "./catalog-grid";
 import { NewProductCategory } from "@/components/product-recent/product-recent";
 import { SectionPromotions } from "@/components/product-promotion/promotions";
 // Explicit prop shape used by category consumers
-type CategoryWidgetProps = {
+type CatalogWidgetProps = {
   readonly userRbacLevel?: number;
   readonly isAuthenticated?: boolean;
 };
@@ -20,18 +20,18 @@ type CategoryWidgetProps = {
 // Cast imported components to a concrete ComponentType instead of `any`.
 // This keeps type-safety for props we pass here while avoiding altering
 // the upstream component typings.
-const NewProductCategoryAny = NewProductCategory as ComponentType<CategoryWidgetProps>;
-const SectionPromotionsAny = SectionPromotions as ComponentType<CategoryWidgetProps>;
+const NewProductCategoryAny = NewProductCategory as ComponentType<CatalogWidgetProps>;
+const SectionPromotionsAny = SectionPromotions as ComponentType<CatalogWidgetProps>;
 
-interface CategorySectionProps {
+interface CatalogSectionProps {
   readonly userRbacLevel?: number;
   readonly isAuthenticated?: boolean;
 }
 
-function CategorySectionComponent({
+function CatalogSectionComponent({
   userRbacLevel,
   isAuthenticated = false,
-}: CategorySectionProps) {
+}: CatalogSectionProps) {
   return (
     <section
       className="py-20 bg-gray-50"
@@ -44,16 +44,16 @@ function CategorySectionComponent({
         <div className="text-center mb-16">
           <h2
             id="boutique-heading"
-            className="font-playfair text-3xl md:text-5xl font-bold text-gray-900 uppercase tracking-wider mb-4"
+            className="font-playfair text-5xl md:text-5xl font-bold text-pink-500 uppercase tracking-wider mb-4"
           >
             Notre Boutique
           </h2>
-          <p className="font-lato text-gray-500 text-lg">
-            Découvrez nos collections par catégorie
+          <p className="font-lato text-pink-500 text-lg">
+            Faites la découverte des articles dans notre catalogue
           </p>
         </div>
 
-        {/* ─── Grille des catégories ──────────────────────────────────────── */}
+        {/* ─── CAtalog ──────────────────────────────────────── */}
         <CatalogGrid
           config={{
             columns: { mobile: 1, tablet: 2, desktop: 3 },
@@ -71,10 +71,10 @@ function CategorySectionComponent({
           />
         </CatalogGrid>
 
-         
+
       </div>
     </section>
   );
 }
 
-export default memo(CategorySectionComponent);
+export default memo(CatalogSectionComponent);

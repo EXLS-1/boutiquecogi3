@@ -10,17 +10,17 @@
 import {
   HOME_PRODUCTS_LIMIT,
   CATALOG_PAGE_SIZE,
-} from "@/lib/catalog/catalog-constants";
+} from "@/lib/product-catalog/catalog-constants";
 import {
   getRecentProducts,
   getFeaturedProducts,
   getCatalogCategories,
   getProductsByCategory,
   searchCatalogProducts,
-} from "@/lib/catalog/catalog-queries";
+} from "@/lib/product-catalog/catalog-queries";
 import {
   filterProductsByAccessPolicy,
-} from "@/lib/catalog/catalog-mappers";
+} from "@/lib/product-catalog/catalog-mappers";
 import type {
   CatalogCategory,
   CatalogIndexData,
@@ -70,20 +70,20 @@ export async function fetchCatalogIndexData(): Promise<CatalogIndexData> {
       return [] as CatalogCategory[];
     }),
   ]) as [
-    readonly CatalogProduct[],
-    readonly CatalogProduct[],
-    readonly CatalogCategory[],
-  ];
+      readonly CatalogProduct[],
+      readonly CatalogProduct[],
+      readonly CatalogCategory[],
+    ];
 
   const fetchError =
     recentProductsRaw.length === 0 &&
-    featuredProductsRaw.length === 0 &&
-    categoriesRaw.length === 0
+      featuredProductsRaw.length === 0 &&
+      categoriesRaw.length === 0
       ? new Error(
-          `Échec total du chargement du catalogue. Erreurs: ${partialErrors
-            .map((e) => `[${e.source}] ${e.message}`)
-            .join("; ")}`
-        )
+        `Échec total du chargement du catalogue. Erreurs: ${partialErrors
+          .map((e) => `[${e.source}] ${e.message}`)
+          .join("; ")}`
+      )
       : null;
 
   if (partialErrors.length > 0 && !fetchError) {

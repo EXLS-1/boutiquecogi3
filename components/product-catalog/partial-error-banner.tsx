@@ -8,7 +8,7 @@
  */
 
 import { AlertTriangle } from "lucide-react";
-import type { PartialError } from "@/lib/catalog/catalog-page-types";
+import type { PartialError } from "@/lib/product-catalog/catalog-page-types";
 
 interface PartialErrorBannerProps {
   readonly errors: readonly PartialError[];

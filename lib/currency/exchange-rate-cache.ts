@@ -18,14 +18,6 @@ function getPrisma() {
   return _prisma;
 }
 
-// ─── Opérations de cache ────────────────────────────────────────────────────
-
-/**
- * Sauvegarde le dernier taux de change valide en base de données.
- * Utilise upsert pour garantir l'atomicité de l'opération.
- * @param rate - Taux à persister
- * @throws Error si l'écriture en base échoue
- */
 export async function saveLastValidRate(rate: Prisma.Decimal): Promise<void> {
   const prisma = getPrisma();
   const rateString = rate.toFixed();

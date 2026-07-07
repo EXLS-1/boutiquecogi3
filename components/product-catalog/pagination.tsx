@@ -10,7 +10,7 @@
 "use client";
 
 import Link from "next/link";
-import type { SortOption } from "@/lib/catalog/catalog-page-types";
+import type { SortOption } from "@/lib/product-catalog/catalog-page-types";
 
 interface PaginationProps {
   readonly currentPage: number;
@@ -82,11 +82,10 @@ export function Pagination({
         <Link
           key={page}
           href={buildUrl(page)}
-          className={`px-3 py-2 rounded-lg border transition-colors ${
-            page === currentPage
+          className={`px-3 py-2 rounded-lg border transition-colors ${page === currentPage
               ? "bg-cyan-600 text-white border-cyan-600"
               : "border-slate-200 text-slate-600 hover:bg-slate-50"
-          }`}
+            }`}
           aria-current={page === currentPage ? "page" : undefined}
         >
           {page}

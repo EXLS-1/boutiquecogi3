@@ -9,7 +9,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CatalogQueryParams } from "@/lib/catalog/catalog-types";
+import { CatalogQueryParams } from "@/lib/product-catalog/catalog-types";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Types

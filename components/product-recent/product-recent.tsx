@@ -15,7 +15,7 @@ import { PackageSearch, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { ProductList, ProductListSkeleton } from "@/components/product/product-list";
 import { useCatalogPermissions } from "@/hooks/catalog/use-catalog-permissions";
-import type { CatalogProduct } from "@/lib/catalog/catalog-types";
+import type { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 

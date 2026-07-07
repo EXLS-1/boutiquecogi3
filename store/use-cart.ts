@@ -11,7 +11,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { RBAC_LEVELS, CatalogProduct } from "@/lib/catalog/catalog-types";
+import { RBAC_LEVELS, CatalogProduct } from "@/lib/product-catalog/catalog-types";
 
 interface CartItem {
   product: CatalogProduct;
@@ -54,7 +54,7 @@ interface CartStorageState {
   items: PersistedCartItem[];
 }
 
-interface CartStore extends CartStoreState, CartStoreActions {}
+interface CartStore extends CartStoreState, CartStoreActions { }
 
 const MAX_CART_QUANTITY = 99;
 const CART_STORAGE_KEY = "boutiquecogi3_cart";

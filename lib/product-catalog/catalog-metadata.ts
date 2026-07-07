@@ -7,7 +7,7 @@
  */
 
 import type { Metadata } from "next";
-import { getCatalogCategories } from "@/lib/catalog/catalog-queries";
+import { getCatalogCategories } from "@/lib/product-catalog/catalog-queries";
 
 const OG_IMAGE_DIMENSIONS = { width: 1200, height: 630 } as const;
 

@@ -12,29 +12,29 @@ import { Metadata, ResolvingMetadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ProductList } from "@/components/product/product-list";
-import { CategoryBreadcrumb } from "@/components/catalog/category-breadcrumb";
-import { CategoryHeaderSection } from "@/components/catalog/category-header-section";
+import { CategoryBreadcrumb } from "@/components/product-catalog/category-breadcrumb";
+import { CategoryHeaderSection } from "@/components/product-catalog/category-header-section";
 import { CategoryControlsSection } from "@/components/catalog/category-controls-section";
-import { Pagination } from "@/components/catalog/pagination";
+import { Pagination } from "@/components/product-catalog/pagination";
 import { ProductListSkeleton } from "@/components/product/product-list-skeleton";
-import { PartialErrorBanner } from "@/components/catalog/partial-error-banner";
+import { PartialErrorBanner } from "@/components/product-catalog/partial-error-banner";
 import { EmptyState } from "@/components/product-new/empty-state";
 import { ErrorState } from "@/components/product-new/error-state";
 import { BackToCatalog } from "@/components/catalog/back-to-catalog";
 import {
   fetchCategoryPageData,
   getCategoryInfoBySlug,
-} from "@/lib/catalog/catalog-fetchers";
+} from "@/lib/product-catalog/catalog-fetchers";
 import {
   buildCategoryMetadata,
   buildNotFoundCategoryMetadata,
-} from "@/lib/catalog/catalog-metadata";
+} from "@/lib/product-catalog/catalog-metadata";
 import {
   VALID_SORT_OPTIONS,
   type SortOption,
   type CategoryPageProps,
-} from "@/lib/catalog/catalog-page-types";
-import { CATALOG_PAGE_SIZE } from "@/lib/catalog/catalog-constants";
+} from "@/lib/product-catalog/catalog-page-types";
+import { CATALOG_PAGE_SIZE } from "@/lib/product-catalog/catalog-constants";
 
 export const revalidate = 300; // ISR 5 minutes
 

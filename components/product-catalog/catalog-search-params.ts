@@ -18,7 +18,7 @@ import {
 import {
   SORTABLE_FIELDS,
   type SortableField,
-} from "@/lib/catalog/catalog-types";
+} from "@/lib/product-catalog/catalog-types";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 1: OPTIONS DE TRI (source unique depuis catalog-types.ts)

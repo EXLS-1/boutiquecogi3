@@ -14,7 +14,7 @@ import { memo } from "react";
 import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BadgeProductStatus } from "./badge";
-import { CatalogProduct } from "@/lib/catalog/catalog-types";
+import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 import { useCatalog } from "@/store/use-catalog-store";
 import Price from "@/components/product-price/price";
 
@@ -32,7 +32,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
   return (
     <article className="group relative flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm 
                         hover:shadow-xl hover:border-cyan-400/30 transition-all duration-300 overflow-hidden">
-      
+
       {/* ─── Image Container ───────────────────────────────────────────────── */}
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
         <Link href={`/products/${product.slug}`} aria-label={`Voir ${product.name}`}>
@@ -84,7 +84,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
             {product.categoryName}
           </span>
         )}
-        
+
         <Link href={`/products/${product.slug}`} className="group/link">
           <h3 className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2 
                          group-hover/link:text-cyan-700 transition-colors">
@@ -97,7 +97,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
           <span className="text-lg font-bold text-slate-900">
             <Price amount={product.price} currency={product.currency} />
           </span>
-          {product.discountPercent > 0 }
+          {product.discountPercent > 0}
         </div>
 
         {/* CTA */}

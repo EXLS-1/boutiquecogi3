@@ -11,7 +11,7 @@ import { ProductNotFound } from "./products-not-found";
 
 import {
   mapCatalogProduct,
-} from "@/lib/catalog/catalog-mappers";
+} from "@/lib/product-catalog/catalog-mappers";
 
 export const revalidate = 3600;
 
@@ -117,10 +117,10 @@ export async function generateMetadata({
 
       images: product.image
         ? [
-            {
-              url: product.image,
-            },
-          ]
+          {
+            url: product.image,
+          },
+        ]
         : [],
     },
   };

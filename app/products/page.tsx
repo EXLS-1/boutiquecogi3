@@ -20,11 +20,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { searchParamsCache } from "@/components/catalog/catalog-search-params";
-import { searchCatalogProducts } from "@/lib/catalog/catalog-queries";
+import { searchParamsCache } from "@/components/product-catalog/catalog-search-params";
+import { searchCatalogProducts } from "@/lib/product-catalog/catalog-queries";
 import { ProductListSkeleton } from "@/components/product/product-list-skeleton";
 import { ProductList } from "@/components/product/product-list";
-import { SortableField, SORTABLE_FIELDS } from "@/lib/catalog/catalog-types";
+import { SortableField, SORTABLE_FIELDS } from "@/lib/product-catalog/catalog-types";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // CONSTANTES & TYPES

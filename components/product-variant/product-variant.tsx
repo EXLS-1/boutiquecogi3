@@ -26,16 +26,25 @@ import {
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 
-export const ColorVariantSchema = z.object({
-  id: z.string().uuid(),
+export const CategorySchema = z.object({
+  id: z.uuid(),
   label: z.string().min(1),
-  hex: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  imageUrl: z.string().url().optional(),
+  description: z.string().optional(),
 });
 
-export const SizeVariantSchema = z.object({
-  id: z.string().uuid(),
+export const ColorVariantSchema = z.object({
+  id: z.uuid(),
   label: z.string().min(1),
+  hex: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  imageUrl: z.url().optional(),
+});
+
+export const SizeSystemEnum = z.enum(["NUMERIC", "ALPHABETIC", "FRACTIONAL"]); // Fractional pour 1/2, 3/4 (chaussures US)
+
+export const SizeVariantSchema = z.object({
+  id: z.uuid(),
+  label: z.string().min(1),
+  sizeSystem: SizeSystemEnum.default("NUMERIC"),
   description: z.string().optional(),
   sortOrder: z.number().int().default(0),
 });
@@ -53,20 +62,20 @@ export const WeightSchema = z.object({
 });
 
 export const MaterialSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   label: z.string().min(1),
   description: z.string().optional(),
   ecoFriendly: z.boolean().default(false),
 });
 
 export const FinishSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   label: z.string().min(1),
   description: z.string().optional(),
 });
 
 export const ProductVariantSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   sku: z.string().min(1),
   priceAdjustment: z.number().default(0),
   stockQuantity: z.number().int().min(0).default(0),
@@ -82,9 +91,9 @@ export const ProductVariantSchema = z.object({
 });
 
 export const ProductVariantConfigSchema = z.object({
-  productId: z.string().uuid(),
+  productId: z.uuid(),
   basePrice: z.number().positive(),
-  currency: z.string().default("XOF"),
+  currency: z.string().default("USD"),
   variants: z.array(ProductVariantSchema).min(1),
   allowBackorder: z.boolean().default(false),
   maxQuantityPerOrder: z.number().int().positive().default(10),
@@ -636,8 +645,8 @@ export function ProductVariantSelector({
               selectedVariant.stockQuantity > 0
                 ? `${selectedVariant.stockQuantity} unité${selectedVariant.stockQuantity > 1 ? "s" : ""} disponible${selectedVariant.stockQuantity > 1 ? "s" : ""}`
                 : validated.allowBackorder
-                ? "En rupture — Précommande possible"
-                : "Rupture de stock"
+                  ? "En rupture — Précommande possible"
+                  : "Rupture de stock"
             }
           />
         </dl>

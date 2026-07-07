@@ -7,20 +7,20 @@
  */
 
 import { Metadata, ResolvingMetadata } from "next";
-import Category from "@/components/product-category/category";
-import { FeaturedProductsSection } from "@/components/catalog/featured-products-section";
+import Category from "@/components/product-catalog/category";
+import { FeaturedProductsSection } from "@/components/product-catalog/featured-products-section";
 import { RecentProductsSection } from "@/components/product-new/recent-products-section";
-import { TrustSection } from "@/components/catalog/trust-section";
-import { PartialErrorBanner } from "@/components/catalog/partial-error-banner";
+import { TrustSection } from "@/components/product-catalog/trust-section";
+import { PartialErrorBanner } from "@/components/product-catalog/partial-error-banner";
 import {
   fetchCatalogIndexData,
-} from "@/lib/catalog/catalog-fetchers";
+} from "@/lib/product-catalog/catalog-fetchers";
 import {
   getCatalogStatsForMetadata,
   buildCatalogIndexMetadata,
-} from "@/lib/catalog/catalog-metadata";
-import { resolveRbacContext } from "@/lib/catalog/catalog-rbac";
-import { HOME_PRODUCTS_LIMIT } from "@/lib/catalog/catalog-constants";
+} from "@/lib/product-catalog/catalog-metadata";
+import { resolveRbacContext } from "@/lib/product-catalog/catalog-rbac";
+import { HOME_PRODUCTS_LIMIT } from "@/lib/product-catalog/catalog-constants";
 
 export const revalidate = 300; // ISR 5 minutes
 

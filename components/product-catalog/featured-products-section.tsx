@@ -10,7 +10,7 @@
 import { Suspense } from "react";
 import { ProductList } from "@/components/product/product-list";
 import { ProductListSkeleton } from "../product/product-list-skeleton";
-import type { CatalogProduct } from "@/lib/catalog/catalog-types";
+import type { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 
 interface FeaturedProductsSectionProps {
   readonly products: readonly CatalogProduct[];

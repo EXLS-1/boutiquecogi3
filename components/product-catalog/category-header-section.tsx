@@ -8,8 +8,8 @@
  */
 
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
-import { PRODUCT_PLACEHOLDER } from "@/lib/catalog/catalog-constants";
-import type { CategoryInfo } from "@/lib/catalog/catalog-page-types";
+import { PRODUCT_PLACEHOLDER } from "@/lib/product-catalog/catalog-constants";
+import type { CategoryInfo } from "@/lib/product-catalog/catalog-page-types";
 
 interface CategoryHeaderSectionProps {
   readonly category: CategoryInfo;

@@ -10,7 +10,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CatalogProduct, RBAC_LEVELS, RbacLevel } from "@/lib/catalog/catalog-types";
+import { CatalogProduct, RBAC_LEVELS, RbacLevel } from "@/lib/product-catalog/catalog-types";
 
 interface UseCatalogPermissionsOptions {
   readonly userRbacLevel?: RbacLevel;
