@@ -4,7 +4,6 @@
 // Garantit la continuité de service en cas d'indisponibilité de la BCC.
 // =============================================================================
 
-"use server";
 
 import { Prisma } from "@prisma/client";
 import { CACHE_KEY } from "../currency/exchange-rate-constants";

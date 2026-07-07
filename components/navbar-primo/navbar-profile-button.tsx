@@ -19,6 +19,8 @@ import toast from "react-hot-toast";
 import SignInButton from "@/components/auth/sign-in-button";
 import SignUpButton from "@/components/auth/sign-up-button";
 
+import { useState, useEffect } from "react";
+
 /**
  * Composant NavbarProfileButton
  * Gère l'affichage du statut d'authentification dans la Navbar.
@@ -28,10 +30,12 @@ export function NavbarProfileButton() {
   // isPending sera 'false' immédiatement si la session a été passée en initialData.
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
+  // Prevent hydration mismatch: this component is client-only.
+  // Return null on the server; show skeleton until mounted + session resolved.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  // Le skeleton ne s'affichera que si la session est réellement en cours de vérification 
-  // (ex: changement de compte), et non au premier chargement.
-  if (isPending) {
+  if (!mounted || isPending) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
 
