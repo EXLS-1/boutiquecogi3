@@ -9,6 +9,7 @@
 // DELETE : Blocage (soft-delete) d'un rôle
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma, type Role as PrismaRole } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/uuid";
@@ -18,8 +19,6 @@ import {
   RESTRICTIONS,
   type Permission,
   type Restriction,
-  type ToggleState,
-  type Role,
   invalidateRBACCache,
 } from "@/lib/auth/rbac";
 import {
@@ -33,6 +32,7 @@ import {
 // ───────────────────────────────────────────
 
 const ToggleStateSchema = z.enum(["ON", "OFF"]);
+const PrismaRoleValues = ["SUPER_ADMIN", "ADMIN", "MANAGER", "EDITOR", "SUPERVISOR", "USER"] as const;
 
 const PermissionOverrideSchema = z.record(
   z.enum(Object.values(PERMISSIONS) as [Permission, ...Permission[]]),
@@ -55,8 +55,8 @@ const CreateRoleSchema = z.object({
     }),
   level: z.number().int().min(1).max(7),
   description: z.string().max(256).optional(),
-  permissions: PermissionOverrideSchema.optional().default({}),
-  restrictions: RestrictionOverrideSchema.optional().default({}),
+  permissions: PermissionOverrideSchema.optional().default({} as z.infer<typeof PermissionOverrideSchema>),
+  restrictions: RestrictionOverrideSchema.optional().default({} as z.infer<typeof RestrictionOverrideSchema>),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -97,11 +97,16 @@ function createSuccessResponse<T>(data: T, status: number = 200) {
   return NextResponse.json({ success: true, data }, { status });
 }
 
-function sanitizeRoleInput(role: string): string {
-  return role
-    .toUpperCase()
-    .trim()
-    .replace(/[^A-Z0-9_]/g, "");
+function sanitizeRoleInput(role: string): PrismaRole | null {
+  const normalized = role.toUpperCase().trim().replace(/[^A-Z0-9_]/g, "");
+
+  if (normalized === "GUEST") {
+    return "USER";
+  }
+
+  return (PrismaRoleValues as readonly string[]).includes(normalized)
+    ? (normalized as PrismaRole)
+    : null;
 }
 
 // ───────────────────────────────────────────
@@ -230,9 +235,17 @@ export async function POST(request: NextRequest) {
       const data = parsed.data;
       const sanitizedRole = sanitizeRoleInput(data.role);
 
+      if (!sanitizedRole) {
+        return createErrorResponse(
+          "Le nom du rôle n'est pas pris en charge par la base de données.",
+          "INVALID_ROLE",
+          400,
+        );
+      }
+
       // Vérifie que le rôle n'est pas un rôle système protégé
-      const systemRoles = Object.values(ROLES);
-      if (systemRoles.includes(sanitizedRole as Role)) {
+      const systemRoles = Object.values(ROLES) as string[];
+      if (systemRoles.includes(sanitizedRole)) {
         return createErrorResponse(
           `Le rôle '${sanitizedRole}' est un rôle système et ne peut pas être recréé.`,
           "SYSTEM_ROLE_PROTECTED",
@@ -276,8 +289,8 @@ export async function POST(request: NextRequest) {
           role: sanitizedRole,
           level: data.level,
           description: data.description,
-          permissions: data.permissions as Record<string, unknown>,
-          restrictions: data.restrictions as Record<string, unknown>,
+          permissions: data.permissions as unknown as Prisma.InputJsonValue,
+          restrictions: data.restrictions as unknown as Prisma.InputJsonValue,
           isActive: data.isActive,
           isSystem: false,
           createdBy: context.user.id,
@@ -285,7 +298,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Invalide le cache RBAC pour forcer le recalcul
-      invalidateRBACCache(sanitizedRole as Role);
+      invalidateRBACCache(sanitizedRole as Parameters<typeof invalidateRBACCache>[0]);
 
       return createSuccessResponse(
         {
@@ -335,6 +348,14 @@ export async function PATCH(request: NextRequest) {
       const data = parsed.data;
       const sanitizedRole = sanitizeRoleInput(data.role);
 
+      if (!sanitizedRole) {
+        return createErrorResponse(
+          "Le nom du rôle n'est pas pris en charge par la base de données.",
+          "INVALID_ROLE",
+          400,
+        );
+      }
+
       const existing = await prisma.roleConfig.findUnique({
         where: { role: sanitizedRole },
       });
@@ -362,10 +383,10 @@ export async function PATCH(request: NextRequest) {
         updateData.description = data.description;
       }
       if (data.permissions !== undefined) {
-        updateData.permissions = data.permissions as Record<string, unknown>;
+        updateData.permissions = data.permissions as unknown as Prisma.InputJsonValue;
       }
       if (data.restrictions !== undefined) {
-        updateData.restrictions = data.restrictions as Record<string, unknown>;
+        updateData.restrictions = data.restrictions as unknown as Prisma.InputJsonValue;
       }
       if (data.isActive !== undefined) {
         updateData.isActive = data.isActive;
@@ -379,7 +400,7 @@ export async function PATCH(request: NextRequest) {
       });
 
       // Invalide le cache RBAC
-      invalidateRBACCache(sanitizedRole as Role);
+      invalidateRBACCache(sanitizedRole as Parameters<typeof invalidateRBACCache>[0]);
 
       return createSuccessResponse({
         id: updated.id,
@@ -425,6 +446,14 @@ export async function DELETE(request: NextRequest) {
 
       const { role, reason } = parsed.data;
       const sanitizedRole = sanitizeRoleInput(role);
+
+      if (!sanitizedRole) {
+        return createErrorResponse(
+          "Le nom du rôle n'est pas pris en charge par la base de données.",
+          "INVALID_ROLE",
+          400,
+        );
+      }
 
       const existing = await prisma.roleConfig.findUnique({
         where: { role: sanitizedRole },
@@ -472,7 +501,7 @@ export async function DELETE(request: NextRequest) {
       });
 
       // Invalide le cache RBAC
-      invalidateRBACCache(sanitizedRole as Role);
+      invalidateRBACCache(sanitizedRole as Parameters<typeof invalidateRBACCache>[0]);
 
       return createSuccessResponse({
         id: blocked.id,
