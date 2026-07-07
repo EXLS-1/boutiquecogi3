@@ -943,9 +943,11 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  paidAt    DateTime @default(now())
 
-  items                OrderItem[]
-  payment              Payment?
+  items   OrderItem[]
+  payment Payment?
+
   shipment             Shipment?
   orderStatusHistories OrderStatusHistory[]
   couponUsage          CouponUsage?

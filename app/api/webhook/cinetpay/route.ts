@@ -224,9 +224,7 @@ export async function POST(req: NextRequest) {
           where: { id: order.id },
           data: {
             status: "CONFIRMED",
-            paymentMethod: "CINETPAY",
-            paymentTransactionId: cpm_trans_id,
-            paidAt: new Date(),
+            cinetpayTransId: cpm_trans_id,
             updatedAt: new Date(),
           },
         });
@@ -257,16 +255,11 @@ export async function POST(req: NextRequest) {
           await tx.inventoryTransaction.create({
             data: {
               id: generateUUIDv7(),
-              productVariantId: variant.id,
+              productId: variant.productId,
+              variantId: variant.id,
               quantity: -Math.abs(item.quantity), // Toujours négatif, jamais positif
-              type: "SALE",
+              reason: "SALE",
               referenceId: `ORDER_${order.orderNumber}`,
-              metadata: {
-                orderId: order.id,
-                transactionId: cpm_trans_id,
-                amount: cpm_amount,
-                currency: cpm_currency,
-              },
             },
           });
         }
