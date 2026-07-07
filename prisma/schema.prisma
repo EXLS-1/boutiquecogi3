@@ -355,12 +355,15 @@ model Address {
 // PRODUITS & CATALOGUE
 // ==========================================
 
-model catalog {
-  id         String   @id @db.Uuid
+model Catalog {
+  id         String           @id @db.Uuid
+  name       String
   imageSrc   String?
   imageAlt   String
-  categoryId String   @db.Uuid
-  category   Category @relation("category", fields: [categoryId], references: [id])
+  isActive   Boolean          @default(true)
+  products   CatalogProduct[]
+  category   Category?        @relation(fields: [categoryId], references: [id])
+  categoryId String?          @db.Uuid
 
   @@map("catalog")
 }
@@ -380,30 +383,65 @@ model Category {
   displayOrder       Int      @default(0)
   OrderBy            String
 
-  products Product[]
-  catalog  catalog[]  @relation("category")
   parentId String?    @db.Uuid
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
+
+  // join table relations
+  categoryProducts CategoryProduct[]
 
   seoTitle       String?
   seoDescription String?
   deletedAt      DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  catalogs       Catalog[]
+  products       Product[]
 
   @@index([slug])
+  @@index([parentId])
   @@map("category")
+}
+
+model CategoryProduct {
+  productId    String
+  categoryId   String
+  displayOrder Int    @default(0) // Permet de trier l'affichage par catégorie
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@map("category_product")
+}
+
+model CatalogProduct {
+  catalogId     String
+  productId     String
+  priceOverride Decimal? @db.Decimal(10, 2) // Surcharge du prix de base pour CE catalogue
+  isActive      Boolean  @default(true) // Désactiver un produit dans un catalogue sans le supprimer
+
+  catalog Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([catalogId, productId])
+  @@index([productId])
+  @@map("catalog_product")
 }
 
 model Product {
   id          String  @id @db.Uuid
   name        String
+  sku         String  @unique
   slug        String  @unique
   description String  @db.Text
   price       Decimal @db.Decimal(10, 2)
   basePrice   Decimal @db.Decimal(10, 2)
   currency    String  @default("USD") @db.VarChar(3)
+
+  categories CategoryProduct[]
+  catalogs   CatalogProduct[]
 
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id])
@@ -419,8 +457,6 @@ model Product {
   seoTitle       String?
   seoDescription String?       @db.Text
 
-  categoryId String?   @db.Uuid
-  category   Category? @relation(fields: [categoryId], references: [id])
   taxClassId String?   @db.Uuid
   taxClass   TaxClass? @relation(fields: [taxClassId], references: [id])
 
@@ -456,10 +492,12 @@ model Product {
 
   productPrices ProductPrice[]
   productViews  ProductView[]
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  categoryId    String?        @db.Uuid
 
   @@index([createdBy])
   @@index([updatedBy])
-  @@index([categoryId, isArchived, basePrice])
+  @@index([isArchived, basePrice])
   @@index([slug])
   @@map("product")
 }
