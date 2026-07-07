@@ -4,8 +4,25 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
+import { inferAdditionalFields } from "better-auth/client/plugins";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition, createContext, useContext } from "react";
+import type { auth } from "@/lib/auth";
+import {
+  normalizeRole,
+  getRoleLevel,
+  getRoleConfig,
+  isAdminOrSuperAdmin,
+  isStaffOrAbove,
+  type Role,
+  type RoleLevelConfigEntry,
+} from "@/lib/auth/rbac-shared";
+
+// ─── Réexports RBAC purs (utilisables sans importer rbac-shared directement) ──
+export type { Role, RoleLevelConfigEntry };
+export { normalizeRole, getRoleLevel, getRoleConfig, isAdminOrSuperAdmin, isStaffOrAbove };
+
+// ─── Types session ────────────────────────────────────────────────────────────
 
 export interface User {
   id: string;
@@ -24,16 +41,22 @@ export interface Session {
   expiresAt: Date;
 }
 
+// ─── Instance Better-Auth client ──────────────────────────────────────────────
+
 export const authClient = createAuthClient({
   // Utilisation d'une base URL robuste avec fallback dynamique côté navigateur
   baseURL:
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
     (typeof window !== "undefined" ? window.location.origin : ""),
+  // inferAdditionalFields propage les additionalFields du serveur (ex: role) vers les types client
+  plugins: [inferAdditionalFields<typeof auth>()],
 });
 
 // Destructuration sécurisée (sans SessionProvider qui cause l'erreur TS2339)
 export const { signIn, signUp, signOut, useSession, getSession } = authClient;
+
+// ─── Contexte session initiale (anti-hydratation) ────────────────────────────
 
 /**
  * Contexte pour la session initiale afin d'éviter les erreurs d'hydratation et le skeleton flash.
@@ -42,6 +65,44 @@ export const BetterAuthContext = createContext<{
   session: Session | null | undefined;
 }>({ session: undefined });
 export const useSessionContext = () => useContext(BetterAuthContext);
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+/**
+ * Hook RBAC côté client.
+ * Expose le rôle normalisé, le niveau, et les helpers de permission
+ * basés sur la session Better-Auth courante.
+ *
+ * Usage : const { role, isAdmin, isStaff, roleConfig } = useRBAC();
+ */
+export function useRBAC() {
+  const { data: session, isPending } = authClient.useSession();
+
+  const role: Role = normalizeRole(
+    (session?.user as { role?: string } | null | undefined)?.role,
+  );
+  const level = getRoleLevel(role);
+  const roleConfig = getRoleConfig(role);
+
+  return {
+    /** Rôle RBAC normalisé de l'utilisateur courant */
+    role,
+    /** Niveau hiérarchique (1 = SUPER_ADMIN, 7 = GUEST) */
+    level,
+    /** Config visuelle du rôle (label, icon, bgClass, textClass, borderClass) */
+    roleConfig,
+    /** Vrai si l'utilisateur a une session active */
+    isAuthenticated: !!session,
+    /** Vrai si la session est en cours de chargement */
+    isPending,
+    /** Vrai si ADMIN ou SUPER_ADMIN → accès au dashboard /admin */
+    isAdmin: isAdminOrSuperAdmin(role),
+    /** Vrai si MANAGER, ADMIN ou SUPER_ADMIN → accès aux outils staff */
+    isStaff: isStaffOrAbove(role),
+    /** Données session brutes Better-Auth */
+    session,
+  };
+}
 
 /**
  * Hook 'useAuth' : Abstraction pour les formulaires et la gestion de session.

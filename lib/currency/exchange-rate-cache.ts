@@ -6,9 +6,8 @@
 
 
 import { Prisma } from "@prisma/client";
-import { CACHE_KEY } from "../currency/exchange-rate-constants";
-
-// ─── Lazy import de Prisma pour éviter les cycles de dépendance ───────────────
+import { CACHE_KEY } from "./exchange-rate-constants";
+import { generateUUIDv7 } from "@/lib/uuid";
 
 let _prisma: typeof import("@/lib/prisma").prisma | null = null;
 
@@ -17,18 +16,6 @@ function getPrisma() {
     _prisma = require("@/lib/prisma").prisma;
   }
   return _prisma;
-}
-
-// ─── Génération UUID v7 (RFC 9562) ────────────────────────────────────────────
-
-/**
- * Génère un UUID v7 chronologiquement triable (Node.js 22+).
- * Optimise les index de base de données pour les clés primaires.
- */
-export function generateUUIDv7(): string {
-  const { randomUUID } = require("crypto");
-  // @ts-expect-error — Supporté nativement dans les runtimes modernes (Node 22+)
-  return randomUUID({ version: 7 });
 }
 
 // ─── Opérations de cache ────────────────────────────────────────────────────

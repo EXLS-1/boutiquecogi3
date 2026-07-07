@@ -3,15 +3,16 @@
 // affichant les informations de l'utilisateur connecté.
 "use client";
 
-import { authClient } from "@/lib/auth/auth-client";
+import { authClient, useRBAC } from "@/lib/auth/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { Mail, User, ShieldCheck } from "lucide-react";
+import { Mail, User } from "lucide-react";
 
 export function Profile() {
   const { data: session, isPending } = authClient.useSession();
+  const { roleConfig, isAdmin, isStaff, role } = useRBAC();
 
   if (isPending) {
     return (
@@ -32,7 +33,7 @@ export function Profile() {
     .join("")
     .toUpperCase() || "U";
 
-  const isAdmin = user.role?.toLowerCase() === "admin" || user.role === "ADMIN";
+  const RoleIcon = roleConfig.icon;
 
   return (
     <div className="space-y-8 w-full max-w-4xl animate-in fade-in duration-500">
@@ -47,19 +48,19 @@ export function Profile() {
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <p className="text-slate-600 text-xl">
               Bonjour,{" "}
-              <span className="font-bold text-cyan-600">
-                {user.name}
-              </span>
+              <span className="font-bold text-cyan-600">{user.name}</span>
             </p>
             <p className="text-sm text-slate-400 font-medium">{user.email}</p>
-            {isAdmin && (
-              <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200 hover:bg-cyan-100 gap-1">
-                <ShieldCheck className="w-3 h-3" /> Administrateur
-              </Badge>
-            )}
+            {/* Badge de rôle RBAC avec icon et couleurs contextuels */}
+            <Badge
+              className={`gap-1.5 text-xs font-semibold px-2.5 py-1 ${roleConfig.bgClass} ${roleConfig.textClass} ${roleConfig.borderClass} hover:${roleConfig.bgClass}`}
+            >
+              <RoleIcon className="w-3.5 h-3.5" />
+              {roleConfig.label}
+            </Badge>
           </div>
         </div>
       </header>
@@ -89,9 +90,30 @@ export function Profile() {
               {user.email}
             </p>
           </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-500 uppercase tracking-wider flex items-center gap-2">
+              <RoleIcon className="w-4 h-4" /> Rôle &amp; Accès
+            </p>
+            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <Badge
+                className={`gap-1.5 text-xs font-bold px-3 py-1.5 ${roleConfig.bgClass} ${roleConfig.textClass} ${roleConfig.borderClass} hover:${roleConfig.bgClass}`}
+              >
+                <RoleIcon className="w-3.5 h-3.5" />
+                {roleConfig.label}
+              </Badge>
+              {isAdmin && (
+                <span className="text-xs text-slate-500">— Accès complet au tableau de bord</span>
+              )}
+              {isStaff && !isAdmin && (
+                <span className="text-xs text-slate-500">— Accès à l'espace staff</span>
+              )}
+            </div>
+          </div>
         </div>
+
         <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-end">
-            <SignOutButton variant="destructive" className="px-8" />
+          <SignOutButton variant="destructive" className="px-8" />
         </div>
       </section>
     </div>

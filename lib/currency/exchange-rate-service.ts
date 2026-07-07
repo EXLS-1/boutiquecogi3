@@ -1,5 +1,4 @@
 // lib/currency/exchange-rate-service.ts
-"use server";
 
 import {
   getLastValidRate,
