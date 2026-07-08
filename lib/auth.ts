@@ -1,5 +1,6 @@
 // lib/auth.ts
 
+import { dash } from "@better-auth/infra";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
@@ -90,7 +91,7 @@ export const auth = betterAuth({
   },
 
   // Next.js cookies integration.
-  plugins: [nextCookies()],
+  plugins: [nextCookies(), dash()],
 
   // Session configuration.
   session: {
@@ -103,3 +104,5 @@ export const auth = betterAuth({
   // Trusted origins production.
   trustedOrigins: [baseURL],
 });
+
+
