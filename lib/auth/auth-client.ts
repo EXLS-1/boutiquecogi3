@@ -129,7 +129,8 @@ export function useAuth() {
   /**
    * Exécute une action Better-Auth et gère la navigation/rafraîchissement.
    */
-  const handleAction = async (promise: Promise<any>) => {
+  const handleAction = async (promise: Promise<unknown>) => {
+
     setIsPending(true);
     setError(null);
     try {
@@ -149,7 +150,8 @@ export function useAuth() {
       });
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+
       setError(
         err.message || "Le service d'authentification est indisponible.",
       );

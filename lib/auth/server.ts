@@ -128,18 +128,15 @@ export interface AuditEntry {
  * Cache React pour dedupliquer les appels de session
  * dans un même render cycle Server Component.
  */
-const _cachedGetSession = cache(async () => {
-  const headersList = await headers();
-  return auth.api.getSession({ headers: headersList });
-});
+// Session resolution encapsulée dans un provider dédié
+export { getSessionFromProvider as getCachedSession } from "@/lib/auth/session-provider";
 
-/**
- * Récupère la session en utilisant le cache React.
- * Évite les requêtes dupliquées dans un même render.
- */
-export async function getCachedSession() {
-  return _cachedGetSession();
-}
+
+
+
+
+
+
 
 // ═══════════════════════════════════════════
 // SECTION 3: RÉSOLUTION COMPLÈTE DU CONTEXT

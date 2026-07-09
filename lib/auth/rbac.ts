@@ -9,7 +9,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth"; // ✅ Singleton — JAMAIS réinstancié
+import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+
 
 import {
   Crown,
@@ -598,10 +599,20 @@ export async function getNumericRestriction(
 // ───────────────────────────────────────────
 
 export async function getCurrentUserRole(): Promise<Role> {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
+  const userData = await getCurrentUserFromProvider();
 
-  if (!session?.user) return ROLES.GUEST;
+  if (!userData?.session?.user) return ROLES.GUEST;
+
+  const roleStr =
+    (userData.session.user as Record<string, unknown>).role ??
+    (
+      (userData.session.user as Record<string, unknown>).metadata as Record<
+        string,
+        unknown
+      >
+    )?.role ??
+    ROLES.USER;
+
 
   const roleStr =
     (session.user as Record<string, unknown>).role ??
