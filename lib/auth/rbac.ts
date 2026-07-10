@@ -5,14 +5,10 @@
 // PUREMENT server-side. Aucun 'use client'.
 // Importé dans : Server Components, Server Actions, Route Handlers, Proxy.
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { cache } from "react";
-import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
-
-
 import {
+
   Crown,
   Shield,
   UserCog,
@@ -600,57 +596,22 @@ export async function getNumericRestriction(
 
 export async function getCurrentUserRole(): Promise<Role> {
   const userData = await getCurrentUserFromProvider();
-
-  if (!userData?.session?.user) return ROLES.GUEST;
-
-  const roleStr =
-    (userData.session.user as Record<string, unknown>).role ??
-    (
-      (userData.session.user as Record<string, unknown>).metadata as Record<
-        string,
-        unknown
-      >
-    )?.role ??
-    ROLES.USER;
-
-
-  const roleStr =
-    (session.user as Record<string, unknown>).role ??
-    (
-      (session.user as Record<string, unknown>).metadata as Record<
-        string,
-        unknown
-      >
-    )?.role ??
-    ROLES.USER;
-
-  return normalizeRole(roleStr as string);
+  return userData?.role ?? ROLES.GUEST;
 }
 
+
 export async function getCurrentUserWithRole() {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-
-  if (!session?.user) return null;
-
-  const roleStr =
-    (session.user as Record<string, unknown>).role ??
-    (
-      (session.user as Record<string, unknown>).metadata as Record<
-        string,
-        unknown
-      >
-    )?.role ??
-    ROLES.USER;
-  const role = normalizeRole(roleStr as string);
+  const userData = await getCurrentUserFromProvider();
+  if (!userData?.session?.user) return null;
 
   return {
-    user: session.user,
-    role,
-    level: getRoleLevel(role),
+    user: userData.session.user,
+    role: userData.role,
+    level: userData.level,
     isAuthenticated: true,
   };
 }
+
 
 // ───────────────────────────────────────────
 // 10. GUARDS & REDIRECTS
@@ -761,29 +722,18 @@ export async function requireAdminOrSuperAdmin(
 }
 
 export async function getSessionWithUser() {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-
-  if (!session?.user) return null;
-
-  const role = normalizeRole(
-    ((session.user as Record<string, unknown>).role ??
-      (
-        (session.user as Record<string, unknown>).metadata as Record<
-          string,
-          unknown
-        >
-      )?.role) as string,
-  );
+  const userData = await getCurrentUserFromProvider();
+  if (!userData?.session?.user) return null;
 
   return {
-    session,
-    user: session.user,
-    userId: session.user.id,
-    role,
-    level: getRoleLevel(role),
+    session: userData.session,
+    user: userData.session.user,
+    userId: userData.session.user.id,
+    role: userData.role,
+    level: userData.level,
   };
 }
+
 
 // ───────────────────────────────────────────
 // 14. INVALIDATION DU CACHE
