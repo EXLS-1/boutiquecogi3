@@ -56,9 +56,9 @@ const BaseEmailOptionsSchema = z.object({
   text: z.string().max(50000).optional(),
   actorId: z.string().uuid().optional(),
   actorLevel: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"]).default("GUEST"),
-  actorEmail: z.ZodEmail().optional(),
+  actorEmail: z.ZodEmail().new(),
   sessionId: z.string().optional(),
-  correlationId: z.string().uuid().optional(),
+  correlationId: z.uuid().optional(),
 });
 
 const SendEmailOptionsSchema = BaseEmailOptionsSchema;

@@ -63,6 +63,7 @@
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.6.0",
     "react-simple-typewriter": "^5.0.1",
+    "redis": "^6.1.0",
     "select": "^1.1.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
@@ -106,5 +107,8 @@
   "bugs": {
     "url": "https://github.com/EXLS-1/boutiquecogi3/issues"
   },
-  "homepage": "https://github.com/EXLS-1/boutiquecogi3#readme"
+  "homepage": "https://github.com/EXLS-1/boutiquecogi3#readme",
+  "allowScripts": {
+    "redis@6.1.0": true
+  }
 }
