@@ -1,4 +1,5 @@
 // prisma/seed.ts
+
 import { PrismaClient, Role } from '@prisma/client'
 import { PERMISSIONS } from '@/lib/auth/rbac'
 

@@ -71,17 +71,23 @@ const AUTH_ROUTES = [
 
 /** Routes protégées (nécessitent une session authentifiée) */
 const PROTECTED_ROUTES = [
+  "/products",
   "/checkout",
   "/profile",
-  "/dashboard",
   "/account",
   "/orders",
   "/wishlist",
-  "/settings",
 ];
 
 /** Routes admin (nécessitent une session ; le RBAC détaillé est en aval) */
-const ADMIN_ROUTES = ["/admin"];
+const ADMIN_ROUTES = [
+  "/admin",
+  "/admin/dashboard",
+  "/admin/users",
+  "/admin/roles",
+  "/admin/settings",
+  "/admin/analytics",
+];
 
 // ═══════════════════════════════════════════
 // SECTION 2: UTILITAIRES
