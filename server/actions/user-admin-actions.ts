@@ -1,11 +1,13 @@
 // server/actions/user-admin-actions.ts
+
 'use server'
 
 import { UserAdminService } from '@/server/services/user-admin-service'
-import { blockUserSchema, unblockUserSchema } from '@/lib/validations/role'
+import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role'
 import { revalidatePath } from 'next/cache'
+import { AuthorizationError } from '@/server/core/secure-prisma'
 
-type ActionResult<T = unknown> = 
+type ActionResult<T = unknown> =
   | { success: true; data: T; message?: string }
   | { success: false; error: string; code: string; fieldErrors?: Record<string, string[]> }
 
@@ -14,7 +16,7 @@ type ActionResult<T = unknown> =
 export async function blockUserAction(formData: FormData): Promise<ActionResult> {
   try {
     const raw = Object.fromEntries(formData)
-    
+
     const parsed = blockUserSchema.safeParse({
       userId: raw.userId,
       reason: raw.reason,
@@ -32,21 +34,22 @@ export async function blockUserAction(formData: FormData): Promise<ActionResult>
     }
 
     const result = await UserAdminService.block(parsed.data)
-    
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${parsed.data.userId}`)
-    
+
     return {
       success: true,
       data: result,
       message: `Utilisateur ${result.email} bloqué${result.permanent ? ' définitivement' : ''}`,
     }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur serveur',
-      code: (error as any)?.code || 'INTERNAL_ERROR',
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message, code: error.code }
     }
+    if (error instanceof Error) {
+      return { success: false, error: error.message, code: (error as any).code || 'UNKNOWN_ERROR' }
+    }
+    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
   }
 }
 
@@ -55,7 +58,7 @@ export async function blockUserAction(formData: FormData): Promise<ActionResult>
 export async function unblockUserAction(formData: FormData): Promise<ActionResult> {
   try {
     const raw = Object.fromEntries(formData)
-    
+
     const parsed = unblockUserSchema.safeParse({
       userId: raw.userId,
       reason: raw.reason || undefined,
@@ -71,20 +74,21 @@ export async function unblockUserAction(formData: FormData): Promise<ActionResul
     }
 
     const result = await UserAdminService.unblock(parsed.data)
-    
     revalidatePath('/admin/users')
-    
+
     return {
       success: true,
       data: result,
       message: `Utilisateur ${result.email} débloqué`,
     }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur serveur',
-      code: (error as any)?.code || 'INTERNAL_ERROR',
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message, code: error.code }
     }
+    if (error instanceof Error) {
+      return { success: false, error: error.message, code: (error as any).code || 'UNKNOWN_ERROR' }
+    }
+    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
   }
 }
 
@@ -95,36 +99,50 @@ export async function listBlockedUsersAction(): Promise<ActionResult> {
     const users = await UserAdminService.listBlocked()
     return { success: true, data: users }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur serveur',
-      code: (error as any)?.code || 'INTERNAL_ERROR',
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message, code: error.code }
     }
+    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
+  }
+}
+
+// ─── Lister tous les utilisateurs ───
+
+export async function listUsersAction(): Promise<ActionResult> {
+  try {
+    const users = await UserAdminService.listUsers()
+    return { success: true, data: users }
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message, code: error.code }
+    }
+    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
   }
 }
 
 // ─── Assigner un rôle ───
 
 export async function assignRoleAction(
-  userId: string, 
+  userId: string,
   roleId: string
 ): Promise<ActionResult> {
   try {
-    const result = await UserAdminService.assignRole(userId, roleId)
-    
+    const result = await UserAdminService.assignRole({ userId, roleId })
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${userId}`)
-    
+
     return {
       success: true,
       data: result,
       message: `Rôle assigné avec succès`,
     }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Erreur serveur',
-      code: (error as any)?.code || 'INTERNAL_ERROR',
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message, code: error.code }
     }
+    if (error instanceof Error) {
+      return { success: false, error: error.message, code: (error as any).code || 'UNKNOWN_ERROR' }
+    }
+    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
   }
 }
