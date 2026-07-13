@@ -3,7 +3,8 @@
 // EDGE AUTH PROXY — Gardien d'entrée léger pour Boutiquecogi3
 // ============================================
 // proxy.ts, conçue comme un gardien d'entrée léger et strict.
-// Toute la logique métier RBAC (permissions, restrictions, niveaux, audit, quotas) est intentionnellement déléguée à votre système centralisé (server.ts / rbac.ts).
+// Toute la logique métier RBAC (permissions, restrictions, niveaux, audit, quotas) est intentionnellement déléguée à votre système centralisé
+// (server.ts / rbac.ts).
 // Ce proxy ne connaît que deux états : session existante ou GUEST.
 // Ce proxy est le SEUL point d'entrée Edge pour la sécurité réseau.
 // Il est intentionnellement AGNOSTIQUE de la logique métier RBAC.
@@ -173,7 +174,7 @@ export default async function proxy(request: NextRequest) {
   // On ne résout la session QUE si la route n'est pas publique.
   // C'est l'optimisation clé : pas de fetch session pour les assets/public.
   const session = await resolveSession(request);
-  const isAuthenticated = !!session?.user;
+  const isAuthenticated = !!session?.userId;
 
   // ─── Phase 5: Auth Zone ───
   // Si l'utilisateur est déjà authentifié, inutile d'accéder aux pages de login.
