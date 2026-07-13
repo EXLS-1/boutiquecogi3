@@ -1,110 +1,167 @@
 // server/services/product-service.ts
 
 import { withSecurePrisma, type SecureContext } from '@/server/core/secure-prisma'
+import { createProductSchema, updateProductSchema } from '@/lib/validations/product'
+import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
 import { z } from 'zod'
 
-const createProductSchema = z.object({
-  name: z.string().min(2),
-  price: z.number().positive(),
-  description: z.string().optional(),
-})
+export class ProductServiceError extends Error {
+  constructor(message: string, public code: string) {
+    super(message)
+    this.name = 'ProductServiceError'
+  }
+}
 
 export const ProductService = {
-  // ─── Créer un produit (Vendeur+) ───
+  // ─── Créer un produit (Editor+) ───
   async create(input: z.infer<typeof createProductSchema>) {
+    const parsed = createProductSchema.safeParse(input)
+    if (!parsed.success) {
+      throw new ProductServiceError('Données invalides', 'VALIDATION_ERROR')
+    }
+
     return withSecurePrisma(
       async (ctx) => {
-        // ctx contient: userId, roleLevel, roleName, roleData, prisma
-        
         return ctx.prisma.product.create({
           data: {
-            ...input,
-            sellerId: ctx.userId, // Traçabilité automatique
+            name: parsed.data.name,
+            price: parsed.data.price,
+            description: parsed.data.description,
+            categoryId: parsed.data.categoryId,
+            images: parsed.data.images,
+            stock: parsed.data.stock,
+            sellerId: ctx.userId,
             createdBy: ctx.userId,
           }
         })
       },
       {
-        minRoleLevel: 3, // VENDEUR minimum
-        requiredPermissions: ['product:create'],
+        minRoleLevel: 4, // EDITOR minimum
+        requiredPermissions: [PERMISSIONS['products:create']],
         auditLog: true,
       }
     )
   },
 
-  // ─── Modifier un produit (propriétaire OU Admin) ───
-  async update(productId: string, data: Partial<z.infer<typeof createProductSchema>>) {
+  // ─── Modifier un produit (propriétaire OU Admin+) ───
+  async update(productId: string, data: z.infer<typeof updateProductSchema>) {
+    const parsed = updateProductSchema.safeParse(data)
+    if (!parsed.success) {
+      throw new ProductServiceError('Données invalides', 'VALIDATION_ERROR')
+    }
+
     return withSecurePrisma(
       async (ctx) => {
         const product = await ctx.prisma.product.findUnique({
           where: { id: productId }
         })
 
-        if (!product) throw new Error('Produit non trouvé')
+        if (!product) throw new ProductServiceError('Produit non trouvé', 'NOT_FOUND')
 
-        // Vérification propriétaire OU permission élevée
         const isOwner = product.sellerId === ctx.userId
-        const canEditAny = hasPermission(ctx.roleData, 'product:edit:any')
+        const canEditAny = hasPermissionOnResult(ctx.roleData, PERMISSIONS['products:update'])
 
         if (!isOwner && !canEditAny) {
-          throw new Error('Vous ne pouvez modifier que vos produits')
+          throw new ProductServiceError(
+            'Vous ne pouvez modifier que vos propres produits',
+            'NOT_OWNER'
+          )
         }
 
         return ctx.prisma.product.update({
           where: { id: productId },
           data: {
-            ...data,
+            ...parsed.data,
             updatedBy: ctx.userId,
             updatedAt: new Date(),
           }
         })
       },
       {
-        minRoleLevel: 3,
-        requiredPermissions: ['product:edit:own'], // Au minimum ses propres produits
+        minRoleLevel: 4,
+        requiredPermissions: [PERMISSIONS['products:update']],
         auditLog: true,
       }
     )
   },
 
-  // ─── Supprimer n'importe quel produit (Admin+) ───
-  async deleteAny(productId: string) {
+  // ─── Supprimer un produit (propriétaire OU Super Admin+) ───
+  async delete(productId: string) {
     return withSecurePrisma(
       async (ctx) => {
-        return ctx.prisma.product.delete({
+        const product = await ctx.prisma.product.findUnique({
           where: { id: productId }
         })
+
+        if (!product) throw new ProductServiceError('Produit non trouvé', 'NOT_FOUND')
+
+        const isOwner = product.sellerId === ctx.userId
+        const canDeleteAny = hasPermissionOnResult(ctx.roleData, PERMISSIONS['products:delete'])
+
+        if (!isOwner && !canDeleteAny) {
+          throw new ProductServiceError(
+            'Vous ne pouvez supprimer que vos propres produits',
+            'NOT_OWNER'
+          )
+        }
+
+        return ctx.prisma.product.delete({ where: { id: productId } })
       },
       {
-        minRoleLevel: 6, // SUPER_ADMIN
-        requiredPermissions: ['product:delete:any'],
+        minRoleLevel: 4,
+        requiredPermissions: [PERMISSIONS['products:delete']],
         auditLog: true,
       }
     )
   },
 
-  // ─── Voir tous les produits (tout le monde authentifié) ───
+  // ─── Voir tous les produits (tout utilisateur authentifié) ───
   async listAll() {
     return withSecurePrisma(
       async (ctx) => {
         return ctx.prisma.product.findMany({
-          include: { seller: { select: { name: true } } }
+          include: {
+            seller: { select: { id: true, name: true, email: true } },
+            category: { select: { id: true, name: true } }
+          },
+          orderBy: { createdAt: 'desc' }
         })
       },
       {
-        minRoleLevel: 1, // N'importe quel utilisateur authentifié
+        minRoleLevel: 1,
         auditLog: false,
       }
     )
   },
 
-  // ─── Opération dangereuse : suppression massive (Owner uniquement) ───
+  // ─── Voir un produit spécifique ───
+  async getById(productId: string) {
+    return withSecurePrisma(
+      async (ctx) => {
+        return ctx.prisma.product.findUnique({
+          where: { id: productId },
+          include: {
+            seller: { select: { id: true, name: true } },
+            category: true,
+          }
+        })
+      },
+      {
+        minRoleLevel: 1,
+        auditLog: false,
+      }
+    )
+  },
+
+  // ─── Suppression massive (Super Admin uniquement) ───
   async bulkDelete(productIds: string[]) {
     return withSecurePrisma(
       async (ctx) => {
-        // Double vérification explicite
-        if (ctx.roleLevel < 7) {
-          throw new Error('Opération réservée au propriétaire')
+        if (ctx.roleLevel > 2) {
+          throw new ProductServiceError(
+            'Opération réservée aux Super Admin et Owner',
+            'INSUFFICIENT_LEVEL'
+          )
         }
 
         return ctx.prisma.product.deleteMany({
@@ -112,11 +169,10 @@ export const ProductService = {
         })
       },
       {
-        minRoleLevel: 7, // OWNER
-        requiredPermissions: ['product:delete:any'],
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['products:delete']],
         blockDangerous: true,
         auditLog: true,
-        customCheck: (ctx) => ctx.roleData.metadata.dangerousPermissions.includes('product:delete:any'),
       }
     )
   }

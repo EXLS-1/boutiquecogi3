@@ -214,12 +214,12 @@ Le projet sera accessible en développement à l'adresse `http://localhost:3000`
 
 ## Structure du Projet
 
-Pour une description détaillée de la structure des dossiers et des fichiers, veuillez consulter le fichier `structure.md`. Pour les optimisations de performance, référez-vous à `PERFORMANCE.md`.
-
-## Contribution
-
-Sous réserve d'acceptation par le créateur, les contributions sont les bienvenues ! Veuillez consulter les directives de contribution (à venir) pour plus d'informations.
-
-## Licence
-
-Ce projet est sous licence propriétaire.
+| Level | Rôle         | Description                   |
+| ----- | ------------ | ----------------------------- |
+| 1     | SUPER\_ADMIN | Contrôle absolu               |
+| 2     | ADMIN        | Administration générale       |
+| 3     | MANAGER      | Gestion équipes et opérations |
+| 4     | EDITOR       | Gestion contenu et produits   |
+| 5     | SUPERVISOR   | Supervision commandes         |
+| 6     | USER         | Acheteur privilégié           |
+| 7     | GUEST        | Visiteur non authentifié      |

@@ -1,8 +1,9 @@
 // server/services/user-admin-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
-import { blockUserSchema, unblockUserSchema, type BlockUserInput, type UnblockUserInput } from '@/lib/validations/role'
-import { z } from 'zod'
+import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role'
+import { PERMISSIONS, ROLES, ROLE_HIERARCHY } from '@/lib/auth/rbac'
+import type { BlockUserInput, UnblockUserInput, AssignRoleInput } from '@/lib/validations/role'
 
 export class UserAdminError extends Error {
   constructor(message: string, public code: string) {
@@ -13,7 +14,7 @@ export class UserAdminError extends Error {
 
 export const UserAdminService = {
   /**
-   * Bloquer un utilisateur (Super Admin+)
+   * Bloquer un utilisateur (Admin+)
    */
   async block(input: BlockUserInput) {
     const parsed = blockUserSchema.safeParse(input)
@@ -24,8 +25,6 @@ export const UserAdminService = {
     return withSecurePrisma(
       async (ctx) => {
         const { userId, reason, blockedUntil, permanent } = parsed.data
-
-        // ─── Protections critiques ───
 
         // 1. Ne pas se bloquer soi-même
         if (userId === ctx.userId) {
@@ -49,7 +48,7 @@ export const UserAdminService = {
         if (targetUser.roleAssignment?.role.level === 1) {
           throw new UserAdminError(
             'Impossible de bloquer un SUPER_ADMIN',
-            'OWNER_IMMUNITY'
+            'SUPER_ADMIN_IMMUNITY'
           )
         }
 
@@ -103,7 +102,7 @@ export const UserAdminService = {
               blockedUserEmail: targetUser.email,
               blockedUserName: targetUser.name,
               reason,
-              blockedUntil: permanent ? 'PERMANENT' : blockedUntil,
+              blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
               blockedBy: ctx.userId,
               blockedByRole: ctx.roleName,
             }),
@@ -120,15 +119,15 @@ export const UserAdminService = {
         }
       },
       {
-        minRoleLevel: 1, // SUPER_ADMIN
-        requiredPermissions: ['user:block'],
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
         auditLog: true,
       }
     )
   },
 
   /**
-   * Débloquer un utilisateur (Super Admin+)
+   * Débloquer un utilisateur (Admin+)
    */
   async unblock(input: UnblockUserInput) {
     const parsed = unblockUserSchema.safeParse(input)
@@ -150,19 +149,16 @@ export const UserAdminService = {
         }
 
         if (!targetUser.roleAssignment?.isBlocked) {
-          throw new UserAdminError('Cet utilisateur n\'est pas bloqué', 'NOT_BLOCKED')
+          throw new UserAdminError('Cet utilisateur n'est pas bloqué', 'NOT_BLOCKED')
         }
 
-        const assignment = await ctx.prisma.roleAssignment.update({
+        await ctx.prisma.roleAssignment.update({
           where: { userId },
           data: {
             isBlocked: false,
             blockedReason: null,
             blockedAt: null,
             blockedUntil: null,
-          },
-          include: {
-            user: { select: { email: true, name: true } }
           }
         })
 
@@ -189,8 +185,8 @@ export const UserAdminService = {
         }
       },
       {
-        minRoleLevel: 6,
-        requiredPermissions: ['user:block'], // Même permission : gestion du blocage
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
         auditLog: true,
       }
     )
@@ -225,29 +221,34 @@ export const UserAdminService = {
         }))
       },
       {
-        minRoleLevel: 5, // ADMIN
-        requiredPermissions: ['user:view:any'],
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:view:any']],
       }
     )
   },
 
   /**
-   * Assigner un rôle à un utilisateur 
+   * Assigner un rôle à un utilisateur (Admin+)
    */
-  async assignRole(userId: string, roleId: string) {
+  async assignRole(input: AssignRoleInput) {
+    const parsed = assignRoleSchema.safeParse(input)
+    if (!parsed.success) {
+      throw new UserAdminError('Données invalides', 'VALIDATION_ERROR')
+    }
+
     return withSecurePrisma(
       async (ctx) => {
-        // Vérifier que la cible existe
+        const { userId, roleId } = parsed.data
+
         const targetUser = await ctx.prisma.user.findUnique({
           where: { id: userId },
-          include: { roleAssignment: true }
+          include: { roleAssignment: { include: { role: true } } }
         })
 
         if (!targetUser) {
           throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
         }
 
-        // Vérifier que le rôle existe
         const role = await ctx.prisma.role.findUnique({
           where: { id: roleId }
         })
@@ -256,31 +257,36 @@ export const UserAdminService = {
           throw new UserAdminError('Rôle non trouvé', 'ROLE_NOT_FOUND')
         }
 
-        // Protection : ne pas assigner SUPER_ADMIN (level 1) à quelqu'un
+        // Protection : ne pas assigner SUPER_ADMIN (level 1) manuellement
         if (role.level === 1) {
           throw new UserAdminError(
             'Le rôle SUPER_ADMIN ne peut pas être assigné manuellement',
-            'OWNER_ASSIGNMENT_FORBIDDEN'
+            'SUPER_ADMIN_ASSIGNMENT_FORBIDDEN'
           )
         }
 
         // Protection : ne pas modifier un SUPER_ADMIN existant
-        if (targetUser.roleAssignment?.roleId && 
-            targetUser.roleAssignment.role.level === 1) {
+        if (targetUser.roleAssignment?.role.level === 1) {
           throw new UserAdminError(
-            'Impossible de modifier le rôle d\'un propriétaire',
-            'OWNER_IMMUNITY'
+            'Impossible de modifier le rôle d'un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
           )
         }
 
-        // Upsert de l'assignation
+        // Ne pas se rétrograder soi-même
+        if (userId === ctx.userId && role.level > ctx.roleLevel) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas vous rétrograder vous-même',
+            'SELF_DEMOTION_FORBIDDEN'
+          )
+        }
+
         const assignment = await ctx.prisma.roleAssignment.upsert({
           where: { userId },
           update: {
             roleId: role.id,
             assignedBy: ctx.userId,
             assignedAt: new Date(),
-            // Réinitialiser le blocage si réassignation
             isBlocked: false,
             blockedReason: null,
             blockedAt: null,
@@ -303,7 +309,7 @@ export const UserAdminService = {
             details: JSON.stringify({
               assignedRole: role.name,
               assignedRoleLevel: role.level,
-              previousRole: targetUser.roleAssignment?.roleId,
+              previousRole: targetUser.roleAssignment?.role.name,
             }),
           }
         })
@@ -316,9 +322,43 @@ export const UserAdminService = {
         }
       },
       {
-        minRoleLevel: 1,
-        requiredPermissions: ['role:assign'],
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['role:assign']],
         auditLog: true,
+      }
+    )
+  },
+
+  /**
+   * Lister tous les utilisateurs avec leur rôle (Admin+)
+   */
+  async listUsers() {
+    return withSecurePrisma(
+      async (ctx) => {
+        const users = await ctx.prisma.user.findMany({
+          include: {
+            roleAssignment: {
+              include: {
+                role: { select: { name: true, level: true } }
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+
+        return users.map(u => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          createdAt: u.createdAt,
+          role: u.roleAssignment?.role.name ?? 'GUEST',
+          roleLevel: u.roleAssignment?.role.level ?? 7,
+          isBlocked: u.roleAssignment?.isBlocked ?? false,
+        }))
+      },
+      {
+        minRoleLevel: 2,
+        requiredPermissions: [PERMISSIONS['users:view:any']],
       }
     )
   }

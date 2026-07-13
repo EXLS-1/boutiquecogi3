@@ -1,9 +1,8 @@
-// src/server/services/role-service.ts
+// server/services/role-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
 import { createRoleSchema, type CreateRoleInput } from '@/lib/validations/role'
-import { ROLE_HIERARCHY } from '@/lib/auth/rbac'
-import { z } from 'zod'
+import { PERMISSIONS, ROLE_HIERARCHY, ROLES } from '@/lib/auth/rbac'
 
 export class RoleServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -17,7 +16,6 @@ export const RoleService = {
    * Créer un nouveau rôle dans la hiérarchie (SUPER_ADMIN uniquement)
    */
   async create(input: CreateRoleInput) {
-    // Validation explicite (même si déjà validée en amont, double sécurité)
     const parsed = createRoleSchema.safeParse(input)
     if (!parsed.success) {
       throw new RoleServiceError('Données invalides', 'VALIDATION_ERROR')
@@ -25,28 +23,26 @@ export const RoleService = {
 
     return withSecurePrisma(
       async (ctx) => {
-        // ─── Vérifications métier additionnelles ───
-        
         // 1. Vérifier si le nom existe déjà
         const existing = await ctx.prisma.role.findUnique({
           where: { name: parsed.data.name }
         })
-        
+
         if (existing) {
           throw new RoleServiceError(
-            `Le rôle "${parsed.data.name}" existe déjà`, 
+            `Le rôle "${parsed.data.name}" existe déjà`,
             'DUPLICATE_NAME'
           )
         }
 
-        // 2. Vérifier si le niveau existe déjà (un niveau = un rôle)
+        // 2. Vérifier si le niveau existe déjà
         const existingLevel = await ctx.prisma.role.findUnique({
           where: { level: parsed.data.level }
         })
-        
+
         if (existingLevel) {
           throw new RoleServiceError(
-            `Le niveau ${parsed.data.level} est déjà attribué au rôle "${existingLevel.name}"`, 
+            `Le niveau ${parsed.data.level} est déjà attribué au rôle "${existingLevel.name}"`,
             'DUPLICATE_LEVEL'
           )
         }
@@ -55,12 +51,12 @@ export const RoleService = {
         const permissions = await ctx.prisma.permission.findMany({
           where: { code: { in: parsed.data.defaultPermissionCodes } }
         })
-        
+
         const foundCodes = permissions.map(p => p.code)
         const missingCodes = parsed.data.defaultPermissionCodes.filter(
           c => !foundCodes.includes(c)
         )
-        
+
         if (missingCodes.length > 0) {
           throw new RoleServiceError(
             `Permissions inconnues: ${missingCodes.join(', ')}`,
@@ -102,7 +98,6 @@ export const RoleService = {
               permissions: parsed.data.defaultPermissionCodes,
               createdBy: ctx.userId,
             }),
-            ipAddress: '', // Récupéré via headers dans withSecurePrisma si besoin
           }
         })
 
@@ -117,16 +112,10 @@ export const RoleService = {
         }
       },
       {
-        minRoleLevel: 1,           // SUPER_ADMIN uniquement
-        requiredPermissions: ['role:create'],
+        minRoleLevel: 1, // SUPER_ADMIN uniquement
+        requiredPermissions: [PERMISSIONS['role:create']],
         auditLog: true,
-        customCheck: (ctx) => {
-          // Double sécurité : vérifier que l'utilisateur est bien SUPER_ADMIN
-          if (ctx.roleLevel !== 1) {
-            return false
-          }
-          return true
-        }
+        customCheck: (ctx) => ctx.roleLevel === 1, // Double sécurité
       }
     )
   },
@@ -161,17 +150,17 @@ export const RoleService = {
         }))
       },
       {
-        minRoleLevel: 2, // ADMIN
-        requiredPermissions: ['role:view'],
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['role:view']],
       }
     )
   },
 
   /**
-   * Modifier un rôle (SUPER_ADMIN uniquement, sauf activation/désactivation Admin+)
+   * Modifier un rôle (SUPER_ADMIN uniquement)
    */
   async update(
-    roleId: string, 
+    roleId: string,
     data: Partial<Pick<CreateRoleInput, 'description' | 'isActive' | 'defaultPermissionCodes'>>
   ) {
     return withSecurePrisma(
@@ -185,23 +174,22 @@ export const RoleService = {
           throw new RoleServiceError('Rôle non trouvé', 'NOT_FOUND')
         }
 
-        // Protection : impossible de modifier SUPER_ADMIN (level 1)
-        if (role.level === 1) {
+        // Protection : impossible de modifier SUPER_ADMIN (level 1) ou GUEST (level 7)
+        if (role.level === 1 || role.level === 7) {
           throw new RoleServiceError(
-            'Le rôle SUPER_ADMIN est immuable et ne peut pas être modifié',
+            `Le rôle ${ROLE_HIERARCHY[role.level]?.name} est immuable`,
             'IMMUTABLE_ROLE'
           )
         }
 
-        // Si modification des permissions, vérifier leur existence
         let permissionConnections = undefined
         if (data.defaultPermissionCodes) {
           const permissions = await ctx.prisma.permission.findMany({
             where: { code: { in: data.defaultPermissionCodes } }
           })
-          
+
           permissionConnections = {
-            deleteMany: {}, // Supprimer les anciennes
+            deleteMany: {},
             create: permissions.map(p => ({ permissionId: p.id }))
           }
         }
@@ -232,8 +220,8 @@ export const RoleService = {
         return updated
       },
       {
-        minRoleLevel: 1, // Seul SUPER_ADMIN peut modifier un rôle
-        requiredPermissions: ['role:edit'],
+        minRoleLevel: 1,
+        requiredPermissions: [PERMISSIONS['role:edit']],
       }
     )
   },
@@ -246,8 +234,8 @@ export const RoleService = {
       async (ctx) => {
         const role = await ctx.prisma.role.findUnique({
           where: { id: roleId },
-          include: { 
-            assignments: { take: 1 }, // Vérifier s'il y a des utilisateurs
+          include: {
+            assignments: { take: 1 },
             defaultPermissions: true
           }
         })
@@ -256,8 +244,11 @@ export const RoleService = {
           throw new RoleServiceError('Rôle non trouvé', 'NOT_FOUND')
         }
 
-        if (role.level === 7) {
-          throw new RoleServiceError('Impossible de supprimer le rôle OWNER', 'IMMUTABLE_ROLE')
+        if (role.level === 1 || role.level === 7) {
+          throw new RoleServiceError(
+            `Impossible de supprimer le rôle ${ROLE_HIERARCHY[role.level]?.name}`,
+            'IMMUTABLE_ROLE'
+          )
         }
 
         if (role.assignments.length > 0) {
@@ -267,7 +258,6 @@ export const RoleService = {
           )
         }
 
-        // Suppression atomique
         await ctx.prisma.$transaction([
           ctx.prisma.roleDefaultPermission.deleteMany({ where: { roleId } }),
           ctx.prisma.role.delete({ where: { id: roleId } })
@@ -288,7 +278,7 @@ export const RoleService = {
       },
       {
         minRoleLevel: 1,
-        requiredPermissions: ['role:delete'],
+        requiredPermissions: [PERMISSIONS['role:delete']],
         auditLog: true,
       }
     )
