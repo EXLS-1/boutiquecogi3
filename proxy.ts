@@ -24,7 +24,7 @@
 //
 // RÈGLE D'OR :
 //   Le proxy ne connaît que deux états : "a une session" ou "GUEST".
-//   Toute granularité (Level 1-6) est résolue en aval dans les
+//   Toute granularité (Level 1-7) est résolue en aval dans les
 //   Server Components et Server Actions.
 
 import { betterFetch } from "@better-fetch/fetch";
