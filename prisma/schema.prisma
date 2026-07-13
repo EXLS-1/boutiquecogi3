@@ -15,7 +15,7 @@ datasource db {
 model RoleConfig {
   id       String       @id @db.Uuid
   role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
-  level    Int // 1-6
+  level    Int // 1-7
   // permissions Json     // { "users:read": "ON", "users:delete": "OFF" }
   users    User[]
   parentId String?      @db.Uuid
@@ -49,10 +49,53 @@ model RoleConfig {
   @@map("role_config")
 }
 
+model RoleAssignment {
+  id     String @id @db.Uuid
+  userId String @unique @db.Uuid
+  roleId String @db.Uuid
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role                Role
+  // Overrides spécifiques à cet utilisateur (ON/OFF)
+  permissionOverrides PermissionOverride[]
+
+  // Restrictions temporaires
+  isBlocked     Boolean   @default(false)
+  blockedReason String?
+  blockedAt     DateTime?
+  blockedUntil  DateTime?
+
+  // Audit
+  assignedBy     String?  @db.Uuid
+  assignedAt     DateTime @default(now())
+  lastVerifiedAt DateTime @default(now())
+}
+
+model RoleDefaultPermission {
+  id           String @id @db.Uuid
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_default_permission")
+}
+
 model Permission {
-  id    String           @id @db.Uuid
-  name  String           @unique
-  roles RolePermission[]
+  id   String @id @db.Uuid
+  code String @unique // ex: "product:create", "order:refund"
+
+  roles       RolePermission[]
+  name        String
+  description String?
+  category    String // ex: "PRODUCT", "ORDER", "USER", "FINANCE"
+  isDangerous Boolean          @default(false) // Nécessite confirmation additionnelle
+
+  // Relations
+  roleDefaults RoleDefaultPermission[]
+  overrides    PermissionOverride[]
 
   @@map("permission")
 }
@@ -69,10 +112,32 @@ model RolePermission {
   @@map("role_permission")
 }
 
+// ─── Overrides de permissions par utilisateur (ON/OFF) ───
+
+model PermissionOverride {
+  id               String @id @db.Uuid
+  roleAssignmentId String @db.Uuid
+  permissionId     String @db.Uuid
+
+  // État explicite : ON (true) ou OFF (false)
+  isGranted Boolean // true = accordé même si pas dans le rôle, false = retiré même si dans le rôle
+
+  grantedBy String?   @db.Uuid
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime? // Optionnel : permission temporaire
+
+  roleAssignment RoleAssignment @relation(fields: [roleAssignmentId], references: [id], onDelete: Cascade)
+  permission     Permission     @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleAssignmentId, permissionId])
+}
+
 model User {
   id               String           @id @unique @db.Uuid
   role             Role // SUPER_ADMIN | ADMIN | MANAGER | EDITOR | SUPERVISOR | USER | GUEST
+  roleConfig       RoleConfig?      @relation(fields: [roleConfigId], references: [id])
   roleConfigId     String?          @db.Uuid
+  roleAssignment   RoleAssignment?
   sessions         Session[]
   name             String?
   email            String           @unique
@@ -96,15 +161,17 @@ model User {
   searchAnalytics  SearchAnalytics?
   deletedAt        DateTime?
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  createdBy String?  @db.Uuid
+  updatedAt DateTime @updatedAt
+  updatedBy String?  @db.Uuid
+
   products        Product[]
   productViews    ProductView[]
   createdProducts Product[]     @relation("ProductCreator")
   editedProducts  Product[]     @relation("ProductEditor")
   productCount    Int           @default(0) // 🔒 Compteur atomique pour les quotas
   auditLogs       AuditLog[]
-  roleConfig      RoleConfig?   @relation(fields: [roleConfigId], references: [id])
 
   @@index([email])
   @@map("user")

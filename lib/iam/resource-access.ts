@@ -1,3 +1,5 @@
+// lib/iam/resource-access.ts
+
 import {
   type AuthContext,
   type Role,
