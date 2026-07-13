@@ -8,7 +8,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
 import {
-
   Crown,
   Shield,
   UserCog,
@@ -75,6 +74,16 @@ export const RoleLevelConfig: Record<number, { label: string; icon: React.Compon
   6: { label: "USER", icon: User, color: "#6b7280" },
   7: { label: "GUEST", icon: Users, color: "#9ca3af" },
 };
+
+export const ROLE_HIERARCHY = {
+  1: { name: "SUPER_ADMIN", label: "SUPER_ADMIN", description: "Controle Absolu" },
+  2: { name: "ADMIN", label: "ADMIN", description: "Contrôle total sauf système" },
+  3: { name: "MANAGER", label: "MANAGER", description: "Administration Générale" },
+  4: { name: "EDITOR", label: "EDITOR", description: "Gestion des Commandes" },
+  5: { name: "SUPERVISOR", label: "SUPERVISOR", description: "Création des Produits" },
+  6: { name: "USER", label: "USER", description: "Acheteur Privilégié" },
+  7: { name: "GUEST", label: "GUEST", description: "Acheteur Visiteur" },
+} as const
 
 const LEVEL_TO_ROLE: Record<number, Role> = {
   [LEVELS.LEVEL_1]: ROLES.SUPER_ADMIN,
@@ -401,7 +410,7 @@ export function normalizeRole(role: string | null | undefined): Role {
 }
 
 export function getRoleLevel(role: Role): number {
-  return ROLE_TO_LEVEL[role] ?? LEVELS.LEVEL_6;
+  return ROLE_TO_LEVEL[role] ?? LEVELS.LEVEL_7;
 }
 
 export function isRoleAboveOrEqual(roleA: Role, roleB: Role): boolean {

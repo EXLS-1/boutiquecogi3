@@ -1,119 +1,154 @@
-// server/core/secure-prisma.ts
+// src/server/core/secure-prisma.ts (mise à jour)
 
 import { PrismaClient } from '@prisma/client'
-import { getRoleLevel } from '@/lib/auth/rbac'
+import { getRoleLevel,
+  hasPermission,
+  type RoleEvaluationResult,
+  type PermissionCode,
+  type RoleLevel,
+  getRequiredLevelForPermission
+} from '@/lib/auth/rbac'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 
-// ─── Types ─────────────────────────────────────────────
+// ─── Contexte enrichi ───
 
-export type RoleLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7
-
-export type PermissionContext = {
+export type SecureContext = {
   userId: string
   roleLevel: RoleLevel
-  permissions: string[]
+  roleName: string
+  roleData: RoleEvaluationResult
+  prisma: PrismaClient
 }
 
-// ─── Erreur sécurisée ──────────────────────────────────
-
 class AuthorizationError extends Error {
-  constructor(message: string) {
+  constructor(message: string, public code: string = 'FORBIDDEN') {
     super(message)
     this.name = 'AuthorizationError'
   }
 }
 
-// ─── Vérification d'autorisation (impossible à bypasser) ─
+// ─── Instance Prisma singleton ───
 
-async function buildPermissionContext(): Promise<PermissionContext> {
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+export const prisma = globalForPrisma.prisma || new PrismaClient()
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+// ─── Vérification d'autorisation (INFAILLIBLE) ───
+
+async function buildSecureContext(): Promise<SecureContext> {
   const headersList = await headers()
   
-  // BetterAuth : récupère la session
   const session = await auth.api.getSession({ headers: headersList })
   
   if (!session?.user?.id) {
-    throw new AuthorizationError('Session invalide ou absente')
+    throw new AuthorizationError('Authentification requise', 'UNAUTHENTICATED')
   }
 
-  // Évalue le rôle — CETTE ÉTAPE EST OBLIGATOIRE ET INFAILLIBLE
   const roleData = await getRoleLevel(session.user.id)
   
   if (!roleData) {
-    throw new AuthorizationError('Rôle non attribué ou utilisateur sans rôle')
+    throw new AuthorizationError('Aucun rôle assigné', 'NO_ROLE')
   }
 
-  // Vérifie si le rôle est actif (pas bloqué)
   if (roleData.isBlocked) {
-    throw new AuthorizationError('Compte bloqué')
+    throw new AuthorizationError('Compte bloqué', 'ACCOUNT_BLOCKED')
   }
 
   return {
     userId: session.user.id,
-    roleLevel: roleData.level as RoleLevel,
-    permissions: roleData.permissions,
+    roleLevel: roleData.level,
+    roleName: roleData.roleName,
+    roleData,
+    prisma,
   }
 }
 
-// ─── Wrapper Prisma sécurisé ───────────────────────────
+// ─── Fonction principale : withSecurePrisma ───
 
-/**
- * EXÉCUTE UNE OPÉRATION PRISMA UNIQUEMENT SI L'AUTHENTIFICATION + RÔLE SONT VALIDÉS.
- * 
- * Cette fonction est le SEUL moyen d'accéder à Prisma depuis les Server Actions.
- * Il est IMPOSSIBLE d'appeler Prisma directement sans passer par ici.
- */
 export async function withSecurePrisma<T>(
-  operation: (prisma: PrismaClient, ctx: PermissionContext) => Promise<T>,
+  operation: (ctx: SecureContext) => Promise<T>,
   options: {
-    minRoleLevel?: RoleLevel      // Niveau minimum requis
-    requiredPermissions?: string[] // Permissions spécifiques requises
-    auditLog?: boolean             // Logger l'opération
+    minRoleLevel?: RoleLevel
+    requiredPermissions?: PermissionCode[]
+    requireAll?: boolean // true = AND, false = OR (défaut: true)
+    blockDangerous?: boolean // bloquer les permissions dangereuses par défaut
+    auditLog?: boolean
+    customCheck?: (ctx: SecureContext) => boolean | Promise<boolean>
   } = {}
 ): Promise<T> {
   
-  // 1. Authentification + Rôle (INFAILLIBLE — ne peut pas être oubliée)
-  const ctx = await buildPermissionContext()
+  // 1. CONSTRUCTION DU CONTEXTE (impossible à oublier)
+  const ctx = await buildSecureContext()
 
-  // 2. Vérification du niveau minimum
+  // 2. Vérification niveau minimum
   if (options.minRoleLevel && ctx.roleLevel < options.minRoleLevel) {
     throw new AuthorizationError(
-      `Niveau ${options.minRoleLevel} requis, niveau actuel: ${ctx.roleLevel}`
+      `Niveau ${options.minRoleLevel} requis (actuel: ${ctx.roleLevel})`,
+      'INSUFFICIENT_LEVEL'
     )
   }
 
-  // 3. Vérification des permissions spécifiques
-  if (options.requiredPermissions) {
-    const missing = options.requiredPermissions.filter(
-      p => !ctx.permissions.includes(p)
-    )
-    if (missing.length > 0) {
-      throw new AuthorizationError(`Permissions manquantes: ${missing.join(', ')}`)
+  // 3. Vérification permissions granulaires
+  if (options.requiredPermissions && options.requiredPermissions.length > 0) {
+    const checkFn = options.requireAll !== false ? hasAllPermissions : hasAnyPermission
+    
+    if (!checkFn(ctx.roleData, options.requiredPermissions)) {
+      const missing = options.requiredPermissions.filter(
+        p => !ctx.roleData.permissions.includes(p)
+      )
+      throw new AuthorizationError(
+        `Permissions manquantes: ${missing.join(', ')}`,
+        'MISSING_PERMISSIONS'
+      )
     }
   }
 
-  // 4. Audit log (optionnel)
-  if (options.auditLog) {
-    await logAudit(ctx.userId, ctx.roleLevel, 'OPERATION', options)
+  // 4. Vérification permissions dangereuses
+  if (options.blockDangerous !== false) {
+    const dangerousRequested = options.requiredPermissions?.filter(
+      p => getRequiredLevelForPermission(p) >= 6 // ou isDangerousPermission
+    )
+    if (dangerousRequested && dangerousRequested.length > 0 && ctx.roleLevel < 7) {
+      // Log supplémentaire pour les ops dangereuses
+      console.warn(`[AUDIT] Opération dangereuse par ${ctx.userId}: ${dangerousRequested.join(', ')}`)
+    }
   }
 
-  // 5. EXÉCUTION — seul moment où Prisma est accessible
-  const prisma = new PrismaClient() // ou ton instance singleton
-  try {
-    return await operation(prisma, ctx)
-  } finally {
-    await prisma.$disconnect()
+  // 5. Vérification custom (pour cas spécifiques)
+  if (options.customCheck) {
+    const allowed = await options.customCheck(ctx)
+    if (!allowed) {
+      throw new AuthorizationError('Vérification personnalisée échouée', 'CUSTOM_CHECK_FAILED')
+    }
   }
+
+  // 6. Audit log
+  if (options.auditLog) {
+    await prisma.auditLog.create({
+      data: {
+        userId: ctx.userId,
+        roleLevel: ctx.roleLevel,
+        action: 'OPERATION',
+        details: JSON.stringify({
+          permissions: options.requiredPermissions,
+          minLevel: options.minRoleLevel,
+        }),
+        ipAddress: (await headers()).get('x-forwarded-for') || 'unknown',
+      }
+    })
+  }
+
+  // 7. EXÉCUTION
+  return await operation(ctx)
 }
 
-// ─── Helper audit ───────────────────────────────────────
+// ─── Helpers pour les services ───
 
-async function logAudit(
-  userId: string,
-  roleLevel: number,
-  action: string,
-  options: unknown
-) {
-  // Implémentation de ton audit log
-  console.log(`[AUDIT] User:${userId} Role:${roleLevel} Action:${action}`)
+function hasAllPermissions(roleData: RoleEvaluationResult, perms: PermissionCode[]): boolean {
+  return perms.every(p => roleData.permissions.includes(p))
+}
+
+function hasAnyPermission(roleData: RoleEvaluationResult, perms: PermissionCode[]): boolean {
+  return perms.some(p => roleData.permissions.includes(p))
 }

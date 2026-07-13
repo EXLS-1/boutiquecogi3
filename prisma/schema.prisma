@@ -49,6 +49,36 @@ model RoleConfig {
   @@map("role_config")
 }
 
+model RoleDefinition {
+  id    String @id @db.Uuid
+  role  Role   @unique
+  level Int    @unique // 1-7, correspond à l'enum
+
+  assignments RoleAssignment[]
+  name        String?          @unique
+
+  description        String?
+  permissions        Json                    @default("{}") // { "users:read": "ON", "users:delete": "OFF" }
+  defaultPermissions RoleDefaultPermission[]
+  rolePermissions    RolePermission[]
+  restrictions       Json                    @default("{}") // { "max_daily_orders": "50", "can_access_analytics": "OFF" }
+
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+
+  blockedAt     DateTime?
+  blockedReason String?
+  blockedBy     String?
+
+  unblockedAt     DateTime?
+  unblockedBy     String?
+  unblockedReason String?
+}
+
 model RoleAssignment {
   id     String @id @db.Uuid
   userId String @unique @db.Uuid
@@ -69,6 +99,8 @@ model RoleAssignment {
   assignedBy     String?  @db.Uuid
   assignedAt     DateTime @default(now())
   lastVerifiedAt DateTime @default(now())
+
+  roleDefinitions RoleDefinition[]
 }
 
 model RoleDefaultPermission {
@@ -76,8 +108,9 @@ model RoleDefaultPermission {
   roleId       String @db.Uuid
   permissionId String @db.Uuid
 
-  role       Role
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role            Role
+  permission      Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roleDefinitions RoleDefinition[]
 
   @@unique([roleId, permissionId])
   @@map("role_default_permission")
@@ -101,12 +134,13 @@ model Permission {
 }
 
 model RolePermission {
-  id           String     @id @db.Uuid
-  roleId       String     @db.Uuid
-  roleconfig   RoleConfig @relation(fields: [roleconfigId], references: [id], onDelete: Cascade)
-  roleconfigId String     @db.Uuid
-  permissionId String     @db.Uuid
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  id              String           @id @db.Uuid
+  roleId          String           @db.Uuid
+  roleconfig      RoleConfig       @relation(fields: [roleconfigId], references: [id], onDelete: Cascade)
+  roleconfigId    String           @db.Uuid
+  permissionId    String           @db.Uuid
+  permission      Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roleDefinitions RoleDefinition[]
 
   @@unique([roleconfigId, permissionId])
   @@map("role_permission")
@@ -134,7 +168,7 @@ model PermissionOverride {
 
 model User {
   id               String           @id @unique @db.Uuid
-  role             Role // SUPER_ADMIN | ADMIN | MANAGER | EDITOR | SUPERVISOR | USER | GUEST
+  role             Role             @default(USER)
   roleConfig       RoleConfig?      @relation(fields: [roleConfigId], references: [id])
   roleConfigId     String?          @db.Uuid
   roleAssignment   RoleAssignment?
@@ -298,10 +332,13 @@ model Dashboard {
 }
 
 model AuditLog {
-  id         String   @id @db.Uuid
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull) // Add this line
-  userId     String?  @db.Uuid
-  action     String
+  id         String  @id @db.Uuid
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade) // Add this line
+  userId     String  @db.Uuid
+  roleLevel  Int
+  action     String // ex: "ROLE_CREATED", "USER_BLOCKED"
+  targetId   String? @db.Uuid
+  targetType String? // "ROLE", "USER", "PRODUCT"
   entity     String?
   entityType String?
   entityId   String?
@@ -309,25 +346,30 @@ model AuditLog {
   oldValue   Json?
   metadata   Json?
   ip         String?
-  userAgent  String?
-  location   String?
-  browser    String?
-  os         String?
-  device     String?
-  referrer   String?
-  screenRes  String?
-  duration   Int?
-  status     String?
-  error      String?
-  payload    Json?
-  response   Json?
-  context    Json?
-  sessionId  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  details    String? // JSON stringifié
+  ipAddress  String?
 
-  @@index([userId, createdAt])
-  @@index([action, createdAt])
+  userAgent String?
+  location  String?
+  browser   String?
+  os        String?
+  device    String?
+  referrer  String?
+  screenRes String?
+  duration  Int?
+  status    String?
+  error     String?
+  payload   Json?
+  response  Json?
+  context   Json?
+  sessionId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([targetId, targetType])
   @@map("audit_log")
 }
 
