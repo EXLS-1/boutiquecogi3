@@ -1050,10 +1050,14 @@ export async function getCurrentUserRole(): Promise<Role> {
 
 export async function getCurrentUserWithRole() {
   const userData = await getCurrentUserFromProvider();
-  if (!userData?.user) return null;
+  if (!userData) return null;
+
+  // We omit the 'session' part to just return the AuthenticatedUser if needed, 
+  // or we can just return userData directly as 'user'.
+  const { session, ...user } = userData;
 
   return {
-    user: userData.user,
+    user: user,
     role: userData.role,
     level: userData.level,
     isAuthenticated: true,

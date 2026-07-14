@@ -146,3 +146,46 @@ export async function assignRoleAction(
     return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
   }
 }
+
+// ─── Mettre à jour le rôle d'un utilisateur ───
+
+export async function updateUserRole(
+  userId: string,
+  role: string
+): Promise<ActionResult> {
+  try {
+    if (!userId || typeof userId !== 'string') {
+      return {
+        success: false,
+        error: 'ID utilisateur invalide',
+        code: 'VALIDATION_ERROR',
+      }
+    }
+
+    if (!role || typeof role !== 'string') {
+      return {
+        success: false,
+        error: 'Rôle invalide',
+        code: 'VALIDATION_ERROR',
+      }
+    }
+
+    const result = await UserAdminService.updateUserRole({ userId, role })
+    revalidatePath('/admin/users')
+    revalidatePath(`/admin/users/${userId}`)
+
+    return {
+      success: true,
+      data: result,
+      message: `Rôle mis à jour avec succès`,
+    }
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message, code: error.code }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message, code: (error as any).code || 'UNKNOWN_ERROR' }
+    }
+    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
+  }
+}

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateUserRole } from "@/lib/actions/admin/user.admin.actions";
+import { updateUserRole } from "@/server/actions/user-admin-actions";
 import toast from "react-hot-toast";
 import {
   Table,
@@ -36,9 +36,9 @@ export function UsersTable({ initialUsers }: { initialUsers: User[] }) {
 
   const handleRoleChange = (userId: string, newRole: string) => {
     startTransition(async () => {
-      const result = await updateUserRole({ 
-        userId, 
-        newRole: newRole as "user" | "admin" | "super_admin" 
+      const result = await updateUserRole({
+        userId,
+        newRole: newRole as "user" | "admin" | "super_admin"
       });
 
       if (result.success) {
@@ -72,12 +72,12 @@ export function UsersTable({ initialUsers }: { initialUsers: User[] }) {
                 {format(user.createdAt, "PPP", { locale: fr })}
               </TableCell>
               <TableCell>
-                <Badge 
-                  variant="outline" 
+                <Badge
+                  variant="outline"
                   className={
                     user.role === "super_admin" ? "border-rose-200 bg-rose-50 text-rose-700" :
-                    user.role === "admin" ? "border-cyan-200 bg-cyan-50 text-cyan-700" : 
-                    "border-slate-200 bg-slate-50 text-slate-600"
+                      user.role === "admin" ? "border-cyan-200 bg-cyan-50 text-cyan-700" :
+                        "border-slate-200 bg-slate-50 text-slate-600"
                   }
                 >
                   {user.role.toUpperCase()}

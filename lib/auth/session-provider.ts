@@ -46,7 +46,7 @@ function toDate(value: Date | string | null | undefined): Date {
 }
 
 export async function getCurrentUserFromProvider(): Promise<
-  | (AuthenticatedUser & { session: NonNullable<ReturnType<typeof auth.api.getSession>> })
+  | (AuthenticatedUser & { session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>> })
   | null
 > {
   const session = await getSessionFromProvider();
