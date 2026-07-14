@@ -513,8 +513,8 @@ model Category {
 }
 
 model CategoryProduct {
-  productId    String
-  categoryId   String
+  productId    String @db.Uuid
+  categoryId   String @db.Uuid
   displayOrder Int    @default(0) // Permet de trier l'affichage par catégorie
 
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -526,8 +526,8 @@ model CategoryProduct {
 }
 
 model CatalogProduct {
-  catalogId     String
-  productId     String
+  catalogId     String   @db.Uuid
+  productId     String   @db.Uuid
   priceOverride Decimal? @db.Decimal(10, 2) // Surcharge du prix de base pour CE catalogue
   isActive      Boolean  @default(true) // Désactiver un produit dans un catalogue sans le supprimer
 

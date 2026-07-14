@@ -42,17 +42,21 @@ export const LEVELS = {
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 export type Level = (typeof LEVELS)[keyof typeof LEVELS];
 
-// ─── Niveau par rôle ────────────────────────
+// ─── Type utilisateur unifié (client + server) ───────
 
-export const RoleLevel: Record<Role, number> = {
-  SUPER_ADMIN: 1,
-  ADMIN: 2,
-  MANAGER: 3,
-  EDITOR: 4,
-  SUPERVISOR: 5,
-  USER: 6,
-  GUEST: 7,
-} as const;
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: Role;
+  level: number;
+  image?: string | null;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ─── Niveau par rôle ────────────────────────
 
 const ROLE_TO_LEVEL: Record<Role, number> = {
   [ROLES.SUPER_ADMIN]: LEVELS.LEVEL_1,
@@ -141,21 +145,22 @@ export const RoleLevelConfig: Record<number, RoleLevelConfigEntry> = {
 
 /**
  * Normalise un rôle brut (any case) vers un Role valide.
- * Retourne ROLES.USER si le rôle est inconnu ou absent.
+ * Retourne ROLES.GUEST si le rôle est inconnu ou absent.
  */
 export function normalizeRole(role: string | null | undefined): Role {
-  if (!role) return ROLES.USER;
+  if (!role) return ROLES.GUEST;
   const normalized = role.toUpperCase().trim();
   return (Object.values(ROLES) as string[]).includes(normalized)
     ? (normalized as Role)
-    : ROLES.USER;
+    : ROLES.GUEST;
 }
 
 /**
  * Retourne le niveau numérique d'un rôle (1 = plus élevé).
+ * Fallback GUEST (7) si le rôle est inconnu.
  */
 export function getRoleLevel(role: Role): number {
-  return ROLE_TO_LEVEL[role] ?? LEVELS.LEVEL_6;
+  return ROLE_TO_LEVEL[role] ?? LEVELS.LEVEL_7;
 }
 
 /**
@@ -184,5 +189,5 @@ export function isStaffOrAbove(role: Role): boolean {
  */
 export function getRoleConfig(role: Role): RoleLevelConfigEntry {
   const level = getRoleLevel(role);
-  return RoleLevelConfig[level] ?? RoleLevelConfig[6];
+  return RoleLevelConfig[level] ?? RoleLevelConfig[7];
 }

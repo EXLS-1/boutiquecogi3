@@ -793,7 +793,7 @@ export const DEFAULT_ROLE_CONFIG: Record<
  * Récupère les permissions par défaut pour un rôle donné.
  */
 export function getDefaultPermissions(role: Role): Permission[] {
-  const roleConfig = ROLE_CONFIG[role];
+  const roleConfig = DEFAULT_ROLE_CONFIG[role];
   if (!roleConfig) return [];
 
   return Object.keys(roleConfig.permissions) as Permission[];
@@ -803,7 +803,7 @@ export function getDefaultPermissions(role: Role): Permission[] {
  * Récupère les restrictions par défaut pour un rôle donné.
  */
 export function getDefaultRestrictions(role: Role): Record<Restriction, string> {
-  const roleConfig = ROLE_CONFIG[role];
+  const roleConfig = DEFAULT_ROLE_CONFIG[role];
   if (!roleConfig) return {
     max_daily_orders: "",
     max_products_per_user: "",
@@ -1060,7 +1060,6 @@ export async function getCurrentUserWithRole() {
   };
 }
 
-
 // ───────────────────────────────────────────
 // 10. GUARDS & REDIRECTS
 // ───────────────────────────────────────────
@@ -1181,7 +1180,6 @@ export async function getSessionWithUser() {
     level: userData.level,
   };
 }
-
 
 // ───────────────────────────────────────────
 // 14. INVALIDATION DU CACHE

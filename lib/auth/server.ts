@@ -25,10 +25,11 @@ import { cache } from "react";
 import { auth } from "@/lib/auth"; // ✅ Singleton
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/uuid";
+import type { AuthenticatedUser } from "@/lib/auth/rbac-shared";
 import {
   // Types
   type Role,
-  type Permission,
+  type PermissionCode,
   type Restriction,
   type ToggleState,
   // Constants
@@ -66,28 +67,12 @@ import {
 // ═══════════════════════════════════════════
 
 /**
- * Utilisateur authentifié avec métadonnées RBAC enrichies.
- * C'est le type de référence pour tous les Server Components.
- */
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: Role;
-  level: number;
-  image?: string | null;
-  emailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
  * Contexte d'autorisation complet pour une requête.
  * Passé aux Server Actions et aux composants enfants.
  */
 export interface AuthContext {
   user: AuthenticatedUser;
-  permissions: Set<Permission>;
+  permissions: Set<PermissionCode>;
   restrictions: Map<Restriction, string | ToggleState>;
   isAuthenticated: true;
   timestamp: number;
@@ -128,15 +113,14 @@ export interface AuditEntry {
  * Cache React pour dedupliquer les appels de session
  * dans un même render cycle Server Component.
  */
-// Session resolution encapsulée dans un provider dédié
-export { getSessionFromProvider as getCachedSession } from "@/lib/auth/session-provider";
+const _cachedGetSession = cache(async () => {
+  const headersList = await headers();
+  return auth.api.getSession({ headers: headersList });
+});
 
-
-
-
-
-
-
+export async function getCachedSession() {
+  return _cachedGetSession();
+}
 
 // ═══════════════════════════════════════════
 // SECTION 3: RÉSOLUTION COMPLÈTE DU CONTEXT
@@ -267,7 +251,7 @@ export async function guardAuth(
  * @returns AuthContext filtré (la permission est garantie)
  */
 export async function guardPermission(
-  permission: Permission,
+  permission: PermissionCode,
   redirectTo: string = "/unauthorized",
 ): Promise<AuthContext> {
   const context = await guardAuth();
@@ -283,7 +267,7 @@ export async function guardPermission(
  * Guard : exige TOUTES les permissions listées.
  */
 export async function guardAllPermissions(
-  permissions: Permission[],
+  permissions: PermissionCode[],
   redirectTo: string = "/unauthorized",
 ): Promise<AuthContext> {
   const context = await guardAuth();
@@ -300,7 +284,7 @@ export async function guardAllPermissions(
  * Guard : exige AU MOINS UNE des permissions listées.
  */
 export async function guardAnyPermission(
-  permissions: Permission[],
+  permissions: PermissionCode[],
   redirectTo: string = "/unauthorized",
 ): Promise<AuthContext> {
   const context = await guardAuth();
@@ -441,7 +425,7 @@ export async function actionRequireAuth<T>(
  * Wrapper Server Action : exige une permission.
  */
 export async function actionRequirePermission<T>(
-  permission: Permission,
+  permission: PermissionCode,
   action: (context: AuthContext) => Promise<T>,
 ): Promise<T> {
   return actionRequireAuth(async (context) => {
@@ -460,7 +444,7 @@ export async function actionRequirePermission<T>(
  * Wrapper Server Action : exige TOUTES les permissions.
  */
 export async function actionRequireAllPermissions<T>(
-  permissions: Permission[],
+  permissions: PermissionCode[],
   action: (context: AuthContext) => Promise<T>,
 ): Promise<T> {
   return actionRequireAuth(async (context) => {
@@ -480,7 +464,7 @@ export async function actionRequireAllPermissions<T>(
  * Wrapper Server Action : exige AU MOINS UNE permission.
  */
 export async function actionRequireAnyPermission<T>(
-  permissions: Permission[],
+  permissions: PermissionCode[],
   action: (context: AuthContext) => Promise<T>,
 ): Promise<T> {
   return actionRequireAuth(async (context) => {
@@ -756,7 +740,7 @@ export async function requireAuth(
  * @deprecated Utilisez guardPermission() à la place.
  */
 export async function requirePermission(
-  permission: Permission,
+  permission: PermissionCode,
   redirectTo: string = "/unauthorized",
 ): Promise<AuthenticatedUser> {
   const context = await guardPermission(permission, redirectTo);
@@ -827,4 +811,4 @@ export {
   invalidateRBACCache,
 };
 
-export type { Role, Permission, Restriction, ToggleState };
+export type { Role, PermissionCode, Restriction, ToggleState };

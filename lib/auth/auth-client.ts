@@ -1,6 +1,7 @@
 // lib/auth/auth-client.ts
 // Client d'authentification centralisé pour la boutique COGI3.
 // Ce module utilise Better-Auth pour gérer les sessions côté client et propose une abstraction hookée pour l'UI.
+
 "use client";
 
 import { createAuthClient } from "better-auth/react";
@@ -176,9 +177,9 @@ export function useAuth() {
     error,
     session,
     signIn: (email: string, password: string) =>
-      handleAction(authClient.signIn.email({ email, password })),
+      handleAction(authClient.signIn.credentials({ email, password })),
     signUp: (name: string, email: string, password: string, image?: string) =>
-      handleAction(authClient.signUp.email({ name, email, password, image })),
+      handleAction(authClient.signUp.credentials({ name, email, password, image })),
     signOut: performSignOut,
   };
 }

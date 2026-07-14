@@ -44,21 +44,9 @@ export type RoleConfigCacheValue = {
 export async function getRoleConfigCached(
   role: Role,
 ): Promise<RoleConfigCacheValue> {
-  const fallback =
-    (DEFAULT_ROLE_CONFIG as Record<Role, {
-      level: number;
-      permissions: Record<Permission, "ON" | "OFF">;
-      restrictions: Record<Restriction, string | "ON" | "OFF">;
-    }>)[role];
-
-
-
-
-
-
+  const fallback = DEFAULT_ROLE_CONFIG[role];
 
   if (!redis) return fallback;
-
 
   const key = roleCacheKey(role);
   const cached = (await redis.get<string>(key)) ?? null;
@@ -143,9 +131,8 @@ export async function getEffectiveRestrictionsCached(
   role: Role,
   compute: () => Promise<Map<Restriction, string | "ON" | "OFF">>,
 ): Promise<Map<Restriction, string | "ON" | "OFF">> {
-
   if (!redis) {
-    return (await compute()) as Map<Restriction, string | "ON" | "OFF">;
+    return compute();
   }
 
   const key = restrCacheKey(role);
@@ -168,4 +155,3 @@ export async function getEffectiveRestrictionsCached(
   await redis.set(key, JSON.stringify(obj), { ex: TTL_SECONDS });
   return restrMap;
 }
-

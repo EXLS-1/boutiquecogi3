@@ -2,9 +2,8 @@ import { headers } from "next/headers";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
 
-import type { AuthenticatedUser } from "@/lib/auth/server";
-import type { Role } from "@/lib/auth/rbac";
-import { getRoleLevel, normalizeRole } from "@/lib/auth/rbac";
+import type { AuthenticatedUser, Role } from "@/lib/auth/rbac-shared";
+import { getRoleLevel, normalizeRole } from "@/lib/auth/rbac-shared";
 
 /**
  * SessionProvider : encapsule la résolution de session.
@@ -20,46 +19,59 @@ export async function getSessionFromProvider() {
   return _cachedGetSession();
 }
 
+// ─── Type guard pour éviter les casts dangereux ───
+
+interface BetterAuthUserLike {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role?: string | null;
+  image?: string | null;
+  emailVerified?: boolean | Date | string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+function isBetterAuthUser(obj: unknown): obj is BetterAuthUserLike {
+  if (typeof obj !== "object" || obj === null) return false;
+  const u = obj as Record<string, unknown>;
+  return typeof u.id === "string";
+}
+
+function toDate(value: Date | string | null | undefined): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === "string") return new Date(value);
+  return new Date();
+}
+
 export async function getCurrentUserFromProvider(): Promise<
   | (AuthenticatedUser & { session: NonNullable<ReturnType<typeof auth.api.getSession>> })
   | null
 > {
   const session = await getSessionFromProvider();
-  if (!session?.user) return null;
+  if (!session?.user || !isBetterAuthUser(session.user)) return null;
+
+  const u = session.user;
 
   const roleStr =
-    ((session.user as Record<string, unknown>).role as string | undefined) ??
-    (
-      (session.user as Record<string, unknown>).metadata as Record<
-        string,
-        unknown
-      >
-    )?.role ??
-    "USER";
+    u.role ??
+    (u.metadata?.role as string | undefined) ??
+    "GUEST";
 
-  const role: Role = normalizeRole(roleStr as string);
+  const role: Role = normalizeRole(roleStr);
 
   const user: AuthenticatedUser = {
-    id: session.user.id,
-    email: session.user.email ?? "",
-    name: session.user.name ?? null,
+    id: u.id,
+    email: u.email ?? "",
+    name: u.name ?? null,
     role,
     level: getRoleLevel(role),
-    image: (session.user as Record<string, unknown>).image as
-      | string
-      | null
-      | undefined,
-    emailVerified:
-      ((session.user as Record<string, unknown>).emailVerified as boolean) ??
-      false,
-    createdAt: new Date(
-      (session.user as Record<string, unknown>).createdAt as string,
-    ),
-    updatedAt: new Date(
-      (session.user as Record<string, unknown>).updatedAt as string,
-    ),
+    image: u.image ?? null,
+    emailVerified: Boolean(u.emailVerified),
+    createdAt: toDate(u.createdAt),
+    updatedAt: toDate(u.updatedAt),
   };
 
   return Object.assign(user, { session });
 }
-
