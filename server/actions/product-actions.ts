@@ -6,14 +6,40 @@ import { ProductService } from '@/server/services/product-service'
 import { createProductSchema, updateProductSchema } from '@/lib/validations/product'
 import { revalidatePath } from 'next/cache'
 import { AuthorizationError } from '@/server/core/secure-prisma'
+import { generateUUIDv7 } from '@/lib/uuid'
 
 type ActionResult<T = unknown> =
     | { success: true; data: T; message?: string }
     | { success: false; error: string; code: string; fieldErrors?: Record<string, string[]> }
 
+// ─── Helpers de génération ───
+
+function generateSlug(name: string): string {
+    return name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        .substring(0, 100)
+}
+
+function generateSKU(name: string): string {
+    const prefix = name
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 6)
+    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase()
+    return `${prefix}-${suffix}`
+}
+
+// ─── Créer un produit ───
+
 export async function createProductAction(formData: FormData): Promise<ActionResult> {
     try {
         const raw = Object.fromEntries(formData)
+
+        // Validation Zod (schéma client — peut encore contenir price/stock)
         const parsed = createProductSchema.safeParse({
             name: raw.name,
             price: Number(raw.price),
@@ -32,7 +58,21 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
             }
         }
 
-        const product = await ProductService.create(parsed.data)
+        // Mapping vers le schéma Prisma exact
+        const productData = {
+            id: generateUUIDv7(),
+            name: parsed.data.name,
+            slug: generateSlug(parsed.data.name),
+            sku: generateSKU(parsed.data.name),
+            description: parsed.data.description,
+            basePrice: parsed.data.price,        // ← Prisma attend basePrice
+            status: 'ACTIVE' as const,           // ← enum ProductStatus
+            categoryId: parsed.data.categoryId,
+            images: parsed.data.images,
+            // stock ignoré : n'existe pas dans schema.prisma
+        }
+
+        const product = await ProductService.create(productData)
         revalidatePath('/products')
         revalidatePath('/admin/products')
 
@@ -52,6 +92,8 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
     }
 }
 
+// ─── Mettre à jour un produit ───
+
 export async function updateProductAction(
     productId: string,
     formData: FormData
@@ -59,12 +101,13 @@ export async function updateProductAction(
     try {
         const raw = Object.fromEntries(formData)
         const data: Record<string, unknown> = {}
+
         if (raw.name) data.name = raw.name
-        if (raw.price) data.price = Number(raw.price)
+        if (raw.price) data.basePrice = Number(raw.price) // ← mapping price → basePrice
         if (raw.description) data.description = raw.description
         if (raw.categoryId) data.categoryId = raw.categoryId
         if (raw.images) data.images = JSON.parse(raw.images as string)
-        if (raw.stock) data.stock = Number(raw.stock)
+        // stock ignoré : n'existe pas dans schema.prisma
 
         const product = await ProductService.update(productId, data)
         revalidatePath('/products')
@@ -86,6 +129,8 @@ export async function updateProductAction(
     }
 }
 
+// ─── Supprimer un produit ───
+
 export async function deleteProductAction(productId: string): Promise<ActionResult> {
     try {
         await ProductService.delete(productId)
@@ -103,6 +148,8 @@ export async function deleteProductAction(productId: string): Promise<ActionResu
         return { success: false, error: 'Erreur serveur inattendue', code: 'INTERNAL_ERROR' }
     }
 }
+
+// ─── Lister les produits ───
 
 export async function listProductsAction(): Promise<ActionResult> {
     try {

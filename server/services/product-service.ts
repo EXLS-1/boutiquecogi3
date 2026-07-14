@@ -1,9 +1,8 @@
 // server/services/product-service.ts
 
 import { withSecurePrisma, type SecureContext } from '@/server/core/secure-prisma'
-import { createProductSchema, updateProductSchema } from '@/lib/validations/product'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
-import { z } from 'zod'
+import { generateUUIDv7 } from '@/lib/uuid'
 
 export class ProductServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -12,11 +11,44 @@ export class ProductServiceError extends Error {
   }
 }
 
+// ─── Helpers de génération ───
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .substring(0, 100)
+}
+
+function generateSKU(name: string): string {
+  const prefix = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .substring(0, 6)
+  const suffix = Math.random().toString(36).substring(2, 6).toUpperCase()
+  return `${prefix}-${suffix}`
+}
+
+// ─── Service ───
+
 export const ProductService = {
   // ─── Créer un produit (Editor+) ───
-  async create(input: z.infer<typeof createProductSchema>) {
-    const parsed = createProductSchema.safeParse(input)
-    if (!parsed.success) {
+  async create(input: {
+    id?: string
+    name: string
+    slug?: string
+    sku?: string
+    description?: string | null
+    basePrice: number
+    status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
+    categoryId?: string | null
+    images?: string[]
+  }) {
+    // Validation manuelle des champs requis
+    if (!input.name?.trim() || typeof input.basePrice !== 'number') {
       throw new ProductServiceError('Données invalides', 'VALIDATION_ERROR')
     }
 
@@ -24,14 +56,16 @@ export const ProductService = {
       async (ctx) => {
         return ctx.prisma.product.create({
           data: {
-            name: parsed.data.name,
-            price: parsed.data.price,
-            description: parsed.data.description,
-            categoryId: parsed.data.categoryId,
-            images: parsed.data.images,
-            stock: parsed.data.stock,
-            sellerId: ctx.userId,
-            createdBy: ctx.userId,
+            id: input.id ?? generateUUIDv7(),
+            name: input.name.trim(),
+            slug: input.slug ?? generateSlug(input.name),
+            sku: input.sku ?? generateSKU(input.name),
+            description: input.description ?? '',
+            basePrice: input.basePrice,
+            status: input.status ?? 'ACTIVE',
+            categoryId: input.categoryId,
+            images: input.images ?? [],
+            userId: ctx.userId,
           }
         })
       },
@@ -44,12 +78,18 @@ export const ProductService = {
   },
 
   // ─── Modifier un produit (propriétaire OU Admin+) ───
-  async update(productId: string, data: z.infer<typeof updateProductSchema>) {
-    const parsed = updateProductSchema.safeParse(data)
-    if (!parsed.success) {
-      throw new ProductServiceError('Données invalides', 'VALIDATION_ERROR')
+  async update(
+    productId: string,
+    data: {
+      name?: string
+      basePrice?: number
+      description?: string | null
+      categoryId?: string | null
+      images?: string[]
+      status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
+      slug?: string
     }
-
+  ) {
     return withSecurePrisma(
       async (ctx) => {
         const product = await ctx.prisma.product.findUnique({
@@ -58,7 +98,7 @@ export const ProductService = {
 
         if (!product) throw new ProductServiceError('Produit non trouvé', 'NOT_FOUND')
 
-        const isOwner = product.sellerId === ctx.userId
+        const isOwner = product.userId === ctx.userId
         const canEditAny = hasPermissionOnResult(ctx.roleData, PERMISSIONS['products:update'])
 
         if (!isOwner && !canEditAny) {
@@ -68,11 +108,19 @@ export const ProductService = {
           )
         }
 
+        // Régénère le slug automatiquement si le nom change et pas de slug fourni
+        const slug = data.slug ?? (data.name ? generateSlug(data.name) : undefined)
+
         return ctx.prisma.product.update({
           where: { id: productId },
           data: {
-            ...parsed.data,
-            updatedBy: ctx.userId,
+            ...(data.name !== undefined && { name: data.name }),
+            ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
+            ...(data.description !== undefined && { description: data.description }),
+            ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+            ...(data.images !== undefined && { images: data.images }),
+            ...(data.status !== undefined && { status: data.status }),
+            ...(slug !== undefined && { slug }),
             updatedAt: new Date(),
           }
         })
@@ -95,7 +143,7 @@ export const ProductService = {
 
         if (!product) throw new ProductServiceError('Produit non trouvé', 'NOT_FOUND')
 
-        const isOwner = product.sellerId === ctx.userId
+        const isOwner = product.userId === ctx.userId
         const canDeleteAny = hasPermissionOnResult(ctx.roleData, PERMISSIONS['products:delete'])
 
         if (!isOwner && !canDeleteAny) {
@@ -121,7 +169,7 @@ export const ProductService = {
       async (ctx) => {
         return ctx.prisma.product.findMany({
           include: {
-            seller: { select: { id: true, name: true, email: true } },
+            user: { select: { id: true, name: true, email: true } },
             category: { select: { id: true, name: true } }
           },
           orderBy: { createdAt: 'desc' }
@@ -141,7 +189,7 @@ export const ProductService = {
         return ctx.prisma.product.findUnique({
           where: { id: productId },
           include: {
-            seller: { select: { id: true, name: true } },
+            user: { select: { id: true, name: true } },
             category: true,
           }
         })

@@ -1200,3 +1200,57 @@ export function invalidateRBACCache(role?: Role): void {
     _configCache.clear();
   }
 }
+
+export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluationResult | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { roleAssignment: { include: { role: true } } }
+  });
+
+  if (!user || !user.roleAssignment) return null;
+
+  const assignment = user.roleAssignment;
+  const roleName = assignment.role.name as Role;
+  
+  const effectivePermissions = await resolveEffectivePermissions(roleName);
+
+  return {
+    userId,
+    level: assignment.role.level,
+    roleName,
+    prismaRole: ROLE_TO_PRISMA[roleName] || PrismaRole.USER,
+    isBlocked: assignment.isBlocked,
+    blockReason: assignment.blockedReason || undefined,
+    blockExpiresAt: assignment.blockedUntil,
+    permissions: Array.from(effectivePermissions),
+    effectivePermissions: new Map(Array.from(effectivePermissions).map(p => [p, { granted: true, source: 'role' }])),
+    metadata: {
+      assignedAt: assignment.assignedAt,
+      lastVerifiedAt: new Date(),
+      hasOverrides: false,
+      dangerousPermissions: Array.from(effectivePermissions).filter(p => isDangerousPermission(p)),
+    }
+  };
+}
+
+export function hasPermissionOnResult(
+  result: RoleEvaluationResult,
+  permission: PermissionCode,
+): boolean {
+  return result.permissions.includes(permission);
+}
+
+export function hasAllPermissionsOnResult(
+  result: RoleEvaluationResult,
+  permissions: PermissionCode[],
+): boolean {
+  return permissions.every((p) => result.permissions.includes(p));
+}
+
+export function hasAnyPermissionOnResult(
+  result: RoleEvaluationResult,
+  permissions: PermissionCode[],
+): boolean {
+  return permissions.some((p) => result.permissions.includes(p));
+}
+

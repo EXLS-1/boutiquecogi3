@@ -9,7 +9,7 @@ import { AuthorizationError } from '@/server/core/secure-prisma'
 
 type ActionResult<T = unknown> =
   | { success: true; data: T; message?: string }
-  | { success: false; error: string; code: string; fieldErrors?: Record<string, string[]> }
+  | { success: false; error: string; code: string; fieldErrors?: Record<string, string[] | undefined> }
 
 // ─── Bloquer un utilisateur ───
 
@@ -170,7 +170,7 @@ export async function updateUserRole(
       }
     }
 
-    const result = await UserAdminService.updateUserRole({ userId, role })
+    const result = await UserAdminService.assignRole({ userId, roleId: role })
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${userId}`)
 
