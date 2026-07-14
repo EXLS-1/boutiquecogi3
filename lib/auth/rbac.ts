@@ -6,6 +6,8 @@
 // Importé dans : Server Components, Server Actions, Route Handlers, Proxy.
 
 import { redirect } from "next/navigation";
+import { cache } from "react";
+import { PrismaClient, Role as PrismaRole } from "@prisma/client";
 import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
 import {
   Crown,
@@ -18,12 +20,42 @@ import {
 } from "lucide-react";
 
 // ───────────────────────────────────────────
-// 1. TYPES & CONSTANTS
+// 1. TYPES & CONSTANTS & INSTANCE PRISMA
 // ───────────────────────────────────────────
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 export type Level = (typeof LEVELS)[keyof typeof LEVELS];
 export type ToggleState = "ON" | "OFF";
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+export type RoleEvaluationResult = {
+  userId: string;
+  level: number;
+  roleName: Role;
+  prismaRole: PrismaRole;
+  isBlocked: boolean;
+  blockReason?: string;
+  blockExpiresAt?: Date | null;
+  permissions: PermissionCode[];
+  effectivePermissions: Map<PermissionCode, { granted: boolean; source: "role" | "override" | "denied" }>;
+  metadata: {
+    assignedAt: Date;
+    lastVerifiedAt: Date;
+    hasOverrides: boolean;
+    dangerousPermissions: PermissionCode[];
+  };
+};
+
+export class RoleEvaluationError extends Error {
+  constructor(message: string, public code: string) {
+    super(message);
+    this.name = "RoleEvaluationError";
+  }
+}
 
 export const ROLES = {
   SUPER_ADMIN: "SUPER_ADMIN",
@@ -44,6 +76,26 @@ export const LEVELS = {
   LEVEL_6: 6,
   LEVEL_7: 7,
 } as const;
+
+const ROLE_TO_PRISMA: Record<Role, PrismaRole> = {
+  [ROLES.SUPER_ADMIN]: PrismaRole.SUPER_ADMIN,
+  [ROLES.ADMIN]: PrismaRole.ADMIN,
+  [ROLES.MANAGER]: PrismaRole.MANAGER,
+  [ROLES.EDITOR]: PrismaRole.EDITOR,
+  [ROLES.SUPERVISOR]: PrismaRole.SUPERVISOR,
+  [ROLES.USER]: PrismaRole.USER,
+  [ROLES.GUEST]: PrismaRole.GUEST,
+};
+
+const PRISMA_TO_ROLE: Record<PrismaRole, Role> = {
+  [PrismaRole.SUPER_ADMIN]: ROLES.SUPER_ADMIN,
+  [PrismaRole.ADMIN]: ROLES.ADMIN,
+  [PrismaRole.MANAGER]: ROLES.MANAGER,
+  [PrismaRole.EDITOR]: ROLES.EDITOR,
+  [PrismaRole.SUPERVISOR]: ROLES.SUPERVISOR,
+  [PrismaRole.USER]: ROLES.USER,
+  [PrismaRole.GUEST]: ROLES.GUEST,
+};
 
 const ROLE_TO_LEVEL: Record<Role, number> = {
   [ROLES.SUPER_ADMIN]: LEVELS.LEVEL_1,
@@ -75,15 +127,15 @@ export const RoleLevelConfig: Record<number, { label: string; icon: React.Compon
   7: { label: "GUEST", icon: Users, color: "#9ca3af" },
 };
 
-export const ROLE_HIERARCHY = {
-  1: { name: "SUPER_ADMIN", label: "SUPER_ADMIN", description: "Controle Absolu" },
-  2: { name: "ADMIN", label: "ADMIN", description: "Contrôle total sauf système" },
-  3: { name: "MANAGER", label: "MANAGER", description: "Administration Générale" },
-  4: { name: "EDITOR", label: "EDITOR", description: "Gestion des Commandes" },
-  5: { name: "SUPERVISOR", label: "SUPERVISOR", description: "Création des Produits" },
-  6: { name: "USER", label: "USER", description: "Acheteur Privilégié" },
-  7: { name: "GUEST", label: "GUEST", description: "Acheteur Visiteur" },
-} as const
+export const ROLE_HIERARCHY: Record<number, { name: Role; label: string; description: string }> = {
+  1: { name: ROLES.SUPER_ADMIN, label: "Super Admin", description: "Contrôle absolu" },
+  2: { name: ROLES.ADMIN, label: "Admin", description: "Administration générale" },
+  3: { name: ROLES.MANAGER, label: "Manager", description: "Gestion équipes et opérations" },
+  4: { name: ROLES.EDITOR, label: "Éditeur", description: "Gestion contenu et produits" },
+  5: { name: ROLES.SUPERVISOR, label: "Superviseur", description: "Supervision commandes" },
+  6: { name: ROLES.USER, label: "Utilisateur", description: "Acheteur privilégié" },
+  7: { name: ROLES.GUEST, label: "Invité", description: "Visiteur non authentifié" },
+};
 
 const LEVEL_TO_ROLE: Record<number, Role> = {
   [LEVELS.LEVEL_1]: ROLES.SUPER_ADMIN,
@@ -100,57 +152,393 @@ const LEVEL_TO_ROLE: Record<number, Role> = {
 // ───────────────────────────────────────────
 
 export const PERMISSIONS = {
-  USERS_READ: "users:read",
-  USERS_CREATE: "users:create",
-  USERS_UPDATE: "users:update",
-  USERS_DELETE: "users:delete",
-  USERS_BAN: "users:ban",
-  USERS_IMPERSONATE: "users:impersonate",
-  PRODUCTS_READ: "products:read",
-  PRODUCTS_CREATE: "products:create",
-  PRODUCTS_UPDATE: "products:update",
-  PRODUCTS_DELETE: "products:delete",
-  PRODUCTS_BULK_EDIT: "products:bulk-edit",
-  PRODUCTS_IMPORT: "products:import",
-  PRODUCTS_EXPORT: "products:export",
-  ORDERS_READ: "orders:read",
-  ORDERS_CREATE: "orders:create",
-  ORDERS_UPDATE: "orders:update",
-  ORDERS_DELETE: "orders:delete",
-  ORDERS_REFUND: "orders:refund",
-  ORDERS_CANCEL: "orders:cancel",
-  CATEGORIES_READ: "categories:read",
-  CATEGORIES_CREATE: "categories:create",
-  CATEGORIES_UPDATE: "categories:update",
-  CATEGORIES_DELETE: "categories:delete",
-  ANALYTICS_READ: "analytics:read",
-  ANALYTICS_EXPORT: "analytics:export",
-  REPORTS_GENERATE: "reports:generate",
-  REPORTS_SCHEDULE: "reports:schedule",
-  SETTINGS_READ: "settings:read",
-  SETTINGS_UPDATE: "settings:update",
-  SETTINGS_BILLING: "settings:billing",
-  SETTINGS_ROLES_MANAGE: "settings:roles-manage",
-  MEDIA_UPLOAD: "media:upload",
-  MEDIA_DELETE: "media:delete",
-  MEDIA_READ: "media:read",
-  SYSTEM_LOGS: "system:logs",
-  SYSTEM_MAINTENANCE: "system:maintenance",
-  SYSTEM_BACKUP: "system:backup",
-  CONTENT_READ: "content:read",
-  CONTENT_CREATE: "content:create",
-  CONTENT_UPDATE: "content:update",
-  CONTENT_DELETE: "content:delete",
-  CONTENT_PUBLISH: "content:publish",
-  CONTENT_MODERATE: "content:moderate",
-  // Permissions d'audit
-  AUDIT_SWITCH_SELF: "audit:switch-self",
-  AUDIT_SWITCH_OTHERS: "audit:switch-others",
-  AUDIT_APPROVE_REQUEST: "audit:approve-request",
-  AUDIT_VIEW_LOGS: "audit:view-logs",
+  "users:read": "users:read",
+  "users:create": "users:create",
+  "users:update": "users:update",
+  "users:delete": "users:delete",
+  "users:block": "users:block",
+  "users:unban": "users:unban",
+  "users:impersonate": "users:impersonate",
+  "users:view:any": "users:view:any",
+  "users:search": "users:search",
+  "users:filter:active": "users:filter:active",
+  "users:filter:blocked": "users:filter:blocked",
+  "users:filter:inactive": "users:filter:inactive",
+
+  "role:view": "role:view",
+  "role:create": "role:create",
+  "role:edit": "role:edit",
+  "role:delete": "role:delete",
+  "role:assign": "role:assign",
+  "permission:override": "permission:override",
+  "permission:grant:any": "permission:grant:any",
+  "permission:revoke:own": "permission:revoke:own",
+  "permission:revoke:any": "permission:revoke:any",
+  "permission:view:own": "permission:view:own",
+  "permission:view:any": "permission:view:any",
+  "permission:view:assigned": "permission:view:assigned",
+  "product:read": "product:read",
+  "product:create": "product:create",
+  "product:edit:own": "product:edit:own",
+  "product:edit:any": "product:edit:any",
+  "product:delete:own": "product:delete:own",
+  "product:delete:any": "product:delete:any",
+  "product:moderate": "product:moderate",
+  "products:read": "products:read",
+  "products:create": "products:create",
+  "products:update": "products:update",
+  "products:delete": "products:delete",
+  "products:bulk-edit": "products:bulk-edit",
+  "products:import": "products:import",
+  "products:export": "products:export",
+  "products:view:own": "products:view:own",
+  "products:view:any": "products:view:any",
+  "products:view:admin": "products:view:admin",
+
+  "order:read:own": "order:read:own",
+  "order:read:any": "order:read:any",
+  "order:create": "order:create",
+  "order:cancel:own": "order:cancel:own",
+  "order:cancel:any": "order:cancel:any",
+  "order:refund": "order:refund",
+  "order:status:update": "order:status:update",
+  "orders:read": "orders:read",
+  "orders:create": "orders:create",
+  "orders:update": "orders:update",
+  "orders:delete": "orders:delete",
+  "orders:refund": "orders:refund",
+  "orders:cancel": "orders:cancel",
+
+  "categories:read": "categories:read",
+  "categories:create": "categories:create",
+  "categories:update": "categories:update",
+  "categories:delete": "categories:delete",
+
+  "analytics:read": "analytics:read",
+  "analytics:export": "analytics:export",
+  "analytics:dashboard:view": "analytics:dashboard:view",
+  "analytics:dashboard:export": "analytics:dashboard:export",
+  "analytics:dashboard:filter": "analytics:dashboard:filter",
+
+  "reports:generate": "reports:generate",
+  "reports:schedule": "reports:schedule",
+  "reports:export": "reports:export",
+  "reports:view": "reports:view",
+
+  "settings:read": "settings:read",
+  "settings:update": "settings:update",
+  "settings:billing": "settings:billing",
+  "settings:roles-manage": "settings:roles-manage",
+
+  "media:upload": "media:upload",
+  "media:delete": "media:delete",
+  "media:read": "media:read",
+  "media:manage": "media:manage",
+
+  "system:logs": "system:logs",
+  "system:maintenance": "system:maintenance",
+  "system:backup": "system:backup",
+  "system:config": "system:config",
+  "system:cache:clear": "system:cache:clear",
+  "system:restart": "system:restart",
+  "system:theme:switch": "system:theme:switch",
+  "system:theme:manage": "system:theme:manage",
+  "system:feature-flags:read": "system:feature-flags:read",
+  "system:feature-flags:update": "system:feature-flags:update",
+  "system:api-keys:create": "system:api-keys:create",
+  "system:api-keys:delete": "system:api-keys:delete",
+  "system:api-keys:read": "system:api-keys:read",
+  "system:api-keys:rotate": "system:api-keys:rotate",
+  "system:api-keys:revoke": "system:api-keys:revoke",
+  "system:settings:read": "system:settings:read",
+  "system:settings:write": "system:settings:write",
+
+  "content:read": "content:read",
+  "content:create": "content:create",
+  "content:update": "content:update",
+  "content:delete": "content:delete",
+  "content:publish": "content:publish",
+  "content:moderate": "content:moderate",
+
+  "finance:read:own": "finance:read:own",
+  "finance:read:any": "finance:read:any",
+  "finance:withdraw": "finance:withdraw",
+  "finance:config": "finance:config",
+
+  "audit:switch-self": "audit:switch-self",
+  "audit:switch-others": "audit:switch-others",
+  "audit:approve-request": "audit:approve-request",
+  "audit:view-logs": "audit:view-logs"
 } as const;
 
-export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+export const PERMISSION_META: Record<PermissionCode, { category: string; minLevel: number; isDangerous: boolean; description: string }> = {
+  [PERMISSIONS["users:read"]]: { category: "USER", minLevel: 1, isDangerous: false, description: "Lire les utilisateurs" },
+  [PERMISSIONS["users:create"]]: { category: "USER", minLevel: 2, isDangerous: false, description: "Créer un utilisateur" },
+  [PERMISSIONS["users:update"]]: { category: "USER", minLevel: 2, isDangerous: false, description: "Modifier un utilisateur" },
+  [PERMISSIONS["users:delete"]]: { category: "USER", minLevel: 1, isDangerous: true, description: "Supprimer un utilisateur" },
+  [PERMISSIONS["users:block"]]: { category: "USER", minLevel: 2, isDangerous: true, description: "Bloquer un utilisateur" },
+  [PERMISSIONS["users:unban"]]: { category: "USER", minLevel: 2, isDangerous: false, description: "Débannir un utilisateur" },
+  [PERMISSIONS["users:impersonate"]]: { category: "USER", minLevel: 1, isDangerous: true, description: "Usurper un utilisateur" },
+  [PERMISSIONS["users:view:any"]]: { category: "USER", minLevel: 2, isDangerous: false, description: "Voir tous les profils" },
+  [PERMISSIONS["role:view"]]: { category: "ROLE", minLevel: 2, isDangerous: false, description: "Voir les rôles" },
+  [PERMISSIONS["role:create"]]: { category: "ROLE", minLevel: 1, isDangerous: true, description: "Créer un rôle" },
+  [PERMISSIONS["role:edit"]]: { category: "ROLE", minLevel: 1, isDangerous: true, description: "Modifier un rôle" },
+  [PERMISSIONS["role:delete"]]: { category: "ROLE", minLevel: 1, isDangerous: true, description: "Supprimer un rôle" },
+  [PERMISSIONS["role:assign"]]: { category: "ROLE", minLevel: 2, isDangerous: true, description: "Assigner un rôle" },
+  [PERMISSIONS["permission:override"]]: { category: "ROLE", minLevel: 1, isDangerous: true, description: "Override permissions" },
+  [PERMISSIONS["product:read"]]: { category: "PRODUCT", minLevel: 1, isDangerous: false, description: "Voir les produits" },
+  [PERMISSIONS["product:create"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Créer un produit" },
+  [PERMISSIONS["product:edit:own"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Modifier ses produits" },
+  [PERMISSIONS["product:edit:any"]]: { category: "PRODUCT", minLevel: 5, isDangerous: false, description: "Modifier tous les produits" },
+  [PERMISSIONS["product:delete:own"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Supprimer ses produits" },
+  [PERMISSIONS["product:delete:any"]]: { category: "PRODUCT", minLevel: 6, isDangerous: true, description: "Supprimer tous les produits" },
+  [PERMISSIONS["product:moderate"]]: { category: "PRODUCT", minLevel: 5, isDangerous: false, description: "Modérer les produits" },
+  [PERMISSIONS["products:read"]]: { category: "PRODUCT", minLevel: 1, isDangerous: false, description: "Voir les produits" },
+  [PERMISSIONS["products:create"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Créer un produit" },
+  [PERMISSIONS["products:update"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Modifier un produit" },
+  [PERMISSIONS["products:delete"]]: { category: "PRODUCT", minLevel: 6, isDangerous: true, description: "Supprimer un produit" },
+  [PERMISSIONS["products:bulk-edit"]]: { category: "PRODUCT", minLevel: 4, isDangerous: false, description: "Édition en masse" },
+  [PERMISSIONS["products:import"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Importer des produits" },
+  [PERMISSIONS["products:export"]]: { category: "PRODUCT", minLevel: 4, isDangerous: false, description: "Exporter des produits" },
+  [PERMISSIONS["order:read:own"]]: { category: "ORDER", minLevel: 1, isDangerous: false, description: "Voir ses commandes" },
+  [PERMISSIONS["order:read:any"]]: { category: "ORDER", minLevel: 4, isDangerous: false, description: "Voir toutes les commandes" },
+  [PERMISSIONS["order:create"]]: { category: "ORDER", minLevel: 1, isDangerous: false, description: "Passer une commande" },
+  [PERMISSIONS["order:cancel:own"]]: { category: "ORDER", minLevel: 1, isDangerous: false, description: "Annuler sa commande" },
+  [PERMISSIONS["order:cancel:any"]]: { category: "ORDER", minLevel: 4, isDangerous: false, description: "Annuler toute commande" },
+  [PERMISSIONS["order:refund"]]: { category: "ORDER", minLevel: 5, isDangerous: true, description: "Effectuer un remboursement" },
+  [PERMISSIONS["order:status:update"]]: { category: "ORDER", minLevel: 4, isDangerous: false, description: "Mettre à jour le statut" },
+  [PERMISSIONS["orders:read"]]: { category: "ORDER", minLevel: 1, isDangerous: false, description: "Voir les commandes" },
+  [PERMISSIONS["orders:create"]]: { category: "ORDER", minLevel: 1, isDangerous: false, description: "Créer une commande" },
+  [PERMISSIONS["orders:update"]]: { category: "ORDER", minLevel: 4, isDangerous: false, description: "Modifier une commande" },
+  [PERMISSIONS["orders:delete"]]: { category: "ORDER", minLevel: 6, isDangerous: true, description: "Supprimer une commande" },
+  [PERMISSIONS["orders:refund"]]: { category: "ORDER", minLevel: 5, isDangerous: true, description: "Rembourser une commande" },
+  [PERMISSIONS["orders:cancel"]]: { category: "ORDER", minLevel: 4, isDangerous: false, description: "Annuler une commande" },
+  [PERMISSIONS["categories:read"]]: { category: "CATEGORY", minLevel: 1, isDangerous: false, description: "Voir les catégories" },
+  [PERMISSIONS["categories:create"]]: { category: "CATEGORY", minLevel: 3, isDangerous: false, description: "Créer une catégorie" },
+  [PERMISSIONS["categories:update"]]: { category: "CATEGORY", minLevel: 3, isDangerous: false, description: "Modifier une catégorie" },
+  [PERMISSIONS["categories:delete"]]: { category: "CATEGORY", minLevel: 5, isDangerous: true, description: "Supprimer une catégorie" },
+  [PERMISSIONS["analytics:read"]]: { category: "ANALYTICS", minLevel: 3, isDangerous: false, description: "Voir les analytics" },
+  [PERMISSIONS["analytics:export"]]: { category: "ANALYTICS", minLevel: 5, isDangerous: false, description: "Exporter les analytics" },
+  [PERMISSIONS["reports:generate"]]: { category: "REPORT", minLevel: 4, isDangerous: false, description: "Générer des rapports" },
+  [PERMISSIONS["reports:schedule"]]: { category: "REPORT", minLevel: 5, isDangerous: false, description: "Planifier des rapports" },
+  [PERMISSIONS["settings:read"]]: { category: "SETTINGS", minLevel: 1, isDangerous: false, description: "Voir les paramètres" },
+  [PERMISSIONS["settings:update"]]: { category: "SETTINGS", minLevel: 2, isDangerous: false, description: "Modifier les paramètres" },
+  [PERMISSIONS["settings:billing"]]: { category: "SETTINGS", minLevel: 2, isDangerous: true, description: "Gérer la facturation" },
+  [PERMISSIONS["settings:roles-manage"]]: { category: "SETTINGS", minLevel: 1, isDangerous: true, description: "Gérer les rôles" },
+  [PERMISSIONS["media:upload"]]: { category: "MEDIA", minLevel: 3, isDangerous: false, description: "Uploader des médias" },
+  [PERMISSIONS["media:delete"]]: { category: "MEDIA", minLevel: 4, isDangerous: false, description: "Supprimer des médias" },
+  [PERMISSIONS["media:read"]]: { category: "MEDIA", minLevel: 1, isDangerous: false, description: "Voir les médias" },
+  [PERMISSIONS["system:logs"]]: { category: "SYSTEM", minLevel: 2, isDangerous: false, description: "Voir les logs" },
+  [PERMISSIONS["system:maintenance"]]: { category: "SYSTEM", minLevel: 1, isDangerous: true, description: "Maintenance système" },
+  [PERMISSIONS["system:backup"]]: { category: "SYSTEM", minLevel: 1, isDangerous: true, description: "Gérer les backups" },
+  [PERMISSIONS["system:config"]]: { category: "SYSTEM", minLevel: 1, isDangerous: true, description: "Configurer le système" },
+  [PERMISSIONS["content:read"]]: { category: "CONTENT", minLevel: 1, isDangerous: false, description: "Voir le contenu" },
+  [PERMISSIONS["content:create"]]: { category: "CONTENT", minLevel: 3, isDangerous: false, description: "Créer du contenu" },
+  [PERMISSIONS["content:update"]]: { category: "CONTENT", minLevel: 3, isDangerous: false, description: "Modifier du contenu" },
+  [PERMISSIONS["content:delete"]]: { category: "CONTENT", minLevel: 5, isDangerous: true, description: "Supprimer du contenu" },
+  [PERMISSIONS["content:publish"]]: { category: "CONTENT", minLevel: 3, isDangerous: false, description: "Publier du contenu" },
+  [PERMISSIONS["content:moderate"]]: { category: "CONTENT", minLevel: 4, isDangerous: false, description: "Modérer du contenu" },
+  [PERMISSIONS["finance:read:own"]]: { category: "FINANCE", minLevel: 1, isDangerous: false, description: "Voir ses transactions" },
+  [PERMISSIONS["finance:read:any"]]: { category: "FINANCE", minLevel: 5, isDangerous: false, description: "Voir toutes les transactions" },
+  [PERMISSIONS["finance:withdraw"]]: { category: "FINANCE", minLevel: 4, isDangerous: true, description: "Retirer des fonds" },
+  [PERMISSIONS["finance:config"]]: { category: "FINANCE", minLevel: 1, isDangerous: true, description: "Configurer les paiements" },
+  [PERMISSIONS["audit:switch-self"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Audit soi-même" },
+  [PERMISSIONS["audit:switch-others"]]: { category: "AUDIT", minLevel: 1, isDangerous: true, description: "Audit d'autres" },
+  [PERMISSIONS["audit:approve-request"]]: { category: "AUDIT", minLevel: 1, isDangerous: true, description: "Approuver une requête d'audit" },
+  [PERMISSIONS["audit:view-logs"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Voir les logs d'audit" },
+  "users:search": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "users:filter:active": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "users:filter:blocked": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "users:filter:inactive": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "permission:grant:any": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "permission:revoke:own": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "permission:revoke:any": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "permission:view:own": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "permission:view:any": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "permission:view:assigned": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "products:view:own": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "products:view:any": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "products:view:admin": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "analytics:dashboard:view": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "analytics:dashboard:export": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "analytics:dashboard:filter": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "reports:export": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "reports:view": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "media:manage": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:cache:clear": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:restart": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:theme:switch": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:theme:manage": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:feature-flags:read": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:feature-flags:update": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:api-keys:create": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:api-keys:delete": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:api-keys:read": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:api-keys:rotate": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:api-keys:revoke": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:settings:read": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  },
+  "system:settings:write": {
+    category: "",
+    minLevel: 0,
+    isDangerous: false,
+    description: ""
+  }
+};
 
 // ───────────────────────────────────────────
 // 3. RESTRICTIONS
@@ -221,13 +609,13 @@ export const DEFAULT_ROLE_CONFIG: Record<
     level: LEVELS.LEVEL_2,
     permissions: createPermissions(
       {
-        [PERMISSIONS.SYSTEM_MAINTENANCE]: "OFF",
-        [PERMISSIONS.SYSTEM_BACKUP]: "OFF",
-        [PERMISSIONS.USERS_IMPERSONATE]: "OFF",
-        [PERMISSIONS.AUDIT_SWITCH_SELF]: "ON",
-        [PERMISSIONS.AUDIT_SWITCH_OTHERS]: "OFF",
-        [PERMISSIONS.AUDIT_APPROVE_REQUEST]: "OFF",
-        [PERMISSIONS.AUDIT_VIEW_LOGS]: "ON",
+        [PERMISSIONS["system:maintenance"]]: "OFF",
+        [PERMISSIONS["system:backup"]]: "OFF",
+        [PERMISSIONS["users:impersonate"]]: "OFF",
+        [PERMISSIONS["audit:switch-self"]]: "ON",
+        [PERMISSIONS["audit:switch-others"]]: "OFF",
+        [PERMISSIONS["audit:approve-request"]]: "OFF",
+        [PERMISSIONS["audit:view-logs"]]: "ON",
       },
       "ON",
     ),
@@ -244,38 +632,38 @@ export const DEFAULT_ROLE_CONFIG: Record<
   [ROLES.MANAGER]: {
     level: LEVELS.LEVEL_3,
     permissions: createPermissions({
-      [PERMISSIONS.USERS_READ]: "ON",
-      [PERMISSIONS.USERS_UPDATE]: "ON",
-      [PERMISSIONS.USERS_BAN]: "ON",
-      [PERMISSIONS.PRODUCTS_READ]: "ON",
-      [PERMISSIONS.PRODUCTS_CREATE]: "ON",
-      [PERMISSIONS.PRODUCTS_UPDATE]: "ON",
-      [PERMISSIONS.PRODUCTS_BULK_EDIT]: "ON",
-      [PERMISSIONS.PRODUCTS_IMPORT]: "ON",
-      [PERMISSIONS.ORDERS_READ]: "ON",
-      [PERMISSIONS.ORDERS_UPDATE]: "ON",
-      [PERMISSIONS.ORDERS_REFUND]: "ON",
-      [PERMISSIONS.ORDERS_CANCEL]: "ON",
-      [PERMISSIONS.CATEGORIES_READ]: "ON",
-      [PERMISSIONS.CATEGORIES_CREATE]: "ON",
-      [PERMISSIONS.CATEGORIES_UPDATE]: "ON",
-      [PERMISSIONS.ANALYTICS_READ]: "ON",
-      [PERMISSIONS.ANALYTICS_EXPORT]: "ON",
-      [PERMISSIONS.REPORTS_GENERATE]: "ON",
-      [PERMISSIONS.SETTINGS_READ]: "ON",
-      [PERMISSIONS.MEDIA_UPLOAD]: "ON",
-      [PERMISSIONS.MEDIA_DELETE]: "ON",
-      [PERMISSIONS.MEDIA_READ]: "ON",
-      [PERMISSIONS.SYSTEM_LOGS]: "ON",
-      [PERMISSIONS.CONTENT_READ]: "ON",
-      [PERMISSIONS.CONTENT_CREATE]: "ON",
-      [PERMISSIONS.CONTENT_UPDATE]: "ON",
-      [PERMISSIONS.CONTENT_PUBLISH]: "ON",
-      [PERMISSIONS.CONTENT_MODERATE]: "ON",
-      [PERMISSIONS.AUDIT_SWITCH_SELF]: "ON",
-      [PERMISSIONS.AUDIT_SWITCH_OTHERS]: "OFF",
-      [PERMISSIONS.AUDIT_APPROVE_REQUEST]: "OFF",
-      [PERMISSIONS.AUDIT_VIEW_LOGS]: "OFF",
+      [PERMISSIONS["users:read"]]: "ON",
+      [PERMISSIONS["users:update"]]: "ON",
+      [PERMISSIONS["users:block"]]: "ON",
+      [PERMISSIONS["products:read"]]: "ON",
+      [PERMISSIONS["products:create"]]: "ON",
+      [PERMISSIONS["products:update"]]: "ON",
+      [PERMISSIONS["products:bulk-edit"]]: "ON",
+      [PERMISSIONS["products:import"]]: "ON",
+      [PERMISSIONS["orders:read"]]: "ON",
+      [PERMISSIONS["orders:update"]]: "ON",
+      [PERMISSIONS["orders:refund"]]: "ON",
+      [PERMISSIONS["orders:cancel"]]: "ON",
+      [PERMISSIONS["categories:read"]]: "ON",
+      [PERMISSIONS["categories:create"]]: "ON",
+      [PERMISSIONS["categories:update"]]: "ON",
+      [PERMISSIONS["analytics:read"]]: "ON",
+      [PERMISSIONS["analytics:export"]]: "ON",
+      [PERMISSIONS["reports:generate"]]: "ON",
+      [PERMISSIONS["settings:read"]]: "ON",
+      [PERMISSIONS["media:upload"]]: "ON",
+      [PERMISSIONS["media:delete"]]: "ON",
+      [PERMISSIONS["media:read"]]: "ON",
+      [PERMISSIONS["system:logs"]]: "ON",
+      [PERMISSIONS["content:read"]]: "ON",
+      [PERMISSIONS["content:create"]]: "ON",
+      [PERMISSIONS["content:update"]]: "ON",
+      [PERMISSIONS["content:publish"]]: "ON",
+      [PERMISSIONS["content:moderate"]]: "ON",
+      [PERMISSIONS["audit:switch-self"]]: "ON",
+      [PERMISSIONS["audit:switch-others"]]: "OFF",
+      [PERMISSIONS["audit:approve-request"]]: "OFF",
+      [PERMISSIONS["audit:view-logs"]]: "OFF",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "100",
@@ -297,20 +685,20 @@ export const DEFAULT_ROLE_CONFIG: Record<
   [ROLES.EDITOR]: {
     level: LEVELS.LEVEL_4,
     permissions: createPermissions({
-      [PERMISSIONS.PRODUCTS_READ]: "ON",
-      [PERMISSIONS.PRODUCTS_UPDATE]: "ON",
-      [PERMISSIONS.CATEGORIES_READ]: "ON",
-      [PERMISSIONS.ANALYTICS_READ]: "ON",
-      [PERMISSIONS.MEDIA_UPLOAD]: "ON",
-      [PERMISSIONS.MEDIA_READ]: "ON",
-      [PERMISSIONS.CONTENT_READ]: "ON",
-      [PERMISSIONS.CONTENT_CREATE]: "ON",
-      [PERMISSIONS.CONTENT_UPDATE]: "ON",
-      [PERMISSIONS.CONTENT_PUBLISH]: "ON",
-      [PERMISSIONS.AUDIT_SWITCH_SELF]: "ON",
-      [PERMISSIONS.AUDIT_SWITCH_OTHERS]: "OFF",
-      [PERMISSIONS.AUDIT_APPROVE_REQUEST]: "OFF",
-      [PERMISSIONS.AUDIT_VIEW_LOGS]: "OFF",
+      [PERMISSIONS["products:read"]]: "ON",
+      [PERMISSIONS["products:update"]]: "ON",
+      [PERMISSIONS["categories:read"]]: "ON",
+      [PERMISSIONS["analytics:read"]]: "ON",
+      [PERMISSIONS["media:upload"]]: "ON",
+      [PERMISSIONS["media:read"]]: "ON",
+      [PERMISSIONS["content:read"]]: "ON",
+      [PERMISSIONS["content:create"]]: "ON",
+      [PERMISSIONS["content:update"]]: "ON",
+      [PERMISSIONS["content:publish"]]: "ON",
+      [PERMISSIONS["audit:switch-self"]]: "ON",
+      [PERMISSIONS["audit:switch-others"]]: "OFF",
+      [PERMISSIONS["audit:approve-request"]]: "OFF",
+      [PERMISSIONS["audit:view-logs"]]: "OFF",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "20",
@@ -329,15 +717,15 @@ export const DEFAULT_ROLE_CONFIG: Record<
   [ROLES.SUPERVISOR]: {
     level: LEVELS.LEVEL_5,
     permissions: createPermissions({
-      [PERMISSIONS.ORDERS_READ]: "ON",
-      [PERMISSIONS.ORDERS_UPDATE]: "ON",
-      [PERMISSIONS.ORDERS_CANCEL]: "ON",
-      [PERMISSIONS.PRODUCTS_READ]: "ON",
-      [PERMISSIONS.ANALYTICS_READ]: "ON",
-      [PERMISSIONS.REPORTS_GENERATE]: "ON",
-      [PERMISSIONS.MEDIA_READ]: "ON",
-      [PERMISSIONS.CONTENT_READ]: "ON",
-      [PERMISSIONS.CONTENT_MODERATE]: "ON",
+      [PERMISSIONS["orders:read"]]: "ON",
+      [PERMISSIONS["orders:update"]]: "ON",
+      [PERMISSIONS["orders:cancel"]]: "ON",
+      [PERMISSIONS["products:read"]]: "ON",
+      [PERMISSIONS["analytics:read"]]: "ON",
+      [PERMISSIONS["reports:generate"]]: "ON",
+      [PERMISSIONS["media:read"]]: "ON",
+      [PERMISSIONS["content:read"]]: "ON",
+      [PERMISSIONS["content:moderate"]]: "ON",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "50",
@@ -354,13 +742,13 @@ export const DEFAULT_ROLE_CONFIG: Record<
   [ROLES.USER]: {
     level: LEVELS.LEVEL_6,
     permissions: createPermissions({
-      [PERMISSIONS.PRODUCTS_READ]: "ON",
-      [PERMISSIONS.ORDERS_READ]: "ON",
-      [PERMISSIONS.ORDERS_CREATE]: "ON",
-      [PERMISSIONS.CATEGORIES_READ]: "ON",
-      [PERMISSIONS.MEDIA_READ]: "ON",
-      [PERMISSIONS.CONTENT_READ]: "ON",
-      [PERMISSIONS.SETTINGS_READ]: "ON",
+      [PERMISSIONS["products:read"]]: "ON",
+      [PERMISSIONS["orders:read"]]: "ON",
+      [PERMISSIONS["orders:create"]]: "ON",
+      [PERMISSIONS["categories:read"]]: "ON",
+      [PERMISSIONS["media:read"]]: "ON",
+      [PERMISSIONS["content:read"]]: "ON",
+      [PERMISSIONS["settings:read"]]: "ON",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "5",
@@ -375,10 +763,10 @@ export const DEFAULT_ROLE_CONFIG: Record<
   [ROLES.GUEST]: {
     level: LEVELS.LEVEL_7,
     permissions: createPermissions({
-      [PERMISSIONS.PRODUCTS_READ]: "ON",
-      [PERMISSIONS.CATEGORIES_READ]: "ON",
-      [PERMISSIONS.CONTENT_READ]: "ON",
-      [PERMISSIONS.MEDIA_READ]: "ON",
+      [PERMISSIONS["products:read"]]: "ON",
+      [PERMISSIONS["categories:read"]]: "ON",
+      [PERMISSIONS["content:read"]]: "ON",
+      [PERMISSIONS["media:read"]]: "ON",
     }),
     restrictions: createRestrictions({
       [RESTRICTIONS.MAX_DAILY_ORDERS]: "0",
@@ -400,6 +788,57 @@ export const DEFAULT_ROLE_CONFIG: Record<
 // ───────────────────────────────────────────
 // 5. UTILITAIRES
 // ───────────────────────────────────────────
+
+/**
+ * Récupère les permissions par défaut pour un rôle donné.
+ */
+export function getDefaultPermissions(role: Role): Permission[] {
+  const roleConfig = ROLE_CONFIG[role];
+  if (!roleConfig) return [];
+
+  return Object.keys(roleConfig.permissions) as Permission[];
+}
+
+/**
+ * Récupère les restrictions par défaut pour un rôle donné.
+ */
+export function getDefaultRestrictions(role: Role): Record<Restriction, string> {
+  const roleConfig = ROLE_CONFIG[role];
+  if (!roleConfig) return {
+    max_daily_orders: "",
+    max_products_per_user: "",
+    max_storage_mb: "",
+    max_team_members: "",
+    can_access_api: "",
+    can_access_webhooks: "",
+    can_access_advanced_analytics: "",
+    can_export_data: "",
+    can_use_bulk_actions: "",
+    restricted_to_own_data: "",
+    restricted_to_department: "",
+    rate_limit_per_minute: "",
+    session_duration_hours: "",
+    require_2fa: "",
+    require_approval_for_delete: "",
+    requires_audit_approval: "",
+    audit_max_duration_minutes: "",
+    audit_allowed_target_levels: ""
+  };
+
+  return roleConfig.restrictions;
+}
+
+export function getRequiredLevelForPermission(permission: PermissionCode): number {
+  return PERMISSION_META[permission]?.minLevel ?? 7;
+}
+
+export function isDangerousPermission(permission: PermissionCode): boolean {
+  return PERMISSION_META[permission]?.isDangerous ?? false;
+}
+
+export function getPermissionCategory(permission: PermissionCode): string {
+  return PERMISSION_META[permission]?.category ?? "UNKNOWN";
+}
 
 export function normalizeRole(role: string | null | undefined): Role {
   if (!role) return ROLES.USER;
@@ -611,10 +1050,10 @@ export async function getCurrentUserRole(): Promise<Role> {
 
 export async function getCurrentUserWithRole() {
   const userData = await getCurrentUserFromProvider();
-  if (!userData?.session?.user) return null;
+  if (!userData?.user) return null;
 
   return {
-    user: userData.session.user,
+    user: userData.user,
     role: userData.role,
     level: userData.level,
     isAuthenticated: true,
