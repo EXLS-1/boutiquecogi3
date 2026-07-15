@@ -1,4 +1,5 @@
-// app/admin/roles/page.tsx
+// app/admin/role/page.tsx
+
 
 import { listRolesAction } from "@/server/actions/role-actions";
 import { RolesTable } from "@/components/admin/role-table";
@@ -14,7 +15,11 @@ export default async function AdminRolesPage() {
     }
 
     const rolesResult = await listRolesAction();
-    const roles = rolesResult.success ? (rolesResult.data as any[]) : [];
+    const roles = rolesResult.success && Array.isArray(rolesResult.data)
+        ? rolesResult.data
+        : [];
+
+
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-7xl">

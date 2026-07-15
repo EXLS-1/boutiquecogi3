@@ -4,9 +4,10 @@ import { listUsersAction } from "@/server/actions/user-admin-actions";
 import { listRolesAction } from "@/server/actions/role-actions";
 import { listBlockedUsersAction } from "@/server/actions/user-admin-actions";
 import { UsersTable } from "@/components/admin/users-table";
-import { BlockedUsersTable } from "@/components/admin/blocked-users-table";
+import { BlockedUsersTable } from "@/components/admin/New folder/blocked-users-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireMinLevel } from "@/lib/auth/rbac";
+import { normalizeRole } from "@/lib/auth/rbac-shared";
 import { redirect } from "next/navigation";
 import { Users, Ban, Shield } from "lucide-react";
 
@@ -18,16 +19,54 @@ export default async function AdminUsersPage() {
         redirect("/unauthorized");
     }
 
+
     // Récupération parallèle des données
-    const [usersResult, rolesResult, blockedResult] = await Promise.all([
+    const [usersResult, blockedResult] = await Promise.all([
         listUsersAction(),
         listRolesAction(),
         listBlockedUsersAction(),
     ]);
 
-    const users = usersResult.success ? (usersResult.data as any[]) : [];
-    const roles = rolesResult.success ? (rolesResult.data as any[]) : [];
-    const blockedUsers = blockedResult.success ? (blockedResult.data as any[]) : [];
+    // types déduits des composants (évite les erreurs TS 'unknown')
+    const users = usersResult.success
+        ? (usersResult.data as Array<{
+            id: string;
+            name: string | null;
+            email: string;
+            role: string;
+            emailVerified: boolean | null;
+            image: string | null;
+            isBlocked: boolean;
+            blockedUntil?: Date | null;
+            createdAt: Date | string;
+        }>)
+            .map((u) => ({
+                ...u,
+                role: normalizeRole(u.role),
+            }))
+        : [];
+
+//  const roles = rolesResult.success ? rolesResult.data : [];
+
+    const blockedUsers = blockedResult.success
+        ? (blockedResult.data as Array<{
+            assignmentId: string;
+            userId: string;
+            email: string | null;
+            name: string | null;
+            role: string;
+            roleLevel: number;
+            blockedAt: Date | string | null;
+            blockedUntil: Date | string | null;
+            blockedReason: string | null;
+            isPermanent: boolean;
+        }>)
+        : [];
+
+
+
+
+
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -37,7 +76,7 @@ export default async function AdminUsersPage() {
                     Gestion des utilisateurs
                 </h1>
                 <p className="text-slate-500 mt-1">
-                    Gérez les rôles, les blocages et les permissions de vos utilisateurs.
+                    Gérez les rôles, les blocages et les permissions des utilisateurs.
                 </p>
             </div>
 
@@ -54,7 +93,7 @@ export default async function AdminUsersPage() {
                 </TabsList>
 
                 <TabsContent value="users" className="space-y-4">
-                    <UsersTable initialUsers={users} initialRoles={roles} />
+                    <UsersTable users={users} />
                 </TabsContent>
 
                 <TabsContent value="blocked" className="space-y-4">

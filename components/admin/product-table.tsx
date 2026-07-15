@@ -4,8 +4,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useRBAC } from '@/lib/auth/auth-client'
 import {
-    deleteProductAction,
-    listProductsAction,
+    deleteProductAction
 } from '@/server/actions/product-actions'
 import {
     adjustStockAction,
@@ -23,7 +22,7 @@ import {
     Trash2,
     TrendingUp,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,14 +43,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
+import Image from 'next/image'
+
 
 interface ProductTableItem {
     id: string
@@ -77,7 +70,7 @@ interface ProductTableProps {
 
 export function ProductTable({ products }: ProductTableProps) {
     const router = useRouter()
-    const { role, isAdmin } = useRBAC()
+    const { isAdmin } = useRBAC()
     const [search, setSearch] = React.useState('')
     const [sort, setSort] = React.useState<{
         key: keyof ProductTableItem
@@ -151,7 +144,7 @@ export function ProductTable({ products }: ProductTableProps) {
         else alert(res.error)
     }
 
-    const SortHeader = ({
+    const renderSortHeader = ({
         label,
         sortKey,
     }: {
@@ -175,6 +168,7 @@ export function ProductTable({ products }: ProductTableProps) {
     )
 
     const statusBadge = (status: ProductTableItem['status']) => {
+
         const map = {
             ACTIVE: { label: 'Actif', className: 'bg-green-100 text-green-700 border-green-200' },
             DRAFT: { label: 'Brouillon', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
@@ -207,10 +201,10 @@ export function ProductTable({ products }: ProductTableProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <SortHeader label="Produit" sortKey="name" />
+                            {renderSortHeader({ label: 'Produit', sortKey: 'name' })}
                             <TableHead>SKU</TableHead>
                             <TableHead>Catégorie</TableHead>
-                            <SortHeader label="Prix" sortKey="basePrice" />
+                            {renderSortHeader({ label: 'Prix', sortKey: 'basePrice' })}
                             <TableHead>Stock</TableHead>
                             <TableHead>Statut</TableHead>
                             <TableHead className="w-[100px]">Actions</TableHead>
@@ -241,7 +235,7 @@ export function ProductTable({ products }: ProductTableProps) {
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center overflow-hidden">
                                                     {product.images?.[0] ? (
-                                                        <img
+                                                        <Image
                                                             src={product.images[0]}
                                                             alt={product.name}
                                                             className="h-full w-full object-cover"

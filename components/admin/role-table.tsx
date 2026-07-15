@@ -2,21 +2,21 @@
 
 'use client'
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useRBAC } from '@/lib/auth/auth-client'
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { useRBAC } from '@/lib/auth/auth-client';
 import {
     getRoleConfig,
     getRoleLevel,
     ROLES,
-    type Role,
-} from '@/lib/auth/rbac-shared'
+    type Role
+} from '@/lib/auth/rbac-shared';
 import {
     createRoleAction,
     deleteRoleAction,
     updateRoleAction,
-    listRolesAction,
-} from '@/server/actions/role-actions'
+    listRolesAction
+} from '@/server/actions/role-actions';
 import {
     Crown,
     Loader2,
@@ -35,17 +35,17 @@ import {
     CheckCircle2,
     Ban,
     Eye,
-    Lock,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+    Lock
+} from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Table,
     TableBody,
@@ -53,7 +53,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -61,7 +61,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 import {
     Dialog,
     DialogContent,
@@ -69,20 +69,27 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
+
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@/components/ui/tooltip';
+
+type RoleLevelOption = {
+    readonly value: string;
+    readonly label: string;
+    readonly disabled?: boolean;
+};
 
 // ─── Types ───
 
@@ -523,7 +530,7 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
                                         <SelectItem
                                             key={l.value}
                                             value={l.value}
-                                            disabled={l.disabled}
+                                            disabled={l.disabled ?? false}
                                         >
                                             {l.label}
                                         </SelectItem>
