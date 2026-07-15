@@ -1,308 +1,302 @@
-// components/admin/users-table.tsx
+'use client'
 
-"use client";
+import * as React from 'react'
+import { useRouter } from 'next/navigation'
+import { useRBAC } from '@/lib/auth/auth-client'
+import { getRoleConfig, type Role } from '@/lib/auth/rbac-shared'
+import {
+  blockUserAction,
+  unblockUserAction,
+  updateUserRole,
+} from '@/server/actions/user-admin-actions'
+import {
+  MoreHorizontal,
+  Ban,
+  CheckCircle2,
+  Shield,
+  Search,
+  Loader2,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-import { useState, useTransition } from "react";
-import { useAdminStore } from "@/stores/admin-store";
-import { assignRoleAction, blockUserAction } from "@/server/actions/user-admin-actions";
-import { listUsersAction } from "@/server/actions/user-admin-actions";
-import { toast } from "sonner";
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { Shield, Ban, UserCheck, Crown, UserCog, User, Users } from "lucide-react";
-import { ROLE_HIERARCHY } from "@/lib/auth/rbac";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-interface UsersTableProps {
-    initialUsers: Array<{
-        id: string;
-        name: string | null;
-        email: string | null;
-        role: string;
-        roleLevel: number;
-        isBlocked: boolean;
-        createdAt: Date | string;
-    }>;
-    initialRoles: Array<{
-        id: string;
-        name: string;
-        level: number;
-    }>;
+// ─── Types ───
+
+interface UserTableItem {
+  id: string
+  name: string | null
+  email: string
+  role: Role
+  emailVerified: boolean | null
+  image: string | null
+  isBlocked: boolean
+  blockedUntil?: Date | null
+  createdAt: Date | string
 }
 
-const ROLE_ICONS: Record<number, React.ReactNode> = {
-    1: <Crown className="w-4 h-4 text-rose-500" />,
-    2: <Shield className="w-4 h-4 text-orange-500" />,
-    3: <UserCog className="w-4 h-4 text-amber-500" />,
-    4: <UserCheck className="w-4 h-4 text-emerald-500" />,
-    5: <User className="w-4 h-4 text-blue-500" />,
-    6: <Users className="w-4 h-4 text-slate-500" />,
-    7: <Users className="w-4 h-4 text-slate-400" />,
-};
+interface UsersTableProps {
+  users: UserTableItem[]
+}
 
-const ROLE_COLORS: Record<number, string> = {
-    1: "border-rose-200 bg-rose-50 text-rose-700",
-    2: "border-orange-200 bg-orange-50 text-orange-700",
-    3: "border-amber-200 bg-amber-50 text-amber-700",
-    4: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    5: "border-blue-200 bg-blue-50 text-blue-700",
-    6: "border-slate-200 bg-slate-50 text-slate-600",
-    7: "border-slate-200 bg-slate-50 text-slate-400",
-};
+// ─── Composant ───
 
-export function UsersTable({ initialUsers, initialRoles }: UsersTableProps) {
-    const [isPending, startTransition] = useTransition();
-    const [blockDialogOpen, setBlockDialogOpen] = useState<string | null>(null);
-    const [blockReason, setBlockReason] = useState("");
-    const [blockPermanent, setBlockPermanent] = useState(false);
-    const [blockUntil, setBlockUntil] = useState("");
+export function UsersTable({ users }: UsersTableProps) {
+  const router = useRouter()
+  const { isAdmin } = useRBAC()
+  const [search, setSearch] = React.useState('')
+  const [loadingId, setLoadingId] = React.useState<string | null>(null)
 
-    const { users, setUsers, updateUserRole, blockUserOptimistic } = useAdminStore();
+  const filtered = React.useMemo(() => {
+    if (!search.trim()) return users
+    const q = search.toLowerCase()
+    return users.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q),
+    )
+  }, [users, search])
 
-    // Hydrate store with initial data
-    useState(() => {
-        setUsers(initialUsers);
-    });
+  const handleBlock = async (userId: string) => {
+    if (!confirm('Bloquer cet utilisateur ?')) return
+    setLoadingId(userId)
+    const fd = new FormData()
+    fd.append('userId', userId)
+    fd.append('reason', 'Action admin depuis le tableau')
+    fd.append('permanent', 'false')
+    const res = await blockUserAction(fd)
+    setLoadingId(null)
+    if (res.success) router.refresh()
+    else alert(res.error)
+  }
 
-    const handleRoleChange = (userId: string, newRoleId: string) => {
-        const role = initialRoles.find((r) => r.id === newRoleId);
-        if (!role) return;
+  const handleUnblock = async (userId: string) => {
+    setLoadingId(userId)
+    const fd = new FormData()
+    fd.append('userId', userId)
+    fd.append('reason', 'Débloqué depuis le tableau')
+    const res = await unblockUserAction(fd)
+    setLoadingId(null)
+    if (res.success) router.refresh()
+    else alert(res.error)
+  }
 
-        // Optimistic update
-        updateUserRole(userId, role.name, role.level);
+  const handleRoleChange = async (userId: string, newRole: Role) => {
+    if (!confirm(`Assigner le rôle « ${newRole} » ?`)) return
+    setLoadingId(userId)
+    const res = await updateUserRole(userId, newRole)
+    setLoadingId(null)
+    if (res.success) router.refresh()
+    else alert(res.error)
+  }
 
-        startTransition(async () => {
-            const result = await assignRoleAction(userId, newRoleId);
+  return (
+    <div className="space-y-4">
+      {/* Barre de recherche */}
+      <div className="flex items-center gap-2">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher par nom, email ou rôle..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <span className="text-sm text-muted-foreground ml-auto">
+          {filtered.length} utilisateur(s)
+        </span>
+      </div>
 
-            if (result.success) {
-                toast.success(result.message || "Rôle mis à jour");
-            } else {
-                toast.error(result.error || "Une erreur est survenue");
-                // Rollback: refetch
-                const refreshed = await listUsersAction();
-                if (refreshed.success) {
-                    setUsers(refreshed.data as any);
-                }
-            }
-        });
-    };
+      {/* Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Utilisateur</TableHead>
+              <TableHead>Rôle</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Inscription</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Aucun utilisateur trouvé.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((user) => {
+                const roleConfig = getRoleConfig(user.role)
+                const RoleIcon = roleConfig.icon
+                const isLoading = loadingId === user.id
 
-    const handleBlock = async (userId: string) => {
-        if (!blockReason.trim()) {
-            toast.error("La raison est obligatoire");
-            return;
-        }
+                return (
+                  <TableRow
+                    key={user.id}
+                    className={cn(user.isBlocked && 'opacity-60')}
+                  >
+                    {/* Nom + Email */}
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage
+                            src={user.image ?? ''}
+                            alt={user.name ?? ''}
+                          />
+                          <AvatarFallback>
+                            {user.name?.charAt(0).toUpperCase() ??
+                              user.email.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {user.name ?? '—'}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {user.email}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
 
-        const formData = new FormData();
-        formData.append("userId", userId);
-        formData.append("reason", blockReason);
-        if (blockUntil && !blockPermanent) formData.append("blockedUntil", blockUntil);
-        if (blockPermanent) formData.append("permanent", "true");
+                    {/* Badge Rôle (couleur RBAC) */}
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'gap-1 font-normal',
+                          roleConfig.bgClass,
+                          roleConfig.textClass,
+                          roleConfig.borderClass,
+                        )}
+                      >
+                        <RoleIcon className="h-3 w-3" />
+                        {roleConfig.label}
+                      </Badge>
+                    </TableCell>
 
-        blockUserOptimistic(userId);
-        setBlockDialogOpen(null);
-
-        startTransition(async () => {
-            const result = await blockUserAction(formData);
-
-            if (result.success) {
-                toast.success(result.message || "Utilisateur bloqué");
-                setBlockReason("");
-                setBlockPermanent(false);
-                setBlockUntil("");
-            } else {
-                toast.error(result.error || "Erreur lors du blocage");
-                const refreshed = await listUsersAction();
-                if (refreshed.success) {
-                    setUsers(refreshed.data as any);
-                }
-            }
-        });
-    };
-
-    const currentUsers = users.length > 0 ? users : initialUsers;
-
-    return (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <Table>
-                <TableHeader className="bg-slate-50">
-                    <TableRow>
-                        <TableHead className="w-10"></TableHead>
-                        <TableHead>Utilisateur</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Date d&apos;inscription</TableHead>
-                        <TableHead>Rôle</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {currentUsers.map((user) => (
-                        <TableRow
-                            key={user.id}
-                            className={`hover:bg-slate-50/50 transition-colors ${user.isBlocked ? "opacity-60 bg-red-50/30" : ""
-                                }`}
+                    {/* Statut */}
+                    <TableCell>
+                      {user.isBlocked ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <Ban className="h-3 w-3" />
+                          Bloqué
+                        </Badge>
+                      ) : user.emailVerified ? (
+                        <Badge
+                          variant="default"
+                          className="gap-1 bg-green-600 hover:bg-green-700"
                         >
-                            <TableCell className="py-2">
-                                {ROLE_ICONS[user.roleLevel] || ROLE_ICONS[7]}
-                            </TableCell>
-                            <TableCell className="font-medium text-slate-900">
-                                {user.name || "N/A"}
-                            </TableCell>
-                            <TableCell className="text-slate-600">{user.email}</TableCell>
-                            <TableCell className="text-slate-500 text-sm">
-                                {format(new Date(user.createdAt), "PPP", { locale: fr })}
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant="outline"
-                                    className={ROLE_COLORS[user.roleLevel] || ROLE_COLORS[7]}
-                                >
-                                    {ROLE_HIERARCHY[user.roleLevel]?.label || user.role}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                {user.isBlocked ? (
-                                    <Badge variant="destructive" className="text-xs">
-                                        <Ban className="w-3 h-3 mr-1" />
-                                        Bloqué
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
-                                        <UserCheck className="w-3 h-3 mr-1" />
-                                        Actif
-                                    </Badge>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    <Select
-                                        disabled={isPending || user.isBlocked}
-                                        value={initialRoles.find((r) => r.name === user.role)?.id || ""}
-                                        onValueChange={(value) => handleRoleChange(user.id, value)}
-                                    >
-                                        <SelectTrigger className="w-36 h-8 text-xs">
-                                            <SelectValue placeholder="Changer rôle" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {initialRoles
-                                                .filter((r) => r.level > 1) // Ne pas afficher SUPER_ADMIN
-                                                .map((role) => (
-                                                    <SelectItem key={role.id} value={role.id}>
-                                                        {ROLE_HIERARCHY[role.level]?.label || role.name}
-                                                    </SelectItem>
-                                                ))}
-                                        </SelectContent>
-                                    </Select>
+                          <CheckCircle2 className="h-3 w-3" />
+                          Actif
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1">
+                          <Shield className="h-3 w-3" />
+                          En attente
+                        </Badge>
+                      )}
+                    </TableCell>
 
-                                    {!user.isBlocked && (
-                                        <Dialog
-                                            open={blockDialogOpen === user.id}
-                                            onOpenChange={(open) => {
-                                                setBlockDialogOpen(open ? user.id : null);
-                                                if (!open) {
-                                                    setBlockReason("");
-                                                    setBlockPermanent(false);
-                                                    setBlockUntil("");
-                                                }
-                                            }}
-                                        >
-                                            <DialogTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-50"
-                                                    disabled={isPending}
-                                                >
-                                                    <Ban className="w-4 h-4" />
-                                                </Button>
-                                            </DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle>Bloquer {user.name || user.email}</DialogTitle>
-                                                    <DialogDescription>
-                                                        Cet utilisateur ne pourra plus accéder à la plateforme.
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <div className="space-y-4 py-4">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="reason">Raison *</Label>
-                                                        <Textarea
-                                                            id="reason"
-                                                            value={blockReason}
-                                                            onChange={(e) => setBlockReason(e.target.value)}
-                                                            placeholder="Pourquoi bloquez-vous cet utilisateur ?"
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Switch
-                                                            id="permanent"
-                                                            checked={blockPermanent}
-                                                            onCheckedChange={setBlockPermanent}
-                                                        />
-                                                        <Label htmlFor="permanent">Blocage permanent</Label>
-                                                    </div>
-                                                    {!blockPermanent && (
-                                                        <div className="space-y-2">
-                                                            <Label htmlFor="until">Bloqué jusqu&apos;au</Label>
-                                                            <Input
-                                                                id="until"
-                                                                type="datetime-local"
-                                                                value={blockUntil}
-                                                                onChange={(e) => setBlockUntil(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <DialogFooter>
-                                                    <Button
-                                                        variant="destructive"
-                                                        onClick={() => handleBlock(user.id)}
-                                                        disabled={!blockReason.trim() || isPending}
-                                                    >
-                                                        <Ban className="w-4 h-4 mr-2" />
-                                                        Bloquer
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </div>
-    );
+                    {/* Date */}
+                    <TableCell className="text-muted-foreground">
+                      {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell>
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {isAdmin && (
+                              <>
+                                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                  Changer de rôle
+                                </DropdownMenuLabel>
+                                {(
+                                  [
+                                    'SUPER_ADMIN',
+                                    'ADMIN',
+                                    'MANAGER',
+                                    'EDITOR',
+                                    'SUPERVISOR',
+                                    'USER',
+                                    'GUEST',
+                                  ] as Role[]
+                                ).map((r) => (
+                                  <DropdownMenuItem
+                                    key={r}
+                                    disabled={user.role === r}
+                                    onClick={() =>
+                                      handleRoleChange(user.id, r)
+                                    }
+                                  >
+                                    Passer {r}
+                                  </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                {user.isBlocked ? (
+                                  <DropdownMenuItem
+                                    onClick={() => handleUnblock(user.id)}
+                                  >
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Débloquer
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => handleBlock(user.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Bloquer
+                                  </DropdownMenuItem>
+                                )}
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
 }

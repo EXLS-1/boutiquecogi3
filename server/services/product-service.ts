@@ -3,6 +3,7 @@
 import { withSecurePrisma, type SecureContext } from '@/server/core/secure-prisma'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
 import { generateUUIDv7 } from '@/lib/uuid'
+import { StockService } from './stock-service'
 
 export class ProductServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -54,7 +55,7 @@ export const ProductService = {
 
     return withSecurePrisma(
       async (ctx) => {
-        return ctx.prisma.product.create({
+        const product = await ctx.prisma.product.create({
           data: {
             id: input.id ?? generateUUIDv7(),
             name: input.name.trim(),
@@ -68,6 +69,11 @@ export const ProductService = {
             userId: ctx.userId,
           }
         })
+
+        // Création automatique du stock à 0
+        await StockService.createForProduct(product.id, 0, ctx.userId)
+
+        return product
       },
       {
         minRoleLevel: 4, // EDITOR minimum
@@ -170,7 +176,8 @@ export const ProductService = {
         return ctx.prisma.product.findMany({
           include: {
             user: { select: { id: true, name: true, email: true } },
-            category: { select: { id: true, name: true } }
+            category: { select: { id: true, name: true } },
+            stock: true
           },
           orderBy: { createdAt: 'desc' }
         })
@@ -191,6 +198,14 @@ export const ProductService = {
           include: {
             user: { select: { id: true, name: true } },
             category: true,
+            stock: {
+              include: {
+                movements: {
+                  orderBy: { createdAt: 'desc' },
+                  take: 10
+                }
+              }
+            }
           }
         })
       },

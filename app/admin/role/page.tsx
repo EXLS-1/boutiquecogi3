@@ -1,7 +1,7 @@
 // app/admin/roles/page.tsx
 
 import { listRolesAction } from "@/server/actions/role-actions";
-import { RolesTable } from "@/components/admin/roles-table";
+import { RolesTable } from "@/components/admin/role-table";
 import { requireMinLevel } from "@/lib/auth/rbac";
 import { redirect } from "next/navigation";
 import { Shield } from "lucide-react";
