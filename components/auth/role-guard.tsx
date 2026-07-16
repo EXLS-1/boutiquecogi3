@@ -1,11 +1,12 @@
 // components/auth/role-guard.tsx
 // Composant de protection des routes basé sur le système RBAC hiérarchique (Level 1-6)
 // HIÉRARCHIE DESCENDANTE : Level 1 = SUPER_ADMIN → Level 6 = CLIENT
+
 "use client";
 
 import React, { ReactNode, memo } from "react";
 import { useRBAC } from "@/hooks/rbac/use-rbac";
-import { Permission, RoleLevel } from "@/types/rbac";
+import { Permission, RoleLevelValue } from "@/lib/auth/rbac";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // =============================================================================
@@ -20,7 +21,7 @@ interface BaseGuardProps {
 
 /** Protection par niveau hiérarchique maximum (Level 1 = plus haut) */
 interface MaxLevelGuardProps extends BaseGuardProps {
-  maxLevel: RoleLevel;      // Niveau MAXIMUM autorisé (1 = Super Admin)
+  maxLevel: RoleLevelValue;      // Niveau MAXIMUM autorisé (1 = Super Admin)
   minLevel?: never;
   exactLevel?: never;
   permissions?: never;
@@ -29,7 +30,7 @@ interface MaxLevelGuardProps extends BaseGuardProps {
 
 /** Protection par niveau hiérarchique minimum (Level 6 = plus bas) */
 interface MinLevelGuardProps extends BaseGuardProps {
-  minLevel: RoleLevel;      // Niveau MINIMUM autorisé (6 = Client)
+  minLevel: RoleLevelValue;      // Niveau MINIMUM autorisé (6 = Client)
   maxLevel?: never;
   exactLevel?: never;
   permissions?: never;
@@ -38,7 +39,7 @@ interface MinLevelGuardProps extends BaseGuardProps {
 
 /** Protection par niveau hiérarchique exact */
 interface ExactLevelGuardProps extends BaseGuardProps {
-  exactLevel: RoleLevel;
+  exactLevel: RoleLevelValue;
   minLevel?: never;
   maxLevel?: never;
   permissions?: never;
@@ -56,7 +57,7 @@ interface PermissionGuardProps extends BaseGuardProps {
 
 /** Protection combinée (niveau ET permissions) */
 interface CombinedGuardProps extends BaseGuardProps {
-  maxLevel: RoleLevel;      // Plus petit = plus haut dans la hiérarchie
+  maxLevel: RoleLevelValue;      // Plus petit = plus haut dans la hiérarchie
   permissions: Permission[];
   requireAll?: boolean;
   minLevel?: never;
@@ -65,8 +66,8 @@ interface CombinedGuardProps extends BaseGuardProps {
 
 /** Protection par plage de niveaux */
 interface LevelRangeGuardProps extends BaseGuardProps {
-  maxLevel: RoleLevel;      // Plus petit = plus haut
-  minLevel: RoleLevel;      // Plus grand = plus bas
+  maxLevel: RoleLevelValue;      // Plus petit = plus haut
+  minLevel: RoleLevelValue;      // Plus grand = plus bas
   permissions?: never;
   requireAll?: never;
   exactLevel?: never;

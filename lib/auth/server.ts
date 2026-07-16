@@ -95,6 +95,8 @@ export interface QuotaCheckResult {
 export interface AuditEntry {
   userId: string;
   role: Role;
+  /** Derived from role if not explicitly provided */
+  roleLevel?: number;
   action: string;
   resource: string;
   resourceId?: string;
@@ -641,6 +643,7 @@ export async function logAudit(
         entityId: fullEntry.resourceId,
         ip: fullEntry.ip,
         userAgent: fullEntry.userAgent,
+        roleLevel: fullEntry.roleLevel ?? getRoleLevel(fullEntry.role),
         status: fullEntry.success ? "SUCCESS" : "FAILURE",
         metadata: {
           role: fullEntry.role,

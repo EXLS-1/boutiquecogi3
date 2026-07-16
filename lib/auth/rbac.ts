@@ -117,6 +117,9 @@ export const RoleLevel = {
   GUEST: 7,
 } as const;
 
+/** Numeric role level: 1 (SUPER_ADMIN) → 7 (GUEST) */
+export type RoleLevelValue = (typeof RoleLevel)[keyof typeof RoleLevel];
+
 export const RoleLevelConfig: Record<number, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
   1: { label: "SUPER_ADMIN", icon: Crown, color: "#dc2626" },
   2: { label: "ADMIN", icon: Shield, color: "#ea580c" },
