@@ -1,75 +1,167 @@
-// /api/auth/get-session/route.tsx
-// Ce fichier gère la route GET /api/auth/get-session pour récupérer les informations de session de l'utilisateur.
-// Il utilise le client Supabase côté serveur pour vérifier la validité du jeton d'authentification et renvoyer les données de session sécurisées.
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+// app/api/auth/get-session/route.tsx
+// ============================================
+// ROUTE API — RÉCUPÉRATION SESSION + CONTEXTE RBAC
+// ============================================
+// Endpoint GET exposant la session Better-Auth enrichie du contexte
+// d'autorisation complet (rôle, niveau, permissions, restrictions).
+// Utilisé par le client pour hydrater Zustand / React Query sans
+// dépendre du SessionProvider côté serveur.
 
-export async function GET() {
-  const cookieStore = await cookies();
+import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import {
+    normalizeRole,
+    getRoleLevel,
+    type AuthenticatedUser,
+    type Role,
+} from "@/lib/auth/rbac-shared";
+import {
+    resolveEffectivePermissions,
+    resolveEffectiveRestrictions,
+    type PermissionCode,
+    type Restriction,
+    type ToggleState,
+} from "@/lib/auth/rbac";
 
-  // Initialisation du client Supabase côté serveur
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn("Supabase env vars missing: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
-    return NextResponse.json({ session: null, authenticated: false }, { status: 401 });
-  }
+// ─── Configuration route ───────────────────
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+// ─── Headers de sécurité communs ─────────────
+
+const SECURITY_HEADERS = {
+    "Content-Type": "application/json",
+    "Cache-Control":
+        "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+    Pragma: "no-cache",
+    Expires: "0",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+};
+
+// ─── Type de la réponse ─────────────────────
+
+export interface GetSessionResponse {
+    success: boolean;
+    isAuthenticated: boolean;
+    user: AuthenticatedUser;
+    role: Role;
+    level: number;
+    permissions: PermissionCode[];
+    restrictions: Record<Restriction, string | ToggleState>;
+    timestamp: number;
+}
+
+export interface GetSessionErrorResponse {
+    success: false;
+    isAuthenticated: false;
+    error: string;
+    code: string;
+}
+
+// ═══════════════════════════════════════════
+// HANDLER GET
+// ═══════════════════════════════════════════
+
+export async function GET(
+    _request: NextRequest,
+): Promise<NextResponse<GetSessionResponse | GetSessionErrorResponse>> {
+    try {
+        // 1. Récupération brute de la session Better-Auth
+        const headersList = await headers();
+        const session = await auth.api.getSession({ headers: headersList });
+
+        if (!session?.user) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    isAuthenticated: false,
+                    error: "Session invalide ou expirée.",
+                    code: "UNAUTHENTICATED",
+                },
+                { status: 401, headers: SECURITY_HEADERS },
             );
-          } catch {
-            // Le middleware gère déjà le rafraîchissement des jetons
-          }
-        },
-      },
+        }
+
+        // 2. Extraction & normalisation du rôle
+        const rawRole =
+            (session.user as Record<string, unknown>).role ??
+            (
+                (session.user as Record<string, unknown>).metadata as Record<
+                    string,
+                    unknown
+                >
+            )?.role;
+
+        const role: Role = normalizeRole(rawRole as string);
+        const level = getRoleLevel(role);
+
+        // 3. Résolution parallèle du contexte RBAC
+        const [permissionsSet, restrictionsMap] = await Promise.all([
+            resolveEffectivePermissions(role),
+            resolveEffectiveRestrictions(role),
+        ]);
+
+        // 4. Construction de l'utilisateur typé
+        const user: AuthenticatedUser = {
+            id: session.user.id,
+            email: session.user.email ?? "",
+            name: session.user.name ?? null,
+            role,
+            level,
+            image: (session.user as Record<string, unknown>).image as
+                | string
+                | null
+                | undefined,
+            emailVerified:
+                ((session.user as Record<string, unknown>).emailVerified as boolean) ??
+                false,
+            createdAt: new Date(
+                (session.user as Record<string, unknown>).createdAt as string,
+            ),
+            updatedAt: new Date(
+                (session.user as Record<string, unknown>).updatedAt as string,
+            ),
+        };
+
+        // 5. Sérialisation des Set/Map pour JSON
+        const permissions = Array.from(permissionsSet);
+        const restrictions = Object.fromEntries(
+            restrictionsMap,
+        ) as Record<Restriction, string | ToggleState>;
+
+        // 6. Réponse structurée
+        const payload: GetSessionResponse = {
+            success: true,
+            isAuthenticated: true,
+            user,
+            role,
+            level,
+            permissions,
+            restrictions,
+            timestamp: Date.now(),
+        };
+
+        return NextResponse.json(payload, {
+            status: 200,
+            headers: SECURITY_HEADERS,
+        });
+    } catch (error) {
+        console.error("[API_GET_SESSION_ERROR]", error);
+
+        return NextResponse.json(
+            {
+                success: false,
+                isAuthenticated: false,
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Erreur interne lors de la résolution de la session.",
+                code: "INTERNAL_ERROR",
+            },
+            { status: 500, headers: SECURITY_HEADERS },
+        );
     }
-  );
-
-  try {
-    /**
-     * RIGOUREUX : Utiliser getUser() au lieu de getSession()
-     * getSession() récupère les données du cookie sans vérification approfondie.
-     * getUser() vérifie la validité du jeton JWT auprès de Supabase, 
-     * ce qui empêche l'usurpation de session.
-     */
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      return NextResponse.json(
-        { session: null, authenticated: false },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json(
-      { 
-        session: {
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-          }
-        }, 
-        authenticated: true 
-      },
-      { status: 200 }
-    );
-
-  } catch (error) {
-    console.error("Erreur critique Auth Route:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error", detail: "Échec de la récupération de session" },
-      { status: 500 }
-    );
-  }
 }

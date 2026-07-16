@@ -66,6 +66,6 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
   },
-  trustedOrigins: [baseURL],
+  trustedOrigins: [baseURL, "http://localhost:3000"],
 });
 

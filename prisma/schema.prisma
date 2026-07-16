@@ -205,6 +205,8 @@ model User {
   blockedUntil DateTime?
   blockReason  String?
 
+  version Int @default(1)
+
   products        Product[]
   productViews    ProductView[]
   createdProducts Product[]     @relation("ProductCreator")
