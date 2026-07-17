@@ -59,6 +59,7 @@ export function HeroImageGrid({
                 alt={image.id}
                 fill
                 priority={priority && isCenter}
+                loading="eager"
                 sizes={
                   isCenter
                     ? "(max-width: 768px) 90vw, 38vw"

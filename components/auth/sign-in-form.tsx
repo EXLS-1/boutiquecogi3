@@ -41,7 +41,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -221,7 +220,7 @@ export function SignInForm() {
               href="/auth/sign-up"
               className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
-              S'inscrire
+              S\'inscrire
             </Link>
           </div>
         </form>
