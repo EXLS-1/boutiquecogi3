@@ -1,10 +1,10 @@
 // app/page.tsx
 
 import { Suspense } from "react";
-import { Hero } from "@/components/hero/hero";
+import { Hero } from "@/components/hero/image-show/hero";
 import Category from "@/components/product-catalog/category";
 import { ProductList } from "@/components/product/product-list";
-import VideosCart from "@/components/video-show/videos-cart";
+import VideosCart from "@/components/hero/video-show/videos-cart";
 import SocialNetworks from "@/components/social/social-network";
 import Newsletter from "@/components/newsletter/newsletter";
 import { HOME_PRODUCTS_LIMIT } from "@/lib/product-catalog/catalog-constants";

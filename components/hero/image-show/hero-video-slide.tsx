@@ -1,7 +1,7 @@
 // components/hero/hero-video-slide.tsx
 "use client";
 
-import { HeroVideo } from "./hero-types";
+import { HeroVideo } from "@components/hero/image-show/hero-types";
 
 interface Props {
   item: HeroVideo;
