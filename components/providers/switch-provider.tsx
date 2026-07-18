@@ -1,22 +1,16 @@
 // components/providers/switch-provider.tsx
+
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useTransition, useCallback, useRef } from "react";
 import { getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac";
 import { validateAuditToken } from "@/lib/auth/audit-approval";
 import type { Role, Permission, Restriction, ToggleState } from "@/lib/auth/rbac";
+import { ROLE_TO_LEVEL } from "@/lib/auth/rbac-shared";
 
-const CLIENT_ROLE_LEVELS: Record<Role, number> = {
-  SUPER_ADMIN: 1,
-  ADMIN: 2,
-  MANAGER: 3,
-  EDITOR: 4,
-  SUPERVISOR: 5,
-  USER: 6,
-  GUEST: 7
-};
+const CLIENT_ROLE_LEVELS = ROLE_TO_LEVEL;
 
-type AuditState = 
+type AuditState =
   | { status: "idle" }
   | { status: "pending_approval"; requestId: string; message: string }
   | { status: "approved"; token: string; expiresAt: Date }
@@ -33,7 +27,7 @@ type SwitchContextType = {
   activeLevel: number;
   isAuditMode: boolean;
   isTransitioning: boolean;
-  
+
   // État de l'approbation
   auditState: AuditState;
 
@@ -68,7 +62,7 @@ export function SwitchProvider({
   requiresAuditApproval,
 }: SwitchProviderProps) {
   const [isPending, startTransition] = useTransition();
-  
+
   const [realRole] = useState<Role>(initialRole);
   const [realLevel] = useState<number>(initialLevel);
   const [requiresApproval] = useState<boolean>(requiresAuditApproval);
@@ -94,7 +88,7 @@ export function SwitchProvider({
   const requestApproval = useCallback(async (targetRole: Role, reason: string) => {
     const { requestAuditApproval } = await import("@/lib/auth/audit-approval");
     const result = await requestAuditApproval(targetRole, reason);
-    
+
     if (!result.success) {
       setAuditState({ status: "rejected", reason: result.error });
       return;
@@ -105,14 +99,14 @@ export function SwitchProvider({
       return;
     }
 
-    setAuditState({ 
-      status: "pending_approval", 
+    setAuditState({
+      status: "pending_approval",
       requestId: result.requestId,
-      message: result.message 
+      message: result.message
     });
   }, []);
 
-  const stopAuditRef = useRef<() => void>(() => {});
+  const stopAuditRef = useRef<() => void>(() => { });
 
   const startAudit = useCallback(async (targetRole: Role, approvalToken?: string) => {
     const targetLevel = CLIENT_ROLE_LEVELS[targetRole];
@@ -146,10 +140,10 @@ export function SwitchProvider({
         }, msUntilExpiry);
       }
 
-      setAuditState({ 
-        status: "approved", 
+      setAuditState({
+        status: "approved",
         token: approvalToken,
-        expiresAt: validation.request.expiresAt 
+        expiresAt: validation.request.expiresAt
       });
     }
 

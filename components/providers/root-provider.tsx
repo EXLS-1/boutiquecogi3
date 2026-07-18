@@ -1,4 +1,5 @@
-// components/theme/root-providers.tsx
+// components/providers/root-providers.tsx
+
 "use client";
 
 import { BetterAuthContext } from "@/lib/auth/auth-client";

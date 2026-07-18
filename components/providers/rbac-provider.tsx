@@ -1,3 +1,5 @@
+// components/providers/rbac-provider.tsx
+
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";

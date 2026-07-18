@@ -58,7 +58,7 @@ export interface AuthenticatedUser {
 
 // ─── Niveau par rôle ────────────────────────
 
-const ROLE_TO_LEVEL: Record<Role, number> = {
+export const ROLE_TO_LEVEL: Record<Role, number> = {
   [ROLES.SUPER_ADMIN]: LEVELS.LEVEL_1,
   [ROLES.ADMIN]: LEVELS.LEVEL_2,
   [ROLES.MANAGER]: LEVELS.LEVEL_3,
