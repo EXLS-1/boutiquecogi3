@@ -137,11 +137,13 @@ export function useAuth() {
     try {
       const result = await promise;
 
-      if (result?.error || (result && "error" in result)) {
-        setError(
-          result.error.message || "Erreur d'authentification inattendue.",
-        );
-        return { success: false, error: result.error };
+      // Guard type-safety: TS should not assume `result` has an `error` prop.
+      if (result && typeof result === "object" && "error" in result) {
+        const err = (result as { error?: { message?: string } | undefined })
+          .error;
+
+        setError(err?.message || "Erreur d'authentification inattendue.");
+        return { success: false, error: err };
       }
 
       // startTransition permet de marquer le rafraîchissement comme non-urgent pour l'UI

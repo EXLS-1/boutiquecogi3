@@ -3,8 +3,8 @@
 "use client";
 
 import { BetterAuthContext } from "@/lib/auth/auth-client";
-import type { auth } from "@/lib/auth";
 import { authClient } from "@/lib/auth/auth-client";
+
 import React from "react";
 import { ThemeProvider } from "./theme-provider";
 
@@ -13,7 +13,7 @@ interface RootProvidersProps {
    * Consommation directe du type de retour du serveur.
    * Garantit une synchronisation stricte entre le backend et le frontend.
    */
-  session: Awaited<ReturnType<typeof auth.api.getSession>>;
+  session: Awaited<ReturnType<typeof api.getSession>>;
   children: React.ReactNode;
 }
 
