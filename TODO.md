@@ -1,6 +1,4 @@
 # TODO
-
-- [x] Update `components/auth/role-guard.tsx` to remove TS18048 by tightening union narrowing for `maxLevel` usages.
-- [ ] Re-run TypeScript check (if available) or ensure code compiles by static review.
-
+- [ ] Add runtime guard and type-safe casting in `lib/cache/cacheConsumer.ts` for Redis stream consumer-group commands so Upstash builds don’t fail.
+- [ ] Re-run TypeScript typecheck / lint to ensure `ts(2339)` is resolved.
 

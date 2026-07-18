@@ -1057,7 +1057,7 @@ export async function getCurrentUserWithRole() {
 
   // We omit the 'session' part to just return the AuthenticatedUser if needed, 
   // or we can just return userData directly as 'user'.
-  const { session, ...user } = userData;
+  const { ...user } = userData;
 
   return {
     user: user,
@@ -1207,7 +1207,13 @@ export function invalidateRBACCache(role?: Role): void {
 export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluationResult | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { roleAssignment: { include: { role: true } } }
+    include: {
+      roleAssignment: {
+        include: {
+          role: true,
+        },
+      },
+    },
   });
 
   if (!user || !user.roleAssignment) return null;
@@ -1257,3 +1263,174 @@ export function hasAnyPermissionOnResult(
   return permissions.some((p) => result.permissions.includes(p));
 }
 
+// ───────────────────────────────────────────
+// 15. CONVERSION PRISMA → APPLICATION ROLE
+// ───────────────────────────────────────────
+
+/**
+ * Convertit un rôle Prisma en rôle applicatif (Role).
+ * Si le rôle Prisma n'est pas reconnu, retourne le rôle GUEST par défaut.
+ * 
+ * @param prismaRole - Le rôle Prisma à convertir
+ * @returns Le rôle applicatif correspondant
+ * 
+ * @example
+ * const appRole = convertPrismaRoleToAppRole(PrismaRole.ADMIN);
+ * // Retourne: ROLES.ADMIN
+ */
+export function convertPrismaRoleToAppRole(prismaRole: PrismaRole): Role {
+  return PRISMA_TO_ROLE[prismaRole] ?? ROLES.GUEST;
+}
+
+/**
+ * Convertit un rôle Prisma en niveau numérique.
+ * 
+ * @param prismaRole - Le rôle Prisma à convertir
+ * @returns Le niveau numérique (1-7) ou 7 (GUEST) par défaut
+ * 
+ * @example
+ * const level = getLevelFromPrismaRole(PrismaRole.ADMIN);
+ * // Retourne: 2
+ */
+export function getLevelFromPrismaRole(prismaRole: PrismaRole): number {
+  const appRole = PRISMA_TO_ROLE[prismaRole];
+  return appRole ? ROLE_TO_LEVEL[appRole] : LEVELS.LEVEL_7;
+}
+
+/**
+ * Vérifie si un rôle Prisma est supérieur ou égal à un autre.
+ * 
+ * @param prismaRoleA - Premier rôle Prisma
+ * @param prismaRoleB - Deuxième rôle Prisma
+ * @returns true si roleA >= roleB dans la hiérarchie
+ * 
+ * @example
+ * const result = isPrismaRoleAboveOrEqual(PrismaRole.ADMIN, PrismaRole.EDITOR);
+ * // Retourne: true (ADMIN niveau 2 >= EDITOR niveau 4)
+ */
+export function isPrismaRoleAboveOrEqual(
+  prismaRoleA: PrismaRole,
+  prismaRoleB: PrismaRole
+): boolean {
+  const roleA = PRISMA_TO_ROLE[prismaRoleA];
+  const roleB = PRISMA_TO_ROLE[prismaRoleB];
+  
+  if (!roleA || !roleB) return false;
+  
+  return ROLE_TO_LEVEL[roleA] <= ROLE_TO_LEVEL[roleB];
+}
+
+/**
+ * Récupère toutes les informations d'un rôle Prisma.
+ * 
+ * @param prismaRole - Le rôle Prisma à analyser
+ * @returns Un objet contenant le niveau, le nom applicatif et les métadonnées
+ * 
+ * @example
+ * const info = getPrismaRoleInfo(PrismaRole.MANAGER);
+ * // Retourne: { level: 3, appRole: "MANAGER", hierarchyInfo: {...} }
+ */
+export function getPrismaRoleInfo(prismaRole: PrismaRole): {
+  level: number;
+  appRole: Role;
+  label: string;
+  description: string;
+  color: string;
+} {
+  const appRole = PRISMA_TO_ROLE[prismaRole];
+  
+  if (!appRole) {
+    return {
+      level: LEVELS.LEVEL_7,
+      appRole: ROLES.GUEST,
+      label: "Invité",
+      description: "Rôle non reconnu",
+      color: "#9ca3af",
+    };
+  }
+
+  const level = ROLE_TO_LEVEL[appRole];
+  const hierarchyInfo = ROLE_HIERARCHY[level];
+  const colorInfo = RoleLevelConfig[level];
+
+  return {
+    level,
+    appRole,
+    label: hierarchyInfo?.label || "Inconnu",
+    description: hierarchyInfo?.description || "Rôle non défini",
+    color: colorInfo?.color || "#9ca3af",
+  };
+}
+
+/**
+ * Convertit un tableau de rôles Prisma en rôles applicatifs.
+ * 
+ * @param prismaRoles - Tableau de rôles Prisma
+ * @returns Tableau des rôles applicatifs correspondants
+ * 
+ * @example
+ * const appRoles = convertPrismaRolesToAppRoles([PrismaRole.ADMIN, PrismaRole.USER]);
+ * // Retourne: ["ADMIN", "USER"]
+ */
+export function convertPrismaRolesToAppRoles(
+  prismaRoles: PrismaRole[]
+): Role[] {
+  return prismaRoles
+    .map((prismaRole) => PRISMA_TO_ROLE[prismaRole])
+    .filter((role): role is Role => role !== undefined);
+}
+
+/**
+ * Vérifie si un rôle Prisma est valide dans le système.
+ * 
+ * @param prismaRole - Le rôle Prisma à vérifier
+ * @returns true si le rôle existe dans la hiérarchie
+ * 
+ * @example
+ * const isValid = isValidPrismaRole(PrismaRole.SUPER_ADMIN);
+ * // Retourne: true
+ */
+export function isValidPrismaRole(prismaRole: PrismaRole): boolean {
+  return prismaRole in PRISMA_TO_ROLE;
+}
+
+/**
+ * Récupère tous les rôles Prisma disponibles dans le système.
+ * 
+ * @returns Tableau de tous les rôles Prisma valides
+ * 
+ * @example
+ * const allRoles = getAllPrismaRoles();
+ * // Retourne: ["SUPER_ADMIN", "ADMIN", ...]
+ */
+export function getAllPrismaRoles(): PrismaRole[] {
+  return Object.keys(PRISMA_TO_ROLE) as PrismaRole[];
+}
+
+/**
+ * Récupère tous les rôles applicatifs disponibles.
+ * 
+ * @returns Tableau de tous les rôles applicatifs
+ * 
+ * @example
+ * const allAppRoles = getAllAppRoles();
+ * // Retourne: ["SUPER_ADMIN", "ADMIN", ...]
+ */
+export function getAllAppRoles(): Role[] {
+  return Object.values(ROLES);
+}
+
+/**
+ * Convertit un rôle applicatif en rôle Prisma.
+ * Fonction inverse de PRISMA_TO_ROLE.
+ * 
+ * @param appRole - Le rôle applicatif à convertir
+ * @returns Le rôle Prisma correspondant
+ * 
+ * @example
+ * const prismaRole = convertAppRoleToPrismaRole(ROLES.ADMIN);
+ * // Retourne: PrismaRole.ADMIN
+ */
+export function convertAppRoleToPrismaRole(appRole: Role): PrismaRole {
+  return ROLE_TO_PRISMA[appRole] ?? PrismaRole.USER;
+}
