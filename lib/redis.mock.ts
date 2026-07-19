@@ -1,3 +1,4 @@
+// lib/redis.mock.ts
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
  * @fileoverview Client Redis centralisé pour Boutiquecogi3
