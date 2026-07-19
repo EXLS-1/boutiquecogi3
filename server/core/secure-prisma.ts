@@ -1,4 +1,4 @@
-// src/server/core/secure-prisma.ts
+// server/core/secure-prisma.ts
 // ============================================
 // PORTE DE SÉCURITÉ INFAILLIBLE — SEUL ACCÈS À PRISMA
 // ============================================
@@ -156,7 +156,8 @@ export async function withSecurePrisma<T>(
       })
     } catch {
       // Ne pas faire échouer l'opération si l'audit échoue
-      console.error('[AUDIT] Échec de l'écriture du log d'audit')
+      console.error('[AUDIT] Échec de l\u00e9criture du log d\u2019audit')
+
     }
   }
 

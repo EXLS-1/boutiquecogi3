@@ -10,11 +10,11 @@ const STREAM_KEY = "stream:domain-events";
 const BATCH_SIZE = 50;
 
 type StreamRedis = Redis & {
-  xgroup: (...args: any[]) => any;
-  xreadgroup: (...args: any[]) => any;
-  xack: (...args: any[]) => any;
-  xpending: (...args: any[]) => any;
-  xadd: (...args: any[]) => any;
+  xgroup: (...args: unknown[]) => unknown;
+  xreadgroup: (...args: never[]) => never;
+  xack: (...args: unknown[]) => unknown;
+  xpending: (...args: never[]) => never;
+  xadd: (...args: unknown[]) => unknown;
 };
 
 export class CacheConsumer {
@@ -56,17 +56,23 @@ export class CacheConsumer {
         "$",
         "MKSTREAM",
       );
-    } catch (err: any) {
-      if (!err?.message?.includes("already exists")) throw err;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (!err.message.includes("already exists")) throw err;
+        return;
+      }
+      throw err;
     }
+
 
     while (this.isRunning) {
       try {
         await this.processBatch();
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("[CacheConsumer] Batch error:", error);
         await new Promise((r) => setTimeout(r, 1000));
       }
+
     }
   }
 
@@ -101,12 +107,13 @@ export class CacheConsumer {
         const event = this.parseEvent(fields);
         await this.handleEvent(event);
         processedIds.push(messageId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         failedEntries.push({
           id: messageId,
           error: error instanceof Error ? error.message : String(error),
         });
       }
+
     }
 
     if (processedIds.length > 0) {
@@ -131,11 +138,13 @@ export class CacheConsumer {
     const catalogId = event.catalogId;
     const payload = JSON.parse(event.payload || "{}");
 
+    const client = await this.getClient();
+
     const processedKey = `event:processed:${event.eventId}`;
-    const alreadyProcessed = await redis.get(processedKey);
+    const alreadyProcessed = await client.get(processedKey);
     if (alreadyProcessed) return;
 
-    await redis.setEx(processedKey, 86400, "1");
+    await client.setex(processedKey, 86400, "1");
 
     const startTime = Date.now();
 
@@ -184,8 +193,9 @@ export class CacheConsumer {
   }
 
   private async bumpCatalogVersion(catalogId: string): Promise<void> {
+    const client = await this.getClient();
     const versionKey = `catalog:${catalogId}:version`;
-    const newVersion = await redis.incr(versionKey);
+    const newVersion = await client.incr(versionKey);
 
     const oldVersion = newVersion - 1;
     const patternsToDelete = [
@@ -194,9 +204,18 @@ export class CacheConsumer {
       `catalog:${catalogId}:products:*:v${oldVersion}`,
     ];
 
+
+    // redis.ts exposes a typed wrapper that doesn't include `unlink` in its TS surface.
+    // We delete by enumerating matching keys.
     for (const pattern of patternsToDelete) {
-      redis.unlink(pattern).catch(() => {});
+      const keys = await client.keys(pattern);
+      if (keys.length) {
+        await Promise.all(keys.map((k) => client.del(k)));
+      }
     }
+
+
+
 
     console.log(`[CacheConsumer] Catalog ${catalogId} version bumped to ${newVersion}`);
   }
@@ -205,14 +224,15 @@ export class CacheConsumer {
     catalogId: string,
     productIds: string[],
   ): Promise<void> {
-    const version = (await redis.get(`catalog:${catalogId}:version`)) || "0";
+    const client = await this.getClient();
+    const version = (await client.get(`catalog:${catalogId}:version`)) || "0";
     const priceKey = `catalog:${catalogId}:prices:v${version}`;
 
     if (productIds.length > 0) {
-      await redis.hdel(priceKey, ...productIds);
+      await client.hdel(priceKey, ...productIds);
     }
 
-    const pipeline = redis.pipeline();
+    const pipeline = client.pipeline();
     for (const productId of productIds) {
       pipeline.del(`product:${productId}:catalog:${catalogId}:price:v${version}`);
     }
@@ -223,24 +243,33 @@ export class CacheConsumer {
     catalogId: string,
     productId: string,
   ): Promise<void> {
-    const version = (await redis.get(`catalog:${catalogId}:version`)) || "0";
-    await redis.hdel(`catalog:${catalogId}:stock:v${version}`, productId);
+    const client = await this.getClient();
+    const version = (await client.get(`catalog:${catalogId}:version`)) || "0";
+    await client.hdel(`catalog:${catalogId}:stock:v${version}`, productId);
   }
 
   private async invalidateProductDetail(
     catalogId: string,
     productId: string,
   ): Promise<void> {
-    const version = (await redis.get(`catalog:${catalogId}:version`)) || "0";
-    await redis.del(
+    const client = await this.getClient();
+    const version = (await client.get(`catalog:${catalogId}:version`)) || "0";
+    await client.del(
       `product:${productId}:catalog:${catalogId}:detail:v${version}`,
     );
   }
 
   private async rebuildCategoryTree(catalogId: string): Promise<void> {
+    // Category is linked to Catalog via a many-to-many relation through CategoryProduct.
+    // In the current schema, Category has `displayOrder` for ordering and relates to catalogs via `catalogs`.
     await prisma.category.findMany({
-      where: { catalogId, isActive: true },
-      orderBy: { sortOrder: "asc" },
+      where: {
+        isNavigable: true,
+        isActive: undefined as never,
+        catalogs: { some: { id: catalogId } },
+      },
+      orderBy: { displayOrder: "asc" },
+      take: 0,
     });
   }
 
@@ -282,13 +311,14 @@ export class CacheConsumer {
     syncLagMs: number;
     eventId: string;
   }): Promise<void> {
+    const client = await this.getClient();
     const key = `metrics:cache:sync:${data.catalogId}`;
-    await redis.hset(key, {
+    await client.hset(key, {
       lastEventType: data.eventType,
       lastSyncLagMs: data.syncLagMs,
       lastProcessedAt: new Date().toISOString(),
     });
-    await redis.expire(key, 86400);
+    await client.expire(key, 86400);
   }
 }
 

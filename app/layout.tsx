@@ -14,11 +14,14 @@ import Footer from "@/components/footer";
 import RootProvider from "@/components/providers/root-provider";
 import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { CartSyncManager } from "@/components/cart/cart-sync-manager";
+import { setRedisLogger } from "@/lib/redis";
+import { logger } from "@/lib/logger"; // Votre logger Winston/Pino
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 const lato = Lato({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-lato" });
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-cormorant" });
+
 
 export const metadata: Metadata = {
   metadataBase: new URL('http://localhost:3000'),

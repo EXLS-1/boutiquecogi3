@@ -1209,8 +1209,12 @@ export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluati
     where: { id: userId },
     include: {
       roleAssignment: {
-        include: {
+        select: {
           role: true,
+          isBlocked: true,
+          blockedReason: true,
+          blockedUntil: true,
+          assignedAt: true,
         },
       },
     },
@@ -1219,26 +1223,32 @@ export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluati
   if (!user || !user.roleAssignment) return null;
 
   const assignment = user.roleAssignment;
-  const roleName = assignment.role.name as Role;
+  const roleName = assignment.role as Role;
   
   const effectivePermissions = await resolveEffectivePermissions(roleName);
 
   return {
     userId,
-    level: assignment.role.level,
+    // Ensure downstream code can safely access `.level` even when the source
+    // is a narrow role-assignment projection.
+    level: getRoleLevel(roleName),
     roleName,
     prismaRole: ROLE_TO_PRISMA[roleName] || PrismaRole.USER,
     isBlocked: assignment.isBlocked,
     blockReason: assignment.blockedReason || undefined,
     blockExpiresAt: assignment.blockedUntil,
     permissions: Array.from(effectivePermissions),
-    effectivePermissions: new Map(Array.from(effectivePermissions).map(p => [p, { granted: true, source: 'role' }])),
+    effectivePermissions: new Map(
+      Array.from(effectivePermissions).map((p) => [p, { granted: true, source: "role" }] as const),
+    ),
     metadata: {
       assignedAt: assignment.assignedAt,
       lastVerifiedAt: new Date(),
       hasOverrides: false,
-      dangerousPermissions: Array.from(effectivePermissions).filter(p => isDangerousPermission(p)),
-    }
+      dangerousPermissions: Array.from(effectivePermissions).filter((p) =>
+        isDangerousPermission(p),
+      ),
+    },
   };
 }
 

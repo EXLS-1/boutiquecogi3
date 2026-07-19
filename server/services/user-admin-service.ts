@@ -149,8 +149,9 @@ export const UserAdminService = {
         }
 
         if (!targetUser.roleAssignment?.isBlocked) {
-          throw new UserAdminError('Cet utilisateur n'est pas bloqué', 'NOT_BLOCKED')
+          throw new UserAdminError('Cet utilisateur n\u2019est pas bloqu\u00e9', 'NOT_BLOCKED')
         }
+
 
         await ctx.prisma.roleAssignment.update({
           where: { userId },
@@ -268,10 +269,11 @@ export const UserAdminService = {
         // Protection : ne pas modifier un SUPER_ADMIN existant
         if (targetUser.roleAssignment?.role.level === 1) {
           throw new UserAdminError(
-            'Impossible de modifier le rôle d'un SUPER_ADMIN',
+            'Impossible de modifier le rôle d\u2019un SUPER_ADMIN',
             'SUPER_ADMIN_IMMUNITY'
           )
         }
+
 
         // Ne pas se rétrograder soi-même
         if (userId === ctx.userId && role.level > ctx.roleLevel) {

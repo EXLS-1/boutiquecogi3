@@ -25,6 +25,7 @@ interface BetterAuthUserLike {
   id: string;
   email?: string | null;
   name?: string | null;
+  /** Role may be present either at top-level or inside metadata depending on the auth provider */
   role?: string | null;
   image?: string | null;
   emailVerified?: boolean | Date | string | null;
@@ -32,6 +33,7 @@ interface BetterAuthUserLike {
   updatedAt?: Date | string | null;
   metadata?: Record<string, unknown> | null;
 }
+
 
 function isBetterAuthUser(obj: unknown): obj is BetterAuthUserLike {
   if (typeof obj !== "object" || obj === null) return false;
