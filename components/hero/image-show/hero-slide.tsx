@@ -4,22 +4,19 @@
 
 import { HeroSlide as SlideType } from "./hero-types";
 import { HeroImageGrid } from "./hero-image-grid";
+import { HeroVideoSlide } from "./hero-video-slide";
 
 interface Props {
-  key: number
-  slide: Extract<SlideType, { type: "images" }>;
+  slide: SlideType; // Retirez Extract et la clé
   priority?: boolean;
 }
 
-export function HeroSlide({
-  key,
-  slide,
-  priority,
-}: Props) {
-  return (
-    <HeroImageGrid
-      items={slide.items}
-      priority={priority}
-    />
-  );
+export function HeroSlide({ slide, priority }: Props) {
+  // Gestion des différents types de slides
+  if (slide.type === "video") {
+    return <HeroVideoSlide item={slide.item} />;
+  }
+  
+  // Pour les slides d'images
+  return <HeroImageGrid items={slide.items} priority={priority} />;
 }

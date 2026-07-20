@@ -29,11 +29,11 @@ export function HeroImageGrid({
                 rounded-3xl
                 border
                 border-white/10
-                bg-black/20
+                bg-black/80
                 shadow-2xl
                 backdrop-blur-sm
                 transition-all
-                duration-2000
+                duration-200
                 ease-out
                 will-change-transform
                 ${

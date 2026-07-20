@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/carousel";
 
 import { HeroSlide } from "@/components/hero/image-show/hero-slide";
-import { HERO_SLIDES } from "./hero-slides";
+import { HERO_SLIDES } from "@/components/hero/image-show/hero-slides";
 
 
 
@@ -47,16 +47,16 @@ export function Hero() {
         }}
         className="w-full"
       >
+        {/* Dans hero.tsx */}
         <CarouselContent className="transition-transform duration-700 ease-in-out">
           {HERO_SLIDES.map((slide, index) => (
             <CarouselItem
-              key={String(index)}
+              key={index} // Utilisez index directement comme clé
               className="relative h-[80vh] min-h-175 w-full basis-full"
             >
               <HeroSlide slide={slide} priority={index === 0} />
             </CarouselItem>
           ))}
-
         </CarouselContent>
 
         {/* Overlay Content */}

@@ -3007,7 +3007,7 @@ export const redisAdvancedHelpers = {
 
   // ─── L1 Cache Integration ──────────────────────────────────────────────────
   l1Cache: {
-    private cache: L1CacheManager | null = null;
+    private cache: L1CacheManager | null,
 
     getInstance(config?: Partial<L1CacheConfig>): L1CacheManager {
       if (!this.cache) {
@@ -3071,7 +3071,7 @@ export const redisAdvancedHelpers = {
 
   // ─── Metrics & Monitoring ──────────────────────────────────────────────────
   metrics: {
-    private collector: RedisMetricsCollector | null = null;
+    private collector: RedisMetricsCollector | null,
 
     getCollector(): RedisMetricsCollector {
       if (!this.collector) {
@@ -3100,7 +3100,7 @@ export const redisAdvancedHelpers = {
 
   // ─── Real-time Notifications ───────────────────────────────────────────────
   notifications: {
-    private manager: RealtimeNotificationManager | null = null;
+    private manager: RealtimeNotificationManager | null,
 
     getManager(): RealtimeNotificationManager {
       if (!this.manager) {
