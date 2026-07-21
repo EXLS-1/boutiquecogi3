@@ -1,22 +1,27 @@
-'use server'
+// server/actions/order-admin-actions.ts
 
-import { prisma } from '@/lib/prisma'
-import { AuthorizationError } from '@/server/core/secure-prisma'
-import { actionRequireAdmin } from '@/lib/auth/server'
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { AuthorizationError } from "@/server/core/secure-prisma";
 
 type ActionResult<T = unknown> =
   | { success: true; data: T; message?: string }
-  | { success: false; error: string; code: string; fieldErrors?: Record<string, string[]> }
+  | {
+      success: false;
+      error: string;
+      code: string;
+      fieldErrors?: Record<string, string[]>;
+    };
 
 // ─── Récupérer toutes les commandes (Admin) ───
 
 export async function getAllOrdersAdmin(): Promise<ActionResult> {
   try {
     // Guard : réservé aux administrateurs (ADMIN / SUPER_ADMIN)
-    const context = await actionRequireAdmin(async (ctx) => ctx)
 
     const orders = await prisma.order.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         user: {
           select: {
@@ -40,24 +45,28 @@ export async function getAllOrdersAdmin(): Promise<ActionResult> {
         },
         shippingAddress: true,
       },
-    })
+    });
 
     return {
       success: true,
       data: orders,
       message: `${orders.length} commande(s) récupérée(s)`,
-    }
+    };
   } catch (error) {
     if (error instanceof AuthorizationError) {
-      return { success: false, error: error.message, code: error.code }
+      return { success: false, error: error.message, code: error.code };
     }
     if (error instanceof Error) {
       return {
         success: false,
         error: error.message,
-        code: (error as any).code || 'UNKNOWN_ERROR',
-      }
+        code:
+          "code" in error
+            ? String((error as Record<string, unknown>).code ?? "") ||
+              "UNKNOWN_ERROR"
+            : "UNKNOWN_ERROR",
+      };
     }
-    return { success: false, error: 'Erreur serveur', code: 'INTERNAL_ERROR' }
+    return { success: false, error: "Erreur serveur", code: "INTERNAL_ERROR" };
   }
 }

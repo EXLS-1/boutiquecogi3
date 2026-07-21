@@ -2,36 +2,17 @@
 
 'use server'
 
-import { ProductService } from '@/server/services/product-service'
-import { createProductSchema, updateProductSchema } from '@/lib/validations/product'
-import { revalidatePath } from 'next/cache'
-import { AuthorizationError } from '@/server/core/secure-prisma'
-import { generateUUIDv7 } from '@/lib/uuid'
+import { ProductService } from '@/server/services/product-service';
+import { createProductSchema } from '@/lib/validations/product';
+import { revalidatePath } from 'next/cache';
+import { AuthorizationError } from '@/server/core/secure-prisma';
+import { generateUUIDv7 } from '@/lib/uuid';
+import { generateSlug } from '@/lib/utils/slug';
+import { generateSKU } from '@/lib/utils/sku';
 
 type ActionResult<T = unknown> =
     | { success: true; data: T; message?: string }
     | { success: false; error: string; code: string; fieldErrors?: Record<string, string[]> }
-
-// ─── Helpers de génération ───
-
-function generateSlug(name: string): string {
-    return name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
-        .substring(0, 100)
-}
-
-function generateSKU(name: string): string {
-    const prefix = name
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, '')
-        .substring(0, 6)
-    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase()
-    return `${prefix}-${suffix}`
-}
 
 // ─── Créer un produit ───
 
@@ -107,7 +88,8 @@ export async function updateProductAction(
         if (raw.description) data.description = raw.description
         if (raw.categoryId) data.categoryId = raw.categoryId
         if (raw.images) data.images = JSON.parse(raw.images as string)
-        // stock ignoré : n'existe pas dans schema.prisma
+        
+            // stock ignoré : n'existe pas dans schema.prisma
 
         const product = await ProductService.update(productId, data)
         revalidatePath('/products')

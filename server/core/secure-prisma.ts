@@ -9,13 +9,10 @@ import { PrismaClient } from '@prisma/client'
 import { headers } from 'next/headers'
 import {
   getRoleLevelByUserId,
-  hasPermissionOnResult,
   hasAllPermissionsOnResult,
   hasAnyPermissionOnResult,
   type RoleEvaluationResult,
   type PermissionCode,
-  RoleEvaluationError,
-  getRequiredLevelForPermission,
   isDangerousPermission,
 } from '@/lib/auth/rbac'
 

@@ -39,6 +39,25 @@ export const createRoleSchema = z.object({
 
 export type CreateRoleInput = z.infer<typeof createRoleSchema>
 
+// ─── Validation pour la modification d'un rôle ───
+
+export const updateRoleSchema = z.object({
+  description: z
+    .string()
+    .max(255, 'La description ne doit pas dépasser 255 caractères')
+    .optional(),
+
+  defaultPermissionCodes: z
+    .array(z.string())
+    .optional(),
+
+  isActive: z
+    .boolean()
+    .optional(),
+})
+
+export type UpdateRoleInput = z.infer<typeof updateRoleSchema>
+
 // ─── Validation pour le blocage ───
 
 export const blockUserSchema = z.object({
@@ -50,10 +69,10 @@ export const blockUserSchema = z.object({
 
   blockedUntil: z
     .string()
-    .iso.datetime()
+    .datetime({ offset: true })
     .optional()
     .nullable()
-    .transform((val: string | number | Date) => val ? new Date(val) : null),
+    .transform((val) => val ? new Date(val) : null),
 
   permanent: z
     .boolean()
@@ -73,8 +92,8 @@ export type UnblockUserInput = z.infer<typeof unblockUserSchema>
 // ─── Validation assignation rôle ───
 
 export const assignRoleSchema = z.object({
-  userId: z.string().uuid(),
-  roleId: z.string().uuid(),
+  userId: z.uuid(),
+  roleId: z.uuid(),
 })
 
 export type AssignRoleInput = z.infer<typeof assignRoleSchema>

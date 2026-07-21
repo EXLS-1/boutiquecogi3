@@ -1,3 +1,4 @@
+// store/use-cart.ts
 /**
  * =============================================================================
  * CART STORE (Zustand) - Boutiquecogi3
@@ -11,7 +12,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { RBAC_LEVELS, CatalogProduct } from "@/lib/product-catalog/catalog-types";
+import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 
 interface CartItem {
   product: CatalogProduct;
@@ -50,10 +51,6 @@ interface PersistedCartItem {
   addedAt: string;
 }
 
-interface CartStorageState {
-  items: PersistedCartItem[];
-}
-
 interface CartStore extends CartStoreState, CartStoreActions { }
 
 const MAX_CART_QUANTITY = 99;
@@ -68,26 +65,14 @@ function getProductStock(product: CatalogProduct): number {
 }
 
 /**
- * Crée un CartItem immutable avec timestamp
+ * Crée un CartItem (utilisé hors immer pour l'initialisation)
  */
 function createCartItem(product: CartProduct, quantity: number = 1): CartItem {
-  return Object.freeze({
-    product: Object.freeze({ ...product }),
+  return {
+    product: { ...product } as CartItem["product"],
     quantity: Math.min(quantity, MAX_CART_QUANTITY),
     addedAt: new Date(),
-  });
-}
-
-/**
- * Vérifie si l'utilisateur peut ajouter ce produit (RBAC)
- */
-function canAddToCart(
-  product: CatalogProduct,
-  userRbacLevel: number = RBAC_LEVELS.GUEST,
-  isAuthenticated: boolean = false,
-): boolean {
-  if (product.requiresAuth && !isAuthenticated) return false;
-  return userRbacLevel <= product.minRbacLevel;
+  };
 }
 
 export const useCartStore = create<CartStore>()(
@@ -128,7 +113,8 @@ export const useCartStore = create<CartStore>()(
                 quantity,
                 getProductStock(product),
               );
-              state.items.push(createCartItem(product, validQuantity));
+              const newItem = createCartItem(product, validQuantity);
+              state.items.push(newItem as unknown as (typeof state.items)[number]);
             }
           });
         },
@@ -179,16 +165,13 @@ export const useCartStore = create<CartStore>()(
 
         getTotalPrice: (currency) => {
           return get().items.reduce((sum, item) => {
-            const product = item.product as any;
+            const p = item.product;
             const price =
               currency === "CDF"
-                ? (product.priceCDF ??
-                  product.priceCdf ??
-                  product.price ??
-                  product.priceUSD)
-                : (product.priceUSD ?? product.price);
+                ? (p.basePriceCDF || p.price)
+                : (p.basePriceUSD || p.price);
             const discountedPrice =
-              price * (1 - item.product.discountPercent / 100);
+              price * (1 - p.discountPercent / 100);
             return sum + discountedPrice * item.quantity;
           }, 0);
         },
@@ -216,7 +199,7 @@ export const useCartStore = create<CartStore>()(
         }),
         onRehydrateStorage: () => (state) => {
           if (state?.items) {
-            const persistedItems = state.items as PersistedCartItem[];
+            const persistedItems = state.items as unknown as PersistedCartItem[];
             state.items = persistedItems.map((item) => ({
               product: item.product,
               quantity: item.quantity,
