@@ -1,4 +1,5 @@
 // components/newsletter/newsletter-success.client.tsx
+
 "use client";
 
 import React from "react";
@@ -30,7 +31,7 @@ export function NewsletterSuccess({ message, onReset }: NewsletterSuccessProps) 
         onClick={onReset}
         className="mt-6 text-neutral-400 hover:text-black transition-colors"
       >
-        S'inscrire avec une autre adresse
+        S&apos;inscrire avec une autre adresse
       </Button>
     </div>
   );

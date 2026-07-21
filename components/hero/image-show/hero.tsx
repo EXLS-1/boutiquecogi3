@@ -2,11 +2,8 @@
 
 "use client";
 
-import { Key, useRef } from "react";
-
+import { useRef } from "react";
 import Autoplay from "embla-carousel-autoplay";
-
-
 import {
   Carousel,
   CarouselContent,
@@ -15,13 +12,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-import { HeroSlide } from "@/components/hero/image-show/hero-slide";
-import { HERO_SLIDES } from "@/components/hero/image-show/hero-slides";
-
-
-
-
-
+import { HeroSlide, HERO_SLIDES } from "@/components/hero/image-show/hero-slide";
 
 export function Hero() {
   const autoplay = useRef(
@@ -35,23 +26,21 @@ export function Hero() {
   return (
     <section className="relative w-full overflow-hidden bg-black">
       <Carousel
-        // eslint-disable-next-line react-hooks/refs
         plugins={[autoplay.current]}
         opts={{
           loop: true,
-          align: "center", // Changé de "start" à "center"
-          speed: 8, // Augmenté pour une transition plus douce
-          dragFree: false, // Changé de true à false pour un défilement par slide
-          containScroll: "trimSnaps", // Ajouté pour un meilleur contrôle
-          skipSnaps: true, // Ajouté pour sauter les snaps intermédiaires
+          align: "center",
+          speed: 8,
+          dragFree: false,
+          containScroll: "trimSnaps",
+          skipSnaps: true,
         }}
         className="w-full"
       >
-        {/* Dans hero.tsx */}
         <CarouselContent className="transition-transform duration-700 ease-in-out">
           {HERO_SLIDES.map((slide, index) => (
             <CarouselItem
-              key={index} // Utilisez index directement comme clé
+              key={index}
               className="relative h-[80vh] min-h-175 w-full basis-full"
             >
               <HeroSlide slide={slide} priority={index === 0} />

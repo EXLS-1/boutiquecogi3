@@ -1,4 +1,4 @@
-// components/hero/hero-image-grid.tsx
+// components/hero/image-show/hero-image-grid.tsx
 
 "use client";
 
@@ -33,7 +33,7 @@ export function HeroImageGrid({
                 shadow-2xl
                 backdrop-blur-sm
                 transition-all
-                duration-200
+                duration-700
                 ease-out
                 will-change-transform
                 ${
@@ -48,19 +48,18 @@ export function HeroImageGrid({
                       z-10
                       h-[62%]
                       w-[28%]
-                      scale-80
-                      opacity-90
+                      scale-90
+                      opacity-70
                     `
                 }
               `}
             >
-              {/* Image */}
               <Image
                 src={image.src}
                 alt={image.id}
                 fill
                 priority={priority && isCenter}
-                loading="eager"
+                loading={priority && isCenter ? "eager" : "lazy"}
                 sizes={
                   isCenter
                     ? "(max-width: 768px) 90vw, 38vw"
@@ -69,17 +68,14 @@ export function HeroImageGrid({
                 className="
                   object-cover
                   transition-transform
-                  duration-3000
-                  // ease-out
-                  hover:scale-105
+                  duration-700
+                  hover:scale-110
                 "
               />
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/10 to-transparent"   />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
 
-              {/* Glass reflection */}
-              <div className="absolute inset-0 bg-white/3" />
+              <div className="absolute inset-0 bg-white/5" />
             </div>
           );
         })}

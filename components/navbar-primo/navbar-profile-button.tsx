@@ -1,8 +1,9 @@
 // components/navbar-primo/navbar-profile-button.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { authClient, useRBAC } from "@/lib/auth/auth-client";
+import { useSyncExternalStore } from "react";
+import { authClient, useSessionContext } from "@/lib/auth/auth-client";
+import { normalizeRole, getRoleConfig, isAdminOrSuperAdmin, isStaffOrAbove } from "@/lib/auth/rbac-shared";
 import Link from "next/link";
 import { LogOut, LayoutDashboard } from "lucide-react";
 import {
@@ -24,17 +25,30 @@ import SignUpButton from "@/components/auth/sign-up-button";
 /**
  * Composant NavbarProfileButton
  * Gère l'affichage du statut d'authentification dans la Navbar.
- * Utilise le RBAC pour afficher les bonnes options selon le rôle de l'utilisateur.
+ * Utilise la session injectée par le serveur (RootLayout → RootProvider)
+ * pour éviter les appels redondants à /api/auth/get-session côté client.
  */
 export function NavbarProfileButton() {
-  const { data: session, isPending } = authClient.useSession();
-  const { isAdmin, isStaff, role, roleConfig } = useRBAC();
+  const { session } = useSessionContext();
   const router = useRouter();
+
+  // Computed RBAC props from server session
+  const rawRole = (session?.user as { role?: string } | null | undefined)?.role;
+  const role = normalizeRole(rawRole);
+  const roleConfig = getRoleConfig(role);
+  const isAdmin = isAdminOrSuperAdmin(role);
+  const isStaff = isStaffOrAbove(role);
+  const isPending = session === undefined;
 
   // Prevent hydration mismatch: this component is client-only.
   // Return null on the server; show skeleton until mounted + session resolved.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  // useSyncExternalStore is the React 19-recommended pattern to handle
+  // server/client differences without calling setState in an effect.
+  const mounted = useSyncExternalStore(
+    () => () => {}, // subscribe (no cleanup needed)
+    () => true,     // getSnapshot (client) — always mounted on client
+    () => false,    // getServerSnapshot — never mounted on server
+  );
 
   if (!mounted || isPending) {
     return <Skeleton className="h-9 w-9 rounded-full" />;

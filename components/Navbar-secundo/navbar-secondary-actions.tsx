@@ -5,10 +5,9 @@
 "use client";
 
 import React from "react";
-import { cn } from "@/lib/utils/utils";
-import { CartBadge } from "@/components/cart/cart-badge";
-import { Price } from "@/components/product-price/price";
-import useCart from "@/store/use-cart";
+import { cn } from "@/lib/utils/cn";
+import Price from "@/components/product-price/price";
+import { useCartStore } from "@/store/use-cart";
 
 type NavbarActionsProps = {
   children: React.ReactNode;
@@ -17,18 +16,18 @@ type NavbarActionsProps = {
 
 /**
  * Conteneur de mise en page pour les actions de droite.
- * Ne contient plus de logique ni d'icône figée.
+ * Ne contient pas de logique ni d'icône figée.
  */
 export function NavbarActions({ children, className }: NavbarActionsProps) {
-  const items = useCart((state) => state.items);
-  const totalPrice = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const items = useCartStore((state) => state.items);
+  const totalPrice = items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
 
   return (
     <div className={cn("flex items-center gap-4", className)}>
       {items.length > 0 && (
         <div className="hidden md:flex flex-col items-end mr-2">
           <span className="text-[10px] uppercase text-cyan-600 font-bold">Total Panier</span>
-          <Price amount={totalPrice} size="sm" />
+          <Price amount={totalPrice} currency="USD" size="sm" />
         </div>
       )}
       {children}
