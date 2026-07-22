@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import Autoplay from "embla-carousel-autoplay";
 import {
   Carousel,
@@ -12,10 +12,10 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-import { HeroSlide, HERO_SLIDES } from "@/components/hero/image-show/hero-slide";
+import { HeroSlide, useHeroSlides } from "@/components/hero/image-show/hero-slide";
 
 export function Hero() {
-  const autoplay = useRef(
+  const [autoplay] = useState(() =>
     Autoplay({
       delay: 10000,
       stopOnInteraction: false,
@@ -23,10 +23,33 @@ export function Hero() {
     })
   );
 
+  const { slides, loading, error } = useHeroSlides();
+
+  // Afficher un état de chargement ou des slides par défaut
+  if (loading) {
+    return (
+      <section className="relative w-full overflow-hidden bg-black">
+        <div className="flex h-[80vh] min-h-175 items-center justify-center">
+          <div className="text-white">Chargement des images...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || slides.length === 0) {
+    return (
+      <section className="relative w-full overflow-hidden bg-black">
+        <div className="flex h-[80vh] min-h-175 items-center justify-center">
+          <div className="text-white">Aucune image disponible</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative w-full overflow-hidden bg-black">
       <Carousel
-        plugins={[autoplay.current]}
+        plugins={[autoplay]}
         opts={{
           loop: true,
           align: "center",
@@ -38,7 +61,7 @@ export function Hero() {
         className="w-full"
       >
         <CarouselContent className="transition-transform duration-700 ease-in-out">
-          {HERO_SLIDES.map((slide, index) => (
+          {slides.map((slide, index) => (
             <CarouselItem
               key={index}
               className="relative h-[80vh] min-h-175 w-full basis-full"
