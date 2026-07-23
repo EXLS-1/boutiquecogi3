@@ -29,11 +29,11 @@ function safeString(v: unknown): string | null {
  * On publie des événements métier vers prisma.auditLog.
  */
 export const authHooks = {
-  async afterSignUp(ctx: HookContext) {
+  afterSignUp(ctx: HookContext) {
     const userId = ctx.user?.id ?? ctx.profile?.id ?? null;
 
-    // Fire-and-forget: ne bloque pas le flux d'authentification
-    publishAuthBusinessEvent({
+    // Fire-and-forget: `void` explicitly discards the Promise — never blocks the auth flow
+    void publishAuthBusinessEvent({
       action: "AUTH_SIGN_UP",
       entityType: "USER",
       entityId: userId,
@@ -55,11 +55,11 @@ export const authHooks = {
     });
   },
 
-  async afterSignIn(ctx: HookContext) {
+  afterSignIn(ctx: HookContext) {
     const sessionId = ctx.session?.id ?? ctx.session?.sessionToken ?? null;
 
-    // Fire-and-forget: ne bloque pas le flux d'authentification
-    publishAuthBusinessEvent({
+    // Fire-and-forget: `void` explicitly discards the Promise — never blocks the auth flow
+    void publishAuthBusinessEvent({
       action: "AUTH_SIGN_IN",
       entityType: "SESSION",
       entityId: sessionId,
@@ -77,11 +77,11 @@ export const authHooks = {
     });
   },
 
-  async afterSignOut(ctx: HookContext) {
+  afterSignOut(ctx: HookContext) {
     const sessionId = ctx.session?.id ?? ctx.session?.sessionToken ?? null;
 
-    // Fire-and-forget: ne bloque pas le flux d'authentification
-    publishAuthBusinessEvent({
+    // Fire-and-forget: `void` explicitly discards the Promise — never blocks the auth flow
+    void publishAuthBusinessEvent({
       action: "AUTH_SIGN_OUT",
       entityType: "SESSION",
       entityId: sessionId,

@@ -25,6 +25,11 @@ import { cache } from "react";
 import { auth } from "@/lib/auth"; // ✅ Singleton
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/uuid";
+import { getRedisClient } from "@/lib/redis";
+import {
+  getEffectivePermissionsCached,
+  getEffectiveRestrictionsCached,
+} from "@/lib/auth/rbac-cache";
 import type { AuthenticatedUser } from "@/lib/auth/rbac-shared";
 import {
   // Types
@@ -108,16 +113,51 @@ export interface AuditEntry {
 }
 
 // ═══════════════════════════════════════════
-// SECTION 2: CACHE DE SESSION (React cache)
+// SECTION 2: CACHE DE SESSION (React cache + Redis)
 // ═══════════════════════════════════════════
 
+const SESSION_CACHE_TTL_SECONDS = 30;
+
 /**
- * Cache React pour dedupliquer les appels de session
- * dans un même render cycle Server Component.
+ * Cache React + Redis pour dédupliquer et accélérer la résolution de session.
  */
 const _cachedGetSession = cache(async () => {
   const headersList = await headers();
-  return auth.api.getSession({ headers: headersList });
+  const cookieHeader = headersList.get("cookie");
+  let cacheKey: string | null = null;
+
+  if (cookieHeader) {
+    const match = cookieHeader.match(
+      /(?:better-auth\.session_token|__Secure-better-auth\.session_token)=([^;]+)/,
+    );
+    if (match?.[1]) {
+      cacheKey = `session:raw:${match[1]}`;
+      try {
+        const redis = getRedisClient();
+        const cached = await redis.get<
+          Awaited<ReturnType<typeof auth.api.getSession>>
+        >(cacheKey);
+        if (cached !== null) {
+          return cached;
+        }
+      } catch {
+        // Fallback non-bloquant en cas d'erreur Redis
+      }
+    }
+  }
+
+  const session = await auth.api.getSession({ headers: headersList });
+
+  if (cacheKey && session) {
+    try {
+      const redis = getRedisClient();
+      await redis.setex(cacheKey, SESSION_CACHE_TTL_SECONDS, session);
+    } catch {
+      // Fallback non-bloquant en cas d'erreur Redis
+    }
+  }
+
+  return session;
 });
 
 export async function getCachedSession() {
@@ -130,7 +170,7 @@ export async function getCachedSession() {
 
 /**
  * Résout le contexte d'autorisation COMPLET en une seule passe.
- * Charge session + permissions + restrictions en parallèle.
+ * Charge session + permissions (Redis) + restrictions (Redis) en parallèle.
  *
  * Usage : Server Components qui ont besoin de tout le contexte RBAC.
  */
@@ -153,10 +193,14 @@ export async function resolveAuthContext(): Promise<AuthContext | null> {
   const role = normalizeRole(rawRole as string);
   const level = getRoleLevel(role);
 
-  // Chargement parallèle des permissions et restrictions
+  // Chargement parallèle des permissions et restrictions optimisé par cache Redis
   const [permissions, restrictions] = await Promise.all([
-    resolveEffectivePermissions(role),
-    resolveEffectiveRestrictions(role),
+    getEffectivePermissionsCached(role, () =>
+      resolveEffectivePermissions(role),
+    ),
+    getEffectiveRestrictionsCached(role, () =>
+      resolveEffectiveRestrictions(role),
+    ),
   ]);
 
   const user: AuthenticatedUser = {

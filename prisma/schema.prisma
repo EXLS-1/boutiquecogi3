@@ -167,15 +167,17 @@ model PermissionOverride {
 }
 
 model User {
-  id               String           @id @unique @db.Uuid
-  role             Role             @default(USER)
-  roleConfig       RoleConfig?      @relation(fields: [roleConfigId], references: [id])
-  roleConfigId     String?          @db.Uuid
-  roleAssignment   RoleAssignment?
-  sessions         Session[]
-  name             String?
-  email            String           @unique
-  emailVerified    Boolean            @default(false)
+  id              String          @id @unique @db.Uuid
+  role            Role            @default(USER)
+  roleConfig      RoleConfig?     @relation(fields: [roleConfigId], references: [id])
+  roleConfigId    String?         @db.Uuid
+  roleAssignment  RoleAssignment?
+  sessions        Session[]
+  name            String?
+  email           String          @unique
+  emailVerified   Boolean         @default(false)
+  emailVerifiedAt DateTime        @default(now())
+
   password         String?          @db.Text
   image            String?
   accounts         Account[]
@@ -194,13 +196,14 @@ model User {
   cart             Cart? // un seul panier par utilisateur (optionnel)
   wishlist         Wishlist? // une seule liste de souhaits
   searchAnalytics  SearchAnalytics?
-  deletedAt        DateTime?
 
-  createdAt DateTime @default(now())
-  createdBy String?  @db.Uuid
-  updatedAt DateTime @updatedAt
-  updatedBy String?  @db.Uuid
-
+  createdAt    DateTime  @default(now())
+  createdBy    String
+  updatedAt    DateTime  @updatedAt
+  updatedBy    String
+  deletedAt    DateTime  @default(now())
+  deletedBy    String
+  isDeleted    Boolean   @default(false)
   isBlocked    Boolean   @default(false)
   blockedUntil DateTime?
   blockReason  String?
