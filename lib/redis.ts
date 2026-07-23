@@ -2938,6 +2938,11 @@ export class RealtimeNotificationManager {
 }
 
   // ─── Streams Event Sourcing ──────────────────────────────────────────────────
+let l1Cache: L1CacheManager | null = null;
+let metricsCollector: RedisMetricsCollector | null = null;
+let notificationManager: RealtimeNotificationManager | null = null;
+
+export const redisAdvancedHelpers = {
   streams: {
     /**
      * Ajoute un événement métier au stream d'audit
@@ -3002,13 +3007,12 @@ export class RealtimeNotificationManager {
 
   // ─── L1 Cache Integration ──────────────────────────────────────────────────
   l1Cache: {
-    private cache: L1CacheManager | null,
 
     getInstance(config?: Partial<L1CacheConfig>): L1CacheManager {
-      if (!this.cache) {
-        this.cache = new L1CacheManager(config);
+      if (!l1Cache) {
+        l1Cache = new L1CacheManager(config);
       }
-      return this.cache;
+      return l1Cache;
     },
 
     /**
@@ -3066,13 +3070,12 @@ export class RealtimeNotificationManager {
 
   // ─── Metrics & Monitoring ──────────────────────────────────────────────────
   metrics: {
-    private collector: RedisMetricsCollector | null,
 
     getCollector(): RedisMetricsCollector {
-      if (!this.collector) {
-        this.collector = new RedisMetricsCollector(getRedisClient());
+      if (!metricsCollector) {
+        metricsCollector = new RedisMetricsCollector(getRedisClient());
       }
-      return this.collector;
+      return metricsCollector;
     },
 
     /**
@@ -3095,13 +3098,12 @@ export class RealtimeNotificationManager {
 
   // ─── Real-time Notifications ───────────────────────────────────────────────
   notifications: {
-    private manager: RealtimeNotificationManager | null,
 
     getManager(): RealtimeNotificationManager {
-      if (!this.manager) {
-        this.manager = new RealtimeNotificationManager(getRedisClient());
+      if (!notificationManager) {
+        notificationManager = new RealtimeNotificationManager(getRedisClient());
       }
-      return this.manager;
+      return notificationManager;
     },
 
     async initialize(): Promise<void> {
