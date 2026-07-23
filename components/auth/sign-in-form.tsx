@@ -115,17 +115,11 @@ export function SignInForm() {
           },
           onError: (ctx) => {
             setIsPending(false);
-            
-            // Incrémentation des tentatives en cas d'erreur
-            const newAttempts = attempts + 1;
-            setAttempts(newAttempts);
-            
-            if (newAttempts >= 3) {
-              setCooldown(30); // Verrouille pendant 30 secondes après 3 échecs
-              toast.error("Trop de tentatives. Veuillez patienter 30 secondes.");
-            } else {
-            toast.error(ctx.error.message || "Identifiants incorrects.");
-            }
+
+            toast.error(
+              "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
+            );
+            router.push("/auth/sign-up");
           },
         }
       );

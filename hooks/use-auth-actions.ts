@@ -28,11 +28,20 @@ export function useAuthActions() {
 
   const signin = (data: { email: string; password: string }) =>
     safe(async () => {
-      await authClient.signIn.email(data);
-      invalidateCache(); // ← INVALIDE LE CACHE RBAC AU LOGIN
-      toast.success("Connecté");
-      router.replace("/");
-      router.refresh();
+      const res = await authClient.signIn.email(data, {
+        onError: () => {
+          toast.error(
+            "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
+          );
+          router.push("/auth/sign-up");
+        },
+      });
+      if (res?.data) {
+        invalidateCache(); // ← INVALIDE LE CACHE RBAC AU LOGIN
+        toast.success("Connecté");
+        router.replace("/");
+        router.refresh();
+      }
     });
 
   const signup = (data: { email: string; password: string }) =>
