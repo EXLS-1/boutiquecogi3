@@ -20,7 +20,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { Redis } from "ioredis";
+import { Redis, Cluster } from "ioredis";
 import { z } from "zod";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1914,8 +1914,6 @@ export type { RedisConfig, CircuitState, Namespace };
 // REDIS CLUSTER SUPPORT — Haute disponibilité & scalabilité horizontale
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Cluster } from "ioredis";
-
 const RedisClusterConfigSchema = z.object({
   enableCluster: z.boolean().default(false),
   nodes: z.array(z.object({
@@ -2941,6 +2939,10 @@ export class RealtimeNotificationManager {
 // ADVANCED HELPERS — Intégration des nouvelles fonctionnalités
 // ═══════════════════════════════════════════════════════════════════════════════
 
+let l1Cache: L1CacheManager | null = null;
+let metricsCollector: RedisMetricsCollector | null = null;
+let notificationManager: RealtimeNotificationManager | null = null;
+
 export const redisAdvancedHelpers = {
   // ─── Streams Event Sourcing ──────────────────────────────────────────────────
   streams: {
@@ -3007,13 +3009,11 @@ export const redisAdvancedHelpers = {
 
   // ─── L1 Cache Integration ──────────────────────────────────────────────────
   l1Cache: {
-    private cache: L1CacheManager | null = null;
-
     getInstance(config?: Partial<L1CacheConfig>): L1CacheManager {
-      if (!this.cache) {
-        this.cache = new L1CacheManager(config);
+      if (!l1Cache) {
+        l1Cache = new L1CacheManager(config);
       }
-      return this.cache;
+      return l1Cache;
     },
 
     /**
@@ -3071,13 +3071,11 @@ export const redisAdvancedHelpers = {
 
   // ─── Metrics & Monitoring ──────────────────────────────────────────────────
   metrics: {
-    private collector: RedisMetricsCollector | null = null;
-
     getCollector(): RedisMetricsCollector {
-      if (!this.collector) {
-        this.collector = new RedisMetricsCollector(getRedisClient());
+      if (!metricsCollector) {
+        metricsCollector = new RedisMetricsCollector(getRedisClient());
       }
-      return this.collector;
+      return metricsCollector;
     },
 
     /**
@@ -3100,13 +3098,11 @@ export const redisAdvancedHelpers = {
 
   // ─── Real-time Notifications ───────────────────────────────────────────────
   notifications: {
-    private manager: RealtimeNotificationManager | null = null;
-
     getManager(): RealtimeNotificationManager {
-      if (!this.manager) {
-        this.manager = new RealtimeNotificationManager(getRedisClient());
+      if (!notificationManager) {
+        notificationManager = new RealtimeNotificationManager(getRedisClient());
       }
-      return this.manager;
+      return notificationManager;
     },
 
     async initialize(): Promise<void> {

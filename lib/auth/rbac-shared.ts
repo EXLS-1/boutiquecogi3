@@ -39,8 +39,8 @@ export const LEVELS = {
   LEVEL_7: 7,
 } as const;
 
-export type Role = (typeof ROLES)[keyof typeof ROLES];
-export type Level = (typeof LEVELS)[keyof typeof LEVELS];
+export type Role = typeof ROLES[keyof typeof ROLES];
+export type Level = typeof LEVELS[keyof typeof LEVELS];
 
 // ─── Type utilisateur unifié (client + server) ───────
 
@@ -81,6 +81,16 @@ export interface RoleLevelConfigEntry {
   /** Tailwind CSS border color class for badge */
   borderClass: string;
 }
+
+export const roleDefinitions = [
+  { level: 1, name: "SUPER_ADMIN", description: "Contrôle absolu" },
+  { level: 2, name: "ADMIN", description: "Administration générale" },
+  { level: 3, name: "MANAGER", description: "Gestion équipes et opérations" },
+  { level: 4, name: "EDITOR", description: "Gestion contenu et produits" },
+  { level: 5, name: "SUPERVISOR", description: "Supervision commandes" },
+  { level: 6, name: "USER", description: "Acheteur privilégié" },
+  { level: 7, name: "GUEST", description: "Visiteur non authentifié" },
+];
 
 export const RoleLevelConfig: Record<number, RoleLevelConfigEntry> = {
   1: {

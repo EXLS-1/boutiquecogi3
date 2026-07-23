@@ -1,18 +1,12 @@
-# TODO - Fix server/actions/role-actions.ts
+# Redis TS Error Fix Plan
 
-## Steps
+## Step 1: Fix `lib/redis.ts` — Remove `private` keywords from `redisAdvancedHelpers` object literals
+- Add module-level variables (`l1Cache`, `metricsCollector`, `notificationManager`) before `redisAdvancedHelpers`
+- Fix the 3 object literal subsections to use module variables instead of `private`/`this.*`
 
-- [x] 1. Add Zod validation schema for update operation in lib/validations/role.ts
-  - Created `updateRoleSchema` with optional fields: description, defaultPermissionCodes, isActive
-  - Added `UpdateRoleInput` type export
-- [x] 2. Fix error.code TypeScript errors + add Zod validation in updateRoleAction
-  - Added `AppError` interface extending Error with optional `code`
-  - Created `getErrorCode()` and `getErrorMessage()` helper functions
-  - Added `RoleServiceError` import for proper type discrimination
-  - Integrated `updateRoleSchema.safeParse()` in `updateRoleAction`
-  - Standardized error handling across all 4 actions (create, list, update, delete)
-- [x] 3. Update `RoleService.update` signature to use `UpdateRoleInput` type
-  - Updated import to include `UpdateRoleInput` type
-  - Changed method signature from `Partial<Pick<CreateRoleInput, ...>>` to `UpdateRoleInput`
-- [x] 4. Verify changes — all 3 files verified and reviewed
+## Step 2: Rewrite `lib/redis.mock.ts` — Replace with proper mock implementation
+- Remove all duplicated `redis.ts` content
+- Add `createMockRedisClient()` factory function
+- Add `createMockLogger()` factory function
+- Add `MockRedisClient` class with in-memory storage
 

@@ -2937,11 +2937,6 @@ export class RealtimeNotificationManager {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ADVANCED HELPERS — Intégration des nouvelles fonctionnalités
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export const redisAdvancedHelpers = {
   // ─── Streams Event Sourcing ──────────────────────────────────────────────────
   streams: {
     /**
