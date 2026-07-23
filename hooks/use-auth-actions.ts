@@ -4,14 +4,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
-import { useRBACStore } from "@/stores/rbac-store"; // ← AJOUT
+import { useRBACStore } from "@/store/rbac-store";
 import { mapAuthError } from "@/lib/auth/errors";
 import toast from "react-hot-toast";
 
 export function useAuthActions() {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
-  const invalidateCache = useRBACStore((s) => s.invalidateCache); // ← AJOUT
+  const invalidateCache = useRBACStore((s) => s.invalidateCache);
 
   const safe = async (fn: () => Promise<void>) => {
     if (isPending) return;

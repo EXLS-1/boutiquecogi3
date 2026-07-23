@@ -7,6 +7,7 @@ import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
 
 import { authHooks } from "@/lib/better-auth/hooks";
+import { generateUUIDv7 } from "@/lib/uuid";
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -30,6 +31,12 @@ export const auth = betterAuth({
   secret: requiredEnv("BETTER_AUTH_SECRET"),
   baseURL,
   hooks: authHooks,
+  advanced: {
+    generateId: () => generateUUIDv7(),
+    database: {
+      generateId: "uuid",
+    },
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: false,

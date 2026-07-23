@@ -1,6 +1,7 @@
-// stores/rbac-store.ts
+// store/use-rbac-store.ts
 // Gestion de l'état global RBAC avec Zustand
-// 
+// Permet de gérer les permissions de l'utilisateur
+// Invalidate le cache RBAC au login et logout
 
 import { create } from "zustand";
 import { Permission } from "@/lib/auth/rbac";

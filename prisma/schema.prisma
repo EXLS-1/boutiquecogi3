@@ -167,7 +167,7 @@ model PermissionOverride {
 }
 
 model User {
-  id              String          @id @unique @db.Uuid
+  id              String          @id @default(uuid(7)) @unique @db.Uuid
   role            Role            @default(USER)
   roleConfig      RoleConfig?     @relation(fields: [roleConfigId], references: [id])
   roleConfigId    String?         @db.Uuid
