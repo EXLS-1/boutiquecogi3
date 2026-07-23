@@ -102,7 +102,7 @@ export function SignInForm() {
 
     setIsPending(true);
     try {
-      await authClient.signIn.email(
+      const res = await authClient.signIn.email(
         {
           email: data.email,
           password: data.password,
@@ -113,9 +113,8 @@ export function SignInForm() {
             router.push("/");
             router.refresh();
           },
-          onError: (ctx) => {
+          onError: () => {
             setIsPending(false);
-
             toast.error(
               "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
             );
@@ -123,13 +122,21 @@ export function SignInForm() {
           },
         }
       );
+
+      if (res?.error) {
+        setIsPending(false);
+        toast.error(
+          "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
+        );
+        router.push("/auth/sign-up");
+      }
     } catch (error) {
-      // Capture les exceptions réseau critiques (ex: Failed to fetch, DNS, Timeout)
       setIsPending(false);
-      console.error("[AUTH_SIGNIN_NETWORK_ERROR]", error);
+      console.error("[AUTH_SIGNIN_ERROR]", error);
       toast.error(
-        "Le serveur est injoignable. Veuillez vérifier votre connexion réseau."
+        "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
       );
+      router.push("/auth/sign-up");
     }
   };
 

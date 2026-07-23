@@ -7,6 +7,7 @@ import { authClient } from "@/lib/auth/auth-client";
 
 import React from "react";
 import { ThemeProvider } from "./theme-provider";
+import { Toaster } from "react-hot-toast";
 
 interface RootProvidersProps {
   /**
@@ -24,6 +25,7 @@ export default function RootProvider({ children, session }: RootProvidersProps) 
     <BetterAuthContext.Provider value={{ session }}>
       <ThemeProvider defaultTheme="system" storageKey="ui-theme">
         {children}
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       </ThemeProvider>
     </BetterAuthContext.Provider>
   );
