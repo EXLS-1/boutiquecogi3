@@ -95,19 +95,22 @@ async function main() {
     const superAdmin = await prisma.user.create({
       data: {
         id: randomUUID(),
-        email: "admin@boutiquecogi3.com",
-        name: "Super Admin",
+        email: "excellentservice1exls@gmail.com",
+        name: "SuperAdmin COGI",
         role: Role.SUPER_ADMIN,
+        password: "@@@123Admin123@@@", // Assurez-vous de changer le mot de passe après la première connexion
       },
     });
 
     await prisma.roleAssignment.create({
       data: {
         userId: superAdmin.id,
-        roleId: (await prisma.roleDefinition.findUniqueOrThrow({
-          where: { role: Role.SUPER_ADMIN },
-          select: { id: true },
-        })).id,
+        roleId: (
+          await prisma.roleDefinition.findUniqueOrThrow({
+            where: { role: Role.SUPER_ADMIN },
+            select: { id: true },
+          })
+        ).id,
         role: Role.SUPER_ADMIN,
         assignedBy: superAdmin.id,
       },

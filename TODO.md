@@ -1,12 +1,11 @@
-# Redis TS Error Fix Plan
+# Fix: emailVerified field type mismatch in User model
 
-## Step 1: Fix `lib/redis.ts` — Remove `private` keywords from `redisAdvancedHelpers` object literals
-- Add module-level variables (`l1Cache`, `metricsCollector`, `notificationManager`) before `redisAdvancedHelpers`
-- Fix the 3 object literal subsections to use module variables instead of `private`/`this.*`
+## Steps
 
-## Step 2: Rewrite `lib/redis.mock.ts` — Replace with proper mock implementation
-- Remove all duplicated `redis.ts` content
-- Add `createMockRedisClient()` factory function
-- Add `createMockLogger()` factory function
-- Add `MockRedisClient` class with in-memory storage
+- [x] 1. Analyze the error and create plan
+- [x] 2. Get user approval
+- [x] 3. Edit `prisma/schema.prisma` - Change `emailVerified DateTime?` → `emailVerified Boolean @default(false)`
+- [x] 4. Run `npx prisma generate` to update Prisma client ✅
+- [x] 5. Run SQL migration via `prisma db execute` to apply schema change to database ✅ Script executed successfully
+- [ ] 6. Restart the dev server and verify sign-up works
 

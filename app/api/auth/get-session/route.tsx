@@ -6,6 +6,11 @@
 // d'autorisation complet (rôle, niveau, permissions, restrictions).
 // Utilisé par le client pour hydrater Zustand / React Query sans
 // dépendre du SessionProvider côté serveur.
+//
+// OPTIMISATION PERFORMANCE :
+// - Cache Redis des permissions/restrictions RBAC (TTL: 60s)
+// - Évite les requêtes Prisma redondantes pour les résolutions RBAC
+// - Cache invalidé automatiquement via le TTL court
 
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
@@ -23,6 +28,7 @@ import {
   type Restriction,
   type ToggleState,
 } from "@/lib/auth/rbac";
+import { getRedisClient } from "@/lib/redis";
 
 // ─── Configuration route ───────────────────
 
@@ -59,6 +65,80 @@ export interface GetSessionErrorResponse {
   isAuthenticated: false;
   error: string;
   code: string;
+}
+
+// ─── Cache Redis RBAC ────────────────────────
+
+const RBAC_CACHE_TTL = 60; // 60 secondes
+
+interface CachedRBAC {
+  permissions: PermissionCode[];
+  restrictions: Record<Restriction, string | ToggleState>;
+  role: Role;
+  level: number;
+}
+
+async function getCachedRBAC(role: Role): Promise<CachedRBAC | null> {
+  try {
+    const redis = getRedisClient();
+    const cacheKey = `rbac:role:${role}`;
+    const cached = await redis.get<CachedRBAC>(cacheKey);
+    return cached;
+  } catch {
+    // Cache failure is non-blocking
+    return null;
+  }
+}
+
+async function setCachedRBAC(role: Role, data: CachedRBAC): Promise<void> {
+  try {
+    const redis = getRedisClient();
+    const cacheKey = `rbac:role:${role}`;
+    await redis.setex(cacheKey, RBAC_CACHE_TTL, data);
+  } catch {
+    // Cache failure is non-blocking
+  }
+}
+
+async function resolveRBACWithCache(
+  role: Role,
+): Promise<{ permissions: PermissionCode[]; restrictions: Record<Restriction, string | ToggleState> }> {
+  // Tentative de cache Redis
+  const cached = await getCachedRBAC(role);
+  if (cached) {
+    return {
+      permissions: cached.permissions,
+      restrictions: cached.restrictions,
+    };
+  }
+
+  // Cache miss → résolution DB + stockage en cache
+  const [permissionsSet, restrictionsMap] = await Promise.all([
+    resolveEffectivePermissions(role),
+    resolveEffectiveRestrictions(role),
+  ]);
+
+  const permissions = Array.from(permissionsSet);
+  const restrictions = Object.fromEntries(
+    restrictionsMap,
+  ) as Record<Restriction, string | ToggleState>;
+
+  // Stockage asynchrone en cache (ne bloque pas la réponse)
+  const rbacRole: Role = role;
+  const rbacLevel: number = getRoleLevel(role);
+  setCachedRBAC(rbacRole, {
+    permissions,
+    restrictions,
+    role: rbacRole,
+    level: rbacLevel,
+  });
+
+  // Retourne les données résolues
+  const result: { permissions: PermissionCode[]; restrictions: Record<Restriction, string | ToggleState> } = {
+    permissions,
+    restrictions
+  };
+  return result;
 }
 
 // ═══════════════════════════════════════════
@@ -98,11 +178,8 @@ export async function GET(
     const role: Role = normalizeRole(rawRole as string);
     const level = getRoleLevel(role);
 
-    // 3. Résolution parallèle du contexte RBAC
-    const [permissionsSet, restrictionsMap] = await Promise.all([
-      resolveEffectivePermissions(role),
-      resolveEffectiveRestrictions(role),
-    ]);
+    // 3. Résolution RBAC avec cache Redis (évite les requêtes Prisma redondantes)
+    const { permissions, restrictions } = await resolveRBACWithCache(role);
 
     // 4. Construction de l'utilisateur typé
     const user: AuthenticatedUser = {
@@ -126,13 +203,7 @@ export async function GET(
       ),
     };
 
-    // 5. Sérialisation des Set/Map pour JSON
-    const permissions = Array.from(permissionsSet);
-    const restrictions = Object.fromEntries(
-      restrictionsMap,
-    ) as Record<Restriction, string | ToggleState>;
-
-    // 6. Réponse structurée
+    // 5. Réponse structurée
     const payload: GetSessionResponse = {
       success: true,
       isAuthenticated: true,
