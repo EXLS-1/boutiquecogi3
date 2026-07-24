@@ -6,8 +6,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
 
-import { authHooks } from "@/lib/better-auth/hooks";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { authDatabaseHooks } from "@/lib/better-auth/hooks";
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -30,16 +29,15 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: requiredEnv("BETTER_AUTH_SECRET"),
   baseURL,
-  hooks: authHooks,
+  databaseHooks: authDatabaseHooks,
   advanced: {
-    generateId: () => generateUUIDv7(),
     database: {
       generateId: "uuid",
     },
   },
   emailAndPassword: {
     enabled: true,
-    autoSignIn: false,
+    autoSignIn: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
     requireEmailVerification: false,
@@ -63,7 +61,8 @@ export const auth = betterAuth({
     },
     facebook: {
       enabled:
-        !!process.env.FACEBOOK_CLIENT_ID && !!process.env.FACEBOOK_CLIENT_SECRET,
+        !!process.env.FACEBOOK_CLIENT_ID &&
+        !!process.env.FACEBOOK_CLIENT_SECRET,
       clientId: process.env.FACEBOOK_CLIENT_ID ?? "",
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? "",
     },
@@ -75,4 +74,3 @@ export const auth = betterAuth({
   },
   trustedOrigins: [baseURL, "http://localhost:3000"],
 });
-

@@ -179,9 +179,9 @@ export function useAuth() {
     error,
     session,
     signIn: (email: string, password: string) =>
-      handleAction(authClient.signIn.credentials({ email, password })),
+      handleAction(authClient.signIn.email({ email, password })),
     signUp: (name: string, email: string, password: string, image?: string) =>
-      handleAction(authClient.signUp.credentials({ name, email, password, image })),
+      handleAction(authClient.signUp.email({ name, email, password, image })),
     signOut: performSignOut,
   };
 }

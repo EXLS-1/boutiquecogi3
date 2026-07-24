@@ -14,7 +14,7 @@ export async function processCinetPayCheckout(formData: FormData) {
   });
 
   if (!session?.user) {
-    redirect("/auth/login?callbackUrl=/checkout");
+    redirect("/auth/sign-in?callbackUrl=/checkout");
   }
 
   const rawItems = formData.get("items");
@@ -42,7 +42,7 @@ export async function processCinetPayCheckout(formData: FormData) {
 
   const amount = items.reduce(
     (acc, item) => acc + Number(item.price) * Number(item.quantity),
-    0,
+    0
   );
 
   if (amount <= 0) {
@@ -61,7 +61,9 @@ export async function processCinetPayCheckout(formData: FormData) {
     transaction_id: transactionId,
     amount: Math.round(amount),
     currency,
-    description: `Commande Boutique COGI — ${session.user.email ?? session.user.name}`,
+    description: `Commande Boutique COGI — ${
+      session.user.email ?? session.user.name
+    }`,
     customer_email: session.user.email ?? undefined,
     customer_phone_number: phone,
     notify_url: `${baseUrl}/api/webhook/cinetpay`,
@@ -74,6 +76,6 @@ export async function processCinetPayCheckout(formData: FormData) {
   }
 
   throw new Error(
-    payment.message || "Impossible d'initialiser le paiement CinetPay",
+    payment.message || "Impossible d'initialiser le paiement CinetPay"
   );
 }

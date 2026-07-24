@@ -43,9 +43,9 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/auth-client";
@@ -59,7 +59,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -97,7 +96,7 @@ export function SignUpForm() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -105,7 +104,8 @@ export function SignUpForm() {
   });
 
   // Surveillance du mot de passe pour calculer la force
-  const passwordValue = watch("password", "");
+  // Utilisation de useWatch au lieu de watch() pour éviter l'erreur React Compiler
+  const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
   const passwordScore = useMemo(() => {
     return passwordValue ? zxcvbn(passwordValue).score : -1;
   }, [passwordValue]);
@@ -121,8 +121,8 @@ export function SignUpForm() {
         onRequest: () => setIsPending(true),
         onSuccess: () => {
           toast.success("Inscription réussie ! Redirection...");
-          // Redirection vers la page de connexion ou une page protégée si l'utilisateur est automatiquement connecté
-          router.push("/auth/login"); // Ou "/protected" si l'utilisateur est connecté automatiquement
+          // AutoSignIn est activé → l'utilisateur est connecté automatiquement, redirection vers l'accueil
+          router.push("/");
           router.refresh(); 
         },
         onError: (ctx) => {
@@ -246,7 +246,7 @@ export function SignUpForm() {
           <div className="text-center text-sm text-cyan-400">
             Déjà un compte ?{" "}
             <Link
-              href="/auth/login"
+              href="/auth/sign-in"
               className="text-cyan-500 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
               Se connecter

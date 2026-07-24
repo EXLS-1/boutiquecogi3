@@ -274,12 +274,12 @@ export function createAuthContextFromRole(
 
 /**
  * Guard : exige une authentification valide.
- * Redirige vers /auth/login si non authentifié.
+ * Redirige vers /auth/sign-in si non authentifié.
  *
  * @returns AuthContext complet
  */
 export async function guardAuth(
-  redirectTo: string = "/auth/login",
+  redirectTo: string = "/auth/sign-in",
 ): Promise<AuthContext> {
   const context = await resolveAuthContext();
 
@@ -777,7 +777,7 @@ export function buildOwnDataFilterSync(context: AuthContext): {
  * Maintenu pour compatibilité avec l'ancien code.
  */
 export async function requireAuth(
-  redirectTo: string = "/auth/login",
+  redirectTo: string = "/auth/sign-in",
 ): Promise<AuthenticatedUser> {
   const context = await guardAuth(redirectTo);
   return context.user;

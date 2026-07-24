@@ -1,7 +1,7 @@
 // components/auth/sign-in-button.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,16 @@ import { authClient } from "@/lib/auth/auth-client";
  */
 export default function SignInButton() {
   const { data: session, isPending } = authClient.useSession();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Subscriber vide (nous n'avons pas besoin de nous abonner à des changements externes)
+  const subscribe = () => () => {};
+
+  // Vérifie si nous sommes côté client (hydraté)
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,  // getSnapshot côté client
+    () => false  // getServerSnapshot côté serveur
+  );
 
   // Affichage du Skeleton pour éviter le saut de contenu au chargement
   if (!mounted || isPending) return <Skeleton className="h-10 w-28 rounded-md" />;
@@ -39,3 +44,4 @@ export default function SignInButton() {
     </Button>
   );
 }
+

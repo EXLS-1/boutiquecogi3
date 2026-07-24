@@ -62,7 +62,6 @@ export function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   
   // État pour le rate limiting
-  const [attempts, setAttempts] = useState(0);
   const [cooldown, setCooldown] = useState(0);
 
   // Gestion du compte à rebours pour le cooldown
@@ -72,7 +71,6 @@ export function SignInForm() {
     const timer = setInterval(() => {
       setCooldown((prev) => {
         if (prev <= 1) {
-          setAttempts(0); // Réinitialise les tentatives après le délai
           return 0;
         }
         return prev - 1;
@@ -97,10 +95,13 @@ export function SignInForm() {
   });
 
   // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const onSubmit = async (data: SignInFormValues) => {
     if (isLocked) return;
 
     setIsPending(true);
+    setErrorMessage(null);
     try {
       const res = await authClient.signIn.email(
         {
@@ -113,30 +114,27 @@ export function SignInForm() {
             router.push("/");
             router.refresh();
           },
-          onError: () => {
+          onError: (ctx) => {
             setIsPending(false);
-            toast.error(
-              "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
-            );
-            router.push("/auth/sign-up");
+            const msg = ctx.error.message || "Email ou mot de passe incorrect.";
+            setErrorMessage(msg);
+            toast.error(msg);
           },
         }
       );
 
       if (res?.error) {
         setIsPending(false);
-        toast.error(
-          "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
-        );
-        router.push("/auth/sign-up");
+        const msg = res.error.message || "Email ou mot de passe incorrect.";
+        setErrorMessage(msg);
+        toast.error(msg);
       }
     } catch (error) {
       setIsPending(false);
       console.error("[AUTH_SIGNIN_ERROR]", error);
-      toast.error(
-        "Vous n'avez pas de compte actif. Veuillez en créer un avec vos coordonnées actuelles"
-      );
-      router.push("/auth/sign-up");
+      const msg = "Une erreur est survenue. Veuillez réessayer.";
+      setErrorMessage(msg);
+      toast.error(msg);
     }
   };
 
@@ -207,6 +205,12 @@ export function SignInForm() {
             </div>
           </div>
 
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-md p-3">
+              {errorMessage}
+            </div>
+          )}
+
           <Button 
             type="submit" 
             className="w-full bg-cyan-400 text-white hover:bg-rose-500" 
@@ -221,7 +225,7 @@ export function SignInForm() {
               href="/auth/sign-up"
               className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
-              S\'inscrire
+              S'inscrire
             </Link>
           </div>
         </form>

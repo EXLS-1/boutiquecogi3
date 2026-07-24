@@ -161,7 +161,7 @@ export default async function proxy(request: NextRequest) {
   });
 
   // ─── Phase 2: Redirects legacy ───
-  if (pathname === "/sign-in" || pathname === "/login") {
+  if (pathname === "/sign-in" || pathname === "/login" || pathname === "/auth/login") {
     return NextResponse.redirect(buildAuthRedirect(request, "/auth/sign-in"));
   }
   if (pathname === "/sign-up" || pathname === "/register") {

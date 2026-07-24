@@ -167,7 +167,7 @@ model PermissionOverride {
 }
 
 model User {
-  id              String          @id @default(uuid(7)) @unique @db.Uuid
+  id              String          @id @unique @default(uuid(7)) @db.Uuid
   role            Role            @default(USER)
   roleConfig      RoleConfig?     @relation(fields: [roleConfigId], references: [id])
   roleConfigId    String?         @db.Uuid
@@ -198,11 +198,11 @@ model User {
   searchAnalytics  SearchAnalytics?
 
   createdAt    DateTime  @default(now())
-  createdBy    String
+  createdBy    String?
   updatedAt    DateTime  @updatedAt
-  updatedBy    String
+  updatedBy    String?
   deletedAt    DateTime  @default(now())
-  deletedBy    String
+  deletedBy    String?
   isDeleted    Boolean   @default(false)
   isBlocked    Boolean   @default(false)
   blockedUntil DateTime?
@@ -281,7 +281,7 @@ model Session {
 model Account {
   id                String  @id @default(uuid(7)) @db.Uuid
   userId            String  @db.Uuid
-  type              String
+  type              String  @default("email")
   provider          String
   providerAccountId String
   refresh_token     String? @db.Text

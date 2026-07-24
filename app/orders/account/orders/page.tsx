@@ -13,7 +13,7 @@ export default async function AccountOrdersPage() {
   });
 
   if (!session?.user) {
-    redirect("/auth/login?callbackUrl=/account/orders");
+    redirect("/auth/sign-in?callbackUrl=/account/orders");
   }
 
   const result = await getUserOrders(session.user.id);
