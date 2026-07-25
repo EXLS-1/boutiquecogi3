@@ -1,8 +1,10 @@
-// app/api/media/route.ts
+  // app/api/media/route.ts
 
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -19,18 +21,32 @@ export async function GET() {
     const files = fs.readdirSync(mediaDir);
 
     // Filtrer pour ne garder que les fichiers (pas les dossiers)
-    const fileStats = files.map((file) => ({
-      name: file,
-      isFile: fs.statSync(path.join(mediaDir, file)).isFile(),
-    }));
+    const imageFiles: string[] = [];
 
-    const imageFiles = fileStats
-      .filter((item) => item.isFile)
-      .map((item) => item.name);
+    for (const file of files) {
+      const filePath = path.join(mediaDir, file);
+      try {
+        const stat = fs.statSync(filePath);
+        if (stat.isFile()) {
+          imageFiles.push(file);
+        }
+      } catch {
+        // Ignorer les fichiers inaccessibles
+        continue;
+      }
+    }
 
-    return NextResponse.json(imageFiles);
+    return NextResponse.json(imageFiles, {
+      headers: {
+        "Cache-Control": "public, max-age=300, s-maxage=300",
+      },
+    });
   } catch (error) {
-    console.error("Error reading media directory:", error);
-    return NextResponse.json([], { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error reading media directory:", message);
+    return NextResponse.json(
+      { error: "Failed to read media directory", details: message },
+      { status: 500 }
+    );
   }
 }

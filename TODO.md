@@ -1,21 +1,8 @@
-# Auth Fix Plan - TODO
 
-## ✅ Step 1: Remove the custom social sign-in route
-- Deleted `app/api/auth/sign-in/social/route.ts`
-- BetterAuth's built-in `[...auth]` handler now processes `POST /api/auth/sign-in/social` natively
-- OAuth redirect flows will work correctly
 
-## ✅ Step 2: Fix `useAuth` hook API method
-- Changed `authClient.signIn.credentials()` → `authClient.signIn.email()`
-- Changed `authClient.signUp.credentials()` → `authClient.signUp.email()`
-- These are the correct method names for BetterAuth 1.6.x
+## Steps
 
-## ✅ Step 3: Deprecate duplicate `lib/auth-client.ts`
-- Updated to re-export from canonical source `lib/auth/auth-client.ts`
-- Added deprecation notice
-
-## ✅ Step 4: Unify base URL resolution
-- Client uses `NEXT_PUBLIC_APP_URL` → `NEXT_PUBLIC_BASE_URL` → `window.location.origin`
-- Server uses `BETTER_AUTH_URL` → `NEXT_PUBLIC_BASE_URL` → `http://localhost:3000`
-- ❓ Consider if `NEXT_PUBLIC_APP_URL` should be added as a fallback for server too
-
+- [x] Step 1: Analyze root cause
+- [x] Step 2: Fix `app/api/media/route.ts` - use `node:fs`/`node:path`, better error responses
+- [x] Step 3: Fix `components/hero/image-show/hero-config.ts` - better error logging, use existing images as fallback
+- [ ] Step 4: Test the fix - verify the dev server runs without errors

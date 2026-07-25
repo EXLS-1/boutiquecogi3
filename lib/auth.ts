@@ -43,14 +43,8 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
   user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: true,
-        defaultValue: "USER",
-        input: false,
-      },
-    },
+    // Role is managed via Prisma schema directly (enum Role with @default(USER)).
+    // No additionalFields needed to avoid conflicts.
   },
   socialProviders: {
     google: {

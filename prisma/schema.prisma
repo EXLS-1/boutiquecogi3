@@ -261,16 +261,16 @@ model Post {
 }
 
 model Session {
-  id           String @id @default(uuid(7)) @db.Uuid
-  role         Role   @default(USER)
-  userId       String @db.Uuid
-  sessionToken String @unique
-
-  expires DateTime
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid(7)) @db.Uuid
+  token     String   @unique
+  userId    String   @db.Uuid
+  expiresAt DateTime
 
   ipAddress String?
   userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -284,6 +284,7 @@ model Account {
   type              String  @default("email")
   provider          String
   providerAccountId String
+  password          String? @db.Text
   refresh_token     String? @db.Text
   access_token      String? @db.Text
   expires_at        Int?

@@ -11,9 +11,18 @@ async function fetchImagesFromMedia(): Promise<HeroImage[]> {
     // Récupérer la liste des fichiers via l'API
     const response = await fetch("/api/media");
     if (!response.ok) {
-      throw new Error("Failed to fetch media files");
+      const errorText = await response.text().catch(() => "No response body");
+      throw new Error(
+        `Failed to fetch media files: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
     const files = await response.json();
+
+    // Vérifier que la réponse est bien un tableau
+    if (!Array.isArray(files)) {
+      console.warn("API/media returned non-array response:", files);
+      return [];
+    }
 
     // Filtrer uniquement les images (webp, jpg, png, etc.)
     const imageExtensions = [".webp", ".jpg", ".jpeg", ".png", ".gif", ".svg"];
@@ -66,12 +75,16 @@ export function useHeroImages() {
   return { images, loading, error };
 }
 
-// Images de fallback au cas où
+/**
+ * Images de fallback utilisant les images existantes dans /public/media/
+ * Utilisées lorsque l'appel API échoue ou ne retourne aucune image.
+ * Les chemins pointent vers des fichiers qui existent réellement dans le projet.
+ */
 function getFallbackImages(): HeroImage[] {
   return [
-    { id: "fallback1", type: "image", src: "/media/fallback1.webp" },
-    { id: "fallback2", type: "image", src: "/media/fallback2.webp" },
-    { id: "fallback3", type: "image", src: "/media/fallback3.webp" },
+    { id: "pict01", type: "image", src: "/media/pict01.webp" },
+    { id: "pict02", type: "image", src: "/media/pict02.webp" },
+    { id: "pict03", type: "image", src: "/media/pict03.webp" },
   ];
 }
 
