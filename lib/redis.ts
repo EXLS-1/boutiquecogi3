@@ -20,7 +20,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { Redis } from "ioredis";
+import crypto from "node:crypto";
+import { Redis, Cluster } from "ioredis";
 import { z } from "zod";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -92,8 +93,8 @@ const RedisConfigSchema = z.object({
   enableReadyCheck: z.boolean().default(true),
   enableOfflineQueue: z.boolean().default(true),
   lazyConnect: z.boolean().default(true),
-  connectTimeout: z.coerce.number().int().min(1000).default(10000),
-  commandTimeout: z.coerce.number().int().min(1000).default(5000),
+  connectTimeout: z.coerce.number().int().min(500).default(2000),
+  commandTimeout: z.coerce.number().int().min(500).default(2000),
   keepAlive: z.coerce.number().int().min(0).default(30000),
   family: z.coerce.number().int().min(4).max(6).default(4),
   tls: z.boolean().default(false),
@@ -112,8 +113,8 @@ const DEFAULT_CONFIG: RedisConfig = {
   enableReadyCheck: process.env.REDIS_ENABLE_READY_CHECK !== "false",
   enableOfflineQueue: process.env.REDIS_ENABLE_OFFLINE_QUEUE !== "false",
   lazyConnect: true,
-  connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || "10000", 10),
-  commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || "5000", 10),
+  connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || "2000", 10),
+  commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || "2000", 10),
   keepAlive: parseInt(process.env.REDIS_KEEP_ALIVE || "30000", 10),
   family: parseInt(process.env.REDIS_FAMILY || "4", 10),
   tls: process.env.REDIS_TLS === "true",
@@ -164,6 +165,7 @@ class CircuitBreaker {
 
   recordSuccess(): void {
     this.failureCount = 0;
+    this.lastFailureTime = null;
     if (this.state === "HALF_OPEN") {
       this.halfOpenCalls++;
       if (this.halfOpenCalls >= this.halfOpenMaxCalls) {
@@ -177,7 +179,10 @@ class CircuitBreaker {
   recordFailure(): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
-    if (this.state === "HALF_OPEN" || this.failureCount >= this.failureThreshold) {
+    if (
+      this.state === "HALF_OPEN" ||
+      this.failureCount >= this.failureThreshold
+    ) {
       this.state = "OPEN";
       getLogger().warn("Circuit breaker transitioning -> OPEN", {
         failureCount: this.failureCount,
@@ -325,7 +330,7 @@ export const RedisNamespaces = {
   RECOMMENDATION: "rec",
 } as const;
 
-type Namespace = (typeof RedisNamespaces)[keyof typeof RedisNamespaces];
+type Namespace = typeof RedisNamespaces[keyof typeof RedisNamespaces];
 
 export class KeyBuilder {
   private readonly prefix: string;
@@ -341,9 +346,7 @@ export class KeyBuilder {
         "REDIS_INVALID_KEY"
       );
     }
-    const sanitized = segments.map((s) =>
-      String(s).replace(/[:\s]/g, "_")
-    );
+    const sanitized = segments.map((s) => String(s).replace(/[:\s]/g, "_"));
     return `${this.prefix}${namespace}:${sanitized.join(":")}`;
   }
 
@@ -355,7 +358,6 @@ export class KeyBuilder {
     return `${this.prefix}${namespace}:*`;
   }
 }
-
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN REDIS CLIENT — Singleton avec lazy connection
@@ -638,7 +640,11 @@ export class RedisClient {
       if (options?.xx) args.push("XX");
       if (options?.keepTtl) args.push("KEEPTTL");
 
-      await this.client!.set(key, serialized, ...(args.slice(2) as (string | number)[]));
+      await this.client!.set(
+        key,
+        serialized,
+        ...(args.slice(2) as (string | number)[])
+      );
     }, "SET");
   }
 
@@ -780,7 +786,11 @@ export class RedisClient {
     }, "HEXISTS");
   }
 
-  async hIncrBy(key: string, field: string, increment: number): Promise<number> {
+  async hIncrBy(
+    key: string,
+    field: string,
+    increment: number
+  ): Promise<number> {
     await this.connect();
     return this.executeWithCircuit(async () => {
       return await this.client!.hincrby(key, field, increment);
@@ -1009,14 +1019,22 @@ export class RedisClient {
     }, "ZCOUNT");
   }
 
-  async zRemRangeByScore(key: string, min: number, max: number): Promise<number> {
+  async zRemRangeByScore(
+    key: string,
+    min: number,
+    max: number
+  ): Promise<number> {
     await this.connect();
     return this.executeWithCircuit(async () => {
       return await this.client!.zremrangebyscore(key, min, max);
     }, "ZREMRANGEBYSCORE");
   }
 
-  async zRemRangeByRank(key: string, start: number, stop: number): Promise<number> {
+  async zRemRangeByRank(
+    key: string,
+    start: number,
+    stop: number
+  ): Promise<number> {
     await this.connect();
     return this.executeWithCircuit(async () => {
       return await this.client!.zremrangebyrank(key, start, stop);
@@ -1025,7 +1043,7 @@ export class RedisClient {
 
   // ─── Pattern Matching & Scan ─────────────────────────────────────────────────
 
-  async keys(pattern: string): Promise<string[]> {
+  async scanKeys(pattern: string): Promise<string[]> {
     await this.connect();
     return this.executeWithCircuit(async () => {
       return await this.client!.keys(pattern);
@@ -1043,7 +1061,10 @@ export class RedisClient {
       if (options?.count) args.push("COUNT", options.count);
 
       const [nextCursor, keys] = await this.client!.scan(...args);
-      return { cursor: parseInt(nextCursor as string, 10), keys: keys as string[] };
+      return {
+        cursor: parseInt(nextCursor as string, 10),
+        keys: keys as string[],
+      };
     }, "SCAN");
   }
 
@@ -1068,7 +1089,9 @@ export class RedisClient {
 
   // ─── Transactions (Multi/Exec) ─────────────────────────────────────────────
 
-  async multi(operations: (pipeline: Redis.Pipeline) => void): Promise<unknown[]> {
+  async multi(
+    operations: (pipeline: Redis.Pipeline) => void
+  ): Promise<unknown[]> {
     await this.connect();
     return this.executeWithCircuit(async () => {
       const pipeline = this.client!.multi();
@@ -1117,7 +1140,6 @@ export class RedisClient {
     };
   }
 
-
   // ═══════════════════════════════════════════════════════════════════════════════
   // DISTRIBUTED LOCK — Sécurité du stock (anti-race condition)
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -1146,11 +1168,21 @@ export class RedisClient {
     const retryDelay = options?.retryDelayMs || 100;
     const maxRetries = options?.maxRetries || 10;
 
-    this.logger.debug("Attempting to acquire lock", { lockKey, token, maxRetries });
+    this.logger.debug("Attempting to acquire lock", {
+      lockKey,
+      token,
+      maxRetries,
+    });
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const acquired = await this.executeWithCircuit(async () => {
-        const result = await this.client!.set(lockKey, token, "EX", ttlSeconds, "NX");
+        const result = await this.client!.set(
+          lockKey,
+          token,
+          "EX",
+          ttlSeconds,
+          "NX"
+        );
         return result === "OK";
       }, "ACQUIRE_LOCK");
 
@@ -1165,11 +1197,14 @@ export class RedisClient {
                 await this.client!.del(lockKey);
                 this.logger.debug("Lock released", { lockKey, token });
               } else {
-                this.logger.warn("Lock release skipped — token mismatch (lock expired or stolen)", {
-                  lockKey,
-                  expectedToken: token,
-                  actualToken: currentToken,
-                });
+                this.logger.warn(
+                  "Lock release skipped — token mismatch (lock expired or stolen)",
+                  {
+                    lockKey,
+                    expectedToken: token,
+                    actualToken: currentToken,
+                  }
+                );
               }
             }, "RELEASE_LOCK");
           },
@@ -1241,7 +1276,10 @@ export class RedisClient {
 
       if (currentCount >= options.maxRequests) {
         const oldest = await this.client!.zrange(key, 0, 0, "WITHSCORES");
-        const resetTime = oldest.length > 0 ? parseInt(oldest[1], 10) + windowMs : now + windowMs;
+        const resetTime =
+          oldest.length > 0
+            ? parseInt(oldest[1], 10) + windowMs
+            : now + windowMs;
         return {
           allowed: false,
           remaining: 0,
@@ -1289,8 +1327,12 @@ export class RedisClient {
 
       if (currentCount >= options.maxRequests) {
         const oldestScores = await this.client!.zrange(key, 0, 0, "WITHSCORES");
-        const oldestTimestamp = oldestScores.length > 0 ? parseInt(oldestScores[1], 10) : windowStart;
-        const retryAfter = Math.max(0, oldestTimestamp + options.windowSeconds - now);
+        const oldestTimestamp =
+          oldestScores.length > 0 ? parseInt(oldestScores[1], 10) : windowStart;
+        const retryAfter = Math.max(
+          0,
+          oldestTimestamp + options.windowSeconds - now
+        );
         return { allowed: false, remaining: 0, retryAfter };
       }
 
@@ -1371,28 +1413,40 @@ export class RedisClient {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SINGLETON EXPORT
+// SINGLETON EXPORT — HMR-Safe via globalThis
 // ═══════════════════════════════════════════════════════════════════════════════
 
-let globalRedisClient: RedisClient | null = null;
+const GLOBAL_KEY = "__boutiquecogi3_redis_client__";
+
+function getGlobalRedisClient(): RedisClient | null {
+  return (globalThis as Record<string, unknown>)[
+    GLOBAL_KEY
+  ] as RedisClient | null;
+}
+
+function setGlobalRedisClient(client: RedisClient | null): void {
+  (globalThis as Record<string, unknown>)[GLOBAL_KEY] = client;
+}
 
 export function getRedisClient(options?: RedisClientOptions): RedisClient {
-  if (!globalRedisClient) {
-    globalRedisClient = RedisClient.getInstance(options);
+  let client = getGlobalRedisClient();
+  if (!client) {
+    client = RedisClient.getInstance(options);
+    setGlobalRedisClient(client);
   }
-  return globalRedisClient;
+  return client;
 }
 
 export function resetRedisClient(): void {
-  if (globalRedisClient) {
-    globalRedisClient.disconnect().catch(() => {});
-    globalRedisClient = null;
+  const client = getGlobalRedisClient();
+  if (client) {
+    client.disconnect().catch(() => {});
+    setGlobalRedisClient(null);
   }
   RedisClient.resetInstance();
 }
 
 export { RedisClient, RedisNamespaces, KeyBuilder, Serializer };
-
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DOMAIN-SPECIFIC HELPERS (Boutiquecogi3)
@@ -1426,7 +1480,12 @@ export const redisHelpers = {
 
     async set(
       sessionToken: string,
-      data: { userId: string; email: string; roleLevel: number; expiresAt: number },
+      data: {
+        userId: string;
+        email: string;
+        roleLevel: number;
+        expiresAt: number;
+      },
       ttlSeconds: number
     ) {
       return getRedisClient().setex(this.key(sessionToken), ttlSeconds, data);
@@ -1454,7 +1513,12 @@ export const redisHelpers = {
     async addItem(
       userId: string,
       itemKey: string,
-      item: { productId: string; quantity: number; variantId?: string; addedAt: number },
+      item: {
+        productId: string;
+        quantity: number;
+        variantId?: string;
+        addedAt: number;
+      },
       ttlSeconds = 7 * 24 * 3600 // 7 jours
     ) {
       return getRedisClient().hSet(this.key(userId), itemKey, item, {
@@ -1493,7 +1557,11 @@ export const redisHelpers = {
       return getRedisClient().get<Record<string, unknown>>(this.key(productId));
     },
 
-    async set(productId: string, data: Record<string, unknown>, ttlSeconds = 3600) {
+    async set(
+      productId: string,
+      data: Record<string, unknown>,
+      ttlSeconds = 3600
+    ) {
       return getRedisClient().setex(this.key(productId), ttlSeconds, data);
     },
 
@@ -1541,18 +1609,20 @@ export const redisHelpers = {
      * Décrémente le stock de manière atomique.
      * ⚠️ Pour les opérations critiques (checkout), utiliser withLock() en plus.
      */
-    async decrementStock(productId: string, quantity: number, variantId?: string) {
-      return getRedisClient().decrBy(
-        this.key(productId, variantId),
-        quantity
-      );
+    async decrementStock(
+      productId: string,
+      quantity: number,
+      variantId?: string
+    ) {
+      return getRedisClient().decrBy(this.key(productId, variantId), quantity);
     },
 
-    async incrementStock(productId: string, quantity: number, variantId?: string) {
-      return getRedisClient().incrBy(
-        this.key(productId, variantId),
-        quantity
-      );
+    async incrementStock(
+      productId: string,
+      quantity: number,
+      variantId?: string
+    ) {
+      return getRedisClient().incrBy(this.key(productId, variantId), quantity);
     },
 
     /**
@@ -1580,7 +1650,11 @@ export const redisHelpers = {
           if (currentStock === null || currentStock < quantity) {
             return { success: false, remainingStock: currentStock ?? 0 };
           }
-          const remaining = await this.decrementStock(productId, quantity, variantId);
+          const remaining = await this.decrementStock(
+            productId,
+            quantity,
+            variantId
+          );
           return { success: true, remainingStock: remaining };
         },
         { maxRetries: options?.maxRetries }
@@ -1591,16 +1665,28 @@ export const redisHelpers = {
   // ─── RBAC Permissions Cache ────────────────────────────────────────────────
   rbac: {
     permissionsKey: (roleLevel: number) =>
-      getRedisClient().keys.build(RedisNamespaces.RBAC, "permissions", roleLevel),
+      getRedisClient().keys.build(
+        RedisNamespaces.RBAC,
+        "permissions",
+        roleLevel
+      ),
 
     restrictionsKey: (roleLevel: number) =>
-      getRedisClient().keys.build(RedisNamespaces.RBAC, "restrictions", roleLevel),
+      getRedisClient().keys.build(
+        RedisNamespaces.RBAC,
+        "restrictions",
+        roleLevel
+      ),
 
     async getPermissions(roleLevel: number) {
       return getRedisClient().get<string[]>(this.permissionsKey(roleLevel));
     },
 
-    async setPermissions(roleLevel: number, permissions: string[], ttlSeconds = 600) {
+    async setPermissions(
+      roleLevel: number,
+      permissions: string[],
+      ttlSeconds = 600
+    ) {
       return getRedisClient().setex(
         this.permissionsKey(roleLevel),
         ttlSeconds,
@@ -1693,7 +1779,11 @@ export const redisHelpers = {
     },
 
     async setStatus(orderId: string, status: string, ttlSeconds = 3600) {
-      return getRedisClient().setex(this.statusKey(orderId), ttlSeconds, status);
+      return getRedisClient().setex(
+        this.statusKey(orderId),
+        ttlSeconds,
+        status
+      );
     },
   },
 
@@ -1720,7 +1810,10 @@ export const redisHelpers = {
 
   // ─── Analytics temporaires ─────────────────────────────────────────────────
   analytics: {
-    pageViewKey: (page: string, date = new Date().toISOString().split("T")[0]) =>
+    pageViewKey: (
+      page: string,
+      date = new Date().toISOString().split("T")[0]
+    ) =>
       getRedisClient().keys.build(RedisNamespaces.ANALYTICS, "pv", page, date),
 
     async incrementPageView(page: string) {
@@ -1734,8 +1827,16 @@ export const redisHelpers = {
       return count ?? 0;
     },
 
-    eventKey: (eventName: string, date = new Date().toISOString().split("T")[0]) =>
-      getRedisClient().keys.build(RedisNamespaces.ANALYTICS, "event", eventName, date),
+    eventKey: (
+      eventName: string,
+      date = new Date().toISOString().split("T")[0]
+    ) =>
+      getRedisClient().keys.build(
+        RedisNamespaces.ANALYTICS,
+        "event",
+        eventName,
+        date
+      ),
 
     async trackEvent(eventName: string, metadata?: Record<string, unknown>) {
       const key = this.eventKey(eventName);
@@ -1756,7 +1857,11 @@ export const redisHelpers = {
   // ─── Recherche / Autocomplétion ────────────────────────────────────────────
   search: {
     suggestionsKey: (prefix: string) =>
-      getRedisClient().keys.build(RedisNamespaces.SEARCH, "suggestions", prefix),
+      getRedisClient().keys.build(
+        RedisNamespaces.SEARCH,
+        "suggestions",
+        prefix
+      ),
 
     async addSuggestion(query: string, score = 1) {
       const key = this.suggestionsKey(query.slice(0, 3).toLowerCase());
@@ -1776,9 +1881,17 @@ export const redisHelpers = {
   // ─── Recommandations (produits similaires) ─────────────────────────────────
   recommendation: {
     similarKey: (productId: string) =>
-      getRedisClient().keys.build(RedisNamespaces.RECOMMENDATION, "similar", productId),
+      getRedisClient().keys.build(
+        RedisNamespaces.RECOMMENDATION,
+        "similar",
+        productId
+      ),
 
-    async setSimilar(productId: string, similarProductIds: string[], ttlSeconds = 3600) {
+    async setSimilar(
+      productId: string,
+      similarProductIds: string[],
+      ttlSeconds = 3600
+    ) {
       const entries = similarProductIds.map((id, index) => ({
         score: similarProductIds.length - index,
         member: id,
@@ -1818,7 +1931,11 @@ export const redisHelpers = {
     passwordResetKey: (token: string) =>
       getRedisClient().keys.build(RedisNamespaces.PASSWORD_RESET, token),
 
-    async storePasswordResetToken(token: string, userId: string, ttlSeconds = 3600) {
+    async storePasswordResetToken(
+      token: string,
+      userId: string,
+      ttlSeconds = 3600
+    ) {
       return getRedisClient().setex(this.passwordResetKey(token), ttlSeconds, {
         userId,
         createdAt: Date.now(),
@@ -1853,7 +1970,12 @@ export const redisHelpers = {
     stateKey: (state: string) =>
       getRedisClient().keys.build(RedisNamespaces.OAUTH_STATE, state),
 
-    async storeState(state: string, provider: string, redirectUrl: string, ttlSeconds = 600) {
+    async storeState(
+      state: string,
+      provider: string,
+      redirectUrl: string,
+      ttlSeconds = 600
+    ) {
       return getRedisClient().setex(this.stateKey(state), ttlSeconds, {
         provider,
         redirectUrl,
@@ -1876,8 +1998,10 @@ export const redisHelpers = {
 
   // ─── Catégories (cache hiérarchique) ───────────────────────────────────────
   category: {
-    treeKey: () => getRedisClient().keys.build(RedisNamespaces.CATEGORY, "tree"),
-    listKey: () => getRedisClient().keys.build(RedisNamespaces.CATEGORY, "list"),
+    treeKey: () =>
+      getRedisClient().keys.build(RedisNamespaces.CATEGORY, "tree"),
+    listKey: () =>
+      getRedisClient().keys.build(RedisNamespaces.CATEGORY, "list"),
 
     async getTree() {
       return getRedisClient().get<Record<string, unknown>>(this.treeKey());
@@ -1888,7 +2012,9 @@ export const redisHelpers = {
     },
 
     async getList() {
-      return getRedisClient().get<Array<Record<string, unknown>>>(this.listKey());
+      return getRedisClient().get<Array<Record<string, unknown>>>(
+        this.listKey()
+      );
     },
 
     async setList(list: Array<Record<string, unknown>>, ttlSeconds = 3600) {
@@ -1909,26 +2035,29 @@ export const redisHelpers = {
 
 export type { RedisConfig, CircuitState, Namespace };
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // REDIS CLUSTER SUPPORT — Haute disponibilité & scalabilité horizontale
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { Cluster } from "ioredis";
-
 const RedisClusterConfigSchema = z.object({
   enableCluster: z.boolean().default(false),
-  nodes: z.array(z.object({
-    host: z.string(),
-    port: z.coerce.number().int().min(1).max(65535),
-  })).default([]),
-  clusterOptions: z.object({
-    maxRedirections: z.coerce.number().int().min(1).default(16),
-    retryDelayOnFailover: z.coerce.number().int().min(0).default(300),
-    retryDelayOnClusterDown: z.coerce.number().int().min(0).default(300),
-    enableOfflineQueue: z.boolean().default(true),
-    scaleReads: z.enum(["master", "slave", "all"]).default("master"),
-  }).default({}),
+  nodes: z
+    .array(
+      z.object({
+        host: z.string(),
+        port: z.coerce.number().int().min(1).max(65535),
+      })
+    )
+    .default([]),
+  clusterOptions: z
+    .object({
+      maxRedirections: z.coerce.number().int().min(1).default(16),
+      retryDelayOnFailover: z.coerce.number().int().min(0).default(300),
+      retryDelayOnClusterDown: z.coerce.number().int().min(0).default(300),
+      enableOfflineQueue: z.boolean().default(true),
+      scaleReads: z.enum(["master", "slave", "all"]).default("master"),
+    })
+    .default({}),
 });
 
 type RedisClusterConfig = z.infer<typeof RedisClusterConfigSchema>;
@@ -1942,11 +2071,22 @@ const DEFAULT_CLUSTER_CONFIG: RedisClusterConfig = {
       })
     : [],
   clusterOptions: {
-    maxRedirections: parseInt(process.env.REDIS_CLUSTER_MAX_REDIRECTIONS || "16", 10),
-    retryDelayOnFailover: parseInt(process.env.REDIS_CLUSTER_RETRY_DELAY || "300", 10),
-    retryDelayOnClusterDown: parseInt(process.env.REDIS_CLUSTER_DOWN_DELAY || "300", 10),
+    maxRedirections: parseInt(
+      process.env.REDIS_CLUSTER_MAX_REDIRECTIONS || "16",
+      10
+    ),
+    retryDelayOnFailover: parseInt(
+      process.env.REDIS_CLUSTER_RETRY_DELAY || "300",
+      10
+    ),
+    retryDelayOnClusterDown: parseInt(
+      process.env.REDIS_CLUSTER_DOWN_DELAY || "300",
+      10
+    ),
     enableOfflineQueue: process.env.REDIS_CLUSTER_OFFLINE_QUEUE !== "false",
-    scaleReads: (process.env.REDIS_CLUSTER_SCALE_READS as "master" | "slave" | "all") || "master",
+    scaleReads:
+      (process.env.REDIS_CLUSTER_SCALE_READS as "master" | "slave" | "all") ||
+      "master",
   },
 };
 
@@ -1961,7 +2101,9 @@ export class RedisClusterClient {
   private readonly logger: RedisLogger;
   private isConnected = false;
 
-  private constructor(options: { clusterConfig?: Partial<RedisClusterConfig> } = {}) {
+  private constructor(
+    options: { clusterConfig?: Partial<RedisClusterConfig> } = {}
+  ) {
     const parsed = RedisClusterConfigSchema.safeParse({
       ...DEFAULT_CLUSTER_CONFIG,
       ...options.clusterConfig,
@@ -1978,7 +2120,9 @@ export class RedisClusterClient {
     this.logger = getLogger().child({ component: "RedisClusterClient" });
   }
 
-  static getInstance(options?: { clusterConfig?: Partial<RedisClusterConfig> }): RedisClusterClient {
+  static getInstance(options?: {
+    clusterConfig?: Partial<RedisClusterConfig>;
+  }): RedisClusterClient {
     if (!RedisClusterClient.instance) {
       RedisClusterClient.instance = new RedisClusterClient(options);
     }
@@ -1995,7 +2139,10 @@ export class RedisClusterClient {
   async connect(): Promise<void> {
     if (this.isConnected) return;
     if (!this.config.enableCluster) {
-      throw new RedisError("Cluster mode is disabled", "REDIS_CLUSTER_DISABLED");
+      throw new RedisError(
+        "Cluster mode is disabled",
+        "REDIS_CLUSTER_DISABLED"
+      );
     }
 
     return new Promise((resolve, reject) => {
@@ -2007,7 +2154,10 @@ export class RedisClusterClient {
             connectTimeout: DEFAULT_CONFIG.connectTimeout,
             commandTimeout: DEFAULT_CONFIG.commandTimeout,
             tls: DEFAULT_CONFIG.tls
-              ? { rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== "false" }
+              ? {
+                  rejectUnauthorized:
+                    process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== "false",
+                }
               : undefined,
           },
           ...this.config.clusterOptions,
@@ -2035,26 +2185,35 @@ export class RedisClusterClient {
           }
         });
 
-        this.cluster.on("node error", (err: Error, node: { host: string; port: number }) => {
-          this.logger.warn("Cluster node error", {
-            error: err.message,
+        this.cluster.on(
+          "node error",
+          (err: Error, node: { host: string; port: number }) => {
+            this.logger.warn("Cluster node error", {
+              error: err.message,
+              node: `${node.host}:${node.port}`,
+            });
+          }
+        );
+
+        this.cluster.on("+node", (node: { host: string; port: number }) => {
+          this.logger.info("Cluster node added", {
             node: `${node.host}:${node.port}`,
           });
         });
 
-        this.cluster.on("+node", (node: { host: string; port: number }) => {
-          this.logger.info("Cluster node added", { node: `${node.host}:${node.port}` });
-        });
-
         this.cluster.on("-node", (node: { host: string; port: number }) => {
-          this.logger.warn("Cluster node removed", { node: `${node.host}:${node.port}` });
+          this.logger.warn("Cluster node removed", {
+            node: `${node.host}:${node.port}`,
+          });
         });
 
         this.cluster.connect().catch((err: Error) => {
           reject(new RedisConnectionError("Failed to connect to cluster", err));
         });
       } catch (err) {
-        reject(new RedisConnectionError("Failed to create cluster client", err));
+        reject(
+          new RedisConnectionError("Failed to create cluster client", err)
+        );
       }
     });
   }
@@ -2143,7 +2302,9 @@ export class RedisStreamManager {
         args.push(key, value);
       }
 
-      const id = await this.client.getClient().xadd(...args as [string, ...Array<string | number>]);
+      const id = await this.client
+        .getClient()
+        .xadd(...(args as [string, ...Array<string | number>]));
       this.logger.debug("Event added to stream", { stream: streamKey, id });
       return id as string;
     }, "XADD");
@@ -2162,8 +2323,15 @@ export class RedisStreamManager {
       if (options?.mkStream) args.push("MKSTREAM");
       args.push(options?.id || "$"); // $ = only new messages
 
-      await this.client.getClient().xgroup(...args as [string, string, string, ...Array<string | number>]);
-      this.logger.info("Consumer group created", { stream: streamKey, group: groupName });
+      await this.client
+        .getClient()
+        .xgroup(
+          ...(args as [string, string, string, ...Array<string | number>])
+        );
+      this.logger.info("Consumer group created", {
+        stream: streamKey,
+        group: groupName,
+      });
     }, "XGROUP CREATE");
   }
 
@@ -2182,11 +2350,14 @@ export class RedisStreamManager {
       const args: (string | number)[] = ["STREAMS", streamKey];
       args.push(options?.lastId || "0");
 
-      const results = await this.client.getClient().xread(
-        "COUNT", options?.count || 10,
-        ...(options?.block !== undefined ? ["BLOCK", options.block] : []),
-        ...args
-      );
+      const results = await this.client
+        .getClient()
+        .xread(
+          "COUNT",
+          options?.count || 10,
+          ...(options?.block !== undefined ? ["BLOCK", options.block] : []),
+          ...args
+        );
 
       if (!results || results.length === 0) return [];
 
@@ -2218,8 +2389,11 @@ export class RedisStreamManager {
   ): Promise<StreamMessage[]> {
     return this.client.executeWithCircuit(async () => {
       const args: (string | number)[] = [
-        "GROUP", group.group, group.consumer,
-        "COUNT", options?.count || 10,
+        "GROUP",
+        group.group,
+        group.consumer,
+        "COUNT",
+        options?.count || 10,
       ];
 
       if (options?.block !== undefined) {
@@ -2230,7 +2404,9 @@ export class RedisStreamManager {
 
       args.push("STREAMS", group.stream, ">"); // > = only undelivered messages
 
-      const results = await this.client.getClient().xreadgroup(...args as [string, ...Array<string | number>]);
+      const results = await this.client
+        .getClient()
+        .xreadgroup(...(args as [string, ...Array<string | number>]));
 
       if (!results || results.length === 0) return [];
 
@@ -2258,8 +2434,13 @@ export class RedisStreamManager {
     ...messageIds: string[]
   ): Promise<number> {
     return this.client.executeWithCircuit(async () => {
-      const result = await this.client.getClient().xack(streamKey, groupName, ...messageIds);
-      this.logger.debug("Messages acknowledged", { stream: streamKey, count: result });
+      const result = await this.client
+        .getClient()
+        .xack(streamKey, groupName, ...messageIds);
+      this.logger.debug("Messages acknowledged", {
+        stream: streamKey,
+        count: result,
+      });
       return result;
     }, "XACK");
   }
@@ -2276,12 +2457,14 @@ export class RedisStreamManager {
       end?: string;
       count?: number;
     }
-  ): Promise<Array<{
-    id: string;
-    consumer: string;
-    elapsedMs: number;
-    deliveries: number;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      consumer: string;
+      elapsedMs: number;
+      deliveries: number;
+    }>
+  > {
     return this.client.executeWithCircuit(async () => {
       const args: (string | number)[] = [streamKey, groupName];
 
@@ -2289,7 +2472,9 @@ export class RedisStreamManager {
         args.push(options.start, options.end || "+", options.count || 10);
       }
 
-      const result = await this.client.getClient().xpending(...args as [string, string, ...Array<string | number>]);
+      const result = await this.client
+        .getClient()
+        .xpending(...(args as [string, string, ...Array<string | number>]));
 
       if (!Array.isArray(result)) return [];
 
@@ -2313,9 +2498,9 @@ export class RedisStreamManager {
     ...messageIds: string[]
   ): Promise<StreamMessage[]> {
     return this.client.executeWithCircuit(async () => {
-      const results = await this.client.getClient().xclaim(
-        streamKey, groupName, consumerName, minIdleTime, ...messageIds
-      );
+      const results = await this.client
+        .getClient()
+        .xclaim(streamKey, groupName, consumerName, minIdleTime, ...messageIds);
 
       return results.map((item: unknown[]) => ({
         id: item[0] as string,
@@ -2334,7 +2519,10 @@ export class RedisStreamManager {
   /**
    * Supprime des messages d'un stream
    */
-  async deleteEvents(streamKey: string, ...messageIds: string[]): Promise<number> {
+  async deleteEvents(
+    streamKey: string,
+    ...messageIds: string[]
+  ): Promise<number> {
     return this.client.executeWithCircuit(async () => {
       return await this.client.getClient().xdel(streamKey, ...messageIds);
     }, "XDEL");
@@ -2365,28 +2553,36 @@ export class RedisStreamManager {
         radixTreeNodes: parsed["radix-tree-nodes"] as number,
         groups: parsed.groups as number,
         lastGeneratedId: parsed["last-generated-id"] as string,
-        firstEntry: parsed["first-entry"] ? {
-          id: (parsed["first-entry"] as unknown[])[0] as string,
-          data: (() => {
-            const fields = (parsed["first-entry"] as unknown[])[1] as string[];
-            const data: Record<string, string> = {};
-            for (let i = 0; i < fields.length; i += 2) {
-              data[fields[i]] = fields[i + 1];
+        firstEntry: parsed["first-entry"]
+          ? {
+              id: (parsed["first-entry"] as unknown[])[0] as string,
+              data: (() => {
+                const fields = (
+                  parsed["first-entry"] as unknown[]
+                )[1] as string[];
+                const data: Record<string, string> = {};
+                for (let i = 0; i < fields.length; i += 2) {
+                  data[fields[i]] = fields[i + 1];
+                }
+                return data;
+              })(),
             }
-            return data;
-          })(),
-        } : null,
-        lastEntry: parsed["last-entry"] ? {
-          id: (parsed["last-entry"] as unknown[])[0] as string,
-          data: (() => {
-            const fields = (parsed["last-entry"] as unknown[])[1] as string[];
-            const data: Record<string, string> = {};
-            for (let i = 0; i < fields.length; i += 2) {
-              data[fields[i]] = fields[i + 1];
+          : null,
+        lastEntry: parsed["last-entry"]
+          ? {
+              id: (parsed["last-entry"] as unknown[])[0] as string,
+              data: (() => {
+                const fields = (
+                  parsed["last-entry"] as unknown[]
+                )[1] as string[];
+                const data: Record<string, string> = {};
+                for (let i = 0; i < fields.length; i += 2) {
+                  data[fields[i]] = fields[i + 1];
+                }
+                return data;
+              })(),
             }
-            return data;
-          })(),
-        } : null,
+          : null,
       };
     }, "XINFO STREAM");
   }
@@ -2394,13 +2590,19 @@ export class RedisStreamManager {
   /**
    * Tronque un stream à une taille maximale
    */
-  async trimStream(streamKey: string, maxLen: number, approximate = true): Promise<number> {
+  async trimStream(
+    streamKey: string,
+    maxLen: number,
+    approximate = true
+  ): Promise<number> {
     return this.client.executeWithCircuit(async () => {
       const args: (string | number)[] = ["MAXLEN"];
       if (approximate) args.push("~");
       args.push(maxLen);
 
-      return await this.client.getClient().xtrim(streamKey, ...args as [string, ...Array<string | number>]);
+      return await this.client
+        .getClient()
+        .xtrim(streamKey, ...(args as [string, ...Array<string | number>]));
     }, "XTRIM");
   }
 }
@@ -2423,10 +2625,10 @@ export interface L1CacheConfig {
 
 /**
  * Cache L1 In-Memory (Map) devant Redis (L2).
- * 
+ *
  * Architecture :
  *   Client → L1 (Map, <1ms) → miss → L2 (Redis, ~2ms) → miss → DB (~45ms)
- * 
+ *
  * Invalidation : Pub/Sub cross-process pour synchroniser les L1 entre instances.
  */
 export class L1CacheManager {
@@ -2456,7 +2658,9 @@ export class L1CacheManager {
       (channel, message) => {
         if (typeof message === "string") {
           this.delete(message);
-          this.logger.debug("L1 cache invalidated via Pub/Sub", { key: message });
+          this.logger.debug("L1 cache invalidated via Pub/Sub", {
+            key: message,
+          });
         }
       }
     );
@@ -2627,11 +2831,13 @@ export class RedisMetricsCollector {
       },
       performance: {
         totalOperations: this.operationCount,
-        averageLatencyMs: latencies.length > 0
-          ? latencies.reduce((a, b) => a + b, 0) / latencies.length
-          : 0,
+        averageLatencyMs:
+          latencies.length > 0
+            ? latencies.reduce((a, b) => a + b, 0) / latencies.length
+            : 0,
         p99LatencyMs: latencies[p99Index] || 0,
-        errorRate: this.operationCount > 0 ? this.errorCount / this.operationCount : 0,
+        errorRate:
+          this.operationCount > 0 ? this.errorCount / this.operationCount : 0,
       },
       memory: {
         usedMemory: parseInt(infoMap["used_memory"] || "0", 10),
@@ -2667,7 +2873,9 @@ redis_performance_total_operations ${metrics.performance.totalOperations}
 
 # HELP redis_performance_average_latency_ms Average latency
 # TYPE redis_performance_average_latency_ms gauge
-redis_performance_average_latency_ms ${metrics.performance.averageLatencyMs.toFixed(2)}
+redis_performance_average_latency_ms ${metrics.performance.averageLatencyMs.toFixed(
+      2
+    )}
 
 # HELP redis_performance_p99_latency_ms P99 latency
 # TYPE redis_performance_p99_latency_ms gauge
@@ -2752,14 +2960,22 @@ export interface RoomSubscription {
 export class RealtimeNotificationManager {
   private client: RedisClient;
   private subscriber: Redis | null = null;
-  private roomHandlers = new Map<string, Set<(payload: NotificationPayload) => void>>();
-  private userHandlers = new Map<string, Set<(payload: NotificationPayload) => void>>();
+  private roomHandlers = new Map<
+    string,
+    Set<(payload: NotificationPayload) => void>
+  >();
+  private userHandlers = new Map<
+    string,
+    Set<(payload: NotificationPayload) => void>
+  >();
   private logger: RedisLogger;
   private isSubscribed = false;
 
   constructor(client: RedisClient) {
     this.client = client;
-    this.logger = getLogger().child({ component: "RealtimeNotificationManager" });
+    this.logger = getLogger().child({
+      component: "RealtimeNotificationManager",
+    });
   }
 
   /**
@@ -2775,11 +2991,17 @@ export class RealtimeNotificationManager {
         const notification = JSON.parse(message) as NotificationPayload;
         this.dispatch(channel, notification);
       } catch (err) {
-        this.logger.error("Failed to parse notification", { channel, error: String(err) });
+        this.logger.error("Failed to parse notification", {
+          channel,
+          error: String(err),
+        });
       }
     });
 
-    await this.subscriber.subscribe("notifications:broadcast", "notifications:rooms:*");
+    await this.subscriber.subscribe(
+      "notifications:broadcast",
+      "notifications:rooms:*"
+    );
     this.isSubscribed = true;
     this.logger.info("Realtime notification manager initialized");
   }
@@ -2787,7 +3009,10 @@ export class RealtimeNotificationManager {
   /**
    * Rejoint une room pour recevoir les notifications
    */
-  joinRoom(room: string, handler: (payload: NotificationPayload) => void): () => void {
+  joinRoom(
+    room: string,
+    handler: (payload: NotificationPayload) => void
+  ): () => void {
     const roomKey = `room:${room}`;
 
     if (!this.roomHandlers.has(roomKey)) {
@@ -2808,7 +3033,10 @@ export class RealtimeNotificationManager {
   /**
    * S'abonne aux notifications privées d'un utilisateur
    */
-  subscribeToUser(userId: string, handler: (payload: NotificationPayload) => void): () => void {
+  subscribeToUser(
+    userId: string,
+    handler: (payload: NotificationPayload) => void
+  ): () => void {
     if (!this.userHandlers.has(userId)) {
       this.userHandlers.set(userId, new Set());
     }
@@ -2824,7 +3052,10 @@ export class RealtimeNotificationManager {
   /**
    * Envoie une notification à une room
    */
-  async sendToRoom(room: string, notification: Omit<NotificationPayload, "timestamp">): Promise<number> {
+  async sendToRoom(
+    room: string,
+    notification: Omit<NotificationPayload, "timestamp">
+  ): Promise<number> {
     const payload: NotificationPayload = {
       ...notification,
       timestamp: Date.now(),
@@ -2836,7 +3067,9 @@ export class RealtimeNotificationManager {
   /**
    * Broadcast à tous les clients connectés
    */
-  async broadcast(notification: Omit<NotificationPayload, "timestamp">): Promise<number> {
+  async broadcast(
+    notification: Omit<NotificationPayload, "timestamp">
+  ): Promise<number> {
     const payload: NotificationPayload = {
       ...notification,
       timestamp: Date.now(),
@@ -2848,7 +3081,10 @@ export class RealtimeNotificationManager {
   /**
    * Envoie une notification privée à un utilisateur
    */
-  async sendToUser(userId: string, notification: Omit<NotificationPayload, "timestamp">): Promise<void> {
+  async sendToUser(
+    userId: string,
+    notification: Omit<NotificationPayload, "timestamp">
+  ): Promise<void> {
     const payload: NotificationPayload = {
       ...notification,
       timestamp: Date.now(),
@@ -2868,7 +3104,9 @@ export class RealtimeNotificationManager {
   /**
    * Récupère les notifications en attente d'un utilisateur
    */
-  async getPendingNotifications(userId: string): Promise<NotificationPayload[]> {
+  async getPendingNotifications(
+    userId: string
+  ): Promise<NotificationPayload[]> {
     const pattern = `notifications:user:${userId}:*`;
     const keys = await this.client.scanAll(pattern);
 
@@ -2905,7 +3143,9 @@ export class RealtimeNotificationManager {
           try {
             h(notification);
           } catch (err) {
-            this.logger.error("Broadcast handler error", { error: String(err) });
+            this.logger.error("Broadcast handler error", {
+              error: String(err),
+            });
           }
         });
       }
@@ -2937,7 +3177,7 @@ export class RealtimeNotificationManager {
   }
 }
 
-  // ─── Streams Event Sourcing ──────────────────────────────────────────────────
+// ─── Streams Event Sourcing ──────────────────────────────────────────────────
 let l1Cache: L1CacheManager | null = null;
 let metricsCollector: RedisMetricsCollector | null = null;
 let notificationManager: RealtimeNotificationManager | null = null;
@@ -2991,10 +3231,15 @@ export const redisAdvancedHelpers = {
      */
     async createOrderConsumerGroup(groupName: string) {
       const streamManager = new RedisStreamManager(getRedisClient());
-      const streamKey = getRedisClient().keys.build(RedisNamespaces.ORDER, "events");
+      const streamKey = getRedisClient().keys.build(
+        RedisNamespaces.ORDER,
+        "events"
+      );
 
       try {
-        await streamManager.createConsumerGroup(streamKey, groupName, { mkStream: true });
+        await streamManager.createConsumerGroup(streamKey, groupName, {
+          mkStream: true,
+        });
       } catch (err) {
         // Groupe déjà existant — ignorer
         if ((err as Error).message?.includes("already exists")) {
@@ -3007,7 +3252,6 @@ export const redisAdvancedHelpers = {
 
   // ─── L1 Cache Integration ──────────────────────────────────────────────────
   l1Cache: {
-
     getInstance(config?: Partial<L1CacheConfig>): L1CacheManager {
       if (!l1Cache) {
         l1Cache = new L1CacheManager(config);
@@ -3070,7 +3314,6 @@ export const redisAdvancedHelpers = {
 
   // ─── Metrics & Monitoring ──────────────────────────────────────────────────
   metrics: {
-
     getCollector(): RedisMetricsCollector {
       if (!metricsCollector) {
         metricsCollector = new RedisMetricsCollector(getRedisClient());
@@ -3098,7 +3341,6 @@ export const redisAdvancedHelpers = {
 
   // ─── Real-time Notifications ───────────────────────────────────────────────
   notifications: {
-
     getManager(): RealtimeNotificationManager {
       if (!notificationManager) {
         notificationManager = new RealtimeNotificationManager(getRedisClient());
@@ -3133,7 +3375,11 @@ export const redisAdvancedHelpers = {
     /**
      * Notifie un utilisateur spécifique
      */
-    async notifyUser(userId: string, type: string, payload: unknown): Promise<void> {
+    async notifyUser(
+      userId: string,
+      type: string,
+      payload: unknown
+    ): Promise<void> {
       await this.getManager().sendToUser(userId, {
         type,
         payload,
@@ -3143,7 +3389,10 @@ export const redisAdvancedHelpers = {
     /**
      * Broadcast système (maintenance, promotions)
      */
-    async systemBroadcast(message: string, priority: "low" | "medium" | "high" = "medium") {
+    async systemBroadcast(
+      message: string,
+      priority: "low" | "medium" | "high" = "medium"
+    ) {
       await this.getManager().broadcast({
         type: "SYSTEM_MESSAGE",
         payload: { message, priority },

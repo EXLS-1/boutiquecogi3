@@ -15,13 +15,12 @@ const poolOptions: PoolConfig = {
   connectionString:
     process.env.DIRECT_URL ?? process.env.DATABASE_URL,
 
-  // Connexion acquisition timeout (ms).
-  // Valeur précédente: 2000ms (trop agressif sur certains réseaux/infra).
+// Connexion acquisition timeout (ms) — réduit pour éviter les blocages longs.
   connectionTimeoutMillis:
-    Number(process.env.DATABASE_CONNECTION_TIMEOUT_MS) || 10_000,
+    Number(process.env.DATABASE_CONNECTION_TIMEOUT_MS) || 3_000,
 
-  // Limite le nombre de connexions simultanées du pool.
-  max: Number(process.env.PG_POOL_MAX) || 10,
+  // Limite le nombre de connexions simultanées du pool — augmenté pour éviter l'épuisement.
+  max: Number(process.env.PG_POOL_MAX) || 20,
 
   // Temps max d'inactivité d'une connexion avant fermeture.
   idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS) || 30_000,

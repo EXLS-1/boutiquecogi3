@@ -22,6 +22,64 @@ try {
 }
 
 const TTL_SECONDS = Number(process.env.RBAC_CACHE_TTL_SECONDS ?? 60);
+const UPSTASH_TIMEOUT_MS = Number(process.env.UPSTASH_TIMEOUT_MS ?? 2000);
+
+// Helper to execute Upstash Redis with timeout and fail-fast
+async function redisGetWithTimeout<T>(key: string): Promise<T | null> {
+  if (!redis) return null;
+  try {
+    const result = await Promise.race([
+      redis.get<T>(key),
+      new Promise<null>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Upstash Redis timeout")),
+          UPSTASH_TIMEOUT_MS
+        )
+      ),
+    ]);
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+async function redisSetWithTimeout(
+  key: string,
+  value: string,
+  ex: number
+): Promise<void> {
+  if (!redis) return;
+  try {
+    await Promise.race([
+      redis.set(key, value, { ex }),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Upstash Redis timeout")),
+          UPSTASH_TIMEOUT_MS
+        )
+      ),
+    ]);
+  } catch {
+    // Silently fail — cache is non-critical
+  }
+}
+
+async function redisDelWithTimeout(...keys: string[]): Promise<void> {
+  if (!redis) return;
+  try {
+    await Promise.race([
+      redis.del(...keys),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Upstash Redis timeout")),
+          UPSTASH_TIMEOUT_MS
+        )
+      ),
+    ]);
+  } catch {
+    // Silently fail
+  }
+}
 
 function roleCacheKey(role: Role) {
   return `rbac:role-config:${role}`;
@@ -42,14 +100,14 @@ export type RoleConfigCacheValue = {
 };
 
 export async function getRoleConfigCached(
-  role: Role,
+  role: Role
 ): Promise<RoleConfigCacheValue> {
   const fallback = DEFAULT_ROLE_CONFIG[role];
 
   if (!redis) return fallback;
 
   const key = roleCacheKey(role);
-  const cached = (await redis.get<string>(key)) ?? null;
+  const cached = await redisGetWithTimeout<string>(key);
   if (cached) {
     try {
       return JSON.parse(cached) as RoleConfigCacheValue;
@@ -72,7 +130,10 @@ export async function getRoleConfigCached(
         ...((dbConfig?.permissions ?? {}) as Record<Permission, "ON" | "OFF">),
       },
       restrictions: {
-        ...(fallback.restrictions as Record<Restriction, string | "ON" | "OFF">),
+        ...(fallback.restrictions as Record<
+          Restriction,
+          string | "ON" | "OFF"
+        >),
         ...((dbConfig?.restrictions ?? {}) as Record<
           Restriction,
           string | "ON" | "OFF"
@@ -80,7 +141,7 @@ export async function getRoleConfigCached(
       },
     };
 
-    await redis.set(key, JSON.stringify(value), { ex: TTL_SECONDS });
+    await redisSetWithTimeout(key, JSON.stringify(value), TTL_SECONDS);
     return value;
   } catch {
     return fallback;
@@ -91,28 +152,32 @@ export async function invalidateRoleCache(role?: Role) {
   if (!redis) return;
 
   if (role) {
-    await redis.del(roleCacheKey(role));
-    await redis.del(permsCacheKey(role));
-    await redis.del(restrCacheKey(role));
+    await redisDelWithTimeout(
+      roleCacheKey(role),
+      permsCacheKey(role),
+      restrCacheKey(role)
+    );
     return;
   }
 
   // Best-effort: delete all known roles.
   for (const r of Object.values(ROLES) as Role[]) {
-    await redis.del(roleCacheKey(r));
-    await redis.del(permsCacheKey(r));
-    await redis.del(restrCacheKey(r));
+    await redisDelWithTimeout(
+      roleCacheKey(r),
+      permsCacheKey(r),
+      restrCacheKey(r)
+    );
   }
 }
 
 export async function getEffectivePermissionsCached(
   role: Role,
-  compute: () => Promise<Set<Permission>>,
+  compute: () => Promise<Set<Permission>>
 ): Promise<Set<Permission>> {
   if (!redis) return compute();
 
   const key = permsCacheKey(role);
-  const cached = (await redis.get<string>(key)) ?? null;
+  const cached = await redisGetWithTimeout<string>(key);
   if (cached) {
     try {
       const arr = JSON.parse(cached) as Permission[];
@@ -123,24 +188,33 @@ export async function getEffectivePermissionsCached(
   }
 
   const perms = await compute();
-  await redis.set(key, JSON.stringify(Array.from(perms)), { ex: TTL_SECONDS });
+  await redisSetWithTimeout(
+    key,
+    JSON.stringify(Array.from(perms)),
+    TTL_SECONDS
+  );
   return perms;
 }
 
 export async function getEffectiveRestrictionsCached(
   role: Role,
-  compute: () => Promise<Map<Restriction, string | "ON" | "OFF">>,
+  compute: () => Promise<Map<Restriction, string | "ON" | "OFF">>
 ): Promise<Map<Restriction, string | "ON" | "OFF">> {
   if (!redis) {
     return compute();
   }
 
   const key = restrCacheKey(role);
-  const cached = (await redis.get<string>(key)) ?? null;
+  const cached = await redisGetWithTimeout<string>(key);
   if (cached) {
     try {
-      const obj = JSON.parse(cached) as Record<Restriction, string | "ON" | "OFF">;
-      return new Map(Object.entries(obj) as [Restriction, string | "ON" | "OFF"][]);
+      const obj = JSON.parse(cached) as Record<
+        Restriction,
+        string | "ON" | "OFF"
+      >;
+      return new Map(
+        Object.entries(obj) as [Restriction, string | "ON" | "OFF"][]
+      );
     } catch {
       // ignore
     }
@@ -152,6 +226,6 @@ export async function getEffectiveRestrictionsCached(
     Restriction,
     string | "ON" | "OFF"
   >;
-  await redis.set(key, JSON.stringify(obj), { ex: TTL_SECONDS });
+  await redisSetWithTimeout(key, JSON.stringify(obj), TTL_SECONDS);
   return restrMap;
 }

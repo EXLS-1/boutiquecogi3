@@ -1,8 +1,19 @@
+# TODO: Corrective Refactoring — Redis Client
 
+## ✅ Step 1: Fix `lib/redis.ts` — DONE
+- [x] 1.1 Add `import crypto from "node:crypto";` at top
+- [x] 1.2 Fix `RedisClusterConfigSchema` syntax (`= z.object({`)
+- [x] 1.3 Fix HMR Singleton: replace `let globalRedisClient` with `globalThis` pattern
+- [x] 1.4 Fix `CircuitBreaker.recordSuccess()`: add `this.lastFailureTime = null;`
 
-## Steps
+## Step 2: Refactor `lib/redis.mock.ts`
+- [ ] Replace real `ioredis` imports with proper in-memory mock
+- [ ] Add `createMockRedisClient()` and `createMockLogger()` functions
 
-- [x] Step 1: Analyze root cause
-- [x] Step 2: Fix `app/api/media/route.ts` - use `node:fs`/`node:path`, better error responses
-- [x] Step 3: Fix `components/hero/image-show/hero-config.ts` - better error logging, use existing images as fallback
-- [ ] Step 4: Test the fix - verify the dev server runs without errors
+## Step 3: Update `lib/redis.test.ts`
+- [ ] Adjust imports if needed after mock refactor
+
+## Step 4: Verify
+- [ ] Run TypeScript compiler check
+- [ ] Run tests
+

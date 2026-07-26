@@ -1,7 +1,8 @@
 // lib/better-auth-events.ts
 
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { Prisma } from "@prisma/client";
+import { uuidv7 } from "uuidv7";
 
 export type BusinessEventAction =
   | "AUTH_SIGN_UP"
@@ -11,10 +12,7 @@ export type BusinessEventAction =
   | "AUTH_VERIFY_EMAIL"
   | "AUTH_UPDATE_PROFILE";
 
-export type BusinessEventEntityType =
-  | "AUTH"
-  | "USER"
-  | "SESSION";
+export type BusinessEventEntityType = "AUTH" | "USER" | "SESSION";
 
 type PublishInput = {
   action: BusinessEventAction;
@@ -23,7 +21,7 @@ type PublishInput = {
   userId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 };
 
 /**
@@ -43,7 +41,7 @@ export async function publishAuthBusinessEvent(input: PublishInput) {
 
   await prisma.auditLog.create({
     data: {
-      id: generateUUIDv7(),
+      id: uuidv7(),
       action,
       entityType,
       entityId,
@@ -55,4 +53,3 @@ export async function publishAuthBusinessEvent(input: PublishInput) {
     },
   });
 }
-
