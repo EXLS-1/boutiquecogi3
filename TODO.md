@@ -1,19 +1,17 @@
-# TODO: Corrective Refactoring — Redis Client
+# TODO - Implémentation "Suppression de Compte" + "Registre Interne"
 
-## ✅ Step 1: Fix `lib/redis.ts` — DONE
-- [x] 1.1 Add `import crypto from "node:crypto";` at top
-- [x] 1.2 Fix `RedisClusterConfigSchema` syntax (`= z.object({`)
-- [x] 1.3 Fix HMR Singleton: replace `let globalRedisClient` with `globalThis` pattern
-- [x] 1.4 Fix `CircuitBreaker.recordSuccess()`: add `this.lastFailureTime = null;`
+## Partie 1 — UI de suppression (Front-end utilisateur)
+- [x] 1. Créer `components/auth/delete-account-section.tsx` — Composant client avec dialog 3 étapes
+- [x] 2. Modifier `app/profile/page.tsx` — Ajouter section "Supprimer mon compte"
+- [ ] 3. Modifier `components/auth/profile.tsx` — Ajouter bouton "Supprimer mon compte" (optionnel - déjà intégré via page.tsx)
 
-## Step 2: Refactor `lib/redis.mock.ts`
-- [ ] Replace real `ioredis` imports with proper in-memory mock
-- [ ] Add `createMockRedisClient()` and `createMockLogger()` functions
+## Partie 2 — Registre interne (Interface Admin)
+- [x] 4. Créer `server/actions/deleted-account-admin-actions.ts` — Actions serveur admin
+- [x] 5. Créer `store/admin-deleted-account-store.ts` — Store Zustand
+- [x] 6. Créer `components/admin/deleted-account-table.tsx` — Tableau admin complet
+- [x] 7. Créer `app/admin/accounts/deleted/page.tsx` — Page admin du registre
+- [x] 8. Navigation accessible via `/admin/accounts/deleted`
 
-## Step 3: Update `lib/redis.test.ts`
-- [ ] Adjust imports if needed after mock refactor
-
-## Step 4: Verify
-- [ ] Run TypeScript compiler check
-- [ ] Run tests
+## Partie 3 — Traçabilité renforcée
+- [x] 9. AuditLog dans le service de restauration (via withSecurePrisma avec auditLog: true + audit log manuel dans la transaction)
 

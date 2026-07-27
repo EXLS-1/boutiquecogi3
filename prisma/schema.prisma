@@ -217,7 +217,8 @@ model User {
   productCount    Int           @default(0) // 🔒 Compteur atomique pour les quotas
   auditLogs       AuditLog[]
 
-  stockMovements StockMovement[]
+  stockMovements           StockMovement[]
+  deletedAccountRegistries DeletedAccountRegistry[]
 
   @@index([email])
   @@map("user")
@@ -1882,4 +1883,49 @@ model SystemConfiguration {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// REGISTRE DES COMPTES SUPPRIMÉS
+// ==========================================
+// Ce modèle garantit la conservation FOREVER de toutes les données
+// liées à une suppression de compte. Aucune suppression physique n'a lieu.
+// Les données sont conservées sous forme de snapshot JSON.
+// ==========================================
+
+model DeletedAccountRegistry {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  // Identité de la personne supprimée
+  userId    String  @db.Uuid
+  userEmail String
+  userName  String?
+
+  // Qui a initié la suppression
+  deletedBy     String @db.Uuid // userId de la personne/Admin qui a supprimé
+  deletedByRole String // Rôle de la personne ayant supprimé (SUPER_ADMIN, ADMIN, ou USER pour self-delete)
+
+  // Snapshot complet des données utilisateur AVANT suppression (JSON)
+  userSnapshot Json // Contient tout: user, accounts, orders, addresses, etc.
+
+  // Raison de la suppression
+  reason   String // Obligatoire — min 5 caractères
+  metadata Json? // Infos supplémentaires (ip, userAgent, etc.)
+
+  // Date de suppression
+  createdAt DateTime @default(now())
+
+  // Restauration optionnelle
+  restoredAt  DateTime?
+  restoredBy  String?   @db.Uuid
+  restoreNote String?
+
+  // Relations
+  deletedUser User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([deletedBy])
+  @@index([createdAt])
+  @@index([userEmail])
+  @@map("deleted_account_registry")
 }

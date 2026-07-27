@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { uuidv7 } from "uuidv7";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 
 export type BusinessEventAction =
   | "AUTH_SIGN_UP"
@@ -41,7 +41,7 @@ export async function publishAuthBusinessEvent(input: PublishInput) {
 
   await prisma.auditLog.create({
     data: {
-      id: uuidv7(),
+      id: generateUUIDv7(),
       action,
       entityType,
       entityId,

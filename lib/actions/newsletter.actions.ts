@@ -3,7 +3,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { EmailSchema } from "@/components/newsletter/newsletter.schema";
 
 export interface SubscriptionResult {
@@ -16,7 +16,7 @@ export interface SubscriptionResult {
  * Gère l'idempotence (évite les doublons) et utilise UUID v7.
  */
 export async function subscribeToNewsletter(
-  email: string,
+  email: string
 ): Promise<SubscriptionResult> {
   const parsed = EmailSchema.safeParse(email);
   if (!parsed.success) {

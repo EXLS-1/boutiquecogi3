@@ -35,19 +35,19 @@ export default function UnauthorizedPage() {
               Accès refusé
             </CardTitle>
             <CardDescription className="text-muted-foreground mt-2">
-              Vous n'avez pas les permissions nécessaires pour accéder à cette ressource.
+              Vous n&apos;avez pas les permissions nécessaires pour accéder à cette ressource.
             </CardDescription>
           </div>
         </CardHeader>
 
         <CardContent className="text-center space-y-4">
           <p className="text-sm text-muted-foreground">
-            Cette zone est réservée au personnel autorisé. Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.
+            Cette zone est réservée au personnel autorisé. Contactez l&apos;administrateur si vous pensez qu&apos;il s&apos;agit d&apos;une erreur.
           </p>
           <div className="p-3 bg-muted rounded-lg border border-border">
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <ShieldAlert className="w-3 h-3" />
-              <code>Code d'erreur : 403_FORBIDDEN</code>
+              <code>Code d&apos;erreur : 403_FORBIDDEN</code>
             </div>
           </div>
         </CardContent>
