@@ -178,9 +178,10 @@ model User {
   emailVerified   Boolean         @default(false)
   emailVerifiedAt DateTime        @default(now())
 
-  password         String?          @db.Text
-  image            String?
-  accounts         Account[]
+  password String? @db.Text
+  image    String?
+
+  accounts         Account[]        @relation(name: "AccountToUser")
   orders           Order[]
   posts            Post[]
   dashboards       Dashboard[]
@@ -217,7 +218,8 @@ model User {
   productCount    Int           @default(0) // 🔒 Compteur atomique pour les quotas
   auditLogs       AuditLog[]
 
-  stockMovements           StockMovement[]
+  stockMovements StockMovement[]
+
   deletedAccountRegistries DeletedAccountRegistry[]
 
   @@index([email])
@@ -262,10 +264,10 @@ model Post {
 }
 
 model Session {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  token     String   @unique
-  userId    String   @db.Uuid
-  expiresAt DateTime
+  id           String   @id @default(uuid(7)) @db.Uuid
+  sessionToken String   @unique @map("sessionToken")
+  userId       String   @db.Uuid
+  expires      DateTime @map("expires")
 
   ipAddress String?
   userAgent String?
@@ -280,23 +282,25 @@ model Session {
 }
 
 model Account {
-  id                String  @id @default(uuid(7)) @db.Uuid
-  userId            String  @db.Uuid
-  type              String  @default("email")
-  provider          String
-  providerAccountId String
-  password          String? @db.Text
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  userId                String
+  user                  String?
+  type                  String    @default("email")
+  providerId            String    @map("provider")
+  accountId             String    @map("providerAccountId")
+  password              String?   @db.Text
+  refreshToken          String?   @map("refresh_token") @db.Text
+  refreshTokenExpiresAt DateTime?
+  accessToken           String?   @map("access_token") @db.Text
+  accessTokenExpiresAt  DateTime?
+  expiresAt             Int?      @map("expires_at")
+  tokenType             String?   @map("token_type")
+  scope                 String?
+  idToken               String?   @map("id_token") @db.Text
+  sessionState          String?   @map("session_state")
+  users                 User[]    @relation(name: "AccountToUser")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+  @@unique([providerId, accountId])
   @@index([userId])
   @@map("account")
 }
@@ -349,7 +353,7 @@ model AuditLog {
   id         String  @id @default(uuid(7)) @db.Uuid
   user       User?   @relation(fields: [userId], references: [id], onDelete: Cascade) // Add this line
   userId     String  @db.Uuid
-  roleLevel  Int
+  roleLevel  Int     @default(0)
   action     String // ex: "ROLE_CREATED", "USER_BLOCKED"
   targetId   String? @db.Uuid
   targetType String? // "ROLE", "USER", "PRODUCT"
@@ -1901,6 +1905,9 @@ model DeletedAccountRegistry {
   userEmail String
   userName  String?
 
+  // Relations
+  deletedUser String
+
   // Qui a initié la suppression
   deletedBy     String @db.Uuid // userId de la personne/Admin qui a supprimé
   deletedByRole String // Rôle de la personne ayant supprimé (SUPER_ADMIN, ADMIN, ou USER pour self-delete)
@@ -1919,9 +1926,7 @@ model DeletedAccountRegistry {
   restoredAt  DateTime?
   restoredBy  String?   @db.Uuid
   restoreNote String?
-
-  // Relations
-  deletedUser User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  users       User[]
 
   @@index([userId])
   @@index([deletedBy])

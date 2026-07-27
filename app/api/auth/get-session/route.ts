@@ -146,6 +146,7 @@ async function resolveRBACWithCache(
 // ═══════════════════════════════════════════
 
 export async function GET(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _request: NextRequest,
 ): Promise<NextResponse<GetSessionResponse | GetSessionErrorResponse>> {
   try {
