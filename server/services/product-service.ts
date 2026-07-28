@@ -2,7 +2,7 @@
 
 import { withSecurePrisma, type SecureContext } from '@/server/core/secure-prisma'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
-import { generateUUIDv7 } from '@/lib/uuid'
+import { generateUUIDv7 } from '@/lib/utils/uuid'
 import { StockService } from './stock-service'
 
 export class ProductServiceError extends Error {
