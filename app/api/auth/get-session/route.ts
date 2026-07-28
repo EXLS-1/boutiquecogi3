@@ -1,4 +1,4 @@
-// app/api/auth/get-session/route.tsx
+// app/api/auth/get-session/route.ts
 // ============================================
 // ROUTE API — RÉCUPÉRATION SESSION + CONTEXTE RBAC
 // ============================================
@@ -12,7 +12,7 @@
 // - Évite les requêtes Prisma redondantes pour les résolutions RBAC
 // - Cache invalidé automatiquement via le TTL court
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import {
@@ -145,10 +145,7 @@ async function resolveRBACWithCache(
 // HANDLER GET
 // ═══════════════════════════════════════════
 
-export async function GET(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _request: NextRequest,
-): Promise<NextResponse<GetSessionResponse | GetSessionErrorResponse>> {
+export async function GET(): Promise<NextResponse<GetSessionResponse | GetSessionErrorResponse>> {
   try {
     // 1. Récupération brute de la session Better-Auth
     const headersList = await headers();

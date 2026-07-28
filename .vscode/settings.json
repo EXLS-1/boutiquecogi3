@@ -4,15 +4,14 @@
     "geminicodeassist.outlines.automaticOutlineGeneration": true,
     "prisma.trace.server": "verbose",
     "[prisma]": {
-    "editor.defaultFormatter": "Prisma.prisma"
+    "editor.defaultFormatter": "Prisma.prisma",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
     },
-    "editor.formatOnSave": true
-    {
-        "servers": {
-            "supabase": {
-                "type": "http",
-                "url": "https://mcp.supabase.com/mcp?project_ref=cyiwlubjrqyjwgggnqhu"
-            }
-        }
+    "servers": {
+        "supabase": {
+            "type": "http",
+            "url": "https://mcp.supabase.com/mcp?project_ref=cyiwlubjrqyjwgggnqhu"
+        }   
     }   
 }

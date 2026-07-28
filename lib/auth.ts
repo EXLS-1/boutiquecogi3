@@ -67,4 +67,6 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
   trustedOrigins: [baseURL, "http://localhost:3000"],
+  // Add this for better error messages in development
+  debug: process.env.NODE_ENV === "development",
 });

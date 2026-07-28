@@ -1,0 +1,14 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+Datasource "db": PostgreSQL database "postgres", schema "public" at "localhost:5432"
+Error: ERROR: foreign key constraint "product_image_productId_fkey" cannot be implemented
+DETAIL: Key columns "productId" of the referencing table and "id" of the referenced table are of incompatible types: text and uuid.
+   0: sql_schema_connector::apply_migration::migration_step
+           with step=AddForeignKey { foreign_key_id: ForeignKeyId(29) }
+             at schema-engine\connectors\sql-schema-connector\src\apply_migration.rs:28
+   1: sql_schema_connector::apply_migration::apply_migration
+             at schema-engine\connectors\sql-schema-connector\src\apply_migration.rs:11
+   2: schema_core::state::SchemaPush
+             at schema-engine\core\src\state.rs:547
+
