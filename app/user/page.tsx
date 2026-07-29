@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
 
@@ -78,6 +79,15 @@ export default async function UsersPage() {
       <p style={{ color: "#64748b", marginBottom: "2rem", fontSize: "1.125rem" }}>
         Visualisation de tous les utilisateurs (existants et supprimés/bloqués)
       </p>
+
+      <div style={{ marginBottom: "1.5rem" }}>
+        <Link
+          href="/accounts"
+          className="bg-cyan-400 hover:bg-rose-500 text-white shadow-sm transition-all duration-300 active:scale-95 inline-block px-4 py-2 rounded-lg font-medium"
+        >
+Account
+        </Link>
+      </div>
 
       {/* Stats cards */}
       <div

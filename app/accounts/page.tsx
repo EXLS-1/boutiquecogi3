@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 const formatDate = (d: Date | number | null | undefined) => {
@@ -53,9 +54,18 @@ export default async function AccountsPage() {
       <h1 style={{ fontSize: "1.875rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
         Comptes authentification
       </h1>
-      <p style={{ color: "#64748b", marginBottom: "2rem", fontSize: "1.125rem" }}>
+<p style={{ color: "#64748b", marginBottom: "2rem", fontSize: "1.125rem" }}>
         Visualisation de tous les comptes dans la base de donnees
       </p>
+
+      <div style={{ marginBottom: "1.5rem" }}>
+        <Link
+          href="/user"
+          className="bg-cyan-400 hover:bg-rose-500 text-white shadow-sm transition-all duration-300 active:scale-95 inline-block px-4 py-2 rounded-lg font-medium"
+        >
+          User
+        </Link>
+      </div>
 
       {/* Stats */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
