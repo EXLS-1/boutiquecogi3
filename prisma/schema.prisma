@@ -12,6 +12,172 @@ datasource db {
 // AUTHENTIFICATION & UTILISATEURS (BetterAuth)
 // =============================================
 
+model User {
+  id              String          @id @unique @default(uuid(7)) @db.Uuid
+  role            Role            @default(USER)
+  roleConfig      RoleConfig?     @relation(fields: [roleConfigId], references: [id])
+  roleConfigId    String?         @db.Uuid
+  roleAssignment  RoleAssignment?
+  sessions        Session[]
+  name            String?
+  email           String          @unique
+  emailVerified   Boolean         @default(false)
+  emailVerifiedAt DateTime?
+
+  image String?
+
+  accounts Account[]
+
+  orders           Order[]
+  posts            Post[]
+  dashboards       Dashboard[]
+  updater          Stock[]
+  reviews          Review[]
+  addresses        Address[]
+  couponUsages     CouponUsage[]
+  notifications    Notification[]
+  abandonedCarts   AbandonedCart[]
+  twoFactorEnabled Boolean          @default(false)
+  twoFactorSecret  String?          @db.Text
+  twoFactor        TwoFactor[]
+  cart             Cart? // un seul panier par utilisateur (optionnel)
+  wishlist         Wishlist? // une seule liste de souhaits
+  searchAnalytics  SearchAnalytics?
+
+  createdAt   DateTime @default(now())
+  createdById String?  @db.Uuid
+  updatedById String?  @db.Uuid
+  deletedById String?  @db.Uuid
+
+  createdBy User? @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User? @relation("UserUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deletedBy User? @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  createdUsers User[] @relation("UserCreatedBy")
+  updatedUsers User[] @relation("UserUpdatedBy")
+  deletedUsers User[] @relation("UserDeletedBy")
+
+  deletedAt    DateTime?
+  blockedAt    DateTime?
+  isDeleted    Boolean   @default(false)
+  isBlocked    Boolean   @default(false)
+  blockedUntil DateTime?
+  blockReason  String?
+
+  version Int @default(1)
+
+  products        Product[]
+  productViews    ProductView[]
+  createdProducts Product[]     @relation("ProductCreator")
+  editedProducts  Product[]     @relation("ProductEditor")
+  productCount    Int           @default(0) // 🔒 Compteur atomique pour les quotas
+  auditLogs       AuditLog[]
+
+  stockMovements StockMovement[]
+
+  deletedAccountRegistries DeletedAccountRegistry[]
+
+  @@map("user")
+}
+
+model Account {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @db.Uuid
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   String @default("email")
+
+  provider  String
+  accountId String @map("providerAccountId")
+
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  refreshToken          String?   @map("refresh_token") @db.Text
+  refreshTokenExpiresAt DateTime?
+  accessToken           String?   @map("access_token") @db.Text
+  accessTokenExpiresAt  DateTime?
+  expiresAt             DateTime? @map("expires_at")
+  tokenType             String?   @map("token_type")
+  scope                 String?
+  idToken               String?   @map("id_token") @db.Text
+  sessionState          String?   @map("session_state")
+
+  @@unique([provider])
+  @@index([userId])
+  @@map("account")
+}
+
+model Session {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  token     String   @unique
+  userId    String   @db.Uuid
+  expiresAt DateTime
+
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lastUsedAt DateTime?
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Post {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  title     String
+  userId    String  @db.Uuid
+  content   String?
+  published Boolean @default(false)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("post")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  EDITOR
+  SUPERVISOR
+  USER
+  GUEST
+}
+
+model Verification {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  identifier String
+  value      String           @db.Text
+  type       VerificationType
+
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([identifier, type, value])
+  @@index([identifier])
+  @@index([expiresAt])
+  @@map("verification")
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  MAGIC_LINK
+  EMAIL_CHANGE
+  PHONE_VERIFICATION
+  TWO_FACTOR
+}
+
 model RoleConfig {
   id       String       @id @default(uuid(7)) @db.Uuid
   role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
@@ -126,7 +292,6 @@ model Permission {
   category    String // ex: "PRODUCT", "ORDER", "USER", "FINANCE"
   isDangerous Boolean          @default(false) // Nécessite confirmation additionnelle
 
-  // Relations
   roleDefaults RoleDefaultPermission[]
   overrides    PermissionOverride[]
 
@@ -146,8 +311,6 @@ model RolePermission {
   @@map("role_permission")
 }
 
-// ─── Overrides de permissions par utilisateur (ON/OFF) ───
-
 model PermissionOverride {
   id               String @id @default(uuid(7)) @db.Uuid
   roleAssignmentId String @db.Uuid
@@ -164,67 +327,6 @@ model PermissionOverride {
   permission     Permission     @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([roleAssignmentId, permissionId])
-}
-
-model User {
-  id              String          @id @unique @default(uuid(7)) @db.Uuid
-  role            Role            @default(USER)
-  roleConfig      RoleConfig?     @relation(fields: [roleConfigId], references: [id])
-  roleConfigId    String?         @db.Uuid
-  roleAssignment  RoleAssignment?
-  sessions        Session[]
-  name            String?
-  email           String          @unique
-  emailVerified   Boolean         @default(false)
-  emailVerifiedAt DateTime        @default(now())
-
-  password String? @db.Text
-  image    String?
-
-  accounts Account[]
-
-  orders           Order[]
-  posts            Post[]
-  dashboards       Dashboard[]
-  updater          Stock[]
-  reviews          Review[]
-  addresses        Address[]
-  couponUsages     CouponUsage[]
-  notifications    Notification[]
-  abandonedCarts   AbandonedCart[]
-  twoFactorEnabled Boolean          @default(false)
-  twoFactorSecret  String?          @db.Text
-  twoFactor        TwoFactor[]
-  cart             Cart? // un seul panier par utilisateur (optionnel)
-  wishlist         Wishlist? // une seule liste de souhaits
-  searchAnalytics  SearchAnalytics?
-
-  createdAt    DateTime  @default(now())
-  createdBy    String?
-  updatedAt    DateTime  @updatedAt
-  updatedBy    String?
-  deletedAt    DateTime  @default(now())
-  deletedBy    String?
-  isDeleted    Boolean   @default(false)
-  isBlocked    Boolean   @default(false)
-  blockedUntil DateTime?
-  blockReason  String?
-
-  version Int @default(1)
-
-  products        Product[]
-  productViews    ProductView[]
-  createdProducts Product[]     @relation("ProductCreator")
-  editedProducts  Product[]     @relation("ProductEditor")
-  productCount    Int           @default(0) // 🔒 Compteur atomique pour les quotas
-  auditLogs       AuditLog[]
-
-  stockMovements StockMovement[]
-
-  deletedAccountRegistries DeletedAccountRegistry[]
-
-  @@index([email])
-  @@map("user")
 }
 
 model TwoFactor {
@@ -248,94 +350,6 @@ model TwoFactorBackupCode {
   used        Boolean   @default(false)
 
   @@map("twofactor_backup_code")
-}
-
-model Post {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  title     String
-  userId    String   @db.Uuid
-  content   String?
-  published Boolean  @default(false)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("post")
-}
-
-model Session {
-  id           String   @id @default(uuid(7)) @db.Uuid
-  sessionToken String   @unique @map("sessionToken")
-  userId       String   @db.Uuid
-  expires      DateTime @map("expires")
-
-  ipAddress String?
-  userAgent String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@map("session")
-}
-
-model Account {
-  id     String @id @default(uuid(7)) @db.Uuid
-  userId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type   String @default("email")
-
-  provider          String
-  providerAccountId String @map("providerAccountId")
-
-  password              String?   @db.Text
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  refreshToken          String?   @map("refresh_token") @db.Text
-  refreshTokenExpiresAt DateTime?
-  accessToken           String?   @map("access_token") @db.Text
-  accessTokenExpiresAt  DateTime?
-  expiresAt             Int?      @map("expires_at")
-  tokenType             String?   @map("token_type")
-  scope                 String?
-  idToken               String?   @map("id_token") @db.Text
-  sessionState          String?   @map("session_state")
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-  @@map("account")
-}
-
-enum Role {
-  SUPER_ADMIN
-  ADMIN
-  MANAGER
-  EDITOR
-  SUPERVISOR
-  USER
-  GUEST
-}
-
-model VerificationToken {
-  identifier String           @db.Uuid
-  token      String           @unique
-  type       VerificationType
-  expires    DateTime
-  consumedAt DateTime?
-  createdAt  DateTime         @default(now())
-
-  @@unique([identifier, token])
-  @@map("verification_token")
-}
-
-enum VerificationType {
-  EMAIL_VERIFICATION
-  PASSWORD_RESET
-  MAGIC_LINK
-  TWO_FACTOR
 }
 
 // =============================================
