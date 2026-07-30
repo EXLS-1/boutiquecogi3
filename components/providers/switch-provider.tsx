@@ -3,9 +3,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useTransition, useCallback, useRef } from "react";
-import { getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac";
+import { getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac-client";
 import { validateAuditToken } from "@/lib/auth/audit-approval";
-import type { Role, Permission, Restriction, ToggleState } from "@/lib/auth/rbac";
+import type { Role, Permission, Restriction, ToggleState } from "@/lib/auth/rbac-shared";
 import { ROLE_TO_LEVEL } from "@/lib/auth/rbac-shared";
 
 const CLIENT_ROLE_LEVELS = ROLE_TO_LEVEL;

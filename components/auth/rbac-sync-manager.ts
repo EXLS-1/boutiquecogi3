@@ -5,7 +5,7 @@
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useRBACStore } from "@/store/use-rbac-store";
-import type { Permission } from "@/lib/auth/rbac";
+import type { Permission } from "@/lib/auth/rbac-shared";
 
 // ─── Types locaux pour la structure de rôle dans la session ─────────────────
 

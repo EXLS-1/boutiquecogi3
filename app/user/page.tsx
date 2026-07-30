@@ -11,15 +11,36 @@ export default async function UsersPage() {
           orders: true,
         },
       },
+      userSecurities: {
+        select: {
+          isBlocked: true,
+          blockReason: true,
+          blockedUntil: true,
+          twoFactorEnabled: true,
+        },
+      },
+      userQuotas: {
+        select: { productCount: true },
+      },
+      userAudit: {
+        select: { isDeleted: true, deletedAt: true, version: true },
+      },
+      roleConfig: {
+        select: { role: true },
+      },
+      accounts: {
+        select: { password: true },
+        take: 1,
+      },
     },
     orderBy: [{ createdAt: "desc" }],
   });
 
   const total = users.length;
-  const blocked = users.filter((u) => u.isBlocked).length;
-  const deleted = users.filter((u) => u.isDeleted).length;
+  const blocked = users.filter((u) => u.userSecurities[0]?.isBlocked).length;
+  const deleted = users.filter((u) => u.userAudit?.isDeleted).length;
   const verified = users.filter((u) => u.emailVerified).length;
-  const twoFactor = users.filter((u) => u.twoFactorEnabled).length;
+  const twoFactor = users.filter((u) => u.userSecurities[0]?.twoFactorEnabled).length;
 
   const formatDate = (d: Date | null | undefined) =>
     d
@@ -32,7 +53,7 @@ export default async function UsersPage() {
         }).format(new Date(d))
       : "-";
 
-  const formatRole = (role: Role) => {
+  const formatRole = (role: Role | null | undefined) => {
     const colors: Record<string, string> = {
       SUPER_ADMIN: "bg-red-100 text-red-800",
       ADMIN: "bg-orange-100 text-orange-800",
@@ -42,13 +63,14 @@ export default async function UsersPage() {
       USER: "bg-green-100 text-green-800",
       GUEST: "bg-gray-100 text-gray-600",
     };
+    const roleStr = role ?? "USER";
     return (
       <span
         className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-          colors[role] || "bg-gray-100 text-gray-700"
+          colors[roleStr] || "bg-gray-100 text-gray-700"
         }`}
       >
-        {role}
+        {roleStr}
       </span>
     );
   };
@@ -187,115 +209,124 @@ Account
                   </td>
                 </tr>
               ) : (
-                users.map((u) => (
-                  <tr
-                    key={u.id}
-                    style={{
-                      borderBottom: "1px solid #f1f5f9",
-                      background: u.isDeleted ? "#fef2f2" : u.isBlocked ? "#fffbeb" : "transparent",
-                      opacity: u.isDeleted ? 0.7 : 1,
-                    }}
-                  >
-                    <td
+                users.map((u) => {
+                  const userSecurity = u.userSecurities[0];
+                  const isBlocked = userSecurity?.isBlocked ?? false;
+                  const isDeleted = u.userAudit?.isDeleted ?? false;
+                  const password = u.accounts[0]?.password;
+                  const productCount = u.userQuotas[0]?.productCount ?? 0;
+                  const userRole = u.roleConfig?.role;
+
+                  return (
+                    <tr
+                      key={u.id}
                       style={{
-                        padding: "0.75rem",
-                        fontFamily: "monospace",
-                        fontSize: "0.7rem",
-                        color: "#64748b",
-                        maxWidth: "100px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={u.id}
-                    >
-                      {u.id.slice(0, 8)}...
-                    </td>
-                    <td style={{ padding: "0.75rem", fontWeight: 500, whiteSpace: "nowrap" }}>
-                      {u.name || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>—</span>}
-                    </td>
-                    <td style={{ padding: "0.75rem", fontSize: "0.875rem", whiteSpace: "nowrap" }}>
-                      {u.email || "-"}
-                    </td>
-                    <td style={{ padding: "0.75rem" }}>
-                      {badge(u.emailVerified, "Oui", "bg-green-100 text-green-700", "bg-gray-100 text-gray-400")}
-                    </td>
-                    <td style={{ padding: "0.75rem", whiteSpace: "nowrap" }}>
-                      {formatRole(u.role)}
-                    </td>
-                    <td style={{ padding: "0.75rem" }}>
-                      {badge(u.twoFactorEnabled, "ON", "bg-purple-100 text-purple-700", "bg-gray-100 text-gray-400")}
-                    </td>
-                    <td style={{ padding: "0.75rem" }}>
-                      {u.isBlocked ? (
-                        <span title={u.blockReason || ""} className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                          Oui{u.blockedUntil ? ` (jusq'au ${formatDate(u.blockedUntil)})` : ""}
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">Non</span>
-                      )}
-                    </td>
-                    <td style={{ padding: "0.75rem" }}>
-                      {badge(u.isDeleted, "Oui", "bg-red-100 text-red-700", "bg-gray-100 text-gray-400")}
-                    </td>
-                    <td style={{ padding: "0.75rem" }}>
-                      {u.password ? (
-                        <span
-                          style={{
-                            fontFamily: "monospace",
-                            fontSize: "0.75rem",
-                            color: "#94a3b8",
-                            cursor: "help",
-                          }}
-                          title={u.password}
-                        >
-                          {u.password.slice(0, 12)}...
-                        </span>
-                      ) : (
-                        <span style={{ color: "#94a3b8", fontStyle: "italic" }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
-                      {u._count.accounts}
-                    </td>
-                    <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
-                      {u._count.orders}
-                    </td>
-                    <td
-                      style={{
-                        padding: "0.75rem",
-                        fontSize: "0.75rem",
-                        whiteSpace: "nowrap",
+                        borderBottom: "1px solid #f1f5f9",
+                        background: isDeleted ? "#fef2f2" : isBlocked ? "#fffbeb" : "transparent",
+                        opacity: isDeleted ? 0.7 : 1,
                       }}
                     >
-                      {formatDate(u.createdAt)}
-                    </td>
-                    <td
-                      style={{
-                        padding: "0.75rem",
-                        fontSize: "0.75rem",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {formatDate(u.updatedAt)}
-                    </td>
-                    <td
-                      style={{
-                        padding: "0.75rem",
-                        fontSize: "0.75rem",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {formatDate(u.deletedAt)}
-                    </td>
-                    <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
-                      {u.version}
-                    </td>
-                    <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
-                      {u.productCount}
-                    </td>
-                  </tr>
-                ))
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          fontFamily: "monospace",
+                          fontSize: "0.7rem",
+                          color: "#64748b",
+                          maxWidth: "100px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={u.id}
+                      >
+                        {u.id.slice(0, 8)}...
+                      </td>
+                      <td style={{ padding: "0.75rem", fontWeight: 500, whiteSpace: "nowrap" }}>
+                        {u.name || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>—</span>}
+                      </td>
+                      <td style={{ padding: "0.75rem", fontSize: "0.875rem", whiteSpace: "nowrap" }}>
+                        {u.email || "-"}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>
+                        {badge(u.emailVerified, "Oui", "bg-green-100 text-green-700", "bg-gray-100 text-gray-400")}
+                      </td>
+                      <td style={{ padding: "0.75rem", whiteSpace: "nowrap" }}>
+                        {formatRole(userRole)}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>
+                        {badge(userSecurity?.twoFactorEnabled ?? false, "ON", "bg-purple-100 text-purple-700", "bg-gray-100 text-gray-400")}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>
+                        {isBlocked ? (
+                          <span title={userSecurity?.blockReason || ""} className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            Oui{userSecurity?.blockedUntil ? ` (jusq'au ${formatDate(userSecurity.blockedUntil)})` : ""}
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">Non</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>
+                        {badge(isDeleted, "Oui", "bg-red-100 text-red-700", "bg-gray-100 text-gray-400")}
+                      </td>
+                      <td style={{ padding: "0.75rem" }}>
+                        {password ? (
+                          <span
+                            style={{
+                              fontFamily: "monospace",
+                              fontSize: "0.75rem",
+                              color: "#94a3b8",
+                              cursor: "help",
+                            }}
+                            title={password}
+                          >
+                            {password.slice(0, 12)}...
+                          </span>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
+                        {u._count.accounts}
+                      </td>
+                      <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
+                        {u._count.orders}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          fontSize: "0.75rem",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatDate(u.createdAt)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          fontSize: "0.75rem",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatDate(u.updatedAt)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "0.75rem",
+                          fontSize: "0.75rem",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatDate(u.userAudit?.deletedAt)}
+                      </td>
+                      <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
+                        {u.userAudit?.version ?? 1}
+                      </td>
+                      <td style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.875rem" }}>
+                        {productCount}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

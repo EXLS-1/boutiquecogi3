@@ -7,7 +7,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import {
   ROLES,
   PERMISSIONS,

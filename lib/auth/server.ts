@@ -24,7 +24,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/lib/auth"; // ✅ Singleton
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { getRedisClient } from "@/lib/redis";
 import {
   getEffectivePermissionsCached,

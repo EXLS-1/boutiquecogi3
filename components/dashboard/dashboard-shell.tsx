@@ -3,7 +3,7 @@
 
 import { ReactNode } from "react";
 import { useSwitchRBAC } from "@/components/providers/switch-provider";
-import { PERMISSIONS, type Permission } from "@/lib/auth/rbac";
+import { PERMISSIONS, type Permission } from "@/lib/auth/rbac-shared";
 import { AuditModeSwitcher } from "./audit-mode-switcher";
 
 interface DashboardShellProps {

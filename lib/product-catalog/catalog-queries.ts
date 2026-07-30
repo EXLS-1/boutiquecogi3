@@ -160,18 +160,35 @@ export const getRecentProducts = cache(
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      const products = await prisma.product.findMany({
-        where: {
-          ...buildBaseWhere(),
-          // ✅ Filtre : produits créés il y a moins de 90 jours
-          createdAt: {
-            gte: ninetyDaysAgo,
-          },
+      const baseWhere = {
+        ...buildBaseWhere(),
+        // ✅ Filtre : produits créés il y a moins de 90 jours
+        createdAt: {
+          gte: ninetyDaysAgo,
         },
+      };
+
+      // Step 1: Get IDs only (lightweight, no includes)
+      const idResults = await prisma.product.findMany({
+        where: baseWhere,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
-        include: buildBaseInclude(),
+        select: { id: true },
       });
+
+      // Step 2: Only fetch full data with includes if products exist
+      // This avoids Prisma generating IN (NULL) queries for relations
+      let products;
+      if (idResults.length > 0) {
+        const ids = idResults.map((p) => p.id);
+        products = await prisma.product.findMany({
+          where: { id: { in: ids } },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          include: buildBaseInclude(),
+        });
+      } else {
+        products = [];
+      }
 
       // Sérialisation des Decimals + mapping domaine
       return mapCatalogProducts(
@@ -194,17 +211,34 @@ export const getRecentProducts = cache(
 export const getProductsByCategory = cache(
   withCatalogCache(
     async (categorySlug: string, limit: number = CATALOG_PAGE_SIZE) => {
-      const products = await prisma.product.findMany({
-        where: {
-          ...buildBaseWhere(),
-          category: {
-            slug: categorySlug,
-          },
+      const baseWhere = {
+        ...buildBaseWhere(),
+        category: {
+          slug: categorySlug,
         },
+      };
+
+      // Step 1: Get IDs only (lightweight, no includes)
+      const idResults = await prisma.product.findMany({
+        where: baseWhere,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
-        include: buildBaseInclude(),
+        select: { id: true },
       });
+
+      // Step 2: Only fetch full data with includes if products exist
+      // This avoids Prisma generating IN (NULL) queries for relations
+      let products;
+      if (idResults.length > 0) {
+        const ids = idResults.map((p) => p.id);
+        products = await prisma.product.findMany({
+          where: { id: { in: ids } },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          include: buildBaseInclude(),
+        });
+      } else {
+        products = [];
+      }
 
       return mapCatalogProducts(
         normalizeProducts(products as unknown as RawCatalogProduct[]),
@@ -231,15 +265,31 @@ export const getProductsByCategory = cache(
 export const getPromotionalProducts = cache(
   withCatalogCache(
     async (limit: number = CATALOG_PAGE_SIZE) => {
-      const products = await prisma.product.findMany({
-        where: {
-          ...buildBaseWhere(),
-          OR: [{ isFeatured: true }, { salePrice: { not: null } }],
-        },
+      const baseWhere = {
+        ...buildBaseWhere(),
+        OR: [{ isFeatured: true }, { salePrice: { not: null } }],
+      };
+
+      // Step 1: Get IDs only (lightweight, no includes)
+      const idResults = await prisma.product.findMany({
+        where: baseWhere,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
-        include: buildBaseInclude(),
+        select: { id: true },
       });
+
+      // Step 2: Only fetch full data with includes if products exist
+      let products;
+      if (idResults.length > 0) {
+        const ids = idResults.map((p) => p.id);
+        products = await prisma.product.findMany({
+          where: { id: { in: ids } },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          include: buildBaseInclude(),
+        });
+      } else {
+        products = [];
+      }
 
       return mapCatalogProducts(
         normalizeProducts(products as unknown as RawCatalogProduct[]),
@@ -256,15 +306,31 @@ export const getNewArrivalProducts = cache(
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      const products = await prisma.product.findMany({
-        where: {
-          ...buildBaseWhere(),
-          OR: [{ createdAt: { gte: ninetyDaysAgo } }],
-        },
+      const baseWhere = {
+        ...buildBaseWhere(),
+        OR: [{ createdAt: { gte: ninetyDaysAgo } }],
+      };
+
+      // Step 1: Get IDs only (lightweight, no includes)
+      const idResults = await prisma.product.findMany({
+        where: baseWhere,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
-        include: buildBaseInclude(),
+        select: { id: true },
       });
+
+      // Step 2: Only fetch full data with includes if products exist
+      let products;
+      if (idResults.length > 0) {
+        const ids = idResults.map((p) => p.id);
+        products = await prisma.product.findMany({
+          where: { id: { in: ids } },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          include: buildBaseInclude(),
+        });
+      } else {
+        products = [];
+      }
 
       return mapCatalogProducts(
         normalizeProducts(products as unknown as RawCatalogProduct[]),
@@ -301,7 +367,6 @@ export async function searchCatalogProducts(
   const now = new Date();
   const ninetyDaysAgo = new Date(now);
   ninetyDaysAgo.setDate(now.getDate() - 90);
-
 
   // Problème audit #9: Validation du champ de tri
   const sortField = validated.sortBy ?? "createdAt";
@@ -362,17 +427,31 @@ export async function searchCatalogProducts(
     }),
   }; 
 
-
-  const [products, totalCount] = await Promise.all([
+  // Step 1: Get total count and IDs in parallel (lightweight, no includes)
+  const [totalCount, idResults] = await Promise.all([
+    prisma.product.count({ where }),
     prisma.product.findMany({
       where,
       orderBy: [{ [sortField]: validated.sortOrder ?? "desc" }, { id: "desc" }],
       skip: validated.offset ?? 0,
       take: validated.limit,
-      include: buildBaseInclude(),
+      select: { id: true },
     }),
-    prisma.product.count({ where }),
   ]);
+
+  // Step 2: Only fetch full data with includes if products exist
+  // This avoids Prisma generating IN (NULL) queries for relations
+  let products;
+  if (idResults.length > 0) {
+    const ids = idResults.map((p) => p.id);
+    products = await prisma.product.findMany({
+      where: { id: { in: ids } },
+      orderBy: [{ [sortField]: validated.sortOrder ?? "desc" }, { id: "desc" }],
+      include: buildBaseInclude(),
+    });
+  } else {
+    products = [];
+  }
 
   return {
     products: mapCatalogProducts(
@@ -451,15 +530,31 @@ export async function getProductCountsByStatus() {
 export const getFeaturedProducts = cache(
   withCatalogCache(
     async (limit: number = 6) => {
-      const products = await prisma.product.findMany({
-        where: {
-          ...buildBaseWhere(),
-          isFeatured: true,
-        },
+      const baseWhere = {
+        ...buildBaseWhere(),
+        isFeatured: true,
+      };
+
+      // Step 1: Get IDs only (lightweight, no includes)
+      const idResults = await prisma.product.findMany({
+        where: baseWhere,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: Math.min(limit, MAX_CATALOG_PAGE_SIZE),
-        include: buildBaseInclude(),
+        select: { id: true },
       });
+
+      // Step 2: Only fetch full data with includes if products exist
+      let products;
+      if (idResults.length > 0) {
+        const ids = idResults.map((p) => p.id);
+        products = await prisma.product.findMany({
+          where: { id: { in: ids } },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          include: buildBaseInclude(),
+        });
+      } else {
+        products = [];
+      }
 
       return mapCatalogProducts(
         normalizeProducts(products as unknown as RawCatalogProduct[]),

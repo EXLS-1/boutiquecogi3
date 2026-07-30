@@ -4,7 +4,7 @@
 // Invalidate le cache RBAC au login et logout
 
 import { create } from "zustand";
-import { Permission } from "@/lib/auth/rbac";
+import type { Permission } from "@/lib/auth/rbac-shared";
 
 // Local RBAC session shape (module does not export RBACSession)
 interface RBACSession {

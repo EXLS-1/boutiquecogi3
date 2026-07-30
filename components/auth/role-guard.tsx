@@ -6,7 +6,7 @@
 
 import React, { ReactNode, memo } from "react";
 import { useRBAC } from "@/hooks/rbac/use-rbac";
-import { Permission, RoleLevelValue } from "@/lib/auth/rbac";
+import { Permission, getRoleLevel } from "@/lib/auth/rbac-shared";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 
@@ -22,7 +22,7 @@ interface BaseGuardProps {
 
 /** Protection par niveau hiérarchique maximum (Level 1 = plus haut) */
 interface MaxLevelGuardProps extends BaseGuardProps {
-  maxLevel: RoleLevelValue;
+  maxLevel:  typeof getRoleLevel;
   minLevel?: never;
   exactLevel?: never;
   permissions?: never;
@@ -31,7 +31,7 @@ interface MaxLevelGuardProps extends BaseGuardProps {
 
 /** Protection par niveau hiérarchique minimum (Level 7 = plus bas) */
 interface MinLevelGuardProps extends BaseGuardProps {
-  minLevel: RoleLevelValue;
+  minLevel:  typeof getRoleLevel;
   maxLevel?: never;
   exactLevel?: never;
   permissions?: never;
@@ -40,7 +40,7 @@ interface MinLevelGuardProps extends BaseGuardProps {
 
 /** Protection par niveau hiérarchique exact */
 interface ExactLevelGuardProps extends BaseGuardProps {
-  exactLevel: RoleLevelValue;
+  exactLevel:  typeof getRoleLevel;
   minLevel?: never;
   maxLevel?: never;
   permissions?: never;
@@ -58,7 +58,7 @@ interface PermissionGuardProps extends BaseGuardProps {
 
 /** Protection combinée (niveau ET permissions) */
 interface CombinedGuardProps extends BaseGuardProps {
-  maxLevel: RoleLevelValue;
+  maxLevel:  typeof getRoleLevel;
   permissions: Permission[];
   requireAll?: boolean;
   minLevel?: never;
@@ -67,8 +67,8 @@ interface CombinedGuardProps extends BaseGuardProps {
 
 /** Protection par plage de niveaux */
 interface LevelRangeGuardProps extends BaseGuardProps {
-  maxLevel: RoleLevelValue;
-  minLevel: RoleLevelValue;
+  maxLevel:  typeof getRoleLevel;
+  minLevel:  typeof getRoleLevel;
   permissions?: never;
   requireAll?: never;
   exactLevel?: never;
@@ -215,9 +215,9 @@ export const AuthenticatedGuard = memo(function AuthenticatedGuard(
 // =============================================================================
 
 interface WithRBACOptions {
-  maxLevel?: RoleLevelValue;
-  minLevel?: RoleLevelValue;
-  exactLevel?: RoleLevelValue;
+  maxLevel?:  typeof getRoleLevel;
+  minLevel?:  typeof getRoleLevel;
+  exactLevel?:  typeof getRoleLevel;
   permissions?: Permission[];
   requireAll?: boolean;
   fallback?: ReactNode;

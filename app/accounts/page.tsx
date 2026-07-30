@@ -13,22 +13,18 @@ const formatDate = (d: Date | number | null | undefined) => {
   }).format(date);
 };
 
-const badge = (condition: boolean, labelOn: string, labelOff: string, colorOn: string, colorOff: string) =>
-  condition ? (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${colorOn}`}>
-      {labelOn}
-    </span>
-  ) : (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${colorOff}`}>
-      {labelOff}
-    </span>
-  );
-
 export default async function AccountsPage() {
   const accounts = await prisma.account.findMany({
     include: {
       user: {
-        select: { id: true, name: true, email: true, image: true, role: true, isDeleted: true, isBlocked: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          userSecurities: { select: { isBlocked: true } },
+          userAudit: { select: { isDeleted: true } },
+        },
       },
     },
     orderBy: [{ createdAt: "desc" }],
@@ -37,7 +33,6 @@ export default async function AccountsPage() {
   const total = accounts.length;
   const users = new Set(accounts.map((a) => a.userId)).size;
   const providers = [...new Set(accounts.map((a) => a.provider))];
-  const types = [...new Set(accounts.map((a) => a.type))];
   const withPassword = accounts.filter((a) => a.password).length;
   const withRefresh = accounts.filter((a) => a.refreshToken).length;
   const withAccess = accounts.filter((a) => a.accessToken).length;
@@ -161,12 +156,12 @@ export default async function AccountsPage() {
                     key={a.id}
                     style={{
                       borderBottom: "1px solid #f1f5f9",
-                      background: a.user?.isDeleted
+                      background: a.user?.userAudit?.isDeleted
                         ? "#fef2f2"
-                        : a.user?.isBlocked
+                        : a.user?.userSecurities[0]?.isBlocked
                         ? "#fffbeb"
                         : "transparent",
-                      opacity: a.user?.isDeleted ? 0.7 : 1,
+                      opacity: a.user?.userAudit?.isDeleted ? 0.7 : 1,
                     }}
                   >
                     <td
@@ -230,13 +225,13 @@ export default async function AccountsPage() {
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
-                      title={a.providerAccountId}
+                      title={a.accountId}
                     >
-                      {a.providerAccountId.length > 12
-                        ? a.providerAccountId.slice(0, 8) +
+                      {a.accountId.length > 12
+                        ? a.accountId.slice(0, 8) +
                           "..." +
-                          a.providerAccountId.slice(-4)
-                        : a.providerAccountId}
+                          a.accountId.slice(-4)
+                        : a.accountId}
                     </td>
                     <td style={{ padding: "0.75rem", whiteSpace: "nowrap" }}>
                       {a.user ? (
@@ -359,7 +354,7 @@ export default async function AccountsPage() {
                       {formatDate(a.updatedAt)}
                     </td>
                     <td style={{ padding: "0.75rem", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                      {a.expiresAt ? formatDate(a.expiresAt * 1000) : "-"}
+                      {formatDate(a.expiresAt)}
                     </td>
                     <td style={{ padding: "0.75rem", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
                       {formatDate(a.refreshTokenExpiresAt)}

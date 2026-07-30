@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useSwitchRBAC } from "@/components/providers/switch-provider";
-import { ROLES, type Role } from "@/lib/auth/rbac";
+import { ROLES, type Role } from "@/lib/auth/rbac-shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -128,7 +128,7 @@ export function AuditModeSwitcher() {
                     className="h-8 gap-1 text-xs"
                   >
                     <AlertCircle className="h-3 w-3" />
-                    Demander l'accès
+                    Demander l&apos;accès
                   </Button>
                   <Button
                     size="sm"
@@ -138,7 +138,7 @@ export function AuditModeSwitcher() {
                     className="h-8 gap-1 text-xs"
                   >
                     <CheckCircle2 className="h-3 w-3" />
-                    J'ai un token
+                    J&apos;ai un token
                   </Button>
                 </>
               ) : (
@@ -162,7 +162,7 @@ export function AuditModeSwitcher() {
       {auditState.status === "pending_approval" && (
         <Badge variant="outline" className="gap-1 border-blue-300 bg-blue-50 text-blue-700">
           <Clock className="h-3 w-3 animate-pulse" />
-          En attente d'approbation
+          En attente d&apos;approbation
         </Badge>
       )}
       {auditState.status === "rejected" && (
@@ -176,14 +176,14 @@ export function AuditModeSwitcher() {
       <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Demande d'approbation d'audit</DialogTitle>
+            <DialogTitle>Demande d&apos;approbation d&apos;audit</DialogTitle>
             <DialogDescription>
               Un SUPER_ADMIN doit approuver votre demande pour auditer le rôle {selectedRole}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="reason">Motif de l'audit</Label>
+              <Label htmlFor="reason">Motif de l&apos;audit</Label>
               <Input
                 id="reason"
                 placeholder="Ex: Test des permissions éditeur pour validation UI..."
@@ -205,7 +205,7 @@ export function AuditModeSwitcher() {
       <Dialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Token d'approbation</DialogTitle>
+            <DialogTitle>Token d&apos;approbation</DialogTitle>
             <DialogDescription>
               Saisissez le token fourni par le SUPER_ADMIN.
             </DialogDescription>

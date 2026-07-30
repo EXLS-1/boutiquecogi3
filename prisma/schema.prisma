@@ -13,77 +13,133 @@ datasource db {
 // =============================================
 
 model User {
-  id              String          @id @unique @default(uuid(7)) @db.Uuid
-  role            Role            @default(USER)
-  roleConfig      RoleConfig?     @relation(fields: [roleConfigId], references: [id])
-  roleConfigId    String?         @db.Uuid
-  roleAssignment  RoleAssignment?
-  sessions        Session[]
-  name            String?
-  email           String          @unique
-  emailVerified   Boolean         @default(false)
+  id              String    @id @unique @default(uuid(7)) @db.Uuid
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
+  name            String?
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
 
-  image String?
+  sessions                 Session[]
+  accounts                 Account[]
+  deletedAccountRegistries DeletedAccountRegistry[]
 
-  accounts Account[]
+  posts          Post[]
+  orders         Order[]
+  cart           Cart? // un seul panier par utilisateur (optionnel)
+  abandonedCarts AbandonedCart[]
+  couponUsages   CouponUsage[]
+  wishlist       Wishlist? // une seule liste de souhaits
 
-  orders           Order[]
-  posts            Post[]
-  dashboards       Dashboard[]
-  updater          Stock[]
-  reviews          Review[]
-  addresses        Address[]
-  couponUsages     CouponUsage[]
-  notifications    Notification[]
-  abandonedCarts   AbandonedCart[]
-  twoFactorEnabled Boolean          @default(false)
-  twoFactorSecret  String?          @db.Text
-  twoFactor        TwoFactor[]
-  cart             Cart? // un seul panier par utilisateur (optionnel)
-  wishlist         Wishlist? // une seule liste de souhaits
-  searchAnalytics  SearchAnalytics?
-
-  createdAt   DateTime @default(now())
-  createdById String?  @db.Uuid
-  updatedById String?  @db.Uuid
-  deletedById String?  @db.Uuid
-
-  createdBy User? @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User? @relation("UserUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  deletedBy User? @relation("UserDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
-
-  createdUsers User[] @relation("UserCreatedBy")
-  updatedUsers User[] @relation("UserUpdatedBy")
-  deletedUsers User[] @relation("UserDeletedBy")
-
-  deletedAt    DateTime?
-  blockedAt    DateTime?
-  isDeleted    Boolean   @default(false)
-  isBlocked    Boolean   @default(false)
-  blockedUntil DateTime?
-  blockReason  String?
-
-  version Int @default(1)
+  dashboards      Dashboard[]
+  searchAnalytics SearchAnalytics?
+  auditLogs       AuditLog[]
+  addresses       Address[]
 
   products        Product[]
   productViews    ProductView[]
-  createdProducts Product[]     @relation("ProductCreator")
-  editedProducts  Product[]     @relation("ProductEditor")
-  productCount    Int           @default(0) // 🔒 Compteur atomique pour les quotas
-  auditLogs       AuditLog[]
+  reviews         Review[]
+  createdProducts Product[]       @relation("ProductCreator")
+  editedProducts  Product[]       @relation("ProductEditor")
+  updater         Stock[]
+  stockMovements  StockMovement[]
 
-  stockMovements StockMovement[]
-
-  deletedAccountRegistries DeletedAccountRegistry[]
+  userSecurities  UserSecurity[]
+  userPreferences UserPreferences[]
+  userQuotas      UserQuota[]
+  createdAudits   UserAudit[]       @relation("UserAuditCreatedBy")
+  updatedAudits   UserAudit[]       @relation("UserAuditUpdatedBy")
+  deletedAudits   UserAudit[]       @relation("UserAuditDeletedBy")
+  roleConfig      RoleConfig?       @relation(fields: [roleConfigId], references: [id])
+  roleConfigId    String?           @db.Uuid
+  roleAssignment  RoleAssignment?
+  twoFactor       TwoFactor?
+  notifications   Notification[]
+  userAudit       UserAudit?
 
   @@map("user")
+}
+
+model UserSecurity {
+  id               String      @id @default(uuid(7)) @db.Uuid
+  userId           String      @unique @db.Uuid
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  twoFactorEnabled Boolean     @default(false)
+  twoFactorSecret  String?     @db.Text
+  twoFactor        TwoFactor[]
+  blockedAt        DateTime?
+  blockedUntil     DateTime?
+  blockReason      String?
+  isBlocked        Boolean     @default(false)
+
+  @@map("user_security")
+}
+
+model UserRole {
+  id          String  @id @default(uuid(7)) @db.Uuid
+  userId      String  @unique @db.Uuid
+  name        String  @unique
+  description String?
+
+  role             Role            @default(USER)
+  roleConfig       RoleConfig?     @relation(fields: [roleConfigId], references: [id])
+  roleConfigId     String?         @db.Uuid
+  roleAssignment   RoleAssignment? @relation(fields: [roleAssignmentid], references: [id])
+  roleAssignmentid String?         @db.Uuid
+
+  @@map("user_role")
+}
+
+model UserPreferences {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @unique @db.Uuid
+
+  language      String @default("fr")
+  theme         String @default("light")
+  notifications Json   @default("{}")
+  // autres préférences
+
+  users User[]
+
+  @@map("user_preferences")
+}
+
+model UserQuota {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @unique @db.Uuid
+
+  productCount Int @default(0) // 🔒 Compteur atomique pour les quotas
+
+  users User[]
+
+  @@map("user_quota")
+}
+
+model UserAudit {
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @unique @db.Uuid
+
+  deletedAt DateTime?
+  isDeleted Boolean   @default(false)
+  version   Int       @default(1)
+
+  createdById String? @db.Uuid
+  updatedById String? @db.Uuid
+  deletedById String? @db.Uuid
+
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("UserAuditCreatedBy", fields: [createdById], references: [id])
+  updatedBy User? @relation("UserAuditUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy User? @relation("UserAuditDeletedBy", fields: [deletedById], references: [id])
+
+  @@map("user_audit")
 }
 
 model Account {
   id     String @id @default(uuid(7)) @db.Uuid
   userId String @db.Uuid
-  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
   type   String @default("email")
 
   provider  String
@@ -101,6 +157,7 @@ model Account {
   scope                 String?
   idToken               String?   @map("id_token") @db.Text
   sessionState          String?   @map("session_state")
+  user                  User      @relation(fields: [userId], references: [id])
 
   @@unique([provider])
   @@index([userId])
@@ -207,6 +264,7 @@ model RoleConfig {
   unblockedAt     DateTime?
   unblockedBy     String?
   unblockedReason String?
+  userRoles       UserRole[]
 
   @@index([role])
   @@index([level])
@@ -267,6 +325,8 @@ model RoleAssignment {
   lastVerifiedAt DateTime @default(now())
 
   roleDefinitions RoleDefinition[]
+
+  userRoles UserRole[]
 }
 
 model RoleDefaultPermission {
@@ -330,14 +390,15 @@ model PermissionOverride {
 }
 
 model TwoFactor {
-  id          String                @id @default(uuid(7)) @db.Uuid
-  userId      String                @unique @db.Uuid
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  secret      String                @db.Text
-  enabled     Boolean               @default(false)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  backupCodes TwoFactorBackupCode[]
+  id             String                @id @default(uuid(7)) @db.Uuid
+  userId         String                @unique @db.Uuid
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret         String                @db.Text
+  enabled        Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  backupCodes    TwoFactorBackupCode[]
+  userSecurities UserSecurity[]
 
   @@map("twofactor")
 }
