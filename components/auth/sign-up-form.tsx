@@ -111,26 +111,35 @@ export function SignUpForm() {
   }, [passwordValue]);
 
   const onSubmit = async (data: SignUpFormValues) => {
-    await authClient.signUp.email(
-      {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-      },
-      {
-        onRequest: () => setIsPending(true),
-        onSuccess: () => {
-          toast.success("Inscription réussie ! Redirection...");
-          // AutoSignIn est activé → l'utilisateur est connecté automatiquement, redirection vers l'accueil
-          router.push("/");
-          router.refresh(); 
-        },
-        onError: (ctx) => {
-          setIsPending(false);
-          toast.error(ctx.error.message || "Une erreur est survenue lors de l'inscription.");
-        },
+    setIsPending(true);
+
+    try {
+      const response = await fetch("/api/auth/sign-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Une erreur est survenue lors de l'inscription.");
+        setIsPending(false);
+        return;
       }
-    );
+
+      toast.success("Inscription réussie ! Redirection...");
+      // AutoSignIn est activé → l'utilisateur est connecté automatiquement, redirection vers l'accueil
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      toast.error("Une erreur est survenue lors de l'inscription.");
+      setIsPending(false);
+    }
   };
 
   return (

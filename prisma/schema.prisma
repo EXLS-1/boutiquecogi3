@@ -15,7 +15,7 @@ datasource db {
 model User {
   id              String    @id @unique @default(uuid(7)) @db.Uuid
   email           String    @unique
-  emailVerified   Boolean   @default(false)
+  emailVerified   DateTime?
   emailVerifiedAt DateTime?
   name            String?
   image           String?
@@ -142,8 +142,8 @@ model Account {
   userId String @db.Uuid
   type   String @default("email")
 
-  provider  String
-  accountId String @map("providerAccountId")
+  providerId String @map("provider")
+  accountId  String @map("providerAccountId")
 
   password              String?   @db.Text
   createdAt             DateTime  @default(now())
@@ -159,7 +159,7 @@ model Account {
   sessionState          String?   @map("session_state")
   user                  User      @relation(fields: [userId], references: [id])
 
-  @@unique([provider])
+  @@unique([providerId, accountId])
   @@index([userId])
   @@map("account")
 }
