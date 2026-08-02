@@ -1,6 +1,7 @@
 // lib/auth/auth-client.ts
 // Client d'authentification centralisé pour la boutique COGI3.
 // Ce module utilise Better-Auth pour gérer les sessions côté client et propose une abstraction hookée pour l'UI.
+
 "use client";
 
 import { createAuthClient } from "better-auth/react";
@@ -129,17 +130,20 @@ export function useAuth() {
   /**
    * Exécute une action Better-Auth et gère la navigation/rafraîchissement.
    */
-  const handleAction = async (promise: Promise<any>) => {
+  const handleAction = async (promise: Promise<unknown>) => {
+
     setIsPending(true);
     setError(null);
     try {
       const result = await promise;
 
-      if (result?.error || (result && "error" in result)) {
-        setError(
-          result.error.message || "Erreur d'authentification inattendue.",
-        );
-        return { success: false, error: result.error };
+      // Guard type-safety: TS should not assume `result` has an `error` prop.
+      if (result && typeof result === "object" && "error" in result) {
+        const err = (result as { error?: { message?: string } | undefined })
+          .error;
+
+        setError(err?.message || "Erreur d'authentification inattendue.");
+        return { success: false, error: err };
       }
 
       // startTransition permet de marquer le rafraîchissement comme non-urgent pour l'UI
@@ -149,7 +153,8 @@ export function useAuth() {
       });
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+
       setError(
         err.message || "Le service d'authentification est indisponible.",
       );

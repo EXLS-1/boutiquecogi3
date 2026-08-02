@@ -12,18 +12,14 @@ export type CategoryType =
 export interface Product {
   ProdutproductId: string;
   name: string;
-  price: number; // Transformé en number pour permettre les calculs sans cast ultérieur
-  size: string;
-  couleur: string;
-  image: string;
   description: string;
-  currency: string;
   category: CategoryType;
 }
 
 export interface ProductVariant {
   productId: string;
   name: string;
+  stock: number;
   price: number; // Transformé en number pour permettre les calculs sans cast ultérieur
   size: string;
   couleur: string;
@@ -31,10 +27,22 @@ export interface ProductVariant {
   description: string;
   currency: string;
   category: CategoryType;
+  createdAt: Date;
+  createdBy: string;
+  updatedAt: Date;
+  updatedBy: string;
 }
 
 export interface ProductCatalog {
   products: Record<CategoryType, Product[]>;
+  image: string;
+  description: string;
+  currency: string;
+  category: CategoryType;
+  createdAt: Date;
+  createdBy: string;
+  updatedAt: Date;
+  updatedBy: string;
 }
 
 // 2. Exportation de la structure de données

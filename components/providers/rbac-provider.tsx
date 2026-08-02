@@ -1,7 +1,9 @@
+// components/providers/rbac-provider.tsx
+
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import type { Role, Permission, Restriction, ToggleState } from "@/lib/auth/rbac";
+import type { Role, Permission, Restriction, ToggleState } from "@/lib/auth/rbac-shared";
 
 type RBACContextType = {
   user: { id: string; email: string; name?: string | null; image?: string | null };

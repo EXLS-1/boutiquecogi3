@@ -43,9 +43,9 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/auth-client";
@@ -59,7 +59,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -68,7 +67,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 
-// Configuration de zxcvbn pour optimiser les performances (chargement des dictionnaires communs)
+// Configuration de zxcvbn pour optimiser les performances et estimer lq force des mots de passe (chargement des dictionnaires communs)
 zxcvbnOptions.setOptions({
   dictionary: {
     ...commonTransitions.dictionary,
@@ -97,7 +96,7 @@ export function SignUpForm() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -105,36 +104,46 @@ export function SignUpForm() {
   });
 
   // Surveillance du mot de passe pour calculer la force
-  const passwordValue = watch("password", "");
+  // Utilisation de useWatch au lieu de watch() pour éviter l'erreur React Compiler
+  const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
   const passwordScore = useMemo(() => {
     return passwordValue ? zxcvbn(passwordValue).score : -1;
   }, [passwordValue]);
 
   const onSubmit = async (data: SignUpFormValues) => {
-    await authClient.signUp.email(
-      {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-      },
-      {
-        onRequest: () => setIsPending(true),
-        onSuccess: () => {
-          toast.success("Inscription réussie ! Redirection...");
-          // Redirection vers la page de connexion ou une page protégée si l'utilisateur est automatiquement connecté
-          router.push("/auth/login"); // Ou "/protected" si l'utilisateur est connecté automatiquement
-          router.refresh(); 
-        },
-        onError: (ctx) => {
-          setIsPending(false);
-          toast.error(ctx.error.message || "Une erreur est survenue lors de l'inscription.");
-        },
+    setIsPending(true);
+
+    try {
+      const response = await fetch("/api/auth/sign-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Une erreur est survenue lors de l'inscription.");
+        setIsPending(false);
+        return;
       }
-    );
+
+      toast.success("Inscription réussie ! Redirection...");
+      // AutoSignIn est activé → l'utilisateur est connecté automatiquement, redirection vers l'accueil
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      toast.error("Une erreur est survenue lors de l'inscription.");
+      setIsPending(false);
+    }
   };
 
   return (
-      <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
+    <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
       <CardHeader>
         <CardTitle className="text-2xl text-cyan-700">Inscription</CardTitle>
       </CardHeader>
@@ -151,108 +160,108 @@ export function SignUpForm() {
               <span className="px-2 text-cyan-400 bg-cyan-200 rounded-full">ou avec votre email</span>
             </div>
           </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          
-          <div className="grid gap-2">
-            <Label htmlFor="name">Nom complet</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Jean Dupont"
-              {...register("name")}
-              disabled={isPending}
-              className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
-            />
-            {errors.name && <span className="text-sm text-red-500">{errors.name.message}</span>}
-          </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
 
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="m@example.com"
-              {...register("email")}
-              disabled={isPending}
-              className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-            />
-            {errors.email && <span className="text-sm text-red-500">{errors.email.message}</span>}
-          </div>
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nom complet</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Jean Dupont"
+                {...register("name")}
+                disabled={isPending}
+                className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {errors.name && <span className="text-sm text-red-500">{errors.name.message}</span>}
+            </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="password">Mot de passe</Label>
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              {...register("password")}
-              disabled={isPending}
-              className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
-            />
-            {/* Barre de force du mot de passe */}
-            {passwordValue && (
-              <div className="flex flex-col gap-1.5 mt-1">
-                <div className="flex h-1 w-full gap-1">
-                  {[0, 1, 2, 3].map((step) => (
-                    <div
-                      key={step}
-                      className={cn(
-                        "h-full w-full rounded-full transition-colors duration-300",
-                        step <= passwordScore
-                          ? [
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                {...register("email")}
+                disabled={isPending}
+                className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {errors.email && <span className="text-sm text-red-500">{errors.email.message}</span>}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...register("password")}
+                disabled={isPending}
+                className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {/* Barre de force du mot de passe */}
+              {passwordValue && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <div className="flex h-1 w-full gap-1">
+                    {[0, 1, 2, 3].map((step) => (
+                      <div
+                        key={step}
+                        className={cn(
+                          "h-full w-full rounded-full transition-colors duration-300",
+                          step <= passwordScore
+                            ? [
                               "bg-red-500",    // Très faible
                               "bg-orange-500", // Faible
                               "bg-amber-400",  // Moyen
                               "bg-emerald-500" // Fort
                             ][passwordScore]
-                          : "bg-cyan-100"
-                      )}
-                    />
-                  ))}
+                            : "bg-cyan-100"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-400">
+                    Force : {["Très faible", "Faible", "Moyen", "Fort", "Excellent"][passwordScore]}
+                  </p>
                 </div>
-                <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-400">
-                  Force : {["Très faible", "Faible", "Moyen", "Fort", "Excellent"][passwordScore]}
-                </p>
-              </div>
-            )}
-            {errors.password && <span className="text-sm text-red-500">{errors.password.message}</span>}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-            <Input
-              id="confirmPassword"
-              type={showPassword ? "text" : "password"}
-              {...register("confirmPassword")}
-              disabled={isPending}
-              className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
-            />
-            {errors.confirmPassword && <span className="text-sm text-red-500">{errors.confirmPassword.message}</span>}
-            <div className="flex items-center gap-2 mt-1">
-              <Checkbox
-                id="show-passwords"
-                checked={showPassword}
-                onCheckedChange={(checked) => setShowPassword(!!checked)}
-              />
-              <Label htmlFor="show-passwords" className="text-sm font-normal cursor-pointer text-cyan-700">
-                Afficher les mots de passe
-              </Label>
+              )}
+              {errors.password && <span className="text-sm text-red-500">{errors.password.message}</span>}
             </div>
-          </div>
 
-          <Button type="submit" className="w-full bg-cyan-400 text-white hover:bg-rose-500" disabled={isPending}>
-            {isPending ? "Création du compte..." : "S'inscrire"}
-          </Button>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                {...register("confirmPassword")}
+                disabled={isPending}
+                className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {errors.confirmPassword && <span className="text-sm text-red-500">{errors.confirmPassword.message}</span>}
+              <div className="flex items-center gap-2 mt-1">
+                <Checkbox
+                  id="show-passwords"
+                  checked={showPassword}
+                  onCheckedChange={(checked) => setShowPassword(!!checked)}
+                />
+                <Label htmlFor="show-passwords" className="text-sm font-normal cursor-pointer text-cyan-700">
+                  Afficher les mots de passe
+                </Label>
+              </div>
+            </div>
 
-          <div className="text-center text-sm text-cyan-400">
-            Déjà un compte ?{" "}
-            <Link
-              href="/auth/login"
-              className="text-cyan-500 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
-            >
-              Se connecter
-            </Link>
-          </div>
-        </form>
+            <Button type="submit" className="w-full bg-cyan-400 text-white hover:bg-rose-500" disabled={isPending}>
+              {isPending ? "Création du compte..." : "S'inscrire"}
+            </Button>
+
+            <div className="text-center text-sm text-cyan-400">
+              Déjà un compte ?{" "}
+              <Link
+                href="/auth/sign-in"
+                className="text-cyan-500 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
+              >
+                Se connecter
+              </Link>
+            </div>
+          </form>
         </div>
       </CardContent>
     </Card>

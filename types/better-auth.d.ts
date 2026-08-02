@@ -1,5 +1,5 @@
 // types/better-auth.d.ts
-import type { Role } from "@/lib/auth/rbac/constants";
+import type { Role } from "@/lib/auth/rbac-shared";
 
 declare module "better-auth" {
   interface User {

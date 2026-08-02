@@ -6,7 +6,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useRBACStore } from "@/store/use-rbac-store";
-import { Permission, getRoleLevel, Role } from "@/lib/auth/rbac";
+import { Permission, Role, getRoleLevel } from "@/lib/auth/rbac-shared";
 
 type RoleLevel = ReturnType<typeof getRoleLevel>;
 

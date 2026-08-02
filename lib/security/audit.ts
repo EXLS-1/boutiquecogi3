@@ -1,3 +1,4 @@
+// lib/security/audits.ts
 /**
  * =============================================================================
  * BOUTIQUECOGI3 — SECURITY AUDIT LOGGING SYSTEM
@@ -17,9 +18,10 @@
  */
 
 import { Redis } from "@upstash/redis";
-import { uuidv7 } from "uuidv7";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { type NextRequest } from "next/server";
 import { headers } from "next/headers";
+import type { Prisma } from "@prisma/client";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ENVIRONMENT & REDIS CLIENT
@@ -28,20 +30,27 @@ import { headers } from "next/headers";
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
-  throw new Error(
-    "[AUDIT] Missing UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN environment variables"
+const hasUpstashRedis =
+  !!UPSTASH_REDIS_REST_URL && !!UPSTASH_REDIS_REST_TOKEN;
+
+if (!hasUpstashRedis) {
+  console.warn(
+    "[AUDIT] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN manquants. " +
+      "Les logs d'audit seront dégradés (fallback console uniquement)."
   );
 }
 
 /**
  * Dedicated Redis client for audit logs (isolated from rate limiting).
+ * Non-null uniquement si UPSTASH_REDIS_REST_URL / TOKEN sont configurés.
  */
-const auditRedis = new Redis({
-  url: UPSTASH_REDIS_REST_URL,
-  token: UPSTASH_REDIS_REST_TOKEN,
-  cache: "no-store",
-});
+const auditRedis: Redis | null = hasUpstashRedis
+  ? new Redis({
+      url: UPSTASH_REDIS_REST_URL!,
+      token: UPSTASH_REDIS_REST_TOKEN!,
+      cache: "no-store",
+    })
+  : null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RBAC LEVEL TYPE DEFINITIONS
@@ -243,7 +252,7 @@ export enum Severity {
 export interface AuditLogEntry {
   // Core Identity
   id: string;                    // UUID v7 (time-ordered, sortable)
-  timestamp: string;               // ISO 8601 UTC
+  timestamp: string;             // ISO 8601 UTC
   eventType: AuditEventType;
   severity: Severity;
   
@@ -401,7 +410,6 @@ async function resolveRequestContext(
   return {
     ipAddress: forwardedFor?.split(",")[0]?.trim() 
       || realIp 
-      || request?.ip 
       || null,
     userAgent: headersList.get("user-agent") || null,
     requestPath: request?.nextUrl?.pathname || headersList.get("x-request-path") || null,
@@ -491,7 +499,7 @@ export async function auditLog(options: AuditLogOptions): Promise<AuditLogEntry>
   const correlationId = explicitCorrelationId || context.correlationId;
 
   // Generate UUID v7 (time-ordered, sortable, no collision risk)
-  const id = uuidv7();
+  const id = generateUUIDv7();
   const timestamp = new Date().toISOString();
 
   // Build entry (without hash for now)
@@ -556,18 +564,31 @@ export async function auditLog(options: AuditLogOptions): Promise<AuditLogEntry>
  * Uses Redis Streams for durability and consumer group support.
  */
 async function writeToRedisStream(entry: AuditLogEntry): Promise<void> {
+  // Fallback dégradé sans Upstash Redis : journalisation console uniquement.
+  if (!auditRedis) {
+    console.info(`[AUDIT] ${JSON.stringify(entry)}`);
+    return;
+  }
+
   const streamKey = `audit:stream:${entry.severity.toLowerCase()}`;
   
-  await auditRedis.xadd(streamKey, "*", {
-    entry: JSON.stringify(entry),
-    timestamp: entry.timestamp,
-    eventType: entry.eventType,
-    actorId: entry.actorId || "anonymous",
-    severity: entry.severity,
-  });
+  await auditRedis.xadd(
+    streamKey,
+    "*",
+    {
+      entry: JSON.stringify(entry),
+      timestamp: entry.timestamp,
+      eventType: entry.eventType,
+      actorId: entry.actorId || "anonymous",
+      severity: entry.severity,
+    },
+  );
   
   // Trim stream to prevent unbounded growth (keep last 10,000 per severity)
-  await auditRedis.xtrim(streamKey, "MAXLEN", "~", 10000);
+  await auditRedis.xtrim(
+    streamKey,
+    { strategy: "MAXLEN", exactness: "~", threshold: 10000 },
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -585,23 +606,27 @@ async function persistCriticalEvent(entry: AuditLogEntry): Promise<void> {
   await prisma.auditLog.create({
     data: {
       id: entry.id,
-      timestamp: new Date(entry.timestamp),
-      eventType: entry.eventType,
-      severity: entry.severity,
-      actorId: entry.actorId,
-      actorLevel: entry.actorLevel,
-      actorEmail: entry.actorEmail,
-      sessionId: entry.sessionId,
-      targetId: entry.targetId,
-      targetType: entry.targetType,
+      createdAt: new Date(entry.timestamp),
+      userId: entry.actorId || "",
+      action: entry.eventType,
+      metadata: entry.metadata as Prisma.InputJsonValue,
       ipAddress: entry.ipAddress,
       userAgent: entry.userAgent,
-      requestPath: entry.requestPath,
-      requestMethod: entry.requestMethod,
-      correlationId: entry.correlationId,
-      metadata: entry.metadata,
-      hash: entry.hash,
-      previousHash: entry.previousHash,
+      sessionId: entry.sessionId,
+      status: entry.severity,
+      details: JSON.stringify({
+        eventType: entry.eventType,
+        severity: entry.severity,
+        actorLevel: entry.actorLevel,
+        actorEmail: entry.actorEmail,
+        targetId: entry.targetId,
+        targetType: entry.targetType,
+        requestPath: entry.requestPath,
+        requestMethod: entry.requestMethod,
+        correlationId: entry.correlationId,
+        hash: entry.hash,
+        previousHash: entry.previousHash,
+      }),
     },
   });
 }
@@ -627,13 +652,14 @@ async function triggerAlert(entry: AuditLogEntry): Promise<void> {
     message: `[${entry.severity}] ${entry.eventType} by ${entry.actorId || "GUEST"} (${entry.actorLevel})`,
   };
 
-  // Write to Redis Pub/Sub channel for real-time consumers
-  await auditRedis.publish("audit:alerts", JSON.stringify(alertPayload));
-
   // Console alert for immediate visibility (replace with webhook/Slack in production)
   console.warn(
     `[SECURITY-ALERT] ${alertPayload.message} | IP: ${entry.ipAddress} | Target: ${entry.targetId}`
   );
+
+  // Write to Redis Pub/Sub channel for real-time consumers (si configuré)
+  if (!auditRedis) return;
+  await auditRedis.publish("audit:alerts", JSON.stringify(alertPayload));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -741,21 +767,20 @@ export async function queryAuditLogs(
   const where: Record<string, unknown> = {};
   
   if (options.startDate || options.endDate) {
-    where.timestamp = {};
-    if (options.startDate) (where.timestamp as Record<string, Date>).gte = options.startDate;
-    if (options.endDate) (where.timestamp as Record<string, Date>).lte = options.endDate;
+    where.createdAt = {};
+    if (options.startDate) (where.createdAt as Record<string, Date>).gte = options.startDate;
+    if (options.endDate) (where.createdAt as Record<string, Date>).lte = options.endDate;
   }
   
-  if (options.eventTypes?.length) where.eventType = { in: options.eventTypes };
-  if (options.severities?.length) where.severity = { in: options.severities };
-  if (options.actorId) where.actorId = options.actorId;
-  if (options.actorLevels?.length) where.actorLevel = { in: options.actorLevels };
+  if (options.eventTypes?.length) where.action = { in: options.eventTypes };
+  if (options.severities?.length) where.status = { in: options.severities };
+  if (options.actorId) where.userId = options.actorId;
   if (options.targetId) where.targetId = options.targetId;
 
   const [entries, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
-      orderBy: { timestamp: "desc" },
+      orderBy: { createdAt: "desc" },
       take: options.limit || 100,
       skip: options.offset || 0,
     }),
@@ -763,11 +788,33 @@ export async function queryAuditLogs(
   ]);
 
   return {
-    entries: entries.map(e => ({
-      ...e,
-      metadata: e.metadata as Record<string, unknown>,
-      timestamp: e.timestamp.toISOString(),
-    })),
+    entries: entries.map(e => {
+      let parsedDetails: Record<string, unknown> = {};
+      try {
+        if (e.details) parsedDetails = JSON.parse(e.details);
+      } catch { /* ignore parse errors */ }
+      
+      return {
+        id: e.id,
+        timestamp: e.createdAt.toISOString(),
+        eventType: (parsedDetails.eventType || e.action) as AuditEventType,
+        severity: (parsedDetails.severity || e.status) as Severity,
+        actorId: e.userId,
+        actorLevel: (parsedDetails.actorLevel || "GUEST") as RBACLevel,
+        actorEmail: (parsedDetails.actorEmail as string) || null,
+        sessionId: e.sessionId,
+        targetId: e.targetId,
+        targetType: parsedDetails.targetType as string || null,
+        ipAddress: e.ipAddress,
+        userAgent: e.userAgent,
+        requestPath: parsedDetails.requestPath as string || null,
+        requestMethod: parsedDetails.requestMethod as string || null,
+        correlationId: parsedDetails.correlationId as string || null,
+        metadata: (e.metadata as Record<string, unknown>) || {},
+        hash: (parsedDetails.hash as string) || "",
+        previousHash: (parsedDetails.previousHash as string) || null,
+      };
+    }),
     total,
   };
 }
@@ -775,6 +822,103 @@ export async function queryAuditLogs(
 // ─────────────────────────────────────────────────────────────────────────────
 // STREAM CONSUMER (For Real-Time Processing)
 // ─────────────────────────────────────────────────────────────────────────────
+
+interface XReadGroupMessage {
+  messageId: string;
+  fields: Record<string, unknown>;
+}
+
+/**
+ * Convertit un tableau RESP2 [field, value, ...] en objet Record<string, unknown>.
+ */
+function arrayFieldsToRecord(fieldsRaw: unknown): Record<string, unknown> {
+  const record: Record<string, unknown> = {};
+  if (!Array.isArray(fieldsRaw)) return record;
+  for (let i = 0; i + 1 < fieldsRaw.length; i += 2) {
+    const key = fieldsRaw[i];
+    if (typeof key === "string") {
+      record[key] = fieldsRaw[i + 1];
+    }
+  }
+  return record;
+}
+
+/**
+ * Collecte les messages d'un stream (forme objet ou tableau) vers le tableau de sortie.
+ */
+function collectStreamMessages(
+  streamMessages: unknown,
+  out: XReadGroupMessage[]
+): void {
+  if (!streamMessages) return;
+
+  // Forme objet : Record<messageId, fields>
+  if (typeof streamMessages === "object" && !Array.isArray(streamMessages)) {
+    for (const [messageId, fields] of Object.entries(
+      streamMessages as Record<string, unknown>
+    )) {
+      if (fields && typeof fields === "object") {
+        out.push({
+          messageId,
+          fields: fields as Record<string, unknown>,
+        });
+      }
+    }
+    return;
+  }
+
+  // Forme tableau : [ [messageId, [field, value, ...]], ... ]
+  if (Array.isArray(streamMessages)) {
+    for (const messageEntry of streamMessages) {
+      if (!Array.isArray(messageEntry) || messageEntry.length < 2) continue;
+      const [messageId, fieldsRaw] = messageEntry;
+      if (typeof messageId !== "string") continue;
+      out.push({ messageId, fields: arrayFieldsToRecord(fieldsRaw) });
+    }
+  }
+}
+
+/**
+ * Normalise le résultat brut de XREADGROUP (@upstash/redis v1.38.0).
+ *
+ * Le SDK type la commande en `Promise<unknown[]>` (XReadGroupCommand) mais
+ * désérialise la réponse RESP2 sous deux formes possibles :
+ *   - Objet   : Record<streamKey, Record<messageId, fields>>
+ *   - Tableau : [ [streamKey, [[messageId, [field, value, ...]], ...]], ... ]
+ *
+ * Cette fonction gère les deux formes et retourne une liste typée de messages.
+ */
+function parseXReadGroupResult(
+  raw: unknown,
+  expectedStreamKey: string
+): XReadGroupMessage[] {
+  const messages: XReadGroupMessage[] = [];
+
+  if (!raw) return messages;
+
+  // Forme objet : Record<streamKey, Record<messageId, fields>>
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    for (const [streamKey, streamMessages] of Object.entries(
+      raw as Record<string, unknown>
+    )) {
+      if (streamKey !== expectedStreamKey) continue;
+      collectStreamMessages(streamMessages, messages);
+    }
+    return messages;
+  }
+
+  // Forme tableau : [ [streamKey, [[messageId, [field, value, ...]], ...]], ... ]
+  if (Array.isArray(raw)) {
+    for (const streamEntry of raw) {
+      if (!Array.isArray(streamEntry) || streamEntry.length < 2) continue;
+      const [streamKey, streamMessages] = streamEntry;
+      if (streamKey !== expectedStreamKey) continue;
+      collectStreamMessages(streamMessages, messages);
+    }
+  }
+
+  return messages;
+}
 
 /**
  * Consumes audit events from Redis Stream for real-time processing.
@@ -784,51 +928,49 @@ export async function consumeAuditStream(
   severity: Severity,
   callback: (entry: AuditLogEntry) => Promise<void>
 ): Promise<void> {
+  // Sans Upstash Redis, aucun stream à consommer — sortie silencieuse.
+  if (!auditRedis) return;
+
   const streamKey = `audit:stream:${severity.toLowerCase()}`;
   const groupName = "audit-consumers";
   const consumerName = `consumer-${crypto.randomUUID()}`;
 
   try {
     // Create consumer group if not exists
-    await auditRedis.xgroup("CREATE", streamKey, groupName, "0", "MKSTREAM");
+    await auditRedis.xgroup(
+      streamKey,
+      { type: "CREATE", group: groupName, id: "0", options: { MKSTREAM: true } },
+    );
   } catch {
     // Group may already exist, ignore error
   }
 
   // Read events (blocking for 5 seconds)
-  const messages = await auditRedis.xreadgroup(
+  // v1.38.0 : retour typé Promise<unknown[]> — la forme réelle (objet ou tableau)
+  // est normalisée par parseXReadGroupResult ci-dessous.
+  const rawMessages = await auditRedis.xreadgroup(
     groupName,
     consumerName,
-    { [streamKey]: ">" },
-    { count: 10, block: 5000 }
+    streamKey,
+    ">",
+    { count: 10, blockMS: 5000 },
   );
 
-  if (!messages) return;
+  if (!rawMessages) return;
 
-  for (const message of messages) {
-    for (const item of message.messages) {
-      try {
-        const entry = JSON.parse(item.message.entry as string) as AuditLogEntry;
-        await callback(entry);
-        // Acknowledge message
-        await auditRedis.xack(streamKey, groupName, item.id);
-      } catch (err) {
-        console.error(`[AUDIT-CONSUMER] Failed to process message: ${err}`);
-      }
+  const messages = parseXReadGroupResult(rawMessages, streamKey);
+
+  for (const { messageId, fields } of messages) {
+    try {
+      const entryRaw = fields.entry;
+      const entry = typeof entryRaw === "string"
+        ? JSON.parse(entryRaw) as AuditLogEntry
+        : entryRaw as AuditLogEntry;
+      await callback(entry);
+      // Acknowledge message
+      await auditRedis.xack(streamKey, groupName, messageId);
+    } catch (err) {
+      console.error(`[AUDIT-CONSUMER] Failed to process message: ${err}`);
     }
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORTS
-// ─────────────────────────────────────────────────────────────────────────────
-
-export {
-  SuperAdminEvent,
-  AdminEvent,
-  PaymentEvent,
-  UserEvent,
-  SecurityEvent,
-  Severity,
-  auditRedis,
-};

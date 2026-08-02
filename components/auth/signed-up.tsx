@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth/auth-client";
-import toast from "react-hot-toast";
+import toast from "sonner";
 import { MailCheck, ArrowLeft, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessP
   // Gestion du décompte du cooldown (anti-spam)
   useEffect(() => {
     if (cooldown <= 0) return;
-    
+
     const timer = setInterval(() => {
       setCooldown((prev) => prev - 1);
     }, 1000);
@@ -42,7 +42,7 @@ export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessP
     try {
       // Appel asynchrone réel vers l'instance de Better-Auth
       const { error } = await authClient.sendVerificationEmail({
-        email: email === "votre boîte mail" ? "" : email, 
+        email: email === "votre boîte mail" ? "" : email,
         callbackURL: `${window.location.origin}/auth/sign-in`,
       });
 
@@ -77,26 +77,26 @@ export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessP
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-center text-sm text-muted-foreground leading-relaxed">
-              Vous devez confirmer votre compte avant de pouvoir vous connecter. 
+              Vous devez confirmer votre compte avant de pouvoir vous connecter.
               Pensez à vérifier vos courriers indésirables (spams).
             </p>
-            
+
             <div className="mt-4 space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full gap-2 transition-all" 
+              <Button
+                variant="outline"
+                className="w-full gap-2 transition-all"
                 onClick={handleResendEmail}
                 disabled={isResending || cooldown > 0}
               >
                 <RefreshCw className={`h-4 w-4 ${isResending ? "animate-spin" : ""}`} />
-                {isResending 
-                  ? "Envoi en cours..." 
-                  : cooldown > 0 
-                  ? `Renvoyer l'email (${cooldown}s)` 
-                  : "Renvoyer l'email de confirmation"
+                {isResending
+                  ? "Envoi en cours..."
+                  : cooldown > 0
+                    ? `Renvoyer l'email (${cooldown}s)`
+                    : "Renvoyer l'email de confirmation"
                 }
               </Button>
-             
+
               <Button variant="ghost" asChild className="w-full text-cyan-700 hover:text-cyan-800">
                 <Link href="/auth/sign-in" className="flex items-center gap-2 justify-center">
                   <ArrowLeft className="h-4 w-4" />

@@ -1,3 +1,4 @@
+// lib/security/rate-limits.ts
 /**
  * =============================================================================
  * BOUTIQUECOGI3 — RATE LIMITING SYSTEM
@@ -14,10 +15,10 @@
  * =============================================================================
  */
 
-import { Ratelimit } from "@upstash/ratelimit";
+import { Ratelimit, type Duration } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ENVIRONMENT CONFIGURATION
@@ -26,9 +27,13 @@ import { type NextRequest, NextResponse } from "next/server";
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
-  throw new Error(
-    "[RATE-LIMIT] Missing UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN environment variables"
+const hasUpstashRedis =
+  !!UPSTASH_REDIS_REST_URL && !!UPSTASH_REDIS_REST_TOKEN;
+
+if (!hasUpstashRedis) {
+  console.warn(
+    "[RATE-LIMIT] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN manquants. " +
+      "Utilisation du fallback In-Memory (non partagé entre instances)."
   );
 }
 
@@ -37,18 +42,121 @@ if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Singleton Redis client instance.
- * Ensures connection pooling and prevents redundant instantiations.
+ * Singleton Redis client instance (Upstash).
+ * Non-null uniquement si UPSTASH_REDIS_REST_URL / TOKEN sont configurés.
  */
-const redisClient = new Redis({
-  url: UPSTASH_REDIS_REST_URL,
-  token: UPSTASH_REDIS_REST_TOKEN,
-  retry: {
-    retries: 3,
-    backoff: (retryCount) => Math.min(retryCount * 100, 1000),
-  },
-  cache: "no-store", // Disable fetch cache for real-time rate limiting
-});
+const redisClient: Redis | null = hasUpstashRedis
+  ? new Redis({
+      url: UPSTASH_REDIS_REST_URL!,
+      token: UPSTASH_REDIS_REST_TOKEN!,
+      retry: {
+        retries: 3,
+        backoff: (retryCount) => Math.min(retryCount * 100, 1000),
+      },
+      cache: "no-store", // Disable fetch cache for real-time rate limiting
+    })
+  : null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IN-MEMORY RATE LIMITER (Fallback sans Upstash Redis)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Parse une durée courte ("10s", "5m", "1h", "1d") en millisecondes.
+ */
+function parseWindowToMs(window: string): number {
+  const match = window.match(/^(\d+)([smhd])$/);
+  if (!match) return 60_000;
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case "s":
+      return value * 1_000;
+    case "m":
+      return value * 60_000;
+    case "h":
+      return value * 3_600_000;
+    case "d":
+      return value * 86_400_000;
+    default:
+      return 60_000;
+  }
+}
+
+interface RateLimitCheckResult {
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: number;
+}
+
+/**
+ * Rate limiter sliding-window stocké en mémoire (process-local).
+ * Utilisé uniquement en développement / absence d'Upstash Redis.
+ * ⚠️ N'est PAS partagé entre plusieurs instances serverless.
+ */
+class InMemoryRatelimit {
+  private readonly windowMs: number;
+  private readonly hits = new Map<string, number[]>();
+
+  constructor(
+    private readonly maxRequests: number,
+    window: string,
+    private readonly prefix: string
+  ) {
+    this.windowMs = parseWindowToMs(window);
+  }
+
+  async limit(identifier: string): Promise<RateLimitCheckResult> {
+    const now = Date.now();
+    const key = `${this.prefix}:${identifier}`;
+    const windowStart = now - this.windowMs;
+
+    const timestamps = (this.hits.get(key) ?? []).filter(
+      (t) => t > windowStart
+    );
+
+    if (timestamps.length >= this.maxRequests) {
+      const oldest = timestamps[0] ?? now;
+      return {
+        success: false,
+        limit: this.maxRequests,
+        remaining: 0,
+        reset: oldest + this.windowMs,
+      };
+    }
+
+    timestamps.push(now);
+    this.hits.set(key, timestamps);
+
+    // Nettoyage opportuniste pour éviter une croissance mémoire illimitée
+    if (this.hits.size > 10_000) {
+      for (const [k, v] of this.hits) {
+        const filtered = v.filter((t) => t > now - this.windowMs);
+        if (filtered.length === 0) this.hits.delete(k);
+        else this.hits.set(k, filtered);
+      }
+    }
+
+    return {
+      success: true,
+      limit: this.maxRequests,
+      remaining: Math.max(0, this.maxRequests - timestamps.length),
+      reset: now + this.windowMs,
+    };
+  }
+}
+
+type AnyRatelimit = Ratelimit | InMemoryRatelimit;
+
+/**
+ * Optional per-route rate limit override.
+ * Any field present replaces the default RBAC tier for that layer.
+ */
+export interface RateLimitOverride {
+  standard?: { requests: number; window: Duration };
+  burst?: { requests: number; window: Duration };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RBAC RATE LIMIT CONFIGURATION
@@ -109,32 +217,54 @@ type RBACLevel = keyof typeof RBAC_RATE_LIMITS;
  * Rate limiter registry to prevent duplicate instantiations.
  * Keyed by RBAC level + algorithm type.
  */
-const rateLimiterRegistry = new Map<string, Ratelimit>();
+const rateLimiterRegistry = new Map<string, AnyRatelimit>();
 
 /**
- * Creates or retrieves a cached Ratelimit instance.
- * Implements the Sliding Window algorithm with optional burst control.
+ * Creates or retrieves a cached rate limiter instance.
+ * Utilise Upstash Redis si configuré, sinon fallback In-Memory.
+ * Un override optionnel remplace le tier RBAC par défaut pour la couche demandée.
  */
 function getRateLimiter(
   level: RBACLevel,
-  type: "standard" | "burst" = "standard"
-): Ratelimit {
-  const cacheKey = `${level}:${type}`;
+  type: "standard" | "burst" = "standard",
+  override?: RateLimitOverride[typeof type]
+): AnyRatelimit {
+  // Include the override in the registry key so different limits never share
+  // a cached limiter instance.
+  const overrideKey = override
+    ? `:${override.requests}:${override.window}`
+    : "";
+  const cacheKey = `${level}:${type}${overrideKey}`;
   
   if (rateLimiterRegistry.has(cacheKey)) {
     return rateLimiterRegistry.get(cacheKey)!;
   }
 
-  const config = RBAC_RATE_LIMITS[level][type];
-  
-  const limiter = new Ratelimit({
-    redis: redisClient,
-    limiter: Ratelimit.slidingWindow(config.requests, config.window),
-    prefix: `ratelimit:${level.toLowerCase()}:${type}`,
-    analytics: true, // Enable analytics for monitoring
-    // Ephemeral cache disabled for dynamic limit consistency
-    // across serverless function invocations
-  });
+  // Merge: per-route override wins, RBAC tier is the fallback
+  const baseConfig = RBAC_RATE_LIMITS[level][type];
+  const config = {
+    requests: override?.requests ?? baseConfig.requests,
+    window: override?.window ?? baseConfig.window,
+  };
+
+  let limiter: AnyRatelimit;
+
+  if (redisClient) {
+    limiter = new Ratelimit({
+      redis: redisClient,
+      limiter: Ratelimit.slidingWindow(config.requests, config.window),
+      prefix: `ratelimit:${level.toLowerCase()}:${type}`,
+      analytics: true, // Enable analytics for monitoring
+      // Ephemeral cache disabled for dynamic limit consistency
+      // across serverless function invocations
+    });
+  } else {
+    limiter = new InMemoryRatelimit(
+      config.requests,
+      config.window,
+      `ratelimit:${level.toLowerCase()}:${type}`
+    );
+  }
 
   rateLimiterRegistry.set(cacheKey, limiter);
   return limiter;
@@ -174,7 +304,6 @@ async function resolveIdentifier(
   // Extract IP with fallback chain
   const ip = forwardedFor?.split(",")[0]?.trim() 
     || realIp 
-    || request.ip 
     || "unknown";
 
   // Create a fingerprint combining IP + User-Agent hash
@@ -227,15 +356,22 @@ export async function checkRateLimit(
     apiKey?: string;
     level?: RBACLevel;
     skipBurst?: boolean; // Allow bypassing burst check for specific endpoints
+    overrides?: RateLimitOverride; // Per-route overrides for standard/burst layers
   } = {}
 ): Promise<RateLimitResult> {
-  const { userId, apiKey, level = "GUEST", skipBurst = false } = options;
+  const {
+    userId,
+    apiKey,
+    level = "GUEST",
+    skipBurst = false,
+    overrides,
+  } = options;
 
   // Resolve unique identifier
   const identifier = await resolveIdentifier(request, userId, apiKey);
 
   // ── Layer 1: Standard Sliding Window ──
-  const standardLimiter = getRateLimiter(level, "standard");
+  const standardLimiter = getRateLimiter(level, "standard", overrides?.standard);
   const standardResult = await standardLimiter.limit(identifier);
 
   if (!standardResult.success) {
@@ -253,7 +389,7 @@ export async function checkRateLimit(
 
   // ── Layer 2: Burst Control (unless skipped) ──
   if (!skipBurst) {
-    const burstLimiter = getRateLimiter(level, "burst");
+    const burstLimiter = getRateLimiter(level, "burst", overrides?.burst);
     const burstResult = await burstLimiter.limit(identifier);
 
     if (!burstResult.success) {
@@ -287,6 +423,46 @@ export async function checkRateLimit(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Path-specific rate limit overrides.
+ * Applied in `middlewareRateLimit` for stricter limits on sensitive endpoints.
+ * Key must match an exact API path; `middlewareRateLimit` also supports
+ * prefix matching so that e.g. "/api/admin" covers "/api/admin/users".
+ */
+const PATH_RATE_LIMIT_OVERRIDES: Record<string, RateLimitOverride> = {
+  "/api/auth/sign-in": { standard: { requests: 5, window: "5m" } },
+  "/api/auth/sign-up": { standard: { requests: 3, window: "10m" } },
+  "/api/auth/forgot-password": { standard: { requests: 3, window: "15m" } },
+  "/api/checkout": { standard: { requests: 10, window: "1m" } },
+  "/api/admin": { standard: { requests: 100, window: "1m" } },
+};
+
+/**
+ * Resolves the closest matching override for a request path.
+ * Exact match wins; otherwise the longest registered prefix is used.
+ */
+function resolvePathOverride(path?: string): RateLimitOverride | undefined {
+  if (!path) return undefined;
+
+  // Exact match first
+  if (PATH_RATE_LIMIT_OVERRIDES[path]) {
+    return PATH_RATE_LIMIT_OVERRIDES[path];
+  }
+
+  // Longest-prefix match (e.g. "/api/admin/users" → "/api/admin")
+  let bestMatch: string | undefined;
+  for (const key of Object.keys(PATH_RATE_LIMIT_OVERRIDES)) {
+    if (
+      path.startsWith(key) &&
+      (!bestMatch || key.length > bestMatch.length)
+    ) {
+      bestMatch = key;
+    }
+  }
+
+  return bestMatch ? PATH_RATE_LIMIT_OVERRIDES[bestMatch] : undefined;
+}
+
+/**
  * Next.js Middleware-compatible rate limit checker.
  * Returns a NextResponse with appropriate headers or blocks the request.
  */
@@ -300,19 +476,11 @@ export async function middlewareRateLimit(
 ): Promise<NextResponse | null> {
   const { userId, level = "GUEST", path } = options;
 
-  // Path-specific overrides (e.g., stricter limits for auth endpoints)
-  const pathOverrides: Record<string, Partial<typeof RBAC_RATE_LIMITS.GUEST>> = {
-    "/api/auth/login": { standard: { requests: 5, window: "5m" as const } },
-    "/api/auth/register": { standard: { requests: 3, window: "10m" as const } },
-    "/api/auth/forgot-password": { standard: { requests: 3, window: "15m" as const } },
-    "/api/payment": { standard: { requests: 10, window: "1m" as const } },
-    "/api/admin": { standard: { requests: 100, window: "1m" as const } },
-  };
+  // Resolve path-specific overrides (exact or longest-prefix match)
+  const override = resolvePathOverride(path);
 
-  const override = path ? pathOverrides[path] : undefined;
-
-  // Check rate limit
-  const result = await checkRateLimit(request, { userId, level });
+  // Check rate limit (overrides tighten the RBAC tier for this path)
+  const result = await checkRateLimit(request, { userId, level, overrides: override });
 
   // Build response headers
   const responseHeaders = new Headers();
@@ -396,18 +564,24 @@ export async function setDynamicLimit(
   newLimit: number | false
 ): Promise<void> {
   const limiter = getRateLimiter(level, type);
-  
-  // @ts-expect-error — Dynamic limit API from Upstash
-  if (typeof limiter.setDynamicLimit === "function") {
-    // @ts-expect-error
-    await limiter.setDynamicLimit({ limit: newLimit });
-  } else {
-    // Fallback: Log warning if SDK version doesn't support dynamic limits
-    console.warn(
-      `[RATE-LIMIT] Dynamic limits not available for ${level}:${type}. ` +
-      `Consider upgrading @upstash/ratelimit.`
-    );
+
+  // L'API dynamique n'existe que sur l'implémentation Upstash Ratelimit.
+  // Vérification à l'exécution pour éviter les erreurs de type.
+  if (limiter instanceof Ratelimit) {
+    const dynamicLimiter = limiter as Ratelimit & {
+      setDynamicLimit: (opts: { limit: number | false }) => Promise<void>;
+    };
+    if (typeof dynamicLimiter.setDynamicLimit === "function") {
+      await dynamicLimiter.setDynamicLimit({ limit: newLimit });
+      return;
+    }
   }
+
+  // Fallback: Log warning if SDK version doesn't support dynamic limits
+  console.warn(
+    `[RATE-LIMIT] Dynamic limits not available for ${level}:${type}. ` +
+      `Consider upgrading @upstash/ratelimit.`
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -427,6 +601,7 @@ export async function getRateLimitAnalytics(
   averageLatency: number;
 } | null> {
   try {
+    if (!redisClient) return null;
     const prefix = `ratelimit:${level.toLowerCase()}:${type}:analytics`;
     const analytics = await redisClient.get<{
       totalRequests: number;

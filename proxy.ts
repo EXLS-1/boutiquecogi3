@@ -3,7 +3,8 @@
 // EDGE AUTH PROXY — Gardien d'entrée léger pour Boutiquecogi3
 // ============================================
 // proxy.ts, conçue comme un gardien d'entrée léger et strict.
-// Toute la logique métier RBAC (permissions, restrictions, niveaux, audit, quotas) est intentionnellement déléguée à votre système centralisé (server.ts / rbac.ts).
+// Toute la logique métier RBAC (permissions, restrictions, niveaux, audit, quotas) est intentionnellement déléguée à votre système centralisé
+// (server.ts / rbac.ts).
 // Ce proxy ne connaît que deux états : session existante ou GUEST.
 // Ce proxy est le SEUL point d'entrée Edge pour la sécurité réseau.
 // Il est intentionnellement AGNOSTIQUE de la logique métier RBAC.
@@ -24,7 +25,7 @@
 //
 // RÈGLE D'OR :
 //   Le proxy ne connaît que deux états : "a une session" ou "GUEST".
-//   Toute granularité (Level 1-6) est résolue en aval dans les
+//   Toute granularité (Level 1-7) est résolue en aval dans les
 //   Server Components et Server Actions.
 
 import { betterFetch } from "@better-fetch/fetch";
@@ -57,7 +58,7 @@ const SECURITY_HEADERS = {
     "form-action 'self';",
 } as const;
 
-/** Routes d'authentification (pages de login/register/recovery) */
+/** Routes d'authentification (pages de login/register/recovery/2FA) */
 const AUTH_ROUTES = [
   "/auth/sign-in",
   "/auth/sign-up",
@@ -65,22 +66,30 @@ const AUTH_ROUTES = [
   "/auth/reset-password",
   "/auth/verify-email",
   "/auth/two-factor",
+  "/auth/2fa-challenge",
   "/auth/callback",
 ];
 
 /** Routes protégées (nécessitent une session authentifiée) */
 const PROTECTED_ROUTES = [
+  "/products",
   "/checkout",
   "/profile",
-  "/dashboard",
   "/account",
   "/orders",
   "/wishlist",
-  "/settings",
 ];
 
 /** Routes admin (nécessitent une session ; le RBAC détaillé est en aval) */
-const ADMIN_ROUTES = ["/admin"];
+const ADMIN_ROUTES = [
+  "/admin",
+  "/admin/dashboard",
+  "/admin/users",
+  "/admin/roles",
+  "/admin/settings",
+  "/admin/analytics",
+  "/admin/setup-2fa",
+];
 
 // ═══════════════════════════════════════════
 // SECTION 2: UTILITAIRES
@@ -154,7 +163,7 @@ export default async function proxy(request: NextRequest) {
   });
 
   // ─── Phase 2: Redirects legacy ───
-  if (pathname === "/sign-in" || pathname === "/login") {
+  if (pathname === "/sign-in" || pathname === "/login" || pathname === "/auth/login") {
     return NextResponse.redirect(buildAuthRedirect(request, "/auth/sign-in"));
   }
   if (pathname === "/sign-up" || pathname === "/register") {
@@ -173,7 +182,7 @@ export default async function proxy(request: NextRequest) {
   // On ne résout la session QUE si la route n'est pas publique.
   // C'est l'optimisation clé : pas de fetch session pour les assets/public.
   const session = await resolveSession(request);
-  const isAuthenticated = !!session?.user;
+  const isAuthenticated = !!session?.userId;
 
   // ─── Phase 5: Auth Zone ───
   // Si l'utilisateur est déjà authentifié, inutile d'accéder aux pages de login.

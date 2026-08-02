@@ -4,7 +4,7 @@
 import { useState, useCallback } from "react";
 import { ProductsTable } from "./products-table";
 import { BulkActions } from "./bulk-actions";
-import type { Permission } from "@/lib/auth/rbac";
+import type { Permission } from "@/lib/auth/rbac-shared";
 import type { Prisma } from "@prisma/client";
 
 type ProductWithRelations = Prisma.ProductGetPayload<{

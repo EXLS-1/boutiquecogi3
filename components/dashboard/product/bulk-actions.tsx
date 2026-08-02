@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { type Permission } from "@/lib/auth/rbac";
+import { type Permission } from "@/lib/auth/rbac-shared";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { bulkProductsAction } from "@/app/dashboard/products/actions";
+import { bulkProductsAction } from "@/app/dashboard/product/actions";
 
 interface BulkActionsProps {
   permissions: Permission[];
@@ -90,7 +90,6 @@ const BULK_ACTIONS_CONFIG: BulkActionConfig[] = [
 export function BulkActions({
   permissions,
   selectedIds,
-  onSelectionChange,
   onActionComplete,
   userLevel,
 }: BulkActionsProps) {

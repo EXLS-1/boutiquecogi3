@@ -25,7 +25,7 @@ export default function ForbiddenPage() {
       {/* Texte principal */}
       <h1 className="text-4xl font-semibold text-red-600 mb-4">403 - Accès interdit</h1>
       <p className="text-lg text-zinc-700 mb-6 text-center max-w-md">
-        Vous n’etes pas autoriser à accéder à cette page.
+        Vous n&apos;etes pas autoriser à accéder à cette page.
       </p>
 
       {/* Bouton retour */}
@@ -33,7 +33,7 @@ export default function ForbiddenPage() {
         href="/"
         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
       >
-        Retour à l’accueil
+        Retour à l&apos;accueil
       </Link>
     </div>
   );

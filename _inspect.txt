@@ -1,0 +1,96 @@
+ray.isArray(key) ? [...key] : [key],
+      ...Array.isArray(id) ? [...id] : [id]
+    );
+    super(["XREAD", ...commands], opts);
+  }
+};
+
+// pkg/commands/xreadgroup.ts
+var UNBALANCED_XREADGROUP_ERR = "ERR Unbalanced XREADGROUP list of streams: for each stream key an ID or '$' must be specified";
+var XReadGroupCommand = class extends Command {
+  constructor([group, consumer, key, id, options], opts) {
+    if (Array.isArray(key) && Array.isArray(id) && key.length !== id.length) {
+      throw new Error(UNBALANCED_XREADGROUP_ERR);
+    }
+    const commands = [];
+    if (typeof options?.count === "number") {
+      commands.push("COUNT", options.count);
+    }
+    if (typeof options?.blockMS === "number") {
+      commands.push("BLOCK", options.blockMS);
+    }
+    if (typeof options?.NOACK === "boolean" && options.NOACK) {
+      commands.push("NOACK");
+    }
+    commands.push(
+      "STREAMS",
+      ...Array.isArray(key) ? [...key] : [key],
+      ...Array.isArray(id) ? [...id] : [id]
+    );
+    super(["XREADGROUP", "GROUP", group, consumer, ...commands], opts);
+  }
+};
+
+// pkg/commands/xrevrange.ts
+var XRevRangeCommand = class extends Command {
+  constructor([key, end, start, count], opts) {
+    const command = ["XREVRANGE", key, end, start];
+    if (typeof count === "number") {
+      command.push("COUNT", count);
+    }
+    super(command, {
+      deserialize: (result) => deserialize7(result),
+      ...opts
+    });
+  }
+};
+function deserialize7(result) {
+  const obj = {};
+  for (const e of result) {
+    for (let i = 0; i < e.length; i += 2) {
+      const streamId = e[i];
+      const entries = e[i + 1];
+      if (!(streamId in obj)) {
+        obj[streamId] = {};
+      }
+      for (let j = 0; j < entries.length; j += 2) {
+        const field = entries[j];
+        const value = entries[j + 1];
+        try {
+          obj[streamId][field] = JSON.parse(value);
+        } catch {
+          obj[streamId][field] = value;
+        }
+      }
+    }
+  }
+  return obj;
+}
+
+// pkg/commands/xtrim.ts
+var XTrimCommand = class extends Command {
+  constructor([key, options], opts) {
+    const { limit, strategy, threshold, exactness = "~" } = options;
+    super(["XTRIM", key, strategy, exactness, threshold, ...limit ? ["LIMIT", limit] : []], opts);
+  }
+};
+
+// pkg/commands/zadd.ts
+var ZAddCommand = class extends Command {
+  constructor([key, arg1, ...arg2], opts) {
+    const command = ["zadd", key];
+    if ("nx" in arg1 && arg1.nx) {
+      command.push("nx");
+    } else if ("xx" in arg1 && arg1.xx) {
+      command.push("xx");
+    }
+    if ("ch" in arg1 && arg1.ch) {
+      command.push("ch");
+    }
+    if ("incr" in arg1 && arg1.incr) {
+      command.push("incr");
+    }
+    if ("lt" in arg1 && arg1.lt) {
+      command.push("lt");
+    } else if ("gt" in arg1 && arg1.gt) {
+      command.pus

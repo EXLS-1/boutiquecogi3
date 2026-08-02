@@ -6,30 +6,50 @@
 
 "use server";
 
-import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import {
   ROLES,
-  LEVELS,
   PERMISSIONS,
   RESTRICTIONS,
   type Role,
-  type Permission,
-  type Restriction,
-  type ToggleState,
   getRoleLevel,
-  isRoleAboveOrEqual,
-  canManageRole,
   hasPermission,
   getRestrictionValue,
   isRestrictionEnabled,
-  getNumericRestriction,
-  getCurrentUserRole,
   getCurrentUserWithRole,
   invalidateRBACCache,
 } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/auth/server";
+
+// ───────────────────────────────────────────
+// SCHÉMA PRISMA REQUIS
+// ───────────────────────────────────────────
+//
+// model AuditApprovalRequest {
+//   id                     String   @id @default(uuid())
+//   requesterId            String
+//   requesterRole          String
+//   requesterLevel         Int
+//   targetRole             String
+//   targetLevel            Int
+//   reason                 String
+//   status                 String   // PENDING | APPROVED | REJECTED | EXPIRED | REVOKED
+//   approvedById           String?
+//   approvedByRole         String?
+//   expiresAt              DateTime
+//   createdAt              DateTime @default(now())
+//   updatedAt              DateTime @updatedAt
+//   approvalToken          String?  @unique
+//   approvalTokenExpiresAt DateTime?
+// }
+//
+// N'oubliez pas d'ajouter les permissions audit:* dans votre seed RBAC :
+//   - audit:switch-self
+//   - audit:switch-others
+//   - audit:approve-request
+//   - audit:view-logs
+// ───────────────────────────────────────────
 
 // ───────────────────────────────────────────
 // TYPES
@@ -85,7 +105,7 @@ export async function requestAuditApproval(
   const requesterLevel = getRoleLevel(requesterRole);
 
   // Vérifie la permission de switch
-  if (!(await hasPermission(requesterRole, PERMISSIONS.AUDIT_SWITCH_SELF))) {
+  if (!(await hasPermission(requesterRole, PERMISSIONS["audit:switch-self"]))) {
     return { success: false, error: "Permission 'audit:switch-self' requise." };
   }
 
@@ -198,7 +218,7 @@ export async function approveAuditRequest(
   }
 
   // Vérifie la permission explicite
-  if (!(await hasPermission(adminRole, PERMISSIONS.AUDIT_APPROVE_REQUEST))) {
+  if (!(await hasPermission(adminRole, PERMISSIONS["audit:approve-request"]))) {
     return { success: false, error: "Permission 'audit:approve-request' requise." };
   }
 
@@ -310,7 +330,7 @@ export async function validateAuditToken(
     return { valid: false, error: "Token non associé à votre session." };
   }
 
-  return { valid: true, request };
+  return { valid: true, request: request as AuditApprovalRequest };
 }
 
 // ───────────────────────────────────────────

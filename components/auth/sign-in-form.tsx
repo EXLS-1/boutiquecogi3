@@ -41,7 +41,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -63,7 +62,6 @@ export function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   
   // État pour le rate limiting
-  const [attempts, setAttempts] = useState(0);
   const [cooldown, setCooldown] = useState(0);
 
   // Gestion du compte à rebours pour le cooldown
@@ -73,7 +71,6 @@ export function SignInForm() {
     const timer = setInterval(() => {
       setCooldown((prev) => {
         if (prev <= 1) {
-          setAttempts(0); // Réinitialise les tentatives après le délai
           return 0;
         }
         return prev - 1;
@@ -98,45 +95,56 @@ export function SignInForm() {
   });
 
   // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
-  const onSubmit = async (data: SignInFormValues) => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+const onSubmit = async (data: SignInFormValues) => {
     if (isLocked) return;
 
     setIsPending(true);
+    setErrorMessage(null);
     try {
-      await authClient.signIn.email(
+      const res = await authClient.signIn.email(
         {
           email: data.email,
           password: data.password,
         },
         {
-          onSuccess: () => {
-            toast.success("Connexion réussie !");
+          onSuccess: async () => {
+            // Verifier si le serveur a declenche un challenge 2FA
+            const statusRes = await fetch("/api/auth/2fa/status");
+            const status = await statusRes.json();
+
+            if (status.requires2FA) {
+              toast.success("Verification 2FA requise");
+              router.push("/auth/2fa-challenge");
+              return;
+            }
+
+            toast.success("Connexion reussie !");
             router.push("/");
             router.refresh();
           },
           onError: (ctx) => {
             setIsPending(false);
-            
-            // Incrémentation des tentatives en cas d'erreur
-            const newAttempts = attempts + 1;
-            setAttempts(newAttempts);
-            
-            if (newAttempts >= 3) {
-              setCooldown(30); // Verrouille pendant 30 secondes après 3 échecs
-              toast.error("Trop de tentatives. Veuillez patienter 30 secondes.");
-            } else {
-            toast.error(ctx.error.message || "Identifiants incorrects.");
-            }
+            const msg = ctx.error.message || "Email ou mot de passe incorrect.";
+            setErrorMessage(msg);
+            toast.error(msg);
           },
         }
       );
+
+      if (res?.error) {
+        setIsPending(false);
+        const msg = res.error.message || "Email ou mot de passe incorrect.";
+        setErrorMessage(msg);
+        toast.error(msg);
+      }
     } catch (error) {
-      // Capture les exceptions réseau critiques (ex: Failed to fetch, DNS, Timeout)
       setIsPending(false);
-      console.error("[AUTH_SIGNIN_NETWORK_ERROR]", error);
-      toast.error(
-        "Le serveur est injoignable. Veuillez vérifier votre connexion réseau."
-      );
+      console.error("[AUTH_SIGNIN_ERROR]", error);
+      const msg = "Une erreur est survenue. Veuillez reessayer.";
+      setErrorMessage(msg);
+      toast.error(msg);
     }
   };
 
@@ -207,6 +215,12 @@ export function SignInForm() {
             </div>
           </div>
 
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-md p-3">
+              {errorMessage}
+            </div>
+          )}
+
           <Button 
             type="submit" 
             className="w-full bg-cyan-400 text-white hover:bg-rose-500" 
@@ -221,7 +235,7 @@ export function SignInForm() {
               href="/auth/sign-up"
               className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
-              S'inscrire
+              S&apos;inscrire
             </Link>
           </div>
         </form>

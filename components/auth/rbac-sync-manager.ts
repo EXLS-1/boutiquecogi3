@@ -5,11 +5,27 @@
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useRBACStore } from "@/store/use-rbac-store";
-import { Permission } from "@/lib/auth/rbac";
-import type { useRBACSession } from "@/store/use-rbac-store";
+import type { Permission } from "@/lib/auth/rbac-shared";
+
+// ─── Types locaux pour la structure de rôle dans la session ─────────────────
+
+interface RoleDataPermission {
+  value: string;
+  permission: Permission;
+}
+
+interface RoleData {
+  name?: string;
+  level?: number;
+  permissions?: RoleDataPermission[];
+}
+
+type SessionUserWithRole = {
+  role?: RoleData | null;
+};
 
 /**
- * RBACSyncManager - Synchronise Better-Auth avec Zustand.
+ * RBACSyncManager — Synchronise Better-Auth avec Zustand.
  * Ce composant ne fait aucun rendu visuel.
  */
 export function RBACSyncManager() {
@@ -18,21 +34,20 @@ export function RBACSyncManager() {
   const setLoading = useRBACStore((state) => state.setLoading);
 
   useEffect(() => {
-    // On synchronise l'état de chargement
     setLoading(isPending);
 
     if (!isPending) {
       if (session?.user) {
-        // Note: Better-Auth doit être configuré pour inclure le rôle dans le JWT/Session
-        const user = session.user as any;
+        // Récupération typée du rôle depuis la session Better-Auth
+        const user = session.user as SessionUserWithRole;
         const roleData = user.role;
 
-        // Calcul des permissions effectives pour une recherche ultra-rapide
+        // Calcul des permissions effectives pour une recherche O(1)
         const effectivePermissions = new Set<Permission>();
 
         if (roleData?.permissions && Array.isArray(roleData.permissions)) {
-          roleData.permissions.forEach((p: any) => {
-            if (p.value === "ON") {
+          roleData.permissions.forEach((p: RoleDataPermission) => {
+            if (p.value === "ON" && p.permission) {
               effectivePermissions.add(p.permission);
             }
           });
@@ -40,13 +55,16 @@ export function RBACSyncManager() {
 
         const rbacSession = {
           user: session.user,
-          role: roleData || null,
-          level: roleData?.level || null,
+          role: roleData ?? null,
+          level: roleData?.level ?? null,
           effectivePermissions,
-          isAuthenticated: true,
+          isAuthenticated: true as const,
         };
 
-        setSession(rbacSession as any);
+        // Cast intermédiaire via unknown pour respecter le contrat du store
+        // sans recourir à `any`
+        type StoreSession = Parameters<typeof setSession>[0];
+        setSession(rbacSession as unknown as StoreSession);
       } else {
         // Nettoyage du store si déconnecté
         setSession(null);

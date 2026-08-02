@@ -1,3 +1,5 @@
+// prisma/seed/users.seed.ts
+
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/uuid";
 import { hash } from "bcryptjs";

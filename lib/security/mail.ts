@@ -1,3 +1,4 @@
+// lib/security/mail.ts
 /**
  * =============================================================================
  * BOUTIQUECOGI3 — SECURE EMAIL SYSTEM
@@ -17,11 +18,10 @@
  */
 
 import "server-only";
-// @ts-ignore: Missing type declarations for 'resend' package
+// @ts-expect-error Missing type declarations for 'resend' package
 import { Resend } from "resend";
 import { z } from "zod";
 import { auditLog, UserEvent, AdminEvent, SecurityEvent } from "@/lib/security/audit";
-import type { RBACLevel } from "@/lib/security/audit";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ENVIRONMENT CONFIGURATION
@@ -56,9 +56,9 @@ const BaseEmailOptionsSchema = z.object({
   text: z.string().max(50000).optional(),
   actorId: z.string().uuid().optional(),
   actorLevel: z.enum(["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"]).default("GUEST"),
-  actorEmail: z.string().email().optional(),
+  actorEmail: z.ZodEmail().new(),
   sessionId: z.string().optional(),
-  correlationId: z.string().uuid().optional(),
+  correlationId: z.uuid().optional(),
 });
 
 const SendEmailOptionsSchema = BaseEmailOptionsSchema;

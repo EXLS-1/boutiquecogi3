@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1785246725446",
+    "name": "New Environment",
+    "variables": [
+      {
+        "key": "base_url",
+        "value": "http://localhost:3000/api",
+        "enabled": true
+      }
+    ]
+  }
+]
