@@ -58,7 +58,7 @@ const SECURITY_HEADERS = {
     "form-action 'self';",
 } as const;
 
-/** Routes d'authentification (pages de login/register/recovery) */
+/** Routes d'authentification (pages de login/register/recovery/2FA) */
 const AUTH_ROUTES = [
   "/auth/sign-in",
   "/auth/sign-up",
@@ -66,6 +66,7 @@ const AUTH_ROUTES = [
   "/auth/reset-password",
   "/auth/verify-email",
   "/auth/two-factor",
+  "/auth/2fa-challenge",
   "/auth/callback",
 ];
 
@@ -87,6 +88,7 @@ const ADMIN_ROUTES = [
   "/admin/roles",
   "/admin/settings",
   "/admin/analytics",
+  "/admin/setup-2fa",
 ];
 
 // ═══════════════════════════════════════════

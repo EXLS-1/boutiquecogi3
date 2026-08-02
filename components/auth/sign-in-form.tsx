@@ -97,7 +97,7 @@ export function SignInForm() {
   // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const onSubmit = async (data: SignInFormValues) => {
+const onSubmit = async (data: SignInFormValues) => {
     if (isLocked) return;
 
     setIsPending(true);
@@ -109,8 +109,18 @@ export function SignInForm() {
           password: data.password,
         },
         {
-          onSuccess: () => {
-            toast.success("Connexion réussie !");
+          onSuccess: async () => {
+            // Verifier si le serveur a declenche un challenge 2FA
+            const statusRes = await fetch("/api/auth/2fa/status");
+            const status = await statusRes.json();
+
+            if (status.requires2FA) {
+              toast.success("Verification 2FA requise");
+              router.push("/auth/2fa-challenge");
+              return;
+            }
+
+            toast.success("Connexion reussie !");
             router.push("/");
             router.refresh();
           },
@@ -132,7 +142,7 @@ export function SignInForm() {
     } catch (error) {
       setIsPending(false);
       console.error("[AUTH_SIGNIN_ERROR]", error);
-      const msg = "Une erreur est survenue. Veuillez réessayer.";
+      const msg = "Une erreur est survenue. Veuillez reessayer.";
       setErrorMessage(msg);
       toast.error(msg);
     }
@@ -225,7 +235,7 @@ export function SignInForm() {
               href="/auth/sign-up"
               className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
             >
-              S'inscrire
+              S&apos;inscrire
             </Link>
           </div>
         </form>

@@ -12,8 +12,8 @@ import {
   REQUEST_TIMEOUT_MS,
   BCC_USER_AGENT,
 } from "./exchange-rate-constants";
-import { validateRate } from "../exchange-rate/exchange-rate-validator";
-import { ExchangeRate } from "../exchange-rate/exchange-rate-types";
+import { validateRate } from "@/lib/currency/exchange-rate-validator";
+import { ExchangeRate } from "@/lib/currency/exchange-rate-types";
 
 // ─── Utilitaires HTTP ───────────────────────────────────────────────────────
 
@@ -130,19 +130,23 @@ function parseHtml(html: string): ExchangeRate | null {
 
 async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
-    const pdfModule = await import("pdf-parse");
-    const pdf = (pdfModule as any).default ?? pdfModule;
-    const data = await pdf(buffer);
-    if (!data?.text) return null;
+    const { PDFParse } = await import("pdf-parse");
+    const parser = new PDFParse({ data: buffer });
+    try {
+      const data = await parser.getText();
+      if (!data?.text) return null;
 
-    const lines = data.text.split("\n");
-    for (const line of lines) {
-      if (line.toUpperCase().includes("USD")) {
-        const rate = extractRateFromText(line);
-        if (rate && validateRate(rate)) return rate;
+      const lines = data.text.split("\n");
+      for (const line of lines) {
+        if (line.toUpperCase().includes("USD")) {
+          const rate = extractRateFromText(line);
+          if (rate && validateRate(rate)) return rate;
+        }
       }
+      return null;
+    } finally {
+      await parser.destroy().catch(() => undefined);
     }
-    return null;
   } catch {
     return null;
   }
@@ -235,7 +239,9 @@ export async function fetchRate(): Promise<ExchangeRate | null> {
       const url = link.startsWith("http") ? link : new URL(link, BCC_URL).href;
       const lowerUrl = url.toLowerCase();
 
-      let parser: ((b: Buffer) => Promise<ExchangeRate | null>) | null = null;
+      let parser:
+        | ((b: Buffer) => ExchangeRate | null | Promise<ExchangeRate | null>)
+        | null = null;
       if (lowerUrl.endsWith(".pdf")) {
         parser = parsePdf;
       } else if (/\.xlsx?$/.test(lowerUrl)) {
@@ -260,3 +266,4 @@ export async function fetchRate(): Promise<ExchangeRate | null> {
     return null;
   }
 }
+

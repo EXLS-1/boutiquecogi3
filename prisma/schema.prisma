@@ -214,8 +214,9 @@ model Verification {
   value      String           @db.Text
   type       VerificationType
 
-  expiresAt  DateTime
-  consumedAt DateTime?
+  attemptCount Int       @default(0)
+  expiresAt    DateTime
+  consumedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -233,6 +234,28 @@ enum VerificationType {
   EMAIL_CHANGE
   PHONE_VERIFICATION
   TWO_FACTOR
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  email     String
+  ipAddress String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@index([email, createdAt])
+  @@map("login_attempt")
+}
+
+model TwoFactorAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  ipAddress String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@map("two_factor_attempt")
 }
 
 model RoleConfig {
