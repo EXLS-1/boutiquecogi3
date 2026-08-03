@@ -197,7 +197,7 @@ async function main() {
       data: {
         id: userId,
         email: SUPER_ADMIN_EMAIL!,
-        emailVerified: true,
+emailVerified: now,
         emailVerifiedAt: now,
         name: SUPER_ADMIN_NAME,
         image: null,
