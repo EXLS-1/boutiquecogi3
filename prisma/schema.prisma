@@ -15,7 +15,7 @@ datasource db {
 model User {
   id              String    @id @unique @default(uuid(7)) @db.Uuid
   email           String    @unique
-  emailVerified   DateTime?
+  emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
   name            String?
   image           String?

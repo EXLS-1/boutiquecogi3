@@ -30,8 +30,8 @@ export interface User {
   role: string;
   email: string;
   name: string;
-  image?: string | null;
-  emailVerified?: Date;
+image?: string | null;
+  emailVerified?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -154,10 +154,12 @@ export function useAuth() {
 
       return { success: true };
     } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Le service d'authentification est indisponible.";
 
-      setError(
-        err.message || "Le service d'authentification est indisponible.",
-      );
+      setError(message);
       return { success: false, error: err };
     } finally {
       setIsPending(false);
