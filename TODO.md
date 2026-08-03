@@ -1,18 +1,14 @@
-# TODO — Fix "User not found" (401) on Sign-In
+# TODO — Fix BetterAuth API method names
 
-## ✅ Step A: Fix & Run Super Admin Seed Script
-- [x] Fix `emailVerified: true` → `emailVerified: now` in `scripts/seed-super-admin.ts`
-- [ ] Run `npx tsx scripts/seed-super-admin.ts`
-- [ ] Verify user + account exist in DB
+## Context
+The sign-up endpoint returns `500 Cannot read properties of undefined (reading 'email')`.
+Root cause: `auth.api.signUp` / `auth.api.signIn` do not exist in better-auth v1.6.18.
+The `auth.api` object exposes **flat** endpoint keys: `signUpEmail`, `signInEmail`, etc.
 
-## ✅ Step B: Fix Full `prisma/seed.ts` Pipeline
-- [ ] Create `lib/uuid.ts` shim (`export { generateUUIDv7 } from "@/lib/utils/uuid"`)
-- [ ] Rewrite `prisma/seed/users.seed.ts` (remove `password`/`role` from User, create Account + link RoleConfig)
-- [ ] Verify `npm run db:seed` works (optional)
+## Steps
+- [x] Investigate and identify root cause in `app/api/auth/sign-up/route.ts`
+- [x] Confirm same bug in `app/api/auth/sign-in/route.ts`
+- [ ] Fix `app/api/auth/sign-up/route.ts`: `auth.api.signUp.email` → `auth.api.signUpEmail`
+- [ ] Fix `app/api/auth/sign-in/route.ts`: `auth.api.signIn.email` → `auth.api.signInEmail`
+- [ ] Restart dev server and re-test sign-up & sign-in
 
-## ✅ Step C: Redirect to Sign-Up on 401 "User not found"
-- [ ] Read sign-in page component
-- [ ] Modify to detect 401/UserNotFound → redirect to `/auth/sign-up`
-
-## ✅ Cleanup
-- [ ] Remove temp diagnostic scripts (`_diagnose-auth.ts`, `_env-check.ts`)

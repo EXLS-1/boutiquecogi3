@@ -300,8 +300,8 @@ export async function POST(
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (auth.api as any).signIn.email({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (auth.api as any).signInEmail({
       body: {
         email,
         password,

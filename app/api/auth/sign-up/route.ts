@@ -264,8 +264,8 @@ export async function POST(
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = (await (auth.api as any).signUp.email({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = (await (auth.api as any).signUpEmail({
       body: {
         name,
         email,
