@@ -8,7 +8,7 @@ The `auth.api` object exposes **flat** endpoint keys: `signUpEmail`, `signInEmai
 ## Steps
 - [x] Investigate and identify root cause in `app/api/auth/sign-up/route.ts`
 - [x] Confirm same bug in `app/api/auth/sign-in/route.ts`
-- [ ] Fix `app/api/auth/sign-up/route.ts`: `auth.api.signUp.email` → `auth.api.signUpEmail`
-- [ ] Fix `app/api/auth/sign-in/route.ts`: `auth.api.signIn.email` → `auth.api.signInEmail`
+- [x] Fix `app/api/auth/sign-up/route.ts`: `auth.api.signUp.email` → `auth.api.signUpEmail`
+- [x] Fix `app/api/auth/sign-in/route.ts`: `auth.api.signIn.email` → `auth.api.signInEmail`
 - [ ] Restart dev server and re-test sign-up & sign-in
 
