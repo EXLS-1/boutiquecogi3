@@ -131,7 +131,7 @@ if (!variant) {
             currency: normalizedCurrency,
           })),
         },
-        payment: {
+payment: {
           create: {
             id: generateUUIDv7(),
             amount: totalAmount,
@@ -140,6 +140,18 @@ if (!variant) {
             method: PaymentMethodType.CINETPAY,
             transactionId: cinetpayTransId,
           },
+        },
+        orderAddresses: {
+          create: [
+            {
+              id: generateUUIDv7(),
+              street: "",
+              commune: "",
+              city: "Kinshasa",
+              country: "RDC",
+              phone,
+            },
+          ],
         },
       },
       include: { items: true, payment: true },

@@ -6,7 +6,7 @@ import { Currency } from '@prisma/client'
 export const createProductSchema = z.object({
     name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(200),
     price: z.number().positive('Le prix doit être positif'),
-    currency: z.nativeEnum(Currency).default(Currency.USD),
+    currency: z.enum(Currency).default(Currency.USD),
     description: z.string().max(5000).optional(),
     categoryId: z.uuid().optional(),
     images: z.array(z.url()).optional().default([]),

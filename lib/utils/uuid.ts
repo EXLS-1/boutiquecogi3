@@ -1,6 +1,6 @@
 // lib/utils/uuid.ts
 
-import { randomUUIDv7 } from "node:crypto";
+import {randomUUIDv7} from "node:crypto";
 
 /**
  * Génère un UUID v7 RFC 9562.

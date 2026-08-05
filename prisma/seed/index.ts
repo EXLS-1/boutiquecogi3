@@ -1,24 +1,24 @@
 // prisma/seed/index.ts
 
 import { PrismaClient } from "@prisma/client";
-import { seedRoleConfigs } from "@/lib/prisma/role-config.seed";
-import { seedModules } from "@/lib/prisma/modules.seed";
-import { seedUsers } from "@/lib/prisma/users.seed";
-import { seedCategories } from "@/lib/prisma/categories.seed";
-import { seedOrderStatuses, seedCheckoutConfig } from "@/lib/prisma/orders.seed";
-import { seedWishlistConfig } from "@/lib/prisma/wishlist.seed";
-import { seedProductTypes, seedVariantAttributes } from "@/lib/prisma/product-config.seed";
-import { seedAuditEventTypes, seedRetentionPolicies } from "@/lib/prisma/audit.seed";
-import { seedPaymentMethods, seedFinancialThresholds } from "@/lib/prisma/treasury.seed";
-import { seedMediaTypes, seedStorageQuotas } from "@/lib/prisma/media.seed";
-import { seedVideoTypes, seedStreamingConfig } from "@/lib/prisma/video.seed";
-import { seedAuditApprovalPolicies } from "@/lib/prisma/audit-approval.seed"; // Fix: chemin absolu corrigé
+import { seedRoleConfigs } from "@/prisma/seed/role-config.seed";
+import { seedModules } from "@/prisma/seed/modules.seed";
+import { seedUsers } from "@/prisma/seed/users.seed";
+import { seedCategories } from "@/prisma/seed/categories.seed";
+import { seedOrderStatuses, seedCheckoutConfig } from "@/prisma/seed/orders.seed";
+import { seedWishlistConfig } from "@/prisma/seed/wishlist.seed";
+import { seedProductTypes, seedVariantAttributes } from "@/prisma/seed/product-config.seed";
+import { seedAuditEventTypes, seedRetentionPolicies } from "@/prisma/seed/audit.seed";
+import { seedPaymentMethods, seedFinancialThresholds } from "@/prisma/seed/treasury.seed";
+import { seedMediaTypes, seedStorageQuotas } from "@/prisma/seed/media.seed";
+import { seedVideoTypes, seedStreamingConfig } from "@/prisma/seed/video.seed";
+import { seedAuditApprovalPolicies } from "@/prisma/seed/audit-approval.seed";
 import { productData } from "@/data/product-data";
-import { slugify, normalizeImage } from "@/lib/prisma/seed-helpers";
+import { slugify, normalizeImage } from "@/prisma/seed/seed-helpers";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { prisma } from "@/lib/prisma";
 
-async function main(client: PrismaClient) {
+export async function main(client: PrismaClient) {
   console.log("🚀 [BOUTIQUE COGI] Démarrage du seed atomique RBAC...");
 
   // ═══════════════════════════════════════════

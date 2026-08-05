@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
-import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
+import { ROLES, PERMISSIONS, LEVELS } from "@/lib/auth/rbac";
 
 interface ProductTypeConfig {
   type: string; label: string; description: string;
@@ -16,10 +16,10 @@ const PRODUCT_TYPES: ProductTypeConfig[] = [
     whoCanCreate: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER],
     whoCanEdit: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR],
     whoCanDelete: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
-    requiredPermissionCreate: PERMISSIONS.PRODUCTS_CREATE,
-    requiredPermissionEdit: PERMISSIONS.PRODUCTS_UPDATE,
-    requiredPermissionDelete: PERMISSIONS.PRODUCTS_DELETE,
-    minRoleLevelCreate: 3, minRoleLevelEdit: 4, minRoleLevelDelete: 2,
+    requiredPermissionCreate: PERMISSIONS["products:create"],
+    requiredPermissionEdit: PERMISSIONS["products:update"],
+    requiredPermissionDelete: PERMISSIONS["products:delete"],
+    minRoleLevelCreate: LEVELS.LEVEL_3, minRoleLevelEdit: LEVELS.LEVEL_4, minRoleLevelDelete: LEVELS.LEVEL_2,
     maxVariants: 50, requiresApproval: false,
   },
   {
@@ -27,10 +27,10 @@ const PRODUCT_TYPES: ProductTypeConfig[] = [
     whoCanCreate: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
     whoCanEdit: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER],
     whoCanDelete: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
-    requiredPermissionCreate: PERMISSIONS.PRODUCTS_CREATE,
-    requiredPermissionEdit: PERMISSIONS.PRODUCTS_UPDATE,
-    requiredPermissionDelete: PERMISSIONS.PRODUCTS_DELETE,
-    minRoleLevelCreate: 2, minRoleLevelEdit: 3, minRoleLevelDelete: 2,
+    requiredPermissionCreate: PERMISSIONS["products:create"],
+    requiredPermissionEdit: PERMISSIONS["products:update"],
+    requiredPermissionDelete: PERMISSIONS["products:delete"],
+    minRoleLevelCreate: LEVELS.LEVEL_2, minRoleLevelEdit: LEVELS.LEVEL_3, minRoleLevelDelete: LEVELS.LEVEL_2,
     maxVariants: 20, requiresApproval: true,
   },
   {
@@ -38,10 +38,10 @@ const PRODUCT_TYPES: ProductTypeConfig[] = [
     whoCanCreate: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER],
     whoCanEdit: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER],
     whoCanDelete: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
-    requiredPermissionCreate: PERMISSIONS.PRODUCTS_CREATE,
-    requiredPermissionEdit: PERMISSIONS.PRODUCTS_UPDATE,
-    requiredPermissionDelete: PERMISSIONS.PRODUCTS_DELETE,
-    minRoleLevelCreate: 3, minRoleLevelEdit: 3, minRoleLevelDelete: 2,
+    requiredPermissionCreate: PERMISSIONS["products:create"],
+    requiredPermissionEdit: PERMISSIONS["products:update"],
+    requiredPermissionDelete: PERMISSIONS["products:delete"],
+    minRoleLevelCreate: LEVELS.LEVEL_3, minRoleLevelEdit: LEVELS.LEVEL_3, minRoleLevelDelete: LEVELS.LEVEL_2,
     maxVariants: 10, requiresApproval: true,
   },
   {
@@ -49,10 +49,10 @@ const PRODUCT_TYPES: ProductTypeConfig[] = [
     whoCanCreate: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
     whoCanEdit: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER],
     whoCanDelete: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
-    requiredPermissionCreate: PERMISSIONS.PRODUCTS_CREATE,
-    requiredPermissionEdit: PERMISSIONS.PRODUCTS_UPDATE,
-    requiredPermissionDelete: PERMISSIONS.PRODUCTS_DELETE,
-    minRoleLevelCreate: 2, minRoleLevelEdit: 3, minRoleLevelDelete: 2,
+    requiredPermissionCreate: PERMISSIONS["products:create"],
+    requiredPermissionEdit: PERMISSIONS["products:update"],
+    requiredPermissionDelete: PERMISSIONS["products:delete"],
+    minRoleLevelCreate: LEVELS.LEVEL_2, minRoleLevelEdit: LEVELS.LEVEL_3, minRoleLevelDelete: LEVELS.LEVEL_2,
     maxVariants: 30, requiresApproval: true,
   },
   {
@@ -60,10 +60,10 @@ const PRODUCT_TYPES: ProductTypeConfig[] = [
     whoCanCreate: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR],
     whoCanEdit: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR],
     whoCanDelete: [ROLES.SUPER_ADMIN, ROLES.ADMIN],
-    requiredPermissionCreate: PERMISSIONS.PRODUCTS_CREATE,
-    requiredPermissionEdit: PERMISSIONS.PRODUCTS_UPDATE,
-    requiredPermissionDelete: PERMISSIONS.PRODUCTS_DELETE,
-    minRoleLevelCreate: 4, minRoleLevelEdit: 4, minRoleLevelDelete: 2,
+    requiredPermissionCreate: PERMISSIONS["products:create"],
+    requiredPermissionEdit: PERMISSIONS["products:update"],
+    requiredPermissionDelete: PERMISSIONS["products:delete"],
+    minRoleLevelCreate: LEVELS.LEVEL_4, minRoleLevelEdit: LEVELS.LEVEL_4, minRoleLevelDelete: LEVELS.LEVEL_2,
     maxVariants: 5, requiresApproval: false,
   },
 ];
@@ -78,64 +78,70 @@ interface VariantAttributeConfig {
 
 const VARIANT_ATTRIBUTES: VariantAttributeConfig[] = [
   { attribute: "taille", label: "Taille", type: "SIZE", isRequired: true,
-    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR], minRoleLevel: 4 },
+    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR], minRoleLevel: LEVELS.LEVEL_4 },
   { attribute: "couleur", label: "Couleur", type: "COLOR", isRequired: true,
-    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR], minRoleLevel: 4 },
+    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.EDITOR], minRoleLevel: LEVELS.LEVEL_4 },
   { attribute: "matiere", label: "Matière", type: "SELECT", isRequired: false,
-    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER], minRoleLevel: 3 },
+    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER], minRoleLevel: LEVELS.LEVEL_3 },
   { attribute: "edition_limitee", label: "Édition limitée", type: "SELECT", isRequired: false,
-    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN], minRoleLevel: 2 },
+    whoCanConfigure: [ROLES.SUPER_ADMIN, ROLES.ADMIN], minRoleLevel: LEVELS.LEVEL_2 },
 ];
 
 export async function seedProductTypes(prisma: PrismaClient) {
-  console.log("🏷️  [RBAC] Configuration des types de produits...");
-  for (const config of PRODUCT_TYPES) {
-    await prisma.productTypeConfig.upsert({
-      where: { type: config.type },
-      update: {
-        label: config.label, description: config.description,
-        whoCanCreate: config.whoCanCreate, whoCanEdit: config.whoCanEdit, whoCanDelete: config.whoCanDelete,
-        requiredPermissionCreate: config.requiredPermissionCreate,
-        requiredPermissionEdit: config.requiredPermissionEdit,
-        requiredPermissionDelete: config.requiredPermissionDelete,
-        minRoleLevelCreate: config.minRoleLevelCreate,
-        minRoleLevelEdit: config.minRoleLevelEdit,
-        minRoleLevelDelete: config.minRoleLevelDelete,
-        maxVariants: config.maxVariants, requiresApproval: config.requiresApproval,
-      },
-      create: {
-        id: generateUUIDv7(), type: config.type, label: config.label, description: config.description,
-        whoCanCreate: config.whoCanCreate, whoCanEdit: config.whoCanEdit, whoCanDelete: config.whoCanDelete,
-        requiredPermissionCreate: config.requiredPermissionCreate,
-        requiredPermissionEdit: config.requiredPermissionEdit,
-        requiredPermissionDelete: config.requiredPermissionDelete,
-        minRoleLevelCreate: config.minRoleLevelCreate,
-        minRoleLevelEdit: config.minRoleLevelEdit,
-        minRoleLevelDelete: config.minRoleLevelDelete,
-        maxVariants: config.maxVariants, requiresApproval: config.requiresApproval,
-      },
-    });
-    console.log(`   ✓ ${config.label} [create:L${config.minRoleLevelCreate}, delete:L${config.minRoleLevelDelete}]`);
-  }
+  console.log("🏷️  [RBAC] Configuration atomique des types de produits...");
+
+  await prisma.$transaction(
+    PRODUCT_TYPES.map((config) =>
+      prisma.productTypeConfig.upsert({
+        where: { type: config.type },
+        update: {
+          label: config.label, description: config.description,
+          whoCanCreate: config.whoCanCreate, whoCanEdit: config.whoCanEdit, whoCanDelete: config.whoCanDelete,
+          requiredPermissionCreate: config.requiredPermissionCreate,
+          requiredPermissionEdit: config.requiredPermissionEdit,
+          requiredPermissionDelete: config.requiredPermissionDelete,
+          minRoleLevelCreate: config.minRoleLevelCreate,
+          minRoleLevelEdit: config.minRoleLevelEdit,
+          minRoleLevelDelete: config.minRoleLevelDelete,
+          maxVariants: config.maxVariants, requiresApproval: config.requiresApproval,
+        },
+        create: {
+          id: generateUUIDv7(), type: config.type, label: config.label, description: config.description,
+          whoCanCreate: config.whoCanCreate, whoCanEdit: config.whoCanEdit, whoCanDelete: config.whoCanDelete,
+          requiredPermissionCreate: config.requiredPermissionCreate,
+          requiredPermissionEdit: config.requiredPermissionEdit,
+          requiredPermissionDelete: config.requiredPermissionDelete,
+          minRoleLevelCreate: config.minRoleLevelCreate,
+          minRoleLevelEdit: config.minRoleLevelEdit,
+          minRoleLevelDelete: config.minRoleLevelDelete,
+          maxVariants: config.maxVariants, requiresApproval: config.requiresApproval,
+        },
+      })
+    )
+  );
+
   console.log(`🏷️  [RBAC] ${PRODUCT_TYPES.length} types de produits configurés.`);
 }
 
 export async function seedVariantAttributes(prisma: PrismaClient) {
-  console.log("🔧 [RBAC] Configuration des attributs de variante...");
-  for (const attr of VARIANT_ATTRIBUTES) {
-    await prisma.variantAttributeConfig.upsert({
-      where: { attribute: attr.attribute },
-      update: {
-        label: attr.label, type: attr.type, isRequired: attr.isRequired,
-        whoCanConfigure: attr.whoCanConfigure, minRoleLevel: attr.minRoleLevel,
-      },
-      create: {
-        id: generateUUIDv7(), attribute: attr.attribute, label: attr.label,
-        type: attr.type, isRequired: attr.isRequired,
-        whoCanConfigure: attr.whoCanConfigure, minRoleLevel: attr.minRoleLevel,
-      },
-    });
-    console.log(`   ✓ ${attr.label} [type:${attr.type}, required:${attr.isRequired}, minLevel:${attr.minRoleLevel}]`);
-  }
+  console.log("🔧 [RBAC] Configuration atomique des attributs de variante...");
+
+  await prisma.$transaction(
+    VARIANT_ATTRIBUTES.map((attr) =>
+      prisma.variantAttributeConfig.upsert({
+        where: { attribute: attr.attribute },
+        update: {
+          label: attr.label, type: attr.type, isRequired: attr.isRequired,
+          whoCanConfigure: attr.whoCanConfigure, minRoleLevel: attr.minRoleLevel,
+        },
+        create: {
+          id: generateUUIDv7(), attribute: attr.attribute, label: attr.label,
+          type: attr.type, isRequired: attr.isRequired,
+          whoCanConfigure: attr.whoCanConfigure, minRoleLevel: attr.minRoleLevel,
+        },
+      })
+    )
+  );
+
   console.log(`🔧 [RBAC] ${VARIANT_ATTRIBUTES.length} attributs de variante configurés.`);
 }
