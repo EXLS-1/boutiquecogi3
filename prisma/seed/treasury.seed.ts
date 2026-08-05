@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Currency, PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
 
@@ -14,9 +14,9 @@ interface PaymentMethodConfig {
   requiredPermissionView: string;
   minRoleLevelConfigure: number;
   minRoleLevelView: number;
-  requiresApproval: boolean;
+requiresApproval: boolean;
   maxTransactionAmount: number;
-  currency: string;
+  currency: Currency;
 }
 
 const PAYMENT_METHODS: PaymentMethodConfig[] = [
@@ -69,9 +69,9 @@ const PAYMENT_METHODS: PaymentMethodConfig[] = [
 interface FinancialThreshold {
   thresholdName: string;
   label: string;
-  description: string;
+description: string;
   amount: number;
-  currency: string;
+  currency: Currency;
   whoCanOverride: string[];
   requiredPermissionOverride: string;
   minRoleLevelOverride: number;

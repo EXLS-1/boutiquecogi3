@@ -2,6 +2,7 @@
 
 "use server";
 
+import { Currency } from "@prisma/client";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -18,7 +19,9 @@ export async function processCinetPayCheckout(formData: FormData) {
   }
 
   const rawItems = formData.get("items");
-  const currency = String(formData.get("currency") || "USD");
+  const rawCurrency = String(formData.get("currency") || "USD");
+  const currency: Currency =
+    rawCurrency.toUpperCase() === Currency.CDF ? Currency.CDF : Currency.USD;
   const phone = String(formData.get("phone") || "");
 
   if (!phone) {

@@ -1,26 +1,36 @@
-# TODO — Workflow Produit : Cron de publication, Notifications, Preview
+# TODO — Ajout enum Currency (USD / CDF)
 
-## Statut actuel
-✅ **Toutes les étapes applicatives sont implémentées.**
+## Étape 1 — Schéma Prisma (`prisma/schema.prisma`)
+- [x] `enum Currency { USD CDF }` (déjà présent)
+- [x] `Product.currency` → `Currency @default(USD)`
+- [x] `ProductPrice.currency` → `Currency`
+- [x] `Order.currency` → `Currency @default(USD)`
+- [x] `OrderItem.currency` → `Currency?`
+- [x] `Payment.currency` → `Currency @default(USD)`
+- [x] `PaymentMethodConfig.currency` → `Currency @default(USD)`
+- [x] `FinancialThreshold.currency` → `Currency @default(USD)`
+- [x] `Invoice.currency` → `Currency @default(USD)`
+- [x] `ExchangeRate.baseCurrency` / `quoteCurrency` → `Currency`
+- [x] `UserPreferences`: `preferredCurrency Currency @default(CDF)`
 
-- `lib/products/product-workflow.ts` — Service de workflow (transitions, règles, historique, publication programmée)
-- `lib/notifications/product-notification.ts` — Notifications email + in-app (PENDING, PUBLISHED)
-- `app/api/cron/publish-scheduled/route.ts` — CRON publication automatique (CRON_SECRET)
-- `app/api/product/[id]/status/route.ts` — PATCH transition de statut (RBAC)
-- `app/api/product/[id]/history/route.ts` — GET historique des statuts
-- `app/api/product/drafts/route.ts` — GET liste des brouillons (pagination + RBAC)
-- `app/api/product/[id]/preview/route.ts` — GET aperçu produit (DRAFT/PENDING/SCHEDULED)
-- `components/admin/product-preview-dialog.tsx` — Dialog aperçu (réutilise ProductCard)
-- `components/admin/DraftManager.tsx` — UI brouillons (soumettre/publier/programmer/archiver/aperçu/historique)
-- `app/admin/product/drafts/page.tsx` — Page admin dédiée
-- `lib/product-catalog/catalog-types.ts` — Ajout PENDING/SCHEDULED dans PRODUCT_STATUS_VALUES + productStatusSchema
+## Étape 2 — Migration PostgreSQL
+- [x] `prisma db push` — enum `Currency` créé en PostgreSQL
+- [x] `prisma generate`
 
-## Vérifications
-- ✅ `npx prisma generate` — Généré (Prisma Client v7.9.1)
-- ✅ `npx tsc --noEmit --skipLibCheck` — Aucune erreur dans les fichiers du workflow (seules erreurs pré-existantes hors scope : 2fa/verify, redis.mock, cleanup-2fa-challenges, deleted-account-registry-service, import-parser)
+## Étape 3 — Couche applicative
+- [x] `lib/currency/exchange-rate-types.ts` : `DisplayCurrency = Currency`
+- [x] `store/use-currency-store.ts` : re-export `DisplayCurrency`
+- [x] `lib/cinetpay/types.ts` : `currency: Currency`
+- [x] `lib/actions/checkout.action.ts` : `Currency` (normalisation USD/CDF)
+- [x] `lib/orders/services.order.ts` : aligné sur le schéma (OrderStatusEnum, payment, Currency)
+- [x] `lib/actions/currency.actions.ts` : corrigé (baseCurrency/quoteCurrency/rate/effectiveAt)
+- [x] `lib/validations/product.ts` : `z.nativeEnum(Currency)`
+- [x] `prisma/seed/treasury.seed.ts` : interfaces `Currency`
+- [x] `lib/currency/exchange-rate-currency.ts` : import corrigé (`./exchange-rate-types`)
+- [x] `app/checkout/_components/checkout-client.tsx` : imports corrigés (`@/lib/actions/currency.actions`, `@/lib/currency/price-format`, `@/lib/actions/checkout.action`)
 
-## Restant (optionnel)
-- [ ] `npx prisma migrate dev --name add_product_workflow` si la migration n'est pas encore appliquée en base
-- [ ] `npm run build` — build de production
-- [ ] Configurer le cron-job sur cron-job.org pour `/api/cron/publish-scheduled`
-- [ ] Mise à jour README / doc utilisateur
+## Étape 4 — Vérification
+- [x] `prisma validate`
+- [x] `prisma generate` (Prisma Client v7.9.1)
+- [x] `prisma db push` (enum `Currency` créé en PostgreSQL)
+- [x] TypeScript build des fichiers modifiés — OK (les 8 erreurs `tsc --noEmit` restantes sont pré-existantes et non liées)

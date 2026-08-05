@@ -3,13 +3,13 @@
 // Types TypeScript stricts pour le module de taux de change.
 // =============================================================================
 
-import { Prisma } from "@prisma/client";
+import { Currency, Prisma } from "@prisma/client";
 
 /** Représente un taux de change USD/CDF validé (Prisma.Decimal). */
 export type ExchangeRate = Prisma.Decimal;
 
-/** Représente une devise d'affichage supportée. */
-export type DisplayCurrency = "USD" | "CDF";
+/** Représente une devise d'affichage supportée (aligné sur l'enum Prisma). */
+export type DisplayCurrency = Currency;
 
 /** Métadonnées associées à une devise. */
 export interface CurrencyMetadata {

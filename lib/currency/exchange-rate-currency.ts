@@ -7,7 +7,7 @@
 import {
   DisplayCurrency,
   CurrencyMetadata,
-} from "../exchange-rate/exchange-rate-types";
+} from "./exchange-rate-types";
 
 // ─── Définitions des devises ──────────────────────────────────────────────────
 

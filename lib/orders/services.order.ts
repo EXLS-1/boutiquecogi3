@@ -1,7 +1,12 @@
 // lib/services/order.service.ts
-import { OrderStatus, PaymentStatus } from "@prisma/client";
+import {
+  Currency,
+  OrderStatusEnum,
+  PaymentMethodType,
+  PaymentStatus,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 
 export interface CheckoutCartItem {
   id: string;
@@ -30,6 +35,18 @@ async function resolveVariantId(productKey: string): Promise<string | null> {
   return byProduct?.variants[0]?.id ?? null;
 }
 
+/**
+ * Valide et normalise une devise vers l'enum Prisma Currency.
+ * @throws Error si la devise n'est pas USD ou CDF
+ */
+function normalizeCurrency(raw: string): Currency {
+  const upper = raw.toUpperCase();
+  if (upper === Currency.USD || upper === Currency.CDF) {
+    return upper === Currency.USD ? Currency.USD : Currency.CDF;
+  }
+  throw new Error(`Devise invalide: ${raw}. Valeurs acceptées: USD, CDF`);
+}
+
 export async function createOrderFromCart(params: {
   userId: string;
   items: CheckoutCartItem[];
@@ -43,12 +60,16 @@ export async function createOrderFromCart(params: {
     throw new Error("Panier vide");
   }
 
+  const normalizedCurrency = normalizeCurrency(currency);
+
   const lineItems: {
     variantId: string;
     quantity: number;
     unitPrice: number;
     subtotal: number;
     productId: string;
+    productName: string;
+    variantSku: string;
   }[] = [];
 
   for (const item of items) {
@@ -61,11 +82,12 @@ export async function createOrderFromCart(params: {
       where: { id: variantId },
       include: { product: true },
     });
-    if (!variant) {
+if (!variant) {
       throw new Error(`Variante introuvable: ${item.id}`);
     }
 
-    const unitPrice = variant.product.basePrice + variant.priceOffset;
+    const unitPrice =
+      variant.product.basePrice.toNumber() + variant.priceOffset;
     const subtotal = unitPrice * item.quantity;
 
     lineItems.push({
@@ -74,6 +96,8 @@ export async function createOrderFromCart(params: {
       unitPrice,
       subtotal,
       productId: variant.productId,
+      productName: variant.product.name,
+      variantSku: variant.sku,
     });
   }
 
@@ -85,34 +109,40 @@ export async function createOrderFromCart(params: {
         id: generateUUIDv7(),
         orderNumber: orderNumberFromDate(),
         userId,
-        status: OrderStatus.PENDING,
+        status: OrderStatusEnum.PENDING,
+        subtotalAmount: totalAmount,
+        taxAmount: 0,
+        discountAmount: 0,
+        grandTotal: totalAmount,
+        shippingCost: 0,
         totalAmount,
-        currency: currency.toUpperCase().slice(0, 3),
-        paymentStatus: PaymentStatus.PENDING,
+        currency: normalizedCurrency,
         cinetpayTransId,
-        paymentMethod: "CINETPAY",
         items: {
           create: lineItems.map((line) => ({
             id: generateUUIDv7(),
+            productId: line.productId,
             variantId: line.variantId,
+            productName: line.productName,
+            variantSku: line.variantSku,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
             subtotal: line.subtotal,
+            currency: normalizedCurrency,
           })),
         },
-        payments: {
+        payment: {
           create: {
             id: generateUUIDv7(),
             amount: totalAmount,
-            currency: currency.toUpperCase().slice(0, 3),
+            currency: normalizedCurrency,
             status: PaymentStatus.PENDING,
-            provider: "CINETPAY",
+            method: PaymentMethodType.CINETPAY,
             transactionId: cinetpayTransId,
-            metadata: { phone },
           },
         },
       },
-      include: { items: true, payments: true },
+      include: { items: true, payment: true },
     });
 
     for (const line of lineItems) {
@@ -137,26 +167,25 @@ export async function createOrderFromCart(params: {
 export async function confirmOrderPayment(cinetpayTransId: string) {
   const order = await prisma.order.findFirst({
     where: { cinetpayTransId },
-    include: { payments: true },
+    include: { payment: true },
   });
 
   if (!order) {
     return null;
   }
 
-  if (order.paymentStatus === PaymentStatus.COMPLETED) {
+  if (order.payment?.status === PaymentStatus.COMPLETED) {
     return order;
   }
 
   return prisma.order.update({
     where: { id: order.id },
     data: {
-      status: OrderStatus.CONFIRMED,
-      paymentStatus: PaymentStatus.COMPLETED,
-      payments: {
-        updateMany: {
-          where: { orderId: order.id },
-          data: { status: PaymentStatus.COMPLETED },
+      status: OrderStatusEnum.CONFIRMED,
+      payment: {
+        update: {
+          status: PaymentStatus.COMPLETED,
+          paidAt: new Date(),
         },
       },
     },

@@ -8,6 +8,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Currency {
+  USD
+  CDF
+}
+
 // =============================================
 // AUTHENTIFICATION & UTILISATEURS (BetterAuth)
 // =============================================
@@ -98,9 +103,10 @@ model UserPreferences {
   id     String @id @default(uuid(7)) @db.Uuid
   userId String @unique @db.Uuid
 
-  language      String @default("fr")
-  theme         String @default("light")
-  notifications Json   @default("{}")
+  language          String   @default("fr")
+  theme             String   @default("light")
+  notifications     Json     @default("{}")
+  preferredCurrency Currency @default(CDF)
   // autres préférences
 
   users User[]
@@ -664,14 +670,14 @@ model CatalogProduct {
 }
 
 model Product {
-  id          String  @id @default(uuid(7)) @db.Uuid
+  id          String   @id @default(uuid(7)) @db.Uuid
   name        String
-  sku         String  @unique
-  slug        String  @unique
-  description String  @db.Text
-  price       Decimal @db.Decimal(10, 2)
-  basePrice   Decimal @db.Decimal(10, 2)
-  currency    String  @default("USD") @db.VarChar(3)
+  sku         String   @unique
+  slug        String   @unique
+  description String   @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  basePrice   Decimal  @db.Decimal(10, 2)
+  currency    Currency @default(USD)
 
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -890,7 +896,7 @@ model ProductPrice {
   id             String    @id @default(uuid(7)) @db.Uuid
   productId      String    @db.Uuid
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  currency       String
+  currency       Currency
   amount         Int
   compareAtPrice Int?
   country        String?
@@ -1044,7 +1050,7 @@ model FinancialThreshold {
   label                      String
   description                String?
   amount                     Int
-  currency                   String   @default("USD")
+  currency                   Currency @default(USD)
   whoCanOverride             String[]
   requiredPermissionOverride String
   minRoleLevelOverride       Int
@@ -1301,7 +1307,7 @@ model Order {
   grandTotal     Int
   shippingCost   Int             @default(0)
   totalAmount    Int // (subtotal + shipping + tax - discount) – redondant mais pratique
-  currency       String          @default("USD") @db.VarChar(3)
+  currency       Currency        @default(USD)
 
   billingMethodId  String?         @db.Uuid
   billingMethod    BillingMethod?  @relation(fields: [billingMethodId], references: [id])
@@ -1352,7 +1358,7 @@ model OrderItem {
   subtotal       Int
   taxAmount      Int?
   discountAmount Int?
-  currency       String?
+  currency       Currency?
   exchangeRate   Decimal?       @db.Decimal(10, 4)
   returnItems    ReturnItem[]
 
@@ -1518,7 +1524,7 @@ model Payment {
   orderId       String            @unique @db.Uuid
   order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount        Int
-  currency      String            @default("USD") @db.VarChar(3)
+  currency      Currency          @default(USD)
   status        PaymentStatus     @default(PENDING)
   method        PaymentMethodType @default(CINETPAY)
   transactionId String?           @unique
@@ -1575,7 +1581,7 @@ model PaymentMethodConfig {
   minRoleLevelView            Int
   requiresApproval            Boolean  @default(false)
   maxTransactionAmount        Int
-  currency                    String   @default("USD")
+  currency                    Currency @default(USD)
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
@@ -1958,7 +1964,7 @@ model Invoice {
   issueDate     DateTime @default(now())
   dueDate       DateTime
   amountDue     Int
-  currency      String   @default("USD") @db.VarChar(3)
+  currency      Currency @default(USD)
   status        String
   pdfUrl        String?
   createdAt     DateTime @default(now())
@@ -1993,9 +1999,9 @@ model AppConfig {
 }
 
 model ExchangeRate {
-  id            String @id @default(uuid(7)) @db.Uuid
-  baseCurrency  String
-  quoteCurrency String
+  id            String   @id @default(uuid(7)) @db.Uuid
+  baseCurrency  Currency
+  quoteCurrency Currency
 
   rate Decimal @db.Decimal(18, 6)
 

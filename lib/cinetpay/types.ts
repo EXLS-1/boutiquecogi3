@@ -1,10 +1,12 @@
 // lib/cinetplay/types.ts
+import type { Currency } from "@prisma/client";
+
 export interface CinetPayInitPayload {
   apikey: string;
   site_id: string;
   transaction_id: string;
   amount: number;
-  currency: string;
+  currency: Currency;
   description: string;
   customer_name?: string;
   customer_surname?: string;

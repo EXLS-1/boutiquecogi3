@@ -12,8 +12,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { setDisplayCurrency } from "@/lib/actions/currency.actions";
+import type { DisplayCurrency } from "@/lib/currency/exchange-rate-types";
 
-export type DisplayCurrency = "USD" | "CDF";
+export type { DisplayCurrency };
 
 interface ExchangeRateState {
   rate: number | null;
