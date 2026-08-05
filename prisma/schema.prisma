@@ -38,26 +38,28 @@ model User {
   auditLogs       AuditLog[]
   addresses       Address[]
 
-  products        Product[]
-  productViews    ProductView[]
-  reviews         Review[]
-  createdProducts Product[]       @relation("ProductCreator")
-  editedProducts  Product[]       @relation("ProductEditor")
-  updater         Stock[]
-  stockMovements  StockMovement[]
+  products          Product[]
+  productViews      ProductView[]
+  reviews           Review[]
+  createdProducts   Product[]       @relation("ProductCreator")
+  editedProducts    Product[]       @relation("ProductEditor")
+  publishedProducts Product[]       @relation("ProductPublisher")
+  updater           Stock[]
+  stockMovements    StockMovement[]
 
-  userSecurities  UserSecurity[]
-  userPreferences UserPreferences[]
-  userQuotas      UserQuota[]
-  createdAudits   UserAudit[]       @relation("UserAuditCreatedBy")
-  updatedAudits   UserAudit[]       @relation("UserAuditUpdatedBy")
-  deletedAudits   UserAudit[]       @relation("UserAuditDeletedBy")
-  roleConfig      RoleConfig?       @relation(fields: [roleConfigId], references: [id])
-  roleConfigId    String?           @db.Uuid
-  roleAssignment  RoleAssignment?
-  twoFactor       TwoFactor?
-  notifications   Notification[]
-  userAudit       UserAudit?
+  userSecurities         UserSecurity[]
+  userPreferences        UserPreferences[]
+  userQuotas             UserQuota[]
+  createdAudits          UserAudit[]            @relation("UserAuditCreatedBy")
+  updatedAudits          UserAudit[]            @relation("UserAuditUpdatedBy")
+  deletedAudits          UserAudit[]            @relation("UserAuditDeletedBy")
+  roleConfig             RoleConfig?            @relation(fields: [roleConfigId], references: [id])
+  roleConfigId           String?                @db.Uuid
+  roleAssignment         RoleAssignment?
+  twoFactor              TwoFactor?
+  notifications          Notification[]
+  userAudit              UserAudit?
+  productStatusHistories ProductStatusHistory[]
 
   @@map("user")
 }
@@ -684,9 +686,12 @@ model Product {
 
   isFeatured     Boolean       @default(false)
   isArchived     Boolean       @default(false)
+  isActive       Boolean       @default(false)
   isdeleted      Boolean       @default(false)
   deletedAt      DateTime?
   status         ProductStatus @default(ACTIVE)
+  scheduledAt    DateTime? // Publication programmée
+  publishedAt    DateTime? // Date effective de publication
   seoTitle       String?
   seoDescription String?       @db.Text
 
@@ -700,12 +705,16 @@ model Product {
 
   orderItems OrderItem[]
 
-  createdBy String?  @db.Uuid
-  updatedBy String?  @db.Uuid
-  creator   User?    @relation("ProductCreator", fields: [createdBy], references: [id])
-  editor    User?    @relation("ProductEditor", fields: [updatedBy], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdBy     String?  @db.Uuid
+  updatedBy     String?  @db.Uuid
+  publishedById String?  @db.Uuid
+  creator       User?    @relation("ProductCreator", fields: [createdBy], references: [id])
+  editor        User?    @relation("ProductEditor", fields: [updatedBy], references: [id])
+  publisher     User?    @relation("ProductPublisher", fields: [publishedById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  statusHistory ProductStatusHistory[]
 
   variants               ProductVariant[]
   wishlistItems          WishlistItem[]
@@ -729,9 +738,30 @@ model Product {
 
   @@index([createdBy])
   @@index([updatedBy])
+  @@index([publishedById])
+  @@index([status, scheduledAt])
   @@index([isArchived, basePrice])
   @@index([slug])
   @@map("product")
+}
+
+// ==========================================
+// HISTORIQUE DES CHANGEMENTS DE STATUT PRODUIT
+// ==========================================
+
+model ProductStatusHistory {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  productId   String        @db.Uuid
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  oldStatus   ProductStatus
+  newStatus   ProductStatus
+  reason      String?       @db.Text
+  changedById String?       @db.Uuid
+  changedBy   User?         @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime      @default(now())
+
+  @@index([productId, changedAt])
+  @@map("product_status_history")
 }
 
 model ProductVariant {
@@ -839,6 +869,8 @@ model Review {
 enum ProductStatus {
   ACTIVE
   DRAFT
+  PENDING
+  SCHEDULED
   PUBLISHED
   ARCHIVED
   OUT_OF_STOCK

@@ -1,32 +1,26 @@
-# TODO — Fix Redis connection refused (ECONNREFUSED 127.0.0.1:6379)
+# TODO — Workflow Produit : Cron de publication, Notifications, Preview
 
-## Problem
-The app is configured to connect to Redis at `127.0.0.1:6379` (`.env`/`.env.local`),
-but no Redis server is running on this machine. `lib/redis.ts` uses `ioredis` with an
-infinite retry strategy, producing endless `[Redis:ERROR]` log spam.
+## Statut actuel
+✅ **Toutes les étapes applicatives sont implémentées.**
 
-## Steps
-- [x] Analyze `lib/redis.ts` (ioredis client, circuit breaker, retry strategy).
-- [x] Confirm no Redis server running (port 6379 closed; no redis-cli/server, docker, wsl).
-- [x] Review Redis consumers: `lib/auth/server.ts`, `app/api/auth/get-session/route.ts`, `lib/cache/cacheConsumer.ts`.
-- [x] Confirm `.env`/`.env.local` set `REDIS_HOST=localhost`, `REDIS_PORT=6379`, `REDIS_PASSWORD=votre_password`.
-- [x] Get user approval for the plan (add Redis via docker-compose + install Docker Desktop).
-- [x] Add `redis` service to `docker-compose.yml` (port 6379, password matching env, named volume, appendonly).
-- [x] Install Docker Desktop via `winget install -e --id Docker.DockerDesktop` (v4.85.0 installed successfully).
-- [x] Start Docker Desktop (client + compose available; engine not fully up).
-- [x] **BLOCKER identified**: WSL2 is NOT installed. Docker Desktop's Linux engine requires WSL2 + reboot.
-- [x] **Pivoted to Memurai** (Windows-native Redis-compatible, no reboot needed) as the fallback.
-- [x] Downloaded & installed Memurai Developer (4.1.8, Redis API 7.2.12) via elevated MSI.
-- [x] Configured Memurai `requirepass votre_password` in `C:\Program Files\Memurai\memurai.conf` (elevated edit).
-- [x] Started the Memurai service (elevated).
-- [x] Verified connectivity: port 6379 open, `PING` → `PONG`, read/write works with `votre_password`.
-- [x] Verified app-compatible connection (host localhost, port 6379, keyPrefix `boutiquecogi3:`) — no errors.
-- [x] Restart the Next.js dev server to confirm the Redis error spam is gone.
+- `lib/products/product-workflow.ts` — Service de workflow (transitions, règles, historique, publication programmée)
+- `lib/notifications/product-notification.ts` — Notifications email + in-app (PENDING, PUBLISHED)
+- `app/api/cron/publish-scheduled/route.ts` — CRON publication automatique (CRON_SECRET)
+- `app/api/product/[id]/status/route.ts` — PATCH transition de statut (RBAC)
+- `app/api/product/[id]/history/route.ts` — GET historique des statuts
+- `app/api/product/drafts/route.ts` — GET liste des brouillons (pagination + RBAC)
+- `app/api/product/[id]/preview/route.ts` — GET aperçu produit (DRAFT/PENDING/SCHEDULED)
+- `components/admin/product-preview-dialog.tsx` — Dialog aperçu (réutilise ProductCard)
+- `components/admin/DraftManager.tsx` — UI brouillons (soumettre/publier/programmer/archiver/aperçu/historique)
+- `app/admin/product/drafts/page.tsx` — Page admin dédiée
+- `lib/product-catalog/catalog-types.ts` — Ajout PENDING/SCHEDULED dans PRODUCT_STATUS_VALUES + productStatusSchema
 
-## RESULT
-✅ Redis connection is now working. Memurai is running on `127.0.0.1:6379` with password
-`votre_password` (matching `.env`/`.env.local`). The `[Redis:ERROR] ECONNREFUSED` spam is resolved.
+## Vérifications
+- ✅ `npx prisma generate` — Généré (Prisma Client v7.9.1)
+- ✅ `npx tsc --noEmit --skipLibCheck` — Aucune erreur dans les fichiers du workflow (seules erreurs pré-existantes hors scope : 2fa/verify, redis.mock, cleanup-2fa-challenges, deleted-account-registry-service, import-parser)
 
-> Note: Memurai Developer Edition is Redis 7.2.12-compatible. It auto-shuts down after 10 days
-> (developer limitation). The docker-compose.yml `redis` service remains as the production path
-> once WSL2 + reboot are available.
+## Restant (optionnel)
+- [ ] `npx prisma migrate dev --name add_product_workflow` si la migration n'est pas encore appliquée en base
+- [ ] `npm run build` — build de production
+- [ ] Configurer le cron-job sur cron-job.org pour `/api/cron/publish-scheduled`
+- [ ] Mise à jour README / doc utilisateur

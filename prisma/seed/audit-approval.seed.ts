@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
 
 interface AuditApprovalPolicy {

@@ -2,11 +2,11 @@
 // ============================================
 // ENTRY POINT — Délègue au seed modulaire RBAC
 // ============================================
-// Le seed atomique canonique vit dans ./seed/index.ts.
+// Le seed atomique canonique vit dans @/prisma/seed/index.ts.
 // Ce fichier sert uniquement de point d'entrée pour Prisma CLI.
 
 import { prisma } from "@/lib/prisma";
-import { main } from "./seed/index";
+import { main } from "@/prisma/seed/index";
 
 main(prisma)
   .catch((e) => {

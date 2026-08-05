@@ -51,6 +51,8 @@ export type ProductStatus = PrismaProductStatus;
 // Valeurs possibles (pour runtime checks)
 export const PRODUCT_STATUS_VALUES = [
   "DRAFT",
+  "PENDING",
+  "SCHEDULED",
   "PUBLISHED", 
   "ARCHIVED",
   "OUT_OF_STOCK",
@@ -244,6 +246,8 @@ export interface PaginatedCatalogResult<T> {
 
 export const productStatusSchema = z.enum([
   "DRAFT",
+  "PENDING",
+  "SCHEDULED",
   "PUBLISHED",
   "ARCHIVED",
   "OUT_OF_STOCK",

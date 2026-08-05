@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utills/uuid";
 import {
   ROLES,
   PERMISSIONS,
