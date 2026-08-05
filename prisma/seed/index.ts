@@ -1,6 +1,6 @@
 // prisma/seed/index.ts
-// Orchestrateur principal du seed avec RBAC atomique — compatible enum Prisma
 
+import { PrismaClient } from "@prisma/client";
 import { seedRoleConfigs } from "@/lib/prisma/role-config.seed";
 import { seedModules } from "@/lib/prisma/modules.seed";
 import { seedUsers } from "@/lib/prisma/users.seed";
@@ -12,33 +12,28 @@ import { seedAuditEventTypes, seedRetentionPolicies } from "@/lib/prisma/audit.s
 import { seedPaymentMethods, seedFinancialThresholds } from "@/lib/prisma/treasury.seed";
 import { seedMediaTypes, seedStorageQuotas } from "@/lib/prisma/media.seed";
 import { seedVideoTypes, seedStreamingConfig } from "@/lib/prisma/video.seed";
-import { seedAuditApprovalPolicies } from "/audit-approval.seed";
+import { seedAuditApprovalPolicies } from "@/lib/prisma/audit-approval.seed"; // Fix: chemin absolu corrigé
 import { productData } from "@/data/product-data";
 import { slugify, normalizeImage } from "@/lib/prisma/seed-helpers";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
-import { ROLES, LEVELS } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/prisma";
 
-async function main(prisma: unknown) {
+async function main(client: PrismaClient) {
   console.log("🚀 [BOUTIQUE COGI] Démarrage du seed atomique RBAC...");
 
   // ═══════════════════════════════════════════
-  // PHASE 1 : FONDATIONS RBAC (dépendances = 0)
+  // PHASE 1 : FONDATIONS RBAC & BOOTSTRAP ROOT
   // ═══════════════════════════════════════════
   console.log("\n" + "═".repeat(60));
   console.log("PHASE 1 : FONDATIONS RBAC CANONIQUE");
   console.log("═".repeat(60));
 
-  await seedRoleConfigs(prisma);
-  await seedModules(prisma);
+  await seedRoleConfigs(client);
+  await seedModules(client);
 
-  const admin = await seedUsers(prisma, {
-    role: ROLES.SUPER_ADMIN,
-    email: "excellentservice1exls@gmail.com",
-    name: "SuperAdmin Cogi",
-    password: "@@@123Exls",
-  });
-  console.log(`   ✓ Admin créé: ${admin.email} [${admin.role}]`);
+  // L'appel utilise désormais la configuration d'environnement sécurisée
+  const admin = await seedUsers(client);
+  console.log(`   ✓ Admin initialisé : ${admin.email} [${admin.role}]`);
 
   // ═══════════════════════════════════════════
   // PHASE 2 : CONFIGURATION MÉTIER RBAC
@@ -47,29 +42,29 @@ async function main(prisma: unknown) {
   console.log("PHASE 2 : CONFIGURATION MÉTIER RBAC");
   console.log("═".repeat(60));
 
-  await seedOrderStatuses(prisma);
-  await seedCheckoutConfig(prisma);
-  await seedWishlistConfig(prisma);
-  await seedProductTypes(prisma);
-  await seedVariantAttributes(prisma);
-  await seedAuditEventTypes(prisma);
-  await seedRetentionPolicies(prisma);
-  await seedPaymentMethods(prisma);
-  await seedFinancialThresholds(prisma);
-  await seedMediaTypes(prisma);
-  await seedStorageQuotas(prisma);
-  await seedVideoTypes(prisma);
-  await seedStreamingConfig(prisma);
-  await seedAuditApprovalPolicies(prisma);
+  await seedOrderStatuses(client);
+  await seedCheckoutConfig(client);
+  await seedWishlistConfig(client);
+  await seedProductTypes(client);
+  await seedVariantAttributes(client);
+  await seedAuditEventTypes(client);
+  await seedRetentionPolicies(client);
+  await seedPaymentMethods(client);
+  await seedFinancialThresholds(client);
+  await seedMediaTypes(client);
+  await seedStorageQuotas(client);
+  await seedVideoTypes(client);
+  await seedStreamingConfig(client);
+  await seedAuditApprovalPolicies(client);
 
   // ═══════════════════════════════════════════
-  // PHASE 3 : DONNÉES MÉTIER
+  // PHASE 3 : DONNÉES MÉTIER (CATÉGORIES)
   // ═══════════════════════════════════════════
   console.log("\n" + "═".repeat(60));
   console.log("PHASE 3 : DONNÉES MÉTIER");
   console.log("═".repeat(60));
 
-  const categoryMap = await seedCategories(prisma);
+  const categoryMap = await seedCategories(client);
 
   // ═══════════════════════════════════════════
   // PHASE 4 : PRODUITS & INVENTAIRE
@@ -89,25 +84,36 @@ async function main(prisma: unknown) {
     const image = normalizeImage(String(raw.image || ""));
     const priceDecimal = (basePrice / 100).toFixed(2);
 
-    const product = await prisma.product.upsert({
+    const product = await client.product.upsert({
       where: { slug },
       update: {
-        name, description: String(raw.description || ""),
-        basePrice, price: priceDecimal, images: image ? [image] : [], categoryId, status: 'PUBLISHED',
+        name,
+        description: String(raw.description || ""),
+        basePrice,
+        price: priceDecimal,
+        images: image ? [image] : [],
+        categoryId,
+        status: 'PUBLISHED',
       },
       create: {
-        id: generateUUIDv7(), name, slug,
+        id: generateUUIDv7(),
+        name,
+        slug,
         description: String(raw.description || ""),
-        basePrice, price: priceDecimal, currency: "USD",
+        basePrice,
+        price: priceDecimal,
+        currency: "USD",
         status: 'PUBLISHED',
-        images: image ? [image] : [], categoryId,
-        isFeatured: false, isArchived: false,
-        userId: (admin as any).id,
+        images: image ? [image] : [],
+        categoryId,
+        isFeatured: false,
+        isArchived: false,
+        userId: admin.id,
       },
     });
 
     const sku = String(raw.id);
-    await prisma.productVariant.upsert({
+    await client.productVariant.upsert({
       where: { sku },
       update: {
         attributes: {
@@ -116,7 +122,9 @@ async function main(prisma: unknown) {
         },
       },
       create: {
-        id: generateUUIDv7(), productId: product.id, sku,
+        id: generateUUIDv7(),
+        productId: product.id,
+        sku,
         attributes: {
           taille: (raw as unknown as Record<string, unknown>).size ?? null,
           couleur: (raw as unknown as Record<string, unknown>).couleur ?? null,
@@ -125,15 +133,17 @@ async function main(prisma: unknown) {
       },
     });
 
-    const existingStock = await prisma.inventoryTransaction.count({
+    const existingStock = await client.inventoryTransaction.count({
       where: { productId: product.id, reason: "RESTOCK" },
     });
 
     if (existingStock === 0) {
-      await prisma.inventoryTransaction.create({
+      await client.inventoryTransaction.create({
         data: {
-          id: generateUUIDv7(), productId: product.id,
-          quantity: 20, reason: "RESTOCK",
+          id: generateUUIDv7(),
+          productId: product.id,
+          quantity: 20,
+          reason: "RESTOCK",
         },
       });
     }
@@ -147,26 +157,19 @@ async function main(prisma: unknown) {
   console.log("\n" + "═".repeat(60));
   console.log("✨ SEED TERMINÉ — RAPPORT D'ATOMICITÉ RBAC");
   console.log("═".repeat(60));
-  console.log(`Enum Role Prisma         : 6 valeurs (SUPER_ADMIN → USER)`);
-  console.log(`Configs RBAC             : 6/6 (permissions + restrictions)`);
   console.log(`Super Admin              : ${admin.email} [${admin.role}]`);
-  console.log(`Statuts de commande      : 8`);
-  console.log(`Étapes de checkout       : 4`);
-  console.log(`Types de wishlist        : 4`);
-  console.log(`Types de produits        : 5`);
-  console.log(`Attributs de variante    : 4`);
-  console.log(`Types d'audit            : 14 (incl. 4 événements d'audit de rôle)`);
-  console.log(`Politiques de rétention  : 5 (incl. audit approval)`);
-  console.log(`Méthodes de paiement     : 4`);
-  console.log(`Seuils financiers        : 4`);
-  console.log(`Types de médias          : 7`);
-  console.log(`Quotas de stockage       : 6`);
-  console.log(`Types de vidéos          : 5`);
-  console.log(`Configs streaming        : 3`);
-  console.log(`Politiques audit approval: 1`);
   console.log(`Catégories               : ${categoryMap.size}`);
   console.log(`Produits                 : ${allProducts.length}`);
   console.log("═".repeat(60));
 }
 
-export { main };
+// Exécution sécurisée du Script CLI
+main(prisma)
+  .catch((e) => {
+    console.error("❌ [SEED ERROR FATAL]", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+  

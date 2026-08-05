@@ -6,20 +6,11 @@ import { hash } from "bcryptjs";
 import { ROLES, LEVELS, type Role } from "@/lib/auth/rbac";
 
 interface SeedUserOptions {
-  email: string;
-  password: string;
-  name: string;
-  role: Role;
+  email?: string;
+  password?: string;
+  name?: string;
+  role?: Role;
 }
-
-const DEFAULT_SUPER_ADMIN: SeedUserOptions = {
-  email: "excellentservice1exls@gmail.com",
-  password: "@@@123Admin123@@@",
-  name: "SuperAdmin COGI",
-  role: ROLES.SUPER_ADMIN,
-};
-
-// ─── Helpers de mapping app → Prisma ────────────────────────────────
 
 const ROLE_TO_PRISMA: Record<Role, PrismaRole> = {
   [ROLES.SUPER_ADMIN]: PrismaRole.SUPER_ADMIN,
@@ -43,35 +34,48 @@ const ROLE_TO_LEVEL: Record<Role, number> = {
 
 export async function seedUsers(
   prisma: PrismaClient,
-  options: Partial<SeedUserOptions> = {}
+  options: SeedUserOptions = {}
 ) {
-  const config = { ...DEFAULT_SUPER_ADMIN, ...options };
+  // 1. Extraction et validation stricte des variables d'environnement
+  const email = options.email || process.env.INITIAL_SUPERADMIN_EMAIL;
+  const rawPassword = options.password || process.env.INITIAL_SUPERADMIN_PASSWORD;
+  const name = options.name || process.env.INITIAL_SUPERADMIN_NAME || "SuperAdmin COGI";
+  const role = options.role || ROLES.SUPER_ADMIN;
 
-  console.log(`👤 [RBAC] Création de l'administrateur (${config.role})...`);
-
-  if (!Object.values(ROLES).includes(config.role)) {
-    throw new Error(`[RBAC] Rôle invalide: ${config.role}. Attendu: ${Object.values(ROLES).join(", ")}`);
+  if (!email || !rawPassword) {
+    throw new Error(
+      "❌ [SECURITY FATAL] INITIAL_SUPERADMIN_EMAIL et INITIAL_SUPERADMIN_PASSWORD doivent être définis dans l'environnement."
+    );
   }
 
-  const prismaRole = ROLE_TO_PRISMA[config.role];
-  const roleLevel = ROLE_TO_LEVEL[config.role];
+  if (rawPassword.length < 12) {
+    throw new Error("❌ [SECURITY FATAL] Le mot de passe initial du SuperAdmin doit contenir au moins 12 caractères.");
+  }
+
+  console.log(`👤 [RBAC] Amorce sécurisée de l'administrateur root (${role})...`);
+
+  const prismaRole = ROLE_TO_PRISMA[role];
+  const roleLevel = ROLE_TO_LEVEL[role];
+
+  if (!prismaRole || roleLevel === undefined) {
+    throw new Error(`[RBAC] Configuration de rôle invalide ou non reconnue: ${role}`);
+  }
+
+  // Cost factor augmenté à 12 pour le hachage root en production
+  const passwordHash = await hash(rawPassword, 12);
 
   const superadmin = await prisma.$transaction(async (tx) => {
     const now = new Date();
 
-    // 1. Garnir les fondations RBAC (idempotent) — RoleConfig + RoleDefinition
+    // 1. Configuration du rôle système
     const roleConfig = await tx.roleConfig.upsert({
       where: { role: prismaRole },
-      update: {
-        level: roleLevel,
-        isActive: true,
-        isSystem: true,
-      },
+      update: { level: roleLevel, isActive: true, isSystem: true },
       create: {
         id: generateUUIDv7(),
         role: prismaRole,
         level: roleLevel,
-        description: `Rôle système ${config.role}`,
+        description: `Rôle système ${role}`,
         permissions: {},
         restrictions: {},
         isSystem: true,
@@ -81,18 +85,13 @@ export async function seedUsers(
 
     const roleDefinition = await tx.roleDefinition.upsert({
       where: { role: prismaRole },
-      update: {
-        level: roleLevel,
-        description: `Rôle système ${config.role}`,
-        isSystem: true,
-        isActive: true,
-      },
+      update: { level: roleLevel, description: `Rôle système ${role}`, isSystem: true, isActive: true },
       create: {
         id: generateUUIDv7(),
         role: prismaRole,
         level: roleLevel,
-        name: config.role,
-        description: `Rôle système ${config.role}`,
+        name: role,
+        description: `Rôle système ${role}`,
         permissions: {},
         restrictions: {},
         isSystem: true,
@@ -100,19 +99,19 @@ export async function seedUsers(
       },
     });
 
-    // 2. Utilisateur (colonies réelles du modèle User)
+    // 2. Création/Mise à jour de l'utilisateur root
     const user = await tx.user.upsert({
-      where: { email: config.email },
+      where: { email },
       update: {
         emailVerified: true,
-        name: config.name,
+        name,
         roleConfigId: roleConfig.id,
         updatedAt: now,
       },
       create: {
         id: generateUUIDv7(),
-        name: config.name,
-        email: config.email,
+        name,
+        email,
         emailVerified: true,
         emailVerifiedAt: now,
         roleConfigId: roleConfig.id,
@@ -121,16 +120,12 @@ export async function seedUsers(
       },
     });
 
-    // 3. Credentials BetterAuth (mot de passe hashé dans Account)
-    const passwordHash = await hash(config.password, 10);
+    // 3. Credentials de l'utilisateur dans Account
     await tx.account.upsert({
       where: {
         providerId_accountId: { providerId: "credential", accountId: user.id },
       },
-      update: {
-        password: passwordHash,
-        updatedAt: now,
-      },
+      update: { password: passwordHash, updatedAt: now },
       create: {
         id: generateUUIDv7(),
         userId: user.id,
@@ -143,7 +138,7 @@ export async function seedUsers(
       },
     });
 
-    // 4. RoleAssignment (porteur du rôle applicatif)
+    // 4. Attribution canonique du rôle
     const roleAssignment = await tx.roleAssignment.upsert({
       where: { userId: user.id },
       update: {
@@ -152,7 +147,6 @@ export async function seedUsers(
         assignedAt: now,
         lastVerifiedAt: now,
         isBlocked: false,
-        // La relation m2m est idempotente — connecter à nouveau est sans risque
         roleDefinitions: { connect: { id: roleDefinition.id } },
       },
       create: {
@@ -167,11 +161,11 @@ export async function seedUsers(
       },
     });
 
-    // 5. UserRole (vue normalisée pour l'admin UI)
+    // 5. Projection UserRole
     await tx.userRole.upsert({
       where: { userId: user.id },
       update: {
-        name: config.role,
+        name: role,
         role: prismaRole,
         roleConfigId: roleConfig.id,
         roleAssignmentid: roleAssignment.id,
@@ -179,62 +173,47 @@ export async function seedUsers(
       create: {
         id: generateUUIDv7(),
         userId: user.id,
-        name: config.role,
+        name: role,
         role: prismaRole,
         roleConfigId: roleConfig.id,
         roleAssignmentid: roleAssignment.id,
       },
     });
 
-    // 6. Rows satellite obligatoires (1:1 avec User)
+    // 6. Satellites 1:1
     await tx.userSecurity.upsert({
       where: { userId: user.id },
       update: {},
-      create: {
-        id: generateUUIDv7(),
-        userId: user.id,
-        twoFactorEnabled: false,
-        isBlocked: false,
-      },
+      create: { id: generateUUIDv7(), userId: user.id, twoFactorEnabled: false, isBlocked: false },
     });
 
     await tx.userPreferences.upsert({
       where: { userId: user.id },
       update: {},
-      create: {
-        id: generateUUIDv7(),
-        userId: user.id,
-        language: "fr",
-        theme: "light",
-        notifications: {},
-      },
+      create: { id: generateUUIDv7(), userId: user.id, language: "fr", theme: "light", notifications: {} },
     });
 
     await tx.userQuota.upsert({
       where: { userId: user.id },
       update: {},
-      create: {
-        id: generateUUIDv7(),
-        userId: user.id,
-        productCount: 0,
-      },
+      create: { id: generateUUIDv7(), userId: user.id, productCount: 0 },
     });
 
     await tx.userAudit.upsert({
       where: { userId: user.id },
       update: {},
-      create: {
-        id: generateUUIDv7(),
-        userId: user.id,
-        isDeleted: false,
-        version: 1,
-      },
+      create: { id: generateUUIDv7(), userId: user.id, isDeleted: false, version: 1 },
     });
 
-    return { ...user, role: config.role };
+    // 7. SÉCURITÉ SESSION : Invalidation de toutes les sessions actives de cet utilisateur
+    // afin de purger les éventuels jetons obsolètes.
+    await tx.session.deleteMany({
+      where: { userId: user.id },
+    });
+
+    return { ...user, role };
   });
 
-  console.log(`   ✓ Super Admin créé: ${superadmin.email} [${superadmin.role}]`);
+  console.log(`   ✓ Bootstrapping exécuté : ${superadmin.email} [${superadmin.role}]`);
   return superadmin;
 }
-

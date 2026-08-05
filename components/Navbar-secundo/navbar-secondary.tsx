@@ -1,6 +1,12 @@
 // components/navbar-secundo/navbar-secondary.tsx
 // Ce composant est dédié à l'affichage de la barre de navigation secondaire.
-// Il est conçu pour être flexible et réutilisable, permettant d'afficher une liste de liens de navigation, ainsi que des actions spécifiques (comme un menu ou un panier) sans être limité à des éléments spécifiques. Contrairement à la version précédente, ce composant ne contient plus de logique spécifique à une icône de panier, ce qui le rend plus générique et adaptable à différents besoins d'interface utilisateur.
+// Il est conçu pour être flexible et réutilisable,
+// permettant d'afficher une liste de liens de navigation,
+// ainsi que des actions spécifiques (comme un menu ou un panier)
+// sans être limité à des éléments spécifiques.
+// Contrairement à la version précédente,
+// ce composant ne contient plus de logique spécifique à une icône de panier,
+// ce qui le rend plus générique et adaptable à différents besoins d'interface utilisateur.
 
 "use client";
 
