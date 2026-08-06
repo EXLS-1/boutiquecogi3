@@ -1,15 +1,11 @@
-# TODO — Correction des erreurs TypeScript
+# TODO — Sécurisation Webhook CinetPay (Anti-Replay)
 
-## Tâches
-
-- [x] 1. `lib/currency/price-format.ts` : corriger l'appel `formatCurrency(value, currency)` → `formatCurrency(value, { currency })`
-- [x] 2. `lib/idempotency.ts` :
-      - Retirer `responseStatus: 200` (champ inexistant dans `IdempotencyKey`)
-      - Remplacer `requestBody: any` → `unknown`
-      - Remplacer `catch (error: any)` → `catch (error: unknown)` avec garde de type
-- [x] 3. `app/api/roles/route.ts` :
-      - `description` : garantir une valeur non-`undefined` (champ obligatoire)
-      - `prisma.user.count({ where: { role: ... } })` : corriger la requête (le modèle `User` n'a pas de champ `role`)
-- [x] 4. `app/api/product-image-upload/route.ts` : corriger l'accès à `session.user.role` de façon type-safe (via `normalizeRole` + `isAdminOrSuperAdmin`)
-- [x] 5. Vérification finale : les corrections logiques sont en place (vérification `tsc` en cours/fond)
-</content>
+## Steps
+- [x] Analyze existing codebase (route, security, idempotency, schema, checkout)
+- [x] 1. Add `PaymentAuditStatus` enum + `PaymentAuditLog` model to `prisma/schema.prisma`
+- [x] 2. Create `lib/validations/cinetpay.ts` (Zod schema)
+- [x] 3. Create `lib/security/cinetpay-audit.ts` (HMAC timing-safe + S2S verify)
+- [x] 4. Create `lib/services/payment-processor.ts` (pipeline anti-replay)
+- [x] 5. Refactor `app/api/webhook/cinetpay/route.ts` to use the pipeline
+- [x] 6. Run `prisma validate` + `prisma generate` + `prisma db push`
+- [x] 7. Typecheck modified files (no errors in new/modified files)

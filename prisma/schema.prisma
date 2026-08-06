@@ -1605,6 +1605,39 @@ model PaymentWebhookEvent {
   @@map("payment_webhook_event")
 }
 
+enum PaymentAuditStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REPLAY_ATTEMPT_BLOCKED
+  AMOUNT_MISMATCH
+}
+
+// ==========================================
+// AUDIT DES PAIEMENTS (Anti-Replay CinetPay)
+// ==========================================
+// Consigne CHAQUE tentative de notification webhook avec une contrainte
+// d'unicité stricte sur transactionId (cpm_trans_id). C'est le verrou
+// d'idempotence atomique en BDD qui bloque les Replay Attacks.
+model PaymentAuditLog {
+  id            String             @id @default(uuid(7)) @db.Uuid
+  transactionId String             @unique // Clé unique d'idempotence (cpm_trans_id)
+  orderId       String
+  amount        Decimal            @db.Decimal(12, 2)
+  currency      String             @db.VarChar(3)
+  status        PaymentAuditStatus
+  cinetpayCode  String?
+  ipAddress     String?
+  rawPayload    Json
+  failureReason String?
+  processedAt   DateTime?
+  createdAt     DateTime           @default(now())
+
+  @@index([orderId])
+  @@index([status])
+  @@map("payment_audit_log")
+}
+
 enum IdempotencyStatus {
   PENDING
   COMPLETED
