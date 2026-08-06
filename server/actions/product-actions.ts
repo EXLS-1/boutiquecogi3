@@ -6,7 +6,7 @@ import { ProductService } from '@/server/services/product-service';
 import { createProductSchema } from '@/lib/validations/product';
 import { revalidatePath } from 'next/cache';
 import { AuthorizationError } from '@/server/core/secure-prisma';
-import { generateUUIDv7 } from '@/lib/uuid';
+import { generateUUIDv7 } from '@/lib/utils/uuid';
 import { generateSlug } from '@/lib/utils/slug';
 import { generateSKU } from '@/lib/utils/sku';
 

@@ -11,7 +11,7 @@ import {
   verifyCinetPaySignature,
   checkCinetPayTransactionStatus,
 } from "@/lib/cinetpay";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 
 // ─── Types CinetPay Webhook ─────────────────────────────────────────────
 

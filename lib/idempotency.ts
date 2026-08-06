@@ -5,7 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 
 /**
  * Exécute une logique métier de manière idempotente au sein d'une transaction.
@@ -16,7 +16,7 @@ export async function executeIdempotent<T>(
     scope: string;
     method: string;
     route: string;
-    requestBody: any;
+    requestBody: unknown;
   },
   logic: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<{ ok: boolean; fromCache: boolean; data?: T; error?: string }> {
@@ -39,16 +39,20 @@ export async function executeIdempotent<T>(
         data: {
           id: generateUUIDv7(),
           key: config.key,
-          // 'scope' field removed: ensure the IdempotencyKey model does not define a 'scope' property
+          scope: config.scope,
           route: config.route,
-          responseStatus: 200,
+          requestHash: config.method,
         },
       });
 
       return { ok: true, fromCache: false, data: result };
     });
-  } catch (error: any) {
-    return { ok: false, fromCache: false, error: error.message };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      fromCache: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

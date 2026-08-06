@@ -3,6 +3,8 @@
 import { withSecurePrisma, type SecureContext } from '@/server/core/secure-prisma'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
 import { generateUUIDv7 } from '@/lib/utils/uuid'
+import { generateSlug } from '@/lib/utils/slug'
+import { generateSKU } from '@/lib/utils/sku'
 import { StockService } from './stock-service'
 
 export class ProductServiceError extends Error {
@@ -10,27 +12,6 @@ export class ProductServiceError extends Error {
     super(message)
     this.name = 'ProductServiceError'
   }
-}
-
-// ─── Helpers de génération ───
-
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    .substring(0, 100)
-}
-
-function generateSKU(name: string): string {
-  const prefix = name
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .substring(0, 6)
-  const suffix = Math.random().toString(36).substring(2, 6).toUpperCase()
-  return `${prefix}-${suffix}`
 }
 
 // ─── Service ───

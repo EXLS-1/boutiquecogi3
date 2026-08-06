@@ -1,7 +1,7 @@
 // server/services/stock-service.ts
 
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import type { StockMovementType } from "@prisma/client";
 
 export class StockServiceError extends Error {

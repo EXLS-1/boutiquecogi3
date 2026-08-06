@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { slugify } from "@/lib/utils/slug";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 
 const MAX_LIMIT = 50;
 const DEFAULT_LIMIT = 20;

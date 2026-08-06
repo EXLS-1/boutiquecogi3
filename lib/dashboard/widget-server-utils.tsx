@@ -5,18 +5,17 @@
 // ============================================
 
 import { ReactNode } from "react";
+import { Lock } from "lucide-react";
 import {
   getCurrentUserWithRole,
-  hasPermission,
   hasAllPermissions,
-  getRoleLevel,
-  PERMISSIONS,
   type Permission,
   type Role,
 } from "@/lib/auth/rbac";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency as formatCurrencyUtil } from "@/lib/utils/currency";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock } from "lucide-react";
+
 
 // ───────────────────────────────────────────
 // TYPES COMMUNS
@@ -155,11 +154,7 @@ export function getDateRange(range: TimeRange): { start: Date; end: Date } {
 }
 
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "XOF",
-    minimumFractionDigits: 0,
-  }).format(value);
+  return formatCurrencyUtil(value, { currency: "XOF", locale: "fr-FR" });
 }
 
 export function formatNumber(value: number): string {

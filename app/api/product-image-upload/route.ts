@@ -5,8 +5,9 @@
 // Note : Assure-toi que les chemins d'importation et les propriétés de session correspondent à ta configuration Better-Auth.
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { auth } from "@/lib/auth"; // Assure-toi que ce chemin correspond à ton instance Better-Auth
+import { isAdminOrSuperAdmin, normalizeRole } from "@/lib/auth/rbac";
 
 // Constantes d'optimisation définies hors du scope de la requête
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -31,8 +32,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sécurité : Vérifier le rôle de l'utilisateur (ajuste la propriété selon ton schéma Better-Auth)
-    if (session.user.role !== "admin") {
+// Sécurité : Vérifier le rôle de l'utilisateur (ajuste la propriété selon ton schéma Better-Auth)
+    const userRole = normalizeRole(
+      (session.user as Record<string, unknown>).role as string | undefined,
+    );
+    if (!isAdminOrSuperAdmin(userRole)) {
       return NextResponse.json(
         {
           error:

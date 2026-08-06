@@ -1,6 +1,9 @@
+// lib/currency/price-format.ts
+
 "use client";
 
 import { DisplayCurrency } from "@/store/use-currency-store";
+import { formatCurrency } from "@/lib/utils/currency";
 
 export type BaseCurrencyAmount = {
   /** Montant en cents USD */
@@ -8,34 +11,6 @@ export type BaseCurrencyAmount = {
   /** Taux USD->CDF (1 USD = rate CDF). Peut être null si non chargé. */
   rate: number | null;
 };
-
-type FormatOptions = {
-  /** Devise à afficher */
-  currency: DisplayCurrency;
-  /** Règles de fraction (optionnel, sinon déterminées par devise) */
-  minimumFractionDigits?: number;
-  maximumFractionDigits?: number;
-};
-
-function getFractionDigits(currency: DisplayCurrency) {
-  if (currency === "USD") return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
-  return { minimumFractionDigits: 0, maximumFractionDigits: 0 };
-}
-
-function formatCurrency(value: number, currency: DisplayCurrency, opts?: FormatOptions) {
-  const frac = getFractionDigits(currency);
-  const minFD = opts?.minimumFractionDigits ?? frac.minimumFractionDigits;
-  const maxFD = opts?.maximumFractionDigits ?? frac.maximumFractionDigits;
-
-  const locale = currency === "USD" ? "en-US" : "fr-CD";
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: minFD,
-    maximumFractionDigits: maxFD,
-  }).format(value);
-}
 
 /**
  * Convertit un montant de base (cents USD) vers la devise d’affichage.
@@ -66,7 +41,7 @@ export function formatPriceFromUsdCents(
   currency: DisplayCurrency
 ) {
   const { value } = convertFromUsdCents(params, currency);
-  return formatCurrency(value, currency);
+  return formatCurrency(value, { currency });
 }
 
 /**

@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma, type Role as PrismaRole } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/uuid";
+import { generateUUIDv7 } from "@/lib/utils/uuid";
 import {
   ROLES,
   PERMISSIONS,
@@ -287,8 +287,8 @@ export async function POST(request: NextRequest) {
         data: {
           id: generateUUIDv7(),
           role: sanitizedRole,
-          level: data.level,
-          description: data.description,
+level: data.level,
+          description: data.description ?? "",
           permissions: data.permissions as unknown as Prisma.InputJsonValue,
           restrictions: data.restrictions as unknown as Prisma.InputJsonValue,
           isActive: data.isActive,
@@ -477,8 +477,8 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Vérifie qu'il n'y a pas d'utilisateurs actifs avec ce rôle
-      const activeUsersCount = await prisma.user.count({
-        where: { role: sanitizedRole },
+const activeUsersCount = await prisma.user.count({
+        where: { roleConfigId: existing.id },
       });
 
       if (activeUsersCount > 0) {
