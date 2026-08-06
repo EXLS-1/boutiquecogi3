@@ -43,4 +43,4 @@ export const ProdBaseCategoriesSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>
+

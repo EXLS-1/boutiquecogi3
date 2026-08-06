@@ -16,4 +16,4 @@ export const prodRegistry: SeedRegistry = [
   ProdBaseCategoriesSeeder,
   ProdNotificationTemplatesSeeder,
 ];
-</content>
+

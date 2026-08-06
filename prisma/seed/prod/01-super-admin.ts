@@ -95,4 +95,3 @@ export const ProdSuperAdminSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

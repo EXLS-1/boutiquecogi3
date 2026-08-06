@@ -35,4 +35,3 @@ export const ProdNotificationTemplatesSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

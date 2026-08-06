@@ -59,4 +59,4 @@ export async function main(client: PrismaClient) {
     throw err;
   }
 }
-</content>
+

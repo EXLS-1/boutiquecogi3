@@ -142,4 +142,3 @@ export const InventoryConflictScenario: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>
