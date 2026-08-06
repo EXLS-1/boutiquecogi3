@@ -1,0 +1,39 @@
+{
+  "categories": [
+    "USER",
+    "ROLE",
+    "PRODUCT",
+    "ORDER",
+    "CATEGORY",
+    "ANALYTICS",
+    "REPORT",
+    "SETTINGS",
+    "MEDIA",
+    "SYSTEM",
+    "CONTENT",
+    "FINANCE",
+    "AUDIT"
+  ],
+  "permissions": [
+    { "code": "users:read", "name": "Lire utilisateurs", "category": "USER" },
+    { "code": "users:create", "name": "Créer utilisateur", "category": "USER", "isDangerous": true },
+    { "code": "users:update", "name": "Modifier utilisateur", "category": "USER" },
+    { "code": "users:delete", "name": "Supprimer utilisateur", "category": "USER", "isDangerous": true },
+    { "code": "products:read", "name": "Lire produits", "category": "PRODUCT" },
+    { "code": "products:create", "name": "Créer produit", "category": "PRODUCT" },
+    { "code": "products:update", "name": "Modifier produit", "category": "PRODUCT" },
+    { "code": "products:delete", "name": "Supprimer produit", "category": "PRODUCT", "isDangerous": true },
+    { "code": "orders:read", "name": "Lire commandes", "category": "ORDER" },
+    { "code": "orders:create", "name": "Créer commande", "category": "ORDER" },
+    { "code": "orders:update", "name": "Modifier commande", "category": "ORDER" },
+    { "code": "orders:refund", "name": "Rembourser commande", "category": "ORDER", "isDangerous": true },
+    { "code": "categories:read", "name": "Lire catégories", "category": "CATEGORY" },
+    { "code": "categories:create", "name": "Créer catégorie", "category": "CATEGORY" },
+    { "code": "categories:update", "name": "Modifier catégorie", "category": "CATEGORY" },
+    { "code": "categories:delete", "name": "Supprimer catégorie", "category": "CATEGORY", "isDangerous": true },
+    { "code": "analytics:read", "name": "Lire analytics", "category": "ANALYTICS" },
+    { "code": "system:logs", "name": "Voir logs", "category": "SYSTEM" },
+    { "code": "system:maintenance", "name": "Maintenance système", "category": "SYSTEM", "isDangerous": true }
+  ]
+}
+</content>

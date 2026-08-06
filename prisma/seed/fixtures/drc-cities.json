@@ -1,0 +1,11 @@
+{
+  "cities": [
+    { "name": "Kinshasa", "province": "Kinshasa", "communes": ["Gombe", "Ngaliema", "Limete", "Kasa-Vubu", "Bandalungwa", "Lingwala", "Mont-Ngafula", "Lemba", "Barumbu"] },
+    { "name": "Matadi", "province": "Kongo Central", "communes": ["Matadi", "Nzadi"] },
+    { "name": "Lubumbashi", "province": "Haut-Katanga", "communes": ["Lubumbashi", "Kenya", "Katuba"] },
+    { "name": "Goma", "province": "Nord-Kivu", "communes": ["Goma", "Karisimbi"] },
+    { "name": "Bukavu", "province": "Sud-Kivu", "communes": ["Ibanda", "Kadutu"] },
+    { "name": "Mbuji-Mayi", "province": "Kasaï-Oriental", "communes": ["Bipemba", "Kanshi"] }
+  ]
+}
+</content>

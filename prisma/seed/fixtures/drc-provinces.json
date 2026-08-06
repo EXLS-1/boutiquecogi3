@@ -1,0 +1,11 @@
+{
+  "provinces": [
+    { "name": "Kinshasa", "code": "KIN", "country": "RDC" },
+    { "name": "Kongo Central", "code": "KC", "country": "RDC" },
+    { "name": "Lubumbashi (Haut-Katanga)", "code": "HK", "country": "RDC" },
+    { "name": "Goma (Nord-Kivu)", "code": "NK", "country": "RDC" },
+    { "name": "Bukavu (Sud-Kivu)", "code": "SK", "country": "RDC" },
+    { "name": "Mbuji-Mayi (Kasaï-Oriental)", "code": "KO", "country": "RDC" }
+  ]
+}
+</content>

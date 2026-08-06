@@ -1,0 +1,10 @@
+{
+  "templates": [
+    { "key": "email.template.welcome", "subject": "Bienvenue chez BoutiqueCOGI3", "body": "Merci de nous rejoindre !" },
+    { "key": "email.template.order_confirmed", "subject": "Commande confirmée", "body": "Votre commande a été confirmée." },
+    { "key": "email.template.order_shipped", "subject": "Commande expédiée", "body": "Votre commande est en route." },
+    { "key": "email.template.password_reset", "subject": "Réinitialisation de mot de passe", "body": "Cliquez sur le lien pour réinitialiser." },
+    { "key": "email.template.email_verification", "subject": "Vérifiez votre e-mail", "body": "Cliquez pour vérifier votre adresse." }
+  ]
+}
+</content>

@@ -13,6 +13,11 @@
     "db:generate": "prisma generate",
     "db:format": "prisma format",
     "db:seed": "tsx prisma/seed.ts",
+"db:seed:dev": "set NODE_ENV=development && tsx prisma/seed.ts",
+    "db:seed:test": "set NODE_ENV=test && tsx prisma/seed.ts",
+    "db:seed:prod": "set NODE_ENV=production && tsx prisma/seed.ts",
+    "db:seed:scenario": "tsx prisma/seed.ts --scenario=",
+    "db:seed:verbose": "tsx prisma/seed.ts --verbose",
     "db:push": "prisma db push",
     "doctor": "npx react-doctor@latest"
   },

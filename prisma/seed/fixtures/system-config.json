@@ -1,0 +1,14 @@
+{
+  "store": {
+    "name": "BoutiqueCOGI3",
+    "currency": "USD",
+    "country": "RDC",
+    "city": "Kinshasa",
+    "pageSize": 24
+  },
+  "exchange": {
+    "rate": 2850,
+    "source": "seed-bootstrap"
+  }
+}
+</content>

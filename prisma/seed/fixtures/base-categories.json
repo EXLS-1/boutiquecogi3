@@ -1,0 +1,11 @@
+{
+  "categories": [
+    { "name": "Femme", "slug": "femme", "description": "Mode et élégance pour femmes" },
+    { "name": "Homme", "slug": "homme", "description": "Classiques et tendances hommes" },
+    { "name": "Enfant", "slug": "enfant", "description": "Confort et couleurs pour enfants" },
+    { "name": "Chaussures", "slug": "chaussures", "description": "Tendances pieds" },
+    { "name": "Sacs", "slug": "sacs", "description": "Accessoires de luxe" },
+    { "name": "Accessoires", "slug": "accessoires", "description": "La touche finale" }
+  ]
+}
+</content>

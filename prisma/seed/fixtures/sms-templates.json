@@ -1,0 +1,8 @@
+{
+  "templates": [
+    { "key": "sms.template.order_status", "body": "BoutiqueCOGI3 : votre commande #{{orderNumber}} est {{status}}." },
+    { "key": "sms.template.delivery", "body": "BoutiqueCOGI3 : votre colis arrive. Préparez {{amount}}." },
+    { "key": "sms.template.promotion", "body": "BoutiqueCOGI3 : promo {{discount}}% ce week-end !" }
+  ]
+}
+</content>

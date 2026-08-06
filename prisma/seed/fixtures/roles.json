@@ -1,0 +1,12 @@
+{
+  "roles": [
+    { "role": "SUPER_ADMIN", "level": 1, "label": "Super Admin", "isSystem": true },
+    { "role": "ADMIN", "level": 2, "label": "Admin", "isSystem": true },
+    { "role": "MANAGER", "level": 3, "label": "Manager", "isSystem": true },
+    { "role": "EDITOR", "level": 4, "label": "Éditeur", "isSystem": true },
+    { "role": "SUPERVISOR", "level": 5, "label": "Superviseur", "isSystem": true },
+    { "role": "USER", "level": 6, "label": "Utilisateur", "isSystem": true },
+    { "role": "GUEST", "level": 7, "label": "Invité", "isSystem": true }
+  ]
+}
+</content>

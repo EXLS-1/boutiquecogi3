@@ -1,0 +1,8 @@
+{
+  "carriers": [
+    { "name": "BoutiqueCOGI3 Express Kinshasa", "code": "BC3-KIN", "contact": "+243 81 000 0000", "isActive": true },
+    { "name": "RDC Delivery", "code": "RDC-DEL", "contact": "+243 82 000 0000", "isActive": true },
+    { "name": "DHL Congo", "code": "DHL-CDG", "contact": "+243 83 000 0000", "isActive": false }
+  ]
+}
+</content>
