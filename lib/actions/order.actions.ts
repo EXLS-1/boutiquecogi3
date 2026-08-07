@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { OrderCardData, OrderCardItem } from "@/types/order";
 import type { OrderStatus } from "@prisma/client";
 import { getServerSession } from "@/lib/auth/server";
+import { mapOrdersToCards } from "@/lib/orders/map-order-to-card";
 
 export type ActionResponse<T> =
   | { success: true; data: T }
@@ -64,15 +65,15 @@ export async function getPaginatedOrders(
       return { success: false, error: "Non autorisé", code: "UNAUTHORIZED" };
     }
 
-    const orders = await prisma.order.findMany({
+const orders = await prisma.order.findMany({
       where: { userId: session.user.id },
-      include: { orderItems: true },
+      include: { items: true, orderAddresses: true },
       orderBy: { createdAt: "desc" },
       skip: skip,
       take: take,
     });
 
-    return { success: true, data: orders as unknown as OrderCardData[] };
+    return { success: true, data: mapOrdersToCards(orders) };
   } catch (error) {
     console.error("[getPaginatedOrders]", error);
     return {

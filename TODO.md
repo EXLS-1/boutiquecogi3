@@ -1,11 +1,9 @@
-# TODO — Sécurisation Webhook CinetPay (Anti-Replay)
+# Fix: Prisma `orderItems` include error on profile page
 
-## Steps
-- [x] Analyze existing codebase (route, security, idempotency, schema, checkout)
-- [x] 1. Add `PaymentAuditStatus` enum + `PaymentAuditLog` model to `prisma/schema.prisma`
-- [x] 2. Create `lib/validations/cinetpay.ts` (Zod schema)
-- [x] 3. Create `lib/security/cinetpay-audit.ts` (HMAC timing-safe + S2S verify)
-- [x] 4. Create `lib/services/payment-processor.ts` (pipeline anti-replay)
-- [x] 5. Refactor `app/api/webhook/cinetpay/route.ts` to use the pipeline
-- [x] 6. Run `prisma validate` + `prisma generate` + `prisma db push`
-- [x] 7. Typecheck modified files (no errors in new/modified files)
+- [x] Analyze the root cause (Order model relation is `items`, not `orderItems`)
+- [x] Create shared mapping helper `lib/orders/map-order-to-card.ts`
+- [x] Fix `app/profile/page.tsx` (use `items` include + map to OrderCardData)
+- [x] Fix `lib/actions/order.actions.ts` `getPaginatedOrders` (use `items` include + map to OrderCardData)
+- [x] Verify with targeted `npx tsc --noEmit` on modified files (clean)
+
+ 

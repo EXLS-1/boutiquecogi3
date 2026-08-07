@@ -207,5 +207,5 @@ export const CSV_TEMPLATE = `name,description,basePrice,compareAtPrice,sku,stock
 "T-shirt Premium","Coton bio haute qualité",29.99,39.99,TSHIRT-BLK-001,50,Vêtements,"mode,homme",true,"https://example.com/img1.jpg|https://example.com/img2.jpg",,,,,
 "T-shirt Premium","Coton bio haute qualité",29.99,39.99,TSHIRT-BLK-001,0,Vêtements,"mode,homme",true,"https://example.com/img1.jpg",TSHIRT-BLK-001-S,"Noir - S",0,20,"color:noir,size:S"
 "T-shirt Premium","Coton bio haute qualité",29.99,39.99,TSHIRT-BLK-001,0,Vêtements,"mode,homme",true,"https://example.com/img1.jpg",TSHIRT-BLK-001-M,"Noir - M",0,15,"color:noir,size:M"`;
-</content>
+
 

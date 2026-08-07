@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+// app/api/admin/2fa/setup/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import speakeasy from "speakeasy";
 import QRCode from "qrcode";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth.api.getSession({
       headers: request.headers,
@@ -47,7 +49,14 @@ export async function GET(request: Request) {
       },
     });
 
-    const qrCodeDataUrl = await QRCode.toDataURL(secret.otpauth_url!);
+    if (!secret.otpauth_url) {
+      return NextResponse.json(
+        { error: "Impossible de générer l'URL d'authentification 2FA" },
+        { status: 500 }
+      );
+    }
+
+    const qrCodeDataUrl = await QRCode.toDataURL(secret.otpauth_url);
 
     return NextResponse.json({
       qrCode: qrCodeDataUrl,

@@ -21,14 +21,16 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
  * POST /api/admin/products/upload-image
  * Body : FormData avec champ `file` (image)
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const entry = formData.get("file");
 
-    if (!file) {
-      return NextResponse.json({ error: "Fichier requis" }, { status: 400 });
+    if (!entry || !(entry instanceof File)) {
+      return NextResponse.json({ error: "Fichier valide requis" }, { status: 400 });
     }
+
+    const file = entry;
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(

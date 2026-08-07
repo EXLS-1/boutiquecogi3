@@ -1,11 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { ROLES, PERMISSIONS, LEVELS } from "@/lib/auth/rbac";
 
-interface AuditApprovalPolicy {
+export type AuditApprovalPolicy = {
   policyName: string;
   label: string;
-  description: string;
+  description?: string | null;
   approvalTokenTtlMinutes: number;
   requestTtlMinutes: number;
   whoCanApprove: string[];
@@ -13,7 +13,7 @@ interface AuditApprovalPolicy {
   minRoleLevelApprove: number;
   requiresDualApproval: boolean;
   isActive: boolean;
-}
+};
 
 const AUDIT_APPROVAL_POLICIES: AuditApprovalPolicy[] = [
   {
@@ -39,7 +39,7 @@ export async function seedAuditApprovalPolicies(prisma: PrismaClient) {
         where: { policyName: policy.policyName },
         update: {
           label: policy.label,
-          description: policy.description,
+          description: policy.description ?? null,
           approvalTokenTtlMinutes: policy.approvalTokenTtlMinutes,
           requestTtlMinutes: policy.requestTtlMinutes,
           whoCanApprove: policy.whoCanApprove,
@@ -52,7 +52,7 @@ export async function seedAuditApprovalPolicies(prisma: PrismaClient) {
           id: generateUUIDv7(),
           policyName: policy.policyName,
           label: policy.label,
-          description: policy.description,
+          description: policy.description ?? null,
           approvalTokenTtlMinutes: policy.approvalTokenTtlMinutes,
           requestTtlMinutes: policy.requestTtlMinutes,
           whoCanApprove: policy.whoCanApprove,

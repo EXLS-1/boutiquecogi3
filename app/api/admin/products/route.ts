@@ -12,10 +12,10 @@ const createProductSchema = z.object({
   compareAtPrice: z.number().positive().optional(),
   categoryId: z.string().uuid(),
   catalogId: z.string().uuid(),
-  metadata: z.record(z.unknown()).optional(),
-  attributes: z.record(z.union([z.string(), z.number(), z.boolean()])),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   variants: z.array(z.object({
-    attributes: z.record(z.union([z.string(), z.number(), z.boolean()])),
+    attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
     priceAdjustment: z.number().optional(),
     initialStock: z.number().int().min(0),
     images: z.array(z.string().url()).optional(),
@@ -28,9 +28,9 @@ const createProductSchema = z.object({
   })).optional(),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: req.headers });
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -43,7 +43,10 @@ export async function POST(req: NextRequest) {
     // Validation de base (la validation dynamique se fait dans le service)
     const baseData = createProductSchema.parse(body);
 
-    const result = await ProductService.createProduct(baseData, session.user.id);
+    const result = await ProductService.createProduct(
+      { ...baseData, variants: baseData.variants ?? [] },
+      session.user.id
+    );
 
     return NextResponse.json({
       success: true,
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: "Validation failed",
-        details: error.errors,
+        details: error.issues,
       }, { status: 400 });
     }
     
@@ -67,42 +70,4 @@ export async function POST(req: NextRequest) {
       error: error instanceof Error ? error.message : "Internal server error",
     }, { status: 500 });
   }
-}
-
-// app/api/admin/stock/movements/route.ts
-const stockMovementSchema = z.object({
-  variantId: z.string().uuid(),
-  quantity: z.number().int().refine(n => n !== 0, { message: "Quantity cannot be zero" }),
-  reason: z.enum(["PURCHASE", "SALE", "RETURN", "ADJUSTMENT", "CANCELLED", "INITIAL"]),
-  referenceId: z.string().uuid().optional(),
-  referenceType: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const data = stockMovementSchema.parse(body);
-
-    let result;
-    if (data.quantity > 0) {
-      result = await ProductService.addStock(data, session.user.id);
-    } else {
-      result = await ProductService.removeStock(data, session.user.id);
-    }
-
-    return NextResponse.json({ success: true, data: result });
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validation failed", details: error.errors }, { status: 400 });
-    }
-    console.error("[POST /api/admin/stock/movements]", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal error" }, { status: 500 });
-  }
-}
+}

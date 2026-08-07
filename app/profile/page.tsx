@@ -10,6 +10,7 @@ import { DeleteAccountSection } from "@/components/auth/delete-account-section";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth/server";
 import { OrderCardData } from "@/types/order";
+import { mapOrdersToCards } from "@/lib/orders/map-order-to-card";
 
 const ORDERS_PAGE_SIZE = 5;
 
@@ -36,7 +37,7 @@ export default async function ProfilePage() {
     const [fetchedOrders, count] = await Promise.all([
       prisma.order.findMany({
         where: { userId: session.user.id },
-        include: { orderItems: true },
+include: { items: true, orderAddresses: true },
         orderBy: { createdAt: "desc" },
         take: ORDERS_PAGE_SIZE,
       }),
@@ -45,7 +46,7 @@ export default async function ProfilePage() {
       })
     ]);
 
-    orders = fetchedOrders as unknown as OrderCardData[];
+    orders = mapOrdersToCards(fetchedOrders);
     totalCount = count;
   } catch (error) {
     console.error("Erreur lors de la récupération des commandes:", error);
@@ -82,10 +83,10 @@ export default async function ProfilePage() {
         <div className="p-6 space-y-4">
           <div className="flex items-start gap-4">
             <div className="flex-1">
-              <h3 className="font-semibold text-slate-900">Supprimer votre compte</h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <h3 className="font-semibold text-cyan-700">Supprimer votre compte</h3>
+              <p className="text-sm text-cyan-400 mt-1">
                 Supprimez définitivement votre compte et toutes vos données personnelles.
-                Un snapshot anonymisé sera conservé dans notre registre interne à des fins légales.
+                
               </p>
             </div>
             <DeleteAccountSection />

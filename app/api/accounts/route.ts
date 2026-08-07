@@ -15,7 +15,6 @@ export async function GET() {
             name: true,
             email: true,
             image: true,
-            role: true,
           },
         },
       },
@@ -26,8 +25,8 @@ export async function GET() {
       id: acc.id,
       userId: acc.userId,
       type: acc.type,
-      provider: acc.provider,
-      providerAccountId: acc.providerAccountId,
+      provider: acc.providerId,
+      providerAccountId: acc.accountId,
       createdAt: acc.createdAt,
       updatedAt: acc.updatedAt,
       expiresAt: acc.expiresAt,
@@ -39,7 +38,6 @@ export async function GET() {
             name: acc.user.name,
             email: acc.user.email,
             image: acc.user.image,
-            role: acc.user.role,
           }
         : null,
     }));

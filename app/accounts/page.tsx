@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-const formatDate = (d: Date | number | null | undefined) => {
+const formatDate = (d?: Date | number | string | null): string => {
   if (d == null) return "-";
   const date = typeof d === "number" ? new Date(d * 1000) : new Date(d);
   return new Intl.DateTimeFormat("fr-FR", {
@@ -32,7 +32,7 @@ export default async function AccountsPage() {
 
   const total = accounts.length;
   const users = new Set(accounts.map((a) => a.userId)).size;
-  const providers = [...new Set(accounts.map((a) => a.provider))];
+  const providers = [...new Set(accounts.map((a) => a.providerId))];
   const withPassword = accounts.filter((a) => a.password).length;
   const withRefresh = accounts.filter((a) => a.refreshToken).length;
   const withAccess = accounts.filter((a) => a.accessToken).length;
@@ -187,7 +187,7 @@ export default async function AccountsPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {a.provider}
+                      {a.providerId}
                     </td>
                     <td style={{ padding: "0.75rem" }}>
                       <span

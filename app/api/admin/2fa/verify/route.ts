@@ -1,4 +1,6 @@
-﻿import { NextResponse } from "next/server";
+//app/api/admin/2fa/verify/route.ts
+
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import speakeasy from "speakeasy";
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
       ).join("")
     );
 
-    await prisma.(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       await tx.twoFactor.update({
         where: { userId: session.user.id },
         data: { enabled: true, updatedAt: now },
