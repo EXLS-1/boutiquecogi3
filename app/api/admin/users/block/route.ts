@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { UserAdminService } from '@/server/services/user-admin-service'
-import { blockUserSchema, unblockUserSchema } from '@/lib/validations/role'
+import { blockUserSchema } from '@/lib/validations/role'
 import { AuthorizationError } from '@/server/core/secure-prisma'
 
 // POST /api/admin/users/block — Bloquer un utilisateur
@@ -36,8 +36,11 @@ export async function POST(request: NextRequest) {
             )
         }
         if (error instanceof Error) {
+            const code = 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+                ? (error as { code: string }).code
+                : 'UNKNOWN_ERROR'
             return NextResponse.json(
-                { success: false, error: error.message, code: (error as any).code || 'UNKNOWN_ERROR' },
+                { success: false, error: error.message, code },
                 { status: 400 }
             )
         }

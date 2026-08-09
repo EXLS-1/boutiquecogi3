@@ -212,6 +212,12 @@ export const useCartStore = create<CartStore>()(
   ),
 );
 
+// ─── Hook par défaut : accès complet au store panier ─────────────────────────
+// Exporté par défaut pour permettre à la fois :
+//   const { items, addItem } = useCart();          // destructuring du store
+//   const addItem = useCart((s) => s.addItem);      // sélecteur Zustand
+export default useCartStore;
+
 // ─── Hooks dérivés pour performance ───────────────────────────────────────────
 
 /** Récupère uniquement le nombre d'items (pas de re-render sur changement prix) */
@@ -220,6 +226,6 @@ export function useCartItemCount(): number {
 }
 
 /** Récupère uniquement l'état ouvert/fermé */
-export default function useCartOpen(): boolean {
+export function useCartOpen(): boolean {
   return useCartStore((state) => state.isOpen);
 }

@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Upload automatique des images distantes
     let uploadedImagesCount = 0;
-    let failedImages: string[] = [];
+    const failedImages: string[] = [];
 
     if (uploadImages) {
       const allImageUrls = [

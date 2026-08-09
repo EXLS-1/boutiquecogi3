@@ -1,4 +1,4 @@
-// /app/api/products/bulk/route.ts
+// app/api/products/bulk/route.ts
 // ============================================
 // Server Route — Exécution des actions groupées
 // ============================================
@@ -46,12 +46,12 @@ export async function POST(request: NextRequest) {
       BulkAction,
       typeof PERMISSIONS[keyof typeof PERMISSIONS]
     > = {
-      delete: PERMISSIONS.PRODUCTS_DELETE,
-      activate: PERMISSIONS.PRODUCTS_UPDATE,
-      deactivate: PERMISSIONS.PRODUCTS_UPDATE,
-      archive: PERMISSIONS.PRODUCTS_BULK_EDIT,
-      "change-category": PERMISSIONS.PRODUCTS_UPDATE,
-      export: PERMISSIONS.PRODUCTS_EXPORT,
+      delete: PERMISSIONS["products:delete"],
+      activate: PERMISSIONS["products:update"],
+      deactivate: PERMISSIONS["products:update"],
+      archive: PERMISSIONS["products:bulk-edit"],
+      "change-category": PERMISSIONS["products:update"],
+      export: PERMISSIONS["products:export"],
     };
 
     const actionKey = action as BulkAction;

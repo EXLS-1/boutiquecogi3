@@ -1,3 +1,5 @@
+// app/catalog
+
 /**
  * =============================================================================
  * CATALOG INDEX PAGE — Boutiquecogi3 (Allégée)
@@ -9,7 +11,7 @@
 import { Metadata, ResolvingMetadata } from "next";
 import Category from "@/components/product-catalog/category";
 import { FeaturedProductsSection } from "@/components/product-catalog/featured-products-section";
-import { RecentProductsSection } from "@/components/product-new/recent-products-section";
+import { isRecentProduct } from "@/components/product-recent/products-recent";
 import { TrustSection } from "@/components/product-catalog/trust-section";
 import { PartialErrorBanner } from "@/components/product-catalog/partial-error-banner";
 import {

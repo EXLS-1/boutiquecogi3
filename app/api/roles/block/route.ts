@@ -42,8 +42,8 @@ const BlockRoleSchema = z.object({
     .min(2)
     .max(32)
     .optional()
-    .refine((val) => !val || Object.values(ROLES).includes(val), {
-      // ← CORRIGÉ: suppression du cast 'as Role' inutile
+    .refine((val) => !val || Object.values(ROLES).includes(val as Role), {
+      // ← CORRIGÉ: le cast 'as Role' est nécessaire car ROLES est 'as const' → Role[]
       message: "Le rôle de réassignation doit être un rôle système valide.",
     }),
 });
@@ -156,8 +156,9 @@ export async function POST(request: NextRequest) {
       }
 
       // ── Vérification utilisateurs actifs ──
+      // Le rôle d'un utilisateur vit sur le modèle RoleAssignment (pas User.role)
       const activeUsers = await prisma.user.findMany({
-        where: { role: sanitizedRole },
+        where: { roleAssignment: { role: sanitizedRole } },
         select: { id: true, email: true, name: true },
       });
 
@@ -220,8 +221,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Réassigne tous les utilisateurs
-        const updateResult = await prisma.user.updateMany({
+        // Réassigne tous les utilisateurs (le rôle est porté par RoleAssignment)
+        const updateResult = await prisma.roleAssignment.updateMany({
           where: { role: sanitizedRole },
           data: { role: sanitizedReassign },
         });

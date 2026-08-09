@@ -349,7 +349,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-const userCount = await prisma.user.count({
+      const userCount = await prisma.user.count({
         where: { roleConfig: { role: sanitizedRole } },
       });
 

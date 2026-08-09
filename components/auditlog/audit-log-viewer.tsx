@@ -21,17 +21,17 @@ import { fr } from "date-fns/locale";
 interface AuditLogEntry {
   id: string;
   userId: string | null;
-  user?: {
+  user: {
     name: string | null;
-    email: string | null;
-  };
+    email: string;
+  } | null;
   action: string;
   entity: string | null;
   entityType: string | null;
   entityId: string | null;
-  oldValue: any;
-  newValue: any;
-  metadata: any;
+  oldValue: unknown;
+  newValue: unknown;
+  metadata: unknown;
   ip: string | null;
   userAgent: string | null;
   createdAt: Date;
@@ -56,7 +56,7 @@ export function AuditLogViewer({ initialAuditLogs }: { initialAuditLogs: AuditLo
           {initialAuditLogs.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                Aucun journal d'audit trouvé.
+                Aucun journal d&apos;audit trouvé.
               </TableCell>
             </TableRow>
           ) : (

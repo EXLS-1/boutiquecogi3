@@ -24,7 +24,7 @@ const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Détermine si un produit est récent (≤ 90 jours depuis sa création). */
-function isRecentProduct(date: Date | string): boolean {
+export function isRecentProduct(date: Date | string): boolean {
   const createdAt = new Date(date).getTime();
   return Date.now() - createdAt <= NINETY_DAYS_MS;
 }

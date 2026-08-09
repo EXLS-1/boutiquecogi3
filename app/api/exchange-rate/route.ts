@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { normalizeRole } from "@/lib/auth/rbac-shared";
 
 import { ExchangeRateApiResponse } from "@/lib/currency/exchange-rate-types";
 import { forceRefreshExchangeRate, getFastUSDToCDFRate } from "@/lib/currency";
@@ -55,7 +56,18 @@ async function getAuthContext(request: NextRequest): Promise<AuthContext> {
       return { isAuthenticated: false, privilegeLevel: 7 };
     }
 
-    const privilegeLevel = getPrivilegeLevelFromRole(session.user.role);
+    // Le rôle n'est pas renvoyé sur le schéma Better-Auth (User est un type
+    // alias, pas une interface). On le résout de manière sûre depuis le champ
+    // direct ou depuis `metadata.role`, avec repli GUEST (L7).
+    const user = session.user as Record<string, unknown>;
+    const rawRole =
+      typeof user.role === "string"
+        ? user.role
+        : ((user.metadata as Record<string, unknown> | undefined)?.role as
+            | string
+            | undefined) ?? "GUEST";
+
+    const privilegeLevel = getPrivilegeLevelFromRole(normalizeRole(rawRole));
 
     return {
       isAuthenticated: true,

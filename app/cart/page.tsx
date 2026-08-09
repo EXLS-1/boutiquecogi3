@@ -3,15 +3,13 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import useCart from "@/store/use-cart";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 
-// Types extraits proprement en dehors du composant
-type QuantityAction = "increase" | "decrease";
-
-interface CartItem {
+interface DisplayCartItem {
   id: string;
   name: string;
   image: string;
@@ -22,13 +20,25 @@ interface CartItem {
 export default function CartPage() {
   const cart = useCart();
 
-  // Optimisation des performances : mémorisation du calcul du total
+  // Normalise les items du store (product + quantity) vers le format d'affichage
+  const displayItems = useMemo<DisplayCartItem[]>(() => {
+    return cart.items.map((item) => ({
+      id: item.product.id,
+      name: item.product.name,
+      image: item.product.image,
+      price: item.product.price,
+      quantity: item.quantity,
+    }));
+  }, [cart.items]);
+
+  // Mémorisation du calcul du total
   const cartTotal = useMemo(() => {
-    return cart.items.reduce(
-      (total: number, item: CartItem) => total + item.price * item.quantity,
+    return displayItems.reduce(
+      (total: number, item: DisplayCartItem) =>
+        total + item.price * item.quantity,
       0
     );
-  }, [cart.items]);
+  }, [displayItems]);
 
   // Formatage robuste de la devise
   const formatPrice = (price: number) => {
@@ -38,7 +48,7 @@ export default function CartPage() {
     }).format(price);
   };
 
-  if (!cart.items || cart.items.length === 0) {
+  if (displayItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center">
         <h1 className="font-playfair text-3xl font-bold mb-6 tracking-widest uppercase text-cyan-400">
@@ -47,9 +57,12 @@ export default function CartPage() {
         <p className="font-lato text-cyan-400 text-lg">
           Votre panier est actuellement vide.
         </p>
-        <a href="/" className="mt-6 inline-block bg-cyan-400 border-round-md text-white font-bold py-2 px-4 rounded hover:bg-cyan-600 transition-colors">
+        <Link
+          href="/"
+          className="mt-6 inline-block bg-cyan-400 border-round-md text-white font-bold py-2 px-4 rounded hover:bg-cyan-600 transition-colors"
+        >
           Retour à la boutique
-        </a>
+        </Link>
       </div>
     );
   }
@@ -61,7 +74,7 @@ export default function CartPage() {
       </h1>
 
       <div className="space-y-6">
-        {cart.items.map((item: CartItem) => (
+        {displayItems.map((item: DisplayCartItem) => (
           <div
             key={item.id}
             className="flex flex-col sm:flex-row items-center justify-between border border-slate-200 rounded-xl p-4 bg-white shadow-sm"
@@ -92,7 +105,9 @@ export default function CartPage() {
               {/* Contrôle des quantités */}
               <div className="flex items-center gap-x-4 border border-slate-200 rounded-sm px-2 py-1 bg-slate-50">
                 <button
-                  onClick={() => cart.updateQuantity(item.id, "decrease")}
+                  onClick={() =>
+                    cart.updateQuantity(item.id, item.quantity - 1)
+                  }
                   disabled={item.quantity <= 1}
                   className="p-1 text-slate-500 hover:text-rose-500 disabled:opacity-50 transition-colors focus:outline-none"
                   aria-label="Diminuer la quantité"
@@ -103,7 +118,9 @@ export default function CartPage() {
                   {item.quantity}
                 </span>
                 <button
-                  onClick={() => cart.updateQuantity(item.id, "increase")}
+                  onClick={() =>
+                    cart.updateQuantity(item.id, item.quantity + 1)
+                  }
                   className="p-1 text-slate-500 hover:text-rose-500 transition-colors focus:outline-none"
                   aria-label="Augmenter la quantité"
                 >
@@ -129,12 +146,12 @@ export default function CartPage() {
         <div className="flex flex-col sm:flex-row justify-between items-center mt-10 pt-6 border-t border-slate-200 gap-6">
           <Button
             variant="outline"
-            onClick={cart.removeAll}
+            onClick={cart.clearCart}
             className="border-cyan-400 text-cyan-400 hover:bg-rose-500 hover:border-rose-500 hover:text-white font-bold tracking-widest uppercase transition-all w-full sm:w-auto"
           >
             Vider le panier
           </Button>
-          
+
           <div className="flex items-center space-x-4 bg-slate-50 border border-slate-200 px-6 py-4 rounded-xl shadow-sm w-full sm:w-auto justify-between">
             <span className="font-lato text-slate-500 uppercase tracking-wider text-sm font-bold">
               Total estimé

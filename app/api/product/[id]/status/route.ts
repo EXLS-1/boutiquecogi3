@@ -4,7 +4,6 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { updateProductStatus, ProductWorkflowError } from "@/lib/products/product-workflow";
 import { ProductStatus } from "@prisma/client";
 

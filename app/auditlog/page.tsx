@@ -1,4 +1,4 @@
-// app/(auditlog)/page.tsx
+// app/auditlog/page.tsx
 // Ce fichier représente la page d'administration pour visualiser les journaux d'audit.
 // Il utilise Next.js 16 avec le système de fichiers pour les routes et Prisma pour accéder à la base de données.
 // La page affiche les 100 derniers journaux d'audit, avec des informations sur l'utilisateur qui a effectué l'action, le type d'action, et la date.
@@ -33,10 +33,10 @@ export default async function AdminAuditLogsPage() {
     <div className="p-6 lg:p-10 space-y-8">
       <div className="flex items-center gap-3">
         <History className="h-8 w-8 text-cyan-700" />
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Journaux d'Audit</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Journaux d&apos;Audit</h1>
       </div>
 
-      <Suspense fallback={<div className="text-center py-10 text-gray-500 font-medium">Chargement des journaux d'audit...</div>}>
+      <Suspense fallback={<div className="text-center py-10 text-gray-500 font-medium">Chargement des journaux d&apos;audit...</div>}>
         <AuditLogViewer initialAuditLogs={auditLogs} />
       </Suspense>
     </div>

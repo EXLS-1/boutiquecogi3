@@ -19,7 +19,6 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { updateExchangeRateCronJob } from "@/lib/currency/exchange-rate-cron";
 
 // ─── Configuration & Constantes ───────────────────────────────────────────────
