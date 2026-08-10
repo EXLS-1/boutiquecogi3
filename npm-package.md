@@ -1,83 +1,103 @@
 # UPDATE NPM-PACKAGE
 
 ## dependencies:
-  "@better-auth/infra": "^0.3.7",
-  "@headlessui/react": "^2.1.2",
-  "@hookform/resolvers": "^5.2.2",
-  "@prisma/adapter-pg": "^7.9.1",
-  "@prisma/client": "^7.9.1",
-  "@radix-ui/react-checkbox": "^1.3.1",
-  "@radix-ui/react-dropdown-menu": "^2.1.14",
-  "@radix-ui/react-label": "^2.1.6",
-  "@radix-ui/react-slot": "^1.2.2",
-  "@supabase/ssr": "^0.10.3",
-  "@supabase/supabase-js": "^2.108.1",
-  "@tailwindcss/postcss": "^4.2.4",
-  "@upstash/ratelimit": "^2.0.8",
-  "@upstash/redis": "^1.38.0",
-  "@zxcvbn-ts/core": "^3.0.4",
-  "@zxcvbn-ts/language-common": "^3.0.4",
-  "bcryptjs": "^3.0.3",
-  "better-auth": "^1.6.18",
-  "cheerio": "^1.2.0",
-  "class-variance-authority": "^0.7.1",
-  "clsx": "^2.1.1",
-  "date-fns": "^4.2.1",
-  "dotenv": "^17.4.2",
-  "embla-carousel-autoplay": "^8.6.0",
-  "embla-carousel-react": "^8.6.0",
-  "framer-motion": "^12.40.0",
-  "generate-password": "^1.7.1",
-  "immer": "^11.1.8",
-  "ioredis": "^5.11.1",
-  "jose": "^6.2.3",
-  "lint": "^1.2.2",
-  "lucide-react": "^1.18.0",
-  "next": "^16.2.9",
-  "next-themes": "^0.4.6",
-  "nuqs": "^2.9.0",
-  "pdf-parse": "^2.4.5",
-  "pg": "^8.22.0",
-  "radix-ui": "^1.5.0",
-  "react": "^19.2.7",
-  "react-aria": "^3.48.0",
-  "react-dom": "^19.2.7",
-  "react-hook-form": "^7.74.0",
-  "react-hot-toast": "^2.6.0",
-  "react-icons": "^5.6.0",
-  "react-simple-typewriter": "^5.0.1",
-  "redis": "^6.1.0",
-  "select": "^1.1.2",
-  "sonner": "^2.0.7",
-  "swr": "^2.4.2",
-  "tailwind-merge": "^3.5.0",
-  "tw-animate-css": "^1.4.0",
-  "use-debounce": "^10.1.1",
-  "uuid": "^7.0.3",
-  "uuidv7": "^1.2.1",
-  "xlsx": "^0.18.5",
-  "zod": "^4.4.3",
-  "zustand": "^5.0.14"
+  npm i @better-auth/infra
+  npm i @headlessui/react
+  npm i @hookform/resolvers
+  
+  npm i @prisma/adapter-pg
+  npm i @prisma/client
+  
+  npm i @radix-ui/react-checkbox
+  npm i @radix-ui/react-dropdown-menu
+  npm i @radix-ui/react-label
+  npm i @radix-ui/react-slot
+
+  npm i @supabase/ssr
+  npm i @supabase/supabase-js
+
+  npm i @tailwindcss/postcss
+  
+  npm i @upstash/ratelimit
+  npm i @upstash/redis
+
+  npm i @zxcvbn-ts/core
+  npm i @zxcvbn-ts/language-common
+  
+  npm i bcryptjs
+  npm i better-auth
+  
+  npm i cheerio
+  npm i class-variance-authority
+  npm i clsx
+  npm i date-fns
+  npm i dotenv
+  
+  npm i embla-carousel-autoplay
+  npm i embla-carousel-react
+  npm i framer-motion
+  npm i generate-password
+  
+  npm i immer
+  npm i ioredis
+  npm i jose
+  npm i lint
+  
+  npm i lucide-react
+  npm i next
+  npm i next-themes
+ 
+  npm i nuqs
+  npm i pdf-parse
+  npm i pg
+
+  npm i radix-ui
+  npm i react
+  npm i react-aria
+  npm i react-dom
+  npm i react-hook-form
+  npm i react-hot-toast
+  npm i react-icons
+  npm i react-simple-typewriter
+
+  npm i redis
+  npm i select
+  npm i sonner
+  npm i swr
+  
+  npm i tailwind-merge
+  npm i tw-animate-css
+  npm i use-debounce
+
+  npm i uuid
+  npm i uuidv7
+    
+  npm i zod
+  npm i zustand
 
 ## devDependencies":
-  "@types/bcryptjs": "^2.4.6",
-  "@types/ioredis": "^4.28.10",
-  "@types/node": "^20",
-  "@types/pg": "^8.20.0",
-  "@types/react": "^19.2.17",
-  "@types/react-dom": "^19.2.3",
-  "@types/uuid": "^11.0.0",
-  "autoprefixer": "^10.4.20",
-  "babel-plugin-react-compiler": "^1.0.0",
-  "eslint": "^9",
-  "eslint-config-next": "^16.2.4",
-  "postcss": "^8",
-  "prisma": "^7.9.1",
-  "supabase": "^2.98.1",
-  "tailwindcss": "^4.3.1",
-  "tailwindcss-animate": "^1.0.7",
-  "tsx": "^4.22.4",
-  "typescript": "^6.0.3"
+  npm i @types/bcryptjs
+  npm i @types/ioredis
+  npm i @types/node
+  npm i @types/pg
+
+  npm i @types/react
+  npm i @types/react-dom
+  npm i @types/uuid
+  npm i autoprefixer
+
+  npm i babel-plugin-react-compiler
+  npm i eslint
+  npm i eslint-config-next
+
+  npm i postcss
+  npm i prisma
+  npm i supabase
+  
+  npm i tailwindcss
+  npm i tailwindcss-animate
+  npm i tsx
+  npm i typescript
 
 
 ## allowScripts":

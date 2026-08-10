@@ -5,7 +5,7 @@
 // =============================================================================
 
 import * as cheerio from "cheerio";
-import * as XLSX from "xlsx";
+import { Workbook } from "exceljs";
 import { Prisma } from "@prisma/client";
 import {
   BCC_URL,
@@ -154,14 +154,22 @@ async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
 
 // ─── Parsing Excel ────────────────────────────────────────────────────────────
 
-function parseExcel(buffer: Buffer): ExchangeRate | null {
+async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
-    const workbook = XLSX.read(buffer, { type: "buffer" });
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    const csvData = XLSX.utils.sheet_to_csv(firstSheet);
+    const workbook = new Workbook();
+    const loadedWorkbook = await workbook.xlsx.load(buffer);
+    const sheet = loadedWorkbook.worksheets[0];
+    if (!sheet) return null;
 
-    const lines = csvData.split("\n");
-    for (const line of lines) {
+    const rows: string[] = [];
+    sheet.eachRow((row) => {
+      rows.push(row.values
+        .slice(1)
+        .map((cell) => (cell ?? "").toString())
+        .join(" "));
+    });
+
+    for (const line of rows) {
       if (line.toUpperCase().includes("USD")) {
         const rate = extractRateFromText(line);
         if (rate && validateRate(rate)) return rate;
