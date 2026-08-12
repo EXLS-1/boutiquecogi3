@@ -1,3 +1,4 @@
+// scripts/seed-super-admin.ts
 /**
  * SEED SUPER ADMIN — Boutiquecogi3
  * 
@@ -13,6 +14,7 @@
  * il s'arrête immédiatement (sauf si --force est passé).
  */
 
+import "dotenv/config";
 import { Role, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { generateUUIDv7 } from '@/lib/utils/uuid';
@@ -122,8 +124,26 @@ async function main() {
 
   if (existingSuperAdmin && FORCE) {
     console.log("⚠️  Mode FORCE activé — suppression du Super Admin existant...");
-    // Cascade gérera les relations avec onDelete: Cascade
-    await prisma.user.delete({ where: { id: existingSuperAdmin.id } });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.account.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.session.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.twoFactor.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.userSecurity.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.userPreferences.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.userQuota.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.userAudit.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.userRole.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.roleAssignment.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.notification.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.auditLog.deleteMany({ where: { userId: existingSuperAdmin.id } });
+      await tx.user.delete({ where: { id: existingSuperAdmin.id } });
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 10000,
+      timeout: 30000,
+    });
+
     console.log("   Ancien Super Admin supprimé.");
   }
 
