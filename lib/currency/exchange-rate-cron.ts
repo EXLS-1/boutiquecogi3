@@ -4,7 +4,7 @@
 // Ne lit pas le cache mémoire pour garantir une synchronisation réelle avec la BCC.
 // =============================================================================
 
-import { forceRefreshExchangeRate } from "../exchange-rate/exchange-rate-service";
+import { forceRefreshExchangeRate } from "./exchange-rate-service";
 
 /**
  * Exécute la tâche de mise à jour forcée du taux de change.

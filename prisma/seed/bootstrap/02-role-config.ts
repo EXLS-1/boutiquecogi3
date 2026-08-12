@@ -51,4 +51,3 @@ export const RoleConfigSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

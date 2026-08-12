@@ -57,4 +57,3 @@ export const DevReviewsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

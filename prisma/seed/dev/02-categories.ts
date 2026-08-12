@@ -81,4 +81,3 @@ export const DevCategoriesSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

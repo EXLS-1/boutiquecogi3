@@ -89,4 +89,3 @@ export const TaxCarriersSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

@@ -21,4 +21,3 @@ export const bootstrapRegistry: SeedRegistry = [
   GeographySeeder,
   TaxCarriersSeeder,
 ];
-</content>

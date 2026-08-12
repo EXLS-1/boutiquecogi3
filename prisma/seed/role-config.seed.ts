@@ -33,6 +33,7 @@ function createRestrictions(
 type RoleConfigPayload = {
   role: Role;
   level: number;
+  description: string;
   permissions: Record<Permission, ToggleState>;
   restrictions: Record<Restriction, string | ToggleState>;
 };
@@ -41,12 +42,14 @@ const ROLE_CONFIGS: RoleConfigPayload[] = [
   {
     role: ROLES.SUPER_ADMIN,
     level: 1,
+    description: "Contrôle total de la plateforme.",
     permissions: createPermissions({}, "ON"),
     restrictions: createRestrictions({}, "OFF"),
   },
   {
     role: ROLES.ADMIN,
     level: 2,
+    description: "Administration de l'application et des opérations critiques.",
     permissions: createPermissions({
       [PERMISSIONS.SYSTEM_MAINTENANCE]: "OFF",
       [PERMISSIONS.SYSTEM_BACKUP]: "OFF",
@@ -66,6 +69,7 @@ const ROLE_CONFIGS: RoleConfigPayload[] = [
   {
     role: ROLES.MANAGER,
     level: 3,
+    description: "Gestion opérationnelle et supervision des équipes.",
     permissions: createPermissions({
       [PERMISSIONS.USERS_READ]: "ON",
       [PERMISSIONS.USERS_UPDATE]: "ON",
@@ -120,6 +124,7 @@ const ROLE_CONFIGS: RoleConfigPayload[] = [
   {
     role: ROLES.EDITOR,
     level: 4,
+    description: "Édition de contenu et gestion de publication.",
     permissions: createPermissions({
       [PERMISSIONS.PRODUCTS_READ]: "ON",
       [PERMISSIONS.PRODUCTS_UPDATE]: "ON",
@@ -153,6 +158,7 @@ const ROLE_CONFIGS: RoleConfigPayload[] = [
   {
     role: ROLES.SUPERVISOR,
     level: 5,
+    description: "Supervision locale des opérations et du service client.",
     permissions: createPermissions({
       [PERMISSIONS.ORDERS_READ]: "ON",
       [PERMISSIONS.ORDERS_UPDATE]: "ON",
@@ -179,6 +185,7 @@ const ROLE_CONFIGS: RoleConfigPayload[] = [
   {
     role: ROLES.USER,
     level: 6,
+    description: "Utilisateur standard avec accès limité.",
     permissions: createPermissions({
       [PERMISSIONS.PRODUCTS_READ]: "ON",
       [PERMISSIONS.ORDERS_READ]: "ON",
@@ -208,6 +215,7 @@ export async function seedRoleConfigs(prisma: PrismaClient) {
       where: { role: config.role },
       update: {
         level: config.level,
+        description: config.description,
         permissions: config.permissions,
         restrictions: config.restrictions,
         isActive: true,
@@ -216,6 +224,7 @@ export async function seedRoleConfigs(prisma: PrismaClient) {
         id: generateUUIDv7(),
         role: config.role,
         level: config.level,
+        description: config.description,
         permissions: config.permissions,
         restrictions: config.restrictions,
         isActive: true,

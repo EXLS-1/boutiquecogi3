@@ -17,4 +17,3 @@ export const testRegistry: SeedRegistry = [
   TestMinimalCatalogSeeder,
   TestDeterministicDataSeeder,
 ];
-</content>

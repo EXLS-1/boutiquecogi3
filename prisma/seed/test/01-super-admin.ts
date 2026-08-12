@@ -69,4 +69,3 @@ export const TestSuperAdminSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

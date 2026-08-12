@@ -43,4 +43,3 @@ export const GeographySeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

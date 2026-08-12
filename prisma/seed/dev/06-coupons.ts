@@ -43,4 +43,3 @@ export const DevCouponsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

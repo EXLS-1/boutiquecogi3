@@ -35,4 +35,3 @@ export const DualCurrencyCheckoutScenario: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

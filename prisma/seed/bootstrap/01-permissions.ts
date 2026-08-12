@@ -85,7 +85,7 @@ export const PermissionsSeeder: Seeder = {
           update: {},
           create: {
             id: generateUUIDv7(),
-            roleId: role.role,
+            roleId: roleConfig.id,
             roleconfigId: roleConfig.id,
             permissionId: permission.id,
           },
@@ -99,4 +99,3 @@ export const PermissionsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

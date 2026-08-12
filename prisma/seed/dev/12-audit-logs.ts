@@ -38,10 +38,22 @@ export const DevAuditLogsSeeder: Seeder = {
     for (let i = 0; i < 40; i++) {
       const user = users[i % users.length];
       const action = ACTIONS[i % ACTIONS.length];
+      const auditId = generateDeterministicUuidV7("audit", i + 1);
 
-      await ctx.prisma.auditLog.create({
-        data: {
-          id: generateDeterministicUuidV7("audit", i),
+      await ctx.prisma.auditLog.upsert({
+        where: { id: auditId },
+        update: {
+          userId: user.id,
+          roleLevel: (i % 6) + 1,
+          action: action.action,
+          entity: action.entity,
+          entityType: action.entity,
+          targetType: action.entity,
+          details: JSON.stringify({ seed: "dev", reason: "Trace de démonstration" }),
+          createdAt: new Date(Date.now() - i * 3600000),
+        },
+        create: {
+          id: auditId,
           userId: user.id,
           roleLevel: (i % 6) + 1,
           action: action.action,
@@ -59,4 +71,3 @@ export const DevAuditLogsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

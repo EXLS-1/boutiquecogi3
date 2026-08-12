@@ -93,12 +93,16 @@ export const DevCartsWishlistsSeeder: Seeder = {
         if (i % 2 === 0) {
           await ctx.prisma.abandonedCart.upsert({
             where: { cartId: cart.id },
-            update: { expiresAt: new Date(Date.now() + 86400000) },
+            update: {
+              expiresAt: new Date(Date.now() + 86400000),
+              updatedAt: new Date(),
+            },
             create: {
               id: generateUUIDv7(),
               cartId: cart.id,
               userId: user.id,
               expiresAt: new Date(Date.now() + 86400000),
+              updatedAt: new Date(),
             },
           });
         }
@@ -109,4 +113,3 @@ export const DevCartsWishlistsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

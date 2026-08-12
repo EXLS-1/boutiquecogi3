@@ -36,4 +36,3 @@ export const RbacMatrixTestScenario: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

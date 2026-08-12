@@ -55,4 +55,3 @@ export const CurrenciesSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

@@ -33,4 +33,3 @@ export const devRegistry: SeedRegistry = [
   DevNotificationsSeeder,
   DevAuditLogsSeeder,
 ];
-</content>

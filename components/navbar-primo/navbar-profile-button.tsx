@@ -92,13 +92,13 @@ export function NavbarProfileButton() {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64 mt-2 p-2 shadow-xl border-slate-200">
+      <DropdownMenuContent align="end" className="w-64 mt-2 p-2 shadow-xl bg-cyan-50 border-cyan-200">
         <DropdownMenuLabel className="font-normal p-2">
           <div className="flex flex-col space-y-2">
-            <p className="text-sm font-bold leading-none text-slate-900">
+            <p className="text-sm font-bold leading-none text-cyan-500">
               {session.user.name}
             </p>
-            <p className="text-xs leading-none text-slate-500 truncate">
+            <p className="text-xs leading-none text-cyan-500 truncate">
               {session.user.email}
             </p>
             {/* Badge de rôle RBAC */}
@@ -113,10 +113,10 @@ export function NavbarProfileButton() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem asChild className="focus:bg-cyan-50 focus:text-cyan-700 cursor-pointer rounded-md">
-          <Link href="/profile" className="flex items-center gap-2 w-full py-2">
+        <DropdownMenuItem asChild className="focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
+          <Link href="/profile" className="flex items-center gap-2 w-full py-2 text-cyan-400">
             <Avatar className="h-4 w-4">
-              <AvatarFallback className="text-[8px]">{initials}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
             </Avatar>
             Mon Profil
           </Link>
@@ -124,7 +124,7 @@ export function NavbarProfileButton() {
 
         {/* Dashboard Admin — ADMIN & SUPER_ADMIN uniquement */}
         {isAdmin && (
-          <DropdownMenuItem asChild className="text-orange-700 font-semibold focus:bg-orange-50 focus:text-orange-800 cursor-pointer rounded-md">
+          <DropdownMenuItem asChild className="text-cyan-400 font-semibold focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
             <Link href="/admin" className="flex items-center gap-2 w-full py-2">
               <LayoutDashboard className="h-4 w-4" />
               Dashboard Admin
@@ -132,9 +132,9 @@ export function NavbarProfileButton() {
           </DropdownMenuItem>
         )}
 
-        {/* Dashboard Staff — MANAGER uniquement (pas Admin déjà couvert) */}
+        {/* Dashboard Staff — MANAGER uniquement */}
         {isStaff && !isAdmin && (
-          <DropdownMenuItem asChild className="text-yellow-700 font-semibold focus:bg-yellow-50 focus:text-yellow-800 cursor-pointer rounded-md">
+          <DropdownMenuItem asChild className="text-cyan-400 font-semibold focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
             <Link href="/staff" className="flex items-center gap-2 w-full py-2">
               <RoleIcon className="h-4 w-4" />
               Espace {roleConfig.label}
@@ -142,11 +142,30 @@ export function NavbarProfileButton() {
           </DropdownMenuItem>
         )}
 
+        {/* Dashboard Staff — EDITOR uniquement */}
+        {isStaff && !isAdmin && (
+          <DropdownMenuItem asChild className="text-cyan-400 font-semibold focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
+            <Link href="/staff" className="flex items-center gap-2 w-full py-2">
+              <RoleIcon className="h-4 w-4" />
+              Espace {roleConfig.label}
+            </Link>
+          </DropdownMenuItem>
+        )}
+
+        {/* Dashboard Staff — SUPERVISOR uniquement */}
+        {isStaff && !isAdmin && (
+          <DropdownMenuItem asChild className="text-cyan-400 font-semibold focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
+            <Link href="/staff" className="flex items-center gap-2 w-full py-2">
+              <RoleIcon className="h-4 w-4" />
+              Espace {roleConfig.label}
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
           onClick={handleSignOut}
-          className="text-rose-600 focus:bg-rose-50 focus:text-rose-700 cursor-pointer rounded-md py-2"
+          className="text-rose-400 focus:bg-rose-100 focus:text-rose-500 cursor-pointer rounded-md py-2"
         >
           <LogOut className="h-4 w-4 mr-2" /> Se Déconnecter
         </DropdownMenuItem>

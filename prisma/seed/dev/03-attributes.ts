@@ -68,4 +68,3 @@ export const DevAttributesSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

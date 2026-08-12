@@ -53,4 +53,3 @@ export const PERMISSION_CATEGORIES = [
   "FINANCE",
   "AUDIT",
 ] as const;
-</content>

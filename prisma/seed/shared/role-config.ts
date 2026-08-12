@@ -50,4 +50,3 @@ export function buildRoleConfigSeeds(): RoleConfigSeed[] {
 }
 
 export { ROLE_LABELS };
-</content>

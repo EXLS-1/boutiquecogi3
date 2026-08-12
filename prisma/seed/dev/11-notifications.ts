@@ -39,10 +39,20 @@ export const DevNotificationsSeeder: Seeder = {
       for (let n = 0; n < 3; n++) {
         const template = TYPES[(u + n) % TYPES.length];
         const title = template.titles[(u + n) % template.titles.length];
+        const notificationId = generateDeterministicUuidV7(`notif-${userId}-${n}`, u + n + 1);
 
-        await ctx.prisma.notification.create({
-          data: {
-            id: generateDeterministicUuidV7(`notif-${userId.slice(0, 8)}`, n),
+        await ctx.prisma.notification.upsert({
+          where: { id: notificationId },
+          update: {
+            userId,
+            type: template.type,
+            title,
+            message: `Notification ${template.type} pour vous chez BoutiqueCOGI3.`,
+            isRead: n % 3 === 0,
+            createdAt: new Date(Date.now() - n * 86400000),
+          },
+          create: {
+            id: notificationId,
             userId,
             type: template.type,
             title,
@@ -59,4 +69,3 @@ export const DevNotificationsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

@@ -55,4 +55,3 @@ export const DevPaymentsSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

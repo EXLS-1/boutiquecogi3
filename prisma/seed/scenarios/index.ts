@@ -18,4 +18,3 @@ export const scenariosRegistry: SeedRegistry = [
   RbacMatrixTestScenario,
   DualCurrencyCheckoutScenario,
 ];
-</content>

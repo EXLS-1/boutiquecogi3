@@ -117,4 +117,3 @@ export const DevUsersSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

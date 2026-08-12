@@ -88,4 +88,3 @@ export const TestMinimalCatalogSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

@@ -67,4 +67,3 @@ export const TestMinimalUsersSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>

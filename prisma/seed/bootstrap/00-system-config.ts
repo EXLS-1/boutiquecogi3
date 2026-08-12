@@ -71,4 +71,3 @@ export const SystemConfigSeeder: Seeder = {
     ctx.logger.end(this.name);
   },
 };
-</content>
