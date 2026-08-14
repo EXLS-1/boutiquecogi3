@@ -30,11 +30,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/auth-client";
-import toast from "react-hot-toast";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 
-// 1. Définition stricte du schéma de validation
 const signinSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide." }),
   password: z.string().min(6, { message: "Le mot de passe est requis." }),
@@ -57,14 +55,17 @@ const signinSchema = z.object({
 
 type SignInFormValues = z.infer<typeof signinSchema>;
 
+type StatusToast = {
+  type: "success" | "error";
+  message: string;
+};
+
 export function SignInForm() {
   const [isPending, setIsPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  // État pour le rate limiting
+  const [statusToast, setStatusToast] = useState<StatusToast | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
-  // Gestion du compte à rebours pour le cooldown
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -81,27 +82,48 @@ export function SignInForm() {
   }, [cooldown]);
 
   const isLocked = cooldown > 0;
-
   const router = useRouter();
 
-  // 2. Initialisation de React Hook Form pour la performance et la validation
   const {
     register,
     handleSubmit,
+    reset,
+    control,
     formState: { errors },
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signinSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  // 3. Gestion de la soumission avec l'API BetterAuth (via callbacks pour la fiabilité)
+  const emailValue = useWatch({ control, name: "email", defaultValue: "" });
+  const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
+  const isFormValid = signinSchema.safeParse({ email: emailValue, password: passwordValue }).success;
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-const onSubmit = async (data: SignInFormValues) => {
-    if (isLocked) return;
+  useEffect(() => {
+    if (!statusToast) return;
+
+    const timer = window.setTimeout(() => {
+      setStatusToast(null);
+      setIsPending(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [statusToast]);
+
+  const showStatusToast = (type: "success" | "error", message: string) => {
+    setStatusToast({ type, message });
+  };
+
+  const onSubmit = async (data: SignInFormValues) => {
+    if (isLocked || isPending || !isFormValid) return;
 
     setIsPending(true);
     setErrorMessage(null);
+    reset({ email: "", password: "" });
+    setShowPassword(false);
+
     try {
       const res = await authClient.signIn.email(
         {
@@ -110,137 +132,149 @@ const onSubmit = async (data: SignInFormValues) => {
         },
         {
           onSuccess: async () => {
-            // Verifier si le serveur a declenche un challenge 2FA
             const statusRes = await fetch("/api/auth/2fa/status");
             const status = await statusRes.json();
 
             if (status.requires2FA) {
-              toast.success("Verification 2FA requise");
+              showStatusToast("success", "Vérification 2FA requise");
               router.push("/auth/2fa-challenge");
               return;
             }
 
-            toast.success("Connexion reussie !");
+            showStatusToast("success", "Connexion réussie !");
             router.push("/");
             router.refresh();
           },
           onError: (ctx) => {
-            setIsPending(false);
             const msg = ctx.error.message || "Email ou mot de passe incorrect.";
             setErrorMessage(msg);
-            toast.error(msg);
+            showStatusToast("error", msg);
           },
         }
       );
 
       if (res?.error) {
-        setIsPending(false);
         const msg = res.error.message || "Email ou mot de passe incorrect.";
         setErrorMessage(msg);
-        toast.error(msg);
+        showStatusToast("error", msg);
       }
     } catch (error) {
-      setIsPending(false);
       console.error("[AUTH_SIGNIN_ERROR]", error);
       const msg = "Une erreur est survenue. Veuillez reessayer.";
       setErrorMessage(msg);
-      toast.error(msg);
+      showStatusToast("error", msg);
     }
   };
 
   return (
-    <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
-      <CardHeader>
-        <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
-        
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-6">
-          <SocialAuthButtons />
-
-          <div className="relative items-center">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-cyan-200" />
-            </div>
-            <div className="relative flex items-center justify-center text-xs">
-              <span className="px-2 text-cyan-400 bg-cyan-200 rounded-full">ou avec votre email</span>
-            </div>
-          </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          <div className="grid bg-cyan-100 gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email-signin"
-              type="email"
-              placeholder="votre_email@example.com"
-              {...register("email")}
-              disabled={isPending || isLocked}
-              className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-            />
-            {errors.email && (
-              <span className="text-sm text-red-500">{errors.email.message}</span>
-            )}
-          </div>
-
-          <div className="grid gap-2 bg-cyan-100">
-            <div className="flex items-center bg-cyan-100 justify-between">
-              <Label htmlFor="password-signin">Mot de passe</Label>
-              <Link
-                href="/auth/forgot-password"
-                className="text-sm text-cyan-400 underline-offset-4 hover:underline"
-              >
-                Mot de passe oublié ?
-              </Link>
-            </div>
-            <Input
-              id="password-signin"
-              type={showPassword ? "text" : "password"}
-              {...register("password")}
-              disabled={isPending || isLocked}
-              className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
-            />
-            {errors.password && (
-              <span className="text-sm text-red-500">{errors.password.message}</span>
-            )}
-            <div className="flex items-center gap-2 mt-1">
-              <Checkbox
-                id="show-password"
-                checked={showPassword}
-                onCheckedChange={(checked) => setShowPassword(!!checked)}
-                disabled={isLocked}
-              />
-              <Label htmlFor="show-password" className="text-sm font-normal cursor-pointer text-cyan-700">
-                Afficher le mot de passe
-              </Label>
-            </div>
-          </div>
-
-          {errorMessage && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-md p-3">
-              {errorMessage}
-            </div>
-          )}
-
-          <Button 
-            type="submit" 
-            className="w-full bg-cyan-400 text-white hover:bg-rose-500" 
-            disabled={isPending || isLocked}
+    <>
+      {statusToast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+          <div
+            role={statusToast.type === "success" ? "status" : "alert"}
+            className={`rounded-xl border px-5 py-3 text-sm font-medium shadow-lg ${
+              statusToast.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
           >
-            {isPending ? "Connexion..." : isLocked ? `Réessayer dans ${cooldown}s` : "Se connecter"}
-          </Button>
-
-          <div className="text-center text-sm text-cyan-400">
-            Pas encore de compte ?{" "}
-            <Link
-              href="/auth/sign-up"
-              className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
-            >
-              S&apos;inscrire
-            </Link>
+            {statusToast.message}
           </div>
-        </form>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-6">
+            <SocialAuthButtons />
+
+            <div className="relative items-center">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-cyan-200" />
+              </div>
+              <div className="relative flex items-center justify-center text-xs">
+                <span className="px-2 text-cyan-400 bg-cyan-200 rounded-full">ou avec votre email</span>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+              <div className="grid bg-cyan-100 gap-2">
+                <Label htmlFor="email-signin">Email</Label>
+                <Input
+                  id="email-signin"
+                  type="email"
+                  placeholder="votre_email@example.com"
+                  {...register("email")}
+                  disabled={isPending || isLocked}
+                  className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+                />
+                {errors.email && (
+                  <span className="text-sm text-red-500">{errors.email.message}</span>
+                )}
+              </div>
+
+              <div className="grid gap-2 bg-cyan-100">
+                <div className="flex items-center bg-cyan-100 justify-between">
+                  <Label htmlFor="password-signin">Mot de passe</Label>
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-sm text-cyan-400 underline-offset-4 hover:underline"
+                  >
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
+                <Input
+                  id="password-signin"
+                  type={showPassword ? "text" : "password"}
+                  {...register("password")}
+                  disabled={isPending || isLocked}
+                  className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
+                />
+                {errors.password && (
+                  <span className="text-sm text-red-500">{errors.password.message}</span>
+                )}
+                <div className="flex items-center gap-2 mt-1">
+                  <Checkbox
+                    id="show-password"
+                    checked={showPassword}
+                    onCheckedChange={(checked) => setShowPassword(!!checked)}
+                    disabled={isLocked}
+                  />
+                  <Label htmlFor="show-password" className="text-sm font-normal cursor-pointer text-cyan-700">
+                    Afficher le mot de passe
+                  </Label>
+                </div>
+              </div>
+
+              {errorMessage && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-md p-3">
+                  {errorMessage}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full bg-cyan-400 text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={!isFormValid || isPending || isLocked}
+              >
+                {isPending ? "En cours..." : isLocked ? `Réessayer dans ${cooldown}s` : "Se connecter"}
+              </Button>
+
+              <div className="text-center text-sm text-cyan-400">
+                Pas encore de compte ?{" "}
+                <Link
+                  href="/auth/sign-up"
+                  className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
+                >
+                  S&apos;inscrire
+                </Link>
+              </div>
+            </form>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }
