@@ -8,6 +8,10 @@ import { prisma } from "@/lib/prisma";
 
 import { authDatabaseHooks } from "@/lib/better-auth/hooks";
 import {
+  hashPasswordWithBetterAuth,
+  verifyBetterAuthPassword,
+} from "@/lib/auth/password-hash";
+import {
   checkLoginRateLimit,
   recordLoginAttempt,
 } from "@/lib/security/auth-rate-limit";
@@ -68,6 +72,10 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 128,
     requireEmailVerification: false,
+    password: {
+      hash: hashPasswordWithBetterAuth,
+      verify: verifyBetterAuthPassword,
+    },
   },
   user: {
     // Role is managed via Prisma schema directly (enum Role with @default(USER)).
