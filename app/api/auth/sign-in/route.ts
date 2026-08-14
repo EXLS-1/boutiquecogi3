@@ -14,6 +14,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import {
+  repairInvalidPasswordHashIfNeeded,
+} from "@/lib/auth/password-hash";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { auditLog, UserEvent, SecurityEvent } from "@/lib/security/audit";
@@ -182,6 +185,7 @@ export async function POST(
 ): Promise<NextResponse<SignInResponse>> {
   const correlationId = crypto.randomUUID();
   const requestStart = Date.now();
+  let signInInput: SignInInput | null = null;
 
   // ── Logger context setup ──
   logger.setCorrelationId(correlationId);
@@ -276,6 +280,7 @@ export async function POST(
     }
 
     const { email, password }: SignInInput = parsed.data;
+    signInInput = { email, password };
 
     // 3. Extraction des métadonnées de requête
     const headersList = await headers();
@@ -370,6 +375,68 @@ export async function POST(
       headers: SECURITY_HEADERS,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (
+      errorMessage.includes("Invalid password hash") &&
+      signInInput &&
+      signInInput.email &&
+      signInInput.password
+    ) {
+      try {
+        const repaired = await repairInvalidPasswordHashIfNeeded({
+          email: signInInput.email,
+          password: signInInput.password,
+        });
+
+        if (repaired) {
+          const headersList = await headers();
+          const retryResult = await (auth.api as any).signInEmail({
+            body: {
+              email: signInInput.email,
+              password: signInInput.password,
+            },
+            headers: headersList,
+          });
+
+          const durationMs = Date.now() - requestStart;
+          logger.info("Sign-in recovered after hash repair", {
+            ...{ source: "api/auth/sign-in", requestId: correlationId },
+            userId: retryResult?.user?.id,
+            durationMs,
+          });
+
+          return NextResponse.json(
+            {
+              success: true,
+              user: {
+                id: retryResult?.user?.id ?? "",
+                email: retryResult?.user?.email ?? signInInput.email,
+                name: retryResult?.user?.name ?? null,
+                role: retryResult?.user?.role ?? "USER",
+              },
+              session: {
+                id: retryResult?.session?.id ?? "",
+                expiresAt:
+                  retryResult?.session?.expiresAt instanceof Date
+                    ? retryResult.session.expiresAt.toISOString()
+                    : typeof retryResult?.session?.expiresAt === "string"
+                    ? retryResult.session.expiresAt
+                    : new Date().toISOString(),
+              },
+              timestamp: Date.now(),
+            },
+            { status: 200, headers: SECURITY_HEADERS }
+          );
+        }
+      } catch (retryError) {
+        logger.warn("Sign-in retry after hash repair failed", {
+          ...{ source: "api/auth/sign-in", requestId: correlationId },
+          meta: { error: retryError instanceof Error ? retryError.message : String(retryError) },
+        });
+      }
+    }
+
     const durationMs = Date.now() - requestStart;
 
     // Extraire l'IP depuis les headers
