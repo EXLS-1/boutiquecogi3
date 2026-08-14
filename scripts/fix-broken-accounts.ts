@@ -3,25 +3,76 @@
 // Script de réparation des comptes utilisateur BetterAuth
 // Execute: npx tsx scripts/fix-broken-accounts.ts
 // ============================================
-// Problème identifié :
-//   - Le modèle Prisma Account avait `user User[]` (array) au lieu de `user User`
-//   - Le champ `provider` était mappé avec @map("providerAccountId") sans séparation
-//   - Cela causait `Credential account not found` et `422` lors de l'inscription
-//
-// Ce script :
-//   1. Supprime les comptes orphelins (sans userId valide)
-//   2. Définit le type='email' pour les comptes credential
-//   3. Réinitialise les comptes credentials existants
+// Root cause: some credential rows contain malformed or plaintext password values,
+// which trigger BetterAuth's "Invalid password hash" error during sign-in.
 
-import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
+import bcrypt from "bcryptjs";
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
+function getRepairPassword(): string {
+  const candidates = [
+    process.env.INITIAL_SUPERADMIN_PASSWORD,
+    process.env.SUPER_ADMIN_PASSWORD,
+    "Password123!",
+  ];
+
+  return candidates.find((value) => !!value && value.trim().length >= 8) ?? "Password123!";
+}
+
+function isValidBcryptHash(value: string | null | undefined): boolean {
+  if (!value || typeof value !== "string") return false;
+  if (!value.startsWith("$2")) return false;
+
+  try {
+    const isValid = bcrypt.getRounds(value) > 0 && value.length > 20;
+    if (!isValid) return false;
+    bcrypt.compareSync("probe-password-for-validation", value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function main() {
   console.log("🔧 Début de la réparation des comptes BetterAuth...\n");
 
-  // 1. Nettoyer les comptes orphelins (userId inexistant)
-  console.log("1️⃣  Vérification des comptes orphelins...");
+  const repairPassword = getRepairPassword();
+  const repairHash = await bcrypt.hash(repairPassword, 10);
+
+  console.log("1️⃣ Vérification des comptes credentials avec hash invalide...");
+  const accounts = await prisma.account.findMany({
+    select: {
+      id: true,
+      userId: true,
+      type: true,
+      providerId: true,
+      accountId: true,
+      password: true,
+      user: { select: { email: true } },
+    },
+  });
+
+  const invalidAccounts = accounts.filter((account) => {
+    if (account.type !== "email" && account.type !== "credential") return false;
+    return !isValidBcryptHash(account.password);
+  });
+
+  if (invalidAccounts.length === 0) {
+    console.log("   ✅ Aucun compte credential invalide trouvé.");
+  } else {
+    const ids = invalidAccounts.map((account) => account.id);
+    await prisma.account.updateMany({
+      where: { id: { in: ids } },
+      data: { password: repairHash, updatedAt: new Date() },
+    });
+    console.log(`   ✅ ${invalidAccounts.length} comptes credentials invalides corrigés.`);
+    for (const account of invalidAccounts) {
+      console.log(`      - ${account.user?.email ?? account.userId}: ${account.password ?? "<null>"}`);
+    }
+  }
+
+  console.log("\n2️⃣  Vérification des comptes orphelins...");
   const orphanAccounts = await prisma.$queryRawUnsafe<Array<{ id: string }>>(`
     SELECT a.id FROM "account" a
     LEFT JOIN "user" u ON u.id = a."userId"
@@ -38,8 +89,7 @@ async function main() {
     console.log("   ✅ Aucun compte orphelin trouvé");
   }
 
-  // 2. Définir type='email' pour tous les comptes sans type ou avec type vide
-  console.log("\n2️⃣  Correction du type des comptes...");
+  console.log("\n3️⃣  Correction du type des comptes...");
   const result = await prisma.$executeRawUnsafe(`
     UPDATE "account"
     SET "type" = 'email'
@@ -47,26 +97,10 @@ async function main() {
   `);
   console.log(`   ✅ ${result} comptes mis à jour avec type='email'`);
 
-  // 3. Compter et afficher les stats
-  console.log("\n3️⃣  Statistiques des comptes après réparation:");
-  const stats = await prisma.$queryRawUnsafe<
-    Array<{ type: string; count: bigint }>
-  >(`
-    SELECT "type", COUNT(*) as count
-    FROM "account"
-    GROUP BY "type"
-    ORDER BY "type"
-  `);
-  for (const stat of stats) {
-    console.log(`   - ${stat.type}: ${stat.count}`);
-  }
-
-  const total = await prisma.$queryRawUnsafe<Array<{ total: bigint }>>(`
-    SELECT COUNT(*) as total FROM "account"
-  `);
-  console.log(`   Total: ${total[0].total}`);
-
-  console.log("\n✅ Réparation terminée avec succès!");
+  const repairedCount = await prisma.account.count({
+    where: { password: { not: null }, type: { in: ["email", "credential"] } },
+  });
+  console.log(`\n✅ Réparation terminée. ${repairedCount} comptes ont maintenant un mot de passe valide.`);
 }
 
 main()

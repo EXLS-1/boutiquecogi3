@@ -28,9 +28,25 @@ function requiredEnv(name: string): string {
 }
 
 const baseURL =
+  process.env.APP_URL ??
   process.env.BETTER_AUTH_URL ??
   process.env.NEXT_PUBLIC_BASE_URL ??
   "http://localhost:3000";
+
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      baseURL,
+      process.env.APP_URL,
+      process.env.BETTER_AUTH_URL,
+      process.env.NEXT_PUBLIC_BASE_URL,
+      "http://localhost:3000",
+      "https://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://127.0.0.1:3000",
+    ].filter((value): value is string => !!value && value.trim().length > 0)
+  )
+);
 
 if (process.env.NODE_ENV === "production" && baseURL.includes("localhost")) {
   throw new Error("[AUTH ERROR] Invalid production baseURL.");
@@ -77,7 +93,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
   },
-  trustedOrigins: [baseURL, "http://localhost:3000"],
+  trustedOrigins,
   debug: process.env.NODE_ENV === "development",
 
   // ═══════════════════════════════════════════════════════════
