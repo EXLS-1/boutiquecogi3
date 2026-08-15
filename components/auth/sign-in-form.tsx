@@ -116,6 +116,26 @@ export function SignInForm() {
     setStatusToast({ type, message });
   };
 
+  const checkRequires2FA = async (): Promise<boolean> => {
+    try {
+      const statusRes = await fetch("/api/auth/2fa/status", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!statusRes.ok) return false;
+
+      const contentType = statusRes.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) return false;
+
+      const status = await statusRes.json();
+      return Boolean(status?.requires2FA);
+    } catch (error) {
+      console.warn("[AUTH_2FA_STATUS] Unable to check 2FA status", error);
+      return false;
+    }
+  };
+
   const onSubmit = async (data: SignInFormValues) => {
     if (isLocked || isPending || !isFormValid) return;
 
@@ -132,10 +152,9 @@ export function SignInForm() {
         },
         {
           onSuccess: async () => {
-            const statusRes = await fetch("/api/auth/2fa/status");
-            const status = await statusRes.json();
+            const requires2FA = await checkRequires2FA();
 
-            if (status.requires2FA) {
+            if (requires2FA) {
               showStatusToast("success", "Vérification 2FA requise");
               router.push("/auth/2fa-challenge");
               return;

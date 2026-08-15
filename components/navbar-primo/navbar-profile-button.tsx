@@ -1,7 +1,7 @@
 // components/navbar-primo/navbar-profile-button.tsx
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { authClient, useSessionContext } from "@/lib/auth/auth-client";
 import { normalizeRole, getRoleConfig, isAdminOrSuperAdmin, isStaffOrAbove } from "@/lib/auth/rbac-shared";
 import Link from "next/link";
@@ -18,7 +18,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import SignInButton from "@/components/auth/sign-in-button";
 import SignUpButton from "@/components/auth/sign-up-button";
 
@@ -31,6 +30,19 @@ import SignUpButton from "@/components/auth/sign-up-button";
 export function NavbarProfileButton() {
   const { session } = useSessionContext();
   const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [statusToast, setStatusToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!statusToast) return;
+
+    const timer = window.setTimeout(() => {
+      setStatusToast(null);
+      setIsSigningOut(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [statusToast]);
 
   // Computed RBAC props from server session
   const rawRole = (session?.user as { role?: string } | null | undefined)?.role;
@@ -65,34 +77,61 @@ export function NavbarProfileButton() {
   }
 
   const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          toast.success("Déconnexion réussie");
-          router.push("/");
-          router.refresh();
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            setStatusToast({ type: "success", message: "Déconnexion réussie" });
+            router.push("/auth/sign-in");
+            router.refresh();
+          },
+          onError: (ctx) => {
+            setStatusToast({ type: "error", message: ctx.error.message || "Erreur lors de la déconnexion." });
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      setStatusToast({ type: "error", message: "Une erreur inattendue est survenue." });
+    }
   };
 
   const initials = session.user.name?.slice(0, 2).toUpperCase() || "U";
   const RoleIcon = roleConfig.icon;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="relative group outline-none focus:ring-2 focus:ring-cyan-500 rounded-full transition-all active:scale-95">
-          <Avatar className="h-9 w-9 border border-cyan-100 shadow-sm group-hover:border-cyan-300">
-            <AvatarImage src={session.user.image || ""} alt={session.user.name} />
-            <AvatarFallback className="bg-cyan-700 text-white text-[10px] font-bold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </button>
-      </DropdownMenuTrigger>
+    <>
+      {statusToast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+          <div
+            role={statusToast.type === "success" ? "status" : "alert"}
+            className={`rounded-xl border px-5 py-3 text-sm font-medium shadow-lg ${
+              statusToast.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {statusToast.message}
+          </div>
+        </div>
+      )}
 
-      <DropdownMenuContent align="end" className="w-64 mt-2 p-2 shadow-xl bg-cyan-50 border-cyan-200">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="relative group outline-none focus:ring-2 focus:ring-cyan-500 rounded-full transition-all active:scale-95">
+            <Avatar className="h-9 w-9 border border-cyan-100 shadow-sm group-hover:border-cyan-300">
+              <AvatarImage src={session.user.image || ""} alt={session.user.name} />
+              <AvatarFallback className="bg-cyan-700 text-white text-[10px] font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end" className="w-64 mt-2 p-2 shadow-xl bg-cyan-50 border-cyan-200">
         <DropdownMenuLabel className="font-normal p-2">
           <div className="flex flex-col space-y-2">
             <p className="text-sm font-bold leading-none text-cyan-500">
@@ -165,11 +204,14 @@ export function NavbarProfileButton() {
 
         <DropdownMenuItem
           onClick={handleSignOut}
-          className="text-rose-400 focus:bg-rose-100 focus:text-rose-500 cursor-pointer rounded-md py-2"
+          disabled={isSigningOut}
+          className="text-rose-400 focus:bg-rose-100 focus:text-rose-500 cursor-pointer rounded-md py-2 disabled:opacity-70"
         >
-          <LogOut className="h-4 w-4 mr-2" /> Se Déconnecter
+          <LogOut className="h-4 w-4 mr-2" />
+          {isSigningOut ? "En cours..." : "Se Déconnecter"}
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+    </>
   );
 }

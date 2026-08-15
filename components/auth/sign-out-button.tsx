@@ -1,10 +1,9 @@
 // components/auth/sign-out-button.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/auth-client";
-import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 
 interface SignOutButtonProps {
@@ -12,40 +11,76 @@ interface SignOutButtonProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
+type StatusToast = {
+  type: "success" | "error";
+  message: string;
+};
+
 export function SignOutButton({ className, variant = "outline" }: SignOutButtonProps) {
   const [isPending, setIsPending] = useState(false);
+  const [statusToast, setStatusToast] = useState<StatusToast | null>(null);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!statusToast) return;
+
+    const timer = window.setTimeout(() => {
+      setStatusToast(null);
+      setIsPending(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [statusToast]);
+
   const handleLogout = async () => {
+    if (isPending) return;
+
     setIsPending(true);
+
     try {
       await authClient.signOut({
         fetchOptions: {
           onSuccess: () => {
-            toast.success("Déconnexion réussie."); //
-            router.push("/auth/Sign-in"); // Redirection immédiate
-            router.refresh(); // Force la purge du cache Next.js
+            setStatusToast({ type: "success", message: "Déconnexion réussie." });
+            router.push("/auth/sign-in");
+            router.refresh();
           },
           onError: (ctx) => {
-            toast.error(ctx.error.message || "Erreur lors de la déconnexion.");
-            setIsPending(false); // On ne débloque le bouton qu'en cas d'erreur
+            const message = ctx.error.message || "Erreur lors de la déconnexion.";
+            setStatusToast({ type: "error", message });
           },
         },
       });
     } catch (error) {
-      toast.error("Une erreur inattendue est survenue.");
-      setIsPending(false);
+      setStatusToast({ type: "error", message: "Une erreur inattendue est survenue." });
     }
   };
 
   return (
-    <Button 
-      variant={variant} 
-      onClick={handleLogout} 
-      disabled={isPending} 
-      className={className}
-    >
-      {isPending ? "Déconnexion..." : "Se déconnecter"}
-    </Button>
+    <>
+      {statusToast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+          <div
+            role={statusToast.type === "success" ? "status" : "alert"}
+            className={`rounded-xl border px-5 py-3 text-sm font-medium shadow-lg ${
+              statusToast.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {statusToast.message}
+          </div>
+        </div>
+      )}
+
+      <Button
+        variant={variant}
+        onClick={handleLogout}
+        disabled={isPending}
+        className={className}
+      >
+        {isPending ? "En cours..." : "Se déconnecter"}
+      </Button>
+    </>
   );
 }
