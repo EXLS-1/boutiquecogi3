@@ -43,7 +43,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -95,6 +95,8 @@ export function SignUpForm() {
   const [statusToast, setStatusToast] = useState<StatusToast | null>(null);
   const router = useRouter();
 
+  const emptyValues = { name: "", email: "", password: "", confirmPassword: "" };
+
   const {
     register,
     handleSubmit,
@@ -103,8 +105,26 @@ export function SignUpForm() {
     formState: { errors },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: emptyValues,
   });
+
+  const clearForm = useCallback(() => {
+    reset(emptyValues);
+    setShowPassword(false);
+  }, [reset]);
+
+  useEffect(() => {
+    clearForm();
+  }, [clearForm]);
+
+  useEffect(() => {
+    const handlePageShow = () => {
+      clearForm();
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [clearForm]);
 
   const nameValue = useWatch({ control, name: "name", defaultValue: "" });
   const emailValue = useWatch({ control, name: "email", defaultValue: "" });
@@ -162,8 +182,10 @@ export function SignUpForm() {
       }
 
       showStatusToast("success", "Inscription réussie !");
-      router.push("/");
-      router.refresh();
+      setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 5000);
     } catch (err) {
       showStatusToast("error", "Une erreur est survenue lors de l'inscription.");
     }

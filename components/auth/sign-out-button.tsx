@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { authClient } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +19,7 @@ type StatusToast = {
 
 export function SignOutButton({ className, variant = "outline" }: SignOutButtonProps) {
   const [isPending, setIsPending] = useState(false);
+  const [isDone, setIsDone] = useState(false);
   const [statusToast, setStatusToast] = useState<StatusToast | null>(null);
   const router = useRouter();
 
@@ -27,6 +29,7 @@ export function SignOutButton({ className, variant = "outline" }: SignOutButtonP
     const timer = window.setTimeout(() => {
       setStatusToast(null);
       setIsPending(false);
+      setIsDone(true);
     }, 5000);
 
     return () => window.clearTimeout(timer);
@@ -35,6 +38,7 @@ export function SignOutButton({ className, variant = "outline" }: SignOutButtonP
   const handleLogout = async () => {
     if (isPending) return;
 
+    setIsDone(false);
     setIsPending(true);
 
     try {
@@ -42,7 +46,6 @@ export function SignOutButton({ className, variant = "outline" }: SignOutButtonP
         fetchOptions: {
           onSuccess: () => {
             setStatusToast({ type: "success", message: "Déconnexion réussie." });
-            router.push("/auth/sign-in");
             router.refresh();
           },
           onError: (ctx) => {
@@ -73,14 +76,33 @@ export function SignOutButton({ className, variant = "outline" }: SignOutButtonP
         </div>
       )}
 
-      <Button
-        variant={variant}
-        onClick={handleLogout}
-        disabled={isPending}
-        className={className}
-      >
-        {isPending ? "En cours..." : "Se déconnecter"}
-      </Button>
+      {isDone ? (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            asChild
+            className="flex-1"
+          >
+            <Link href="/auth/sign-up">S&apos;inscrire</Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="flex-1"
+          >
+            <Link href="/auth/sign-in">Se connecter</Link>
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant={variant}
+          onClick={handleLogout}
+          disabled={isPending}
+          className={className}
+        >
+          {isPending ? "En cours..." : "Déconnexion"}
+        </Button>
+      )}
     </>
   );
 }

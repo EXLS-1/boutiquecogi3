@@ -28,7 +28,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -84,6 +84,8 @@ export function SignInForm() {
   const isLocked = cooldown > 0;
   const router = useRouter();
 
+  const emptyValues = { email: "", password: "" };
+
   const {
     register,
     handleSubmit,
@@ -92,8 +94,27 @@ export function SignInForm() {
     formState: { errors },
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signinSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: emptyValues,
   });
+
+  const clearForm = useCallback(() => {
+    reset(emptyValues);
+    setShowPassword(false);
+    setErrorMessage(null);
+  }, [reset]);
+
+  useEffect(() => {
+    clearForm();
+  }, [clearForm]);
+
+  useEffect(() => {
+    const handlePageShow = () => {
+      clearForm();
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [clearForm]);
 
   const emailValue = useWatch({ control, name: "email", defaultValue: "" });
   const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
@@ -161,8 +182,10 @@ export function SignInForm() {
             }
 
             showStatusToast("success", "Connexion réussie !");
-            router.push("/");
-            router.refresh();
+            setTimeout(() => {
+              router.push("/");
+              router.refresh();
+            }, 5000);
           },
           onError: (ctx) => {
             const msg = ctx.error.message || "Email ou mot de passe incorrect.";

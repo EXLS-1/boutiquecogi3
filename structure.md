@@ -1,6 +1,6 @@
 # Structure du Projet Boutique COGI
 
-Ce document décrit l'organisation des fichiers et des dossiers du projet **Boutique COGI**, un e-commerce basé sur Next.js 16.2.6. L'objectif est de maintenir une structure claire, modulaire et facile à naviguer pour faciliter le développement et la maintenance.
+Ce document décrit l'organisation des fichiers et des dossiers du projet **Boutique COGI**, un e-commerce basé sur Next.js 16.3.0. L'objectif est de maintenir une structure claire, modulaire et facile à naviguer pour faciliter le développement et la maintenance.
 
 ```
 boutiquecogi3/

@@ -57,6 +57,25 @@ beforeEach(() => {
 });
 
 describe('SignInForm behavior', () => {
+  it('clears the email and password fields whenever the form mounts again', () => {
+    const { unmount } = render(<SignInForm />);
+
+    const emailInput = screen.getByLabelText('Email');
+    const passwordInput = screen.getByLabelText('Mot de passe');
+
+    fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'Motdepasse123!' } });
+
+    expect(emailInput).toHaveValue('user@example.com');
+    expect(passwordInput).toHaveValue('Motdepasse123!');
+
+    unmount();
+    render(<SignInForm />);
+
+    expect(screen.getByLabelText('Email')).toHaveValue('');
+    expect(screen.getByLabelText('Mot de passe')).toHaveValue('');
+  });
+
   it('keeps the submit button disabled until valid email and password are entered, then resets after submission', async () => {
     render(<SignInForm />);
 
@@ -76,6 +95,26 @@ describe('SignInForm behavior', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'En cours...' })).toBeDisabled());
     await waitFor(() => expect(emailInput).toHaveValue(''));
     await waitFor(() => expect(passwordInput).toHaveValue(''));
+  });
+
+  it('clears email and password again when the page is shown again after a refresh', async () => {
+    render(<SignInForm />);
+
+    const emailInput = screen.getByLabelText('Email');
+    const passwordInput = screen.getByLabelText('Mot de passe');
+
+    fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'Motdepasse123!' } });
+
+    expect(emailInput).toHaveValue('user@example.com');
+    expect(passwordInput).toHaveValue('Motdepasse123!');
+
+    fireEvent(window, new Event('pageshow'));
+
+    await waitFor(() => {
+      expect(emailInput).toHaveValue('');
+      expect(passwordInput).toHaveValue('');
+    });
   });
 });
 
@@ -105,5 +144,33 @@ describe('SignUpForm behavior', () => {
     await waitFor(() => expect(emailInput).toHaveValue(''));
     await waitFor(() => expect(passwordInput).toHaveValue(''));
     await waitFor(() => expect(confirmPasswordInput).toHaveValue(''));
+  });
+
+  it('clears all fields again when the sign-up page is shown after a refresh', async () => {
+    render(<SignUpForm />);
+
+    const nameInput = screen.getByLabelText('Nom complet');
+    const emailInput = screen.getByLabelText('Email');
+    const passwordInput = screen.getByLabelText('Mot de passe');
+    const confirmPasswordInput = screen.getByLabelText('Confirmer le mot de passe');
+
+    fireEvent.change(nameInput, { target: { value: 'Jean Dupont' } });
+    fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'Motdepasse123!' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'Motdepasse123!' } });
+
+    expect(nameInput).toHaveValue('Jean Dupont');
+    expect(emailInput).toHaveValue('user@example.com');
+    expect(passwordInput).toHaveValue('Motdepasse123!');
+    expect(confirmPasswordInput).toHaveValue('Motdepasse123!');
+
+    fireEvent(window, new Event('pageshow'));
+
+    await waitFor(() => {
+      expect(nameInput).toHaveValue('');
+      expect(emailInput).toHaveValue('');
+      expect(passwordInput).toHaveValue('');
+      expect(confirmPasswordInput).toHaveValue('');
+    });
   });
 });
