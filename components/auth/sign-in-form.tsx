@@ -1,12 +1,12 @@
 // components/auth/sign-in-form.tsx
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import Link from "next/link";
 
 import { authClient } from "@/lib/auth/auth-client";
@@ -32,18 +32,23 @@ type SignInFormValues = z.infer<typeof signinSchema>;
 export function SignInForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signinSchema),
     mode: "onChange",
     defaultValues: { email: "", password: "" },
   });
+
+  // Nettoyage impératif au chargement/rafraîchissement de la page
+  useEffect(() => {
+    reset({ email: "", password: "" });
+  }, [reset]);
 
   const checkRequires2FA = async (): Promise<boolean> => {
     const statusRes = await fetch("/api/auth/2fa/status", {
@@ -74,7 +79,6 @@ export function SignInForm() {
 
   const onSubmit = async (data: SignInFormValues) => {
     if (cooldown > 0) return;
-    setErrorMessage(null);
 
     try {
       const { error } = await authClient.signIn.email({
@@ -83,16 +87,23 @@ export function SignInForm() {
       });
 
       if (error) {
+        // En cas d'échec, vidage sécurisé du mot de passe
+        reset({ email: data.email, password: "" });
+
         if (error.status === 429) {
           startCooldown(60);
-          setErrorMessage("Trop de tentatives. Veuillez patienter 60 secondes.");
+          toast.error("Trop de tentatives. Veuillez patienter 60 secondes.", { duration: 5000 });
           return;
         }
-        setErrorMessage(error.message || "Email ou mot de passe incorrect.");
+
+        toast.error(error.message || "Email ou mot de passe incorrect.", { duration: 5000 });
         return;
       }
 
       const requires2FA = await checkRequires2FA();
+
+      toast.success("Connexion réussie !", { duration: 5000 });
+      reset({ email: "", password: "" });
 
       if (requires2FA) {
         router.push("/auth/2fa-challenge");
@@ -103,8 +114,10 @@ export function SignInForm() {
       router.refresh();
     } catch (err) {
       console.error("[AUTH_SIGNIN_ERROR]", err);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Une erreur réseau est survenue."
+      reset({ email: "", password: "" });
+      toast.error(
+        err instanceof Error ? err.message : "Une erreur réseau est survenue.",
+        { duration: 5000 }
       );
     }
   };
@@ -129,13 +142,18 @@ export function SignInForm() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+            noValidate
+            autoComplete="off"
+          >
             <div className="grid gap-2">
               <Label htmlFor="email-signin">Email</Label>
               <Input
                 id="email-signin"
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
                 placeholder="votre_email@example.com"
                 disabled={isFormDisabled}
                 aria-invalid={!!errors.email}
@@ -162,7 +180,7 @@ export function SignInForm() {
               <Input
                 id="password-signin"
                 type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 disabled={isFormDisabled}
                 aria-invalid={!!errors.password}
                 {...register("password")}
@@ -189,15 +207,6 @@ export function SignInForm() {
                 Afficher le mot de passe
               </Label>
             </div>
-
-            {errorMessage && (
-              <div
-                className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-                role="alert"
-              >
-                {errorMessage}
-              </div>
-            )}
 
             <Button
               type="submit"

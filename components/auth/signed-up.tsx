@@ -1,4 +1,5 @@
-// components/auth/sign-up-success.tsx
+// components/auth/signed-up.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -17,14 +18,13 @@ import {
 import Link from "next/link";
 
 interface SignUpSuccessProps {
-  email?: string; // Optionnel : à extraire dynamiquement d'un état ou d'une query string
+  email?: string;
 }
 
 export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessProps) {
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  // Gestion du décompte du cooldown (anti-spam)
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -40,7 +40,6 @@ export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessP
 
     setIsResending(true);
     try {
-      // Appel asynchrone réel vers l'instance de Better-Auth
       const { error } = await authClient.sendVerificationEmail({
         email: email === "votre boîte mail" ? "" : email,
         callbackURL: `${window.location.origin}/auth/sign-in`,
@@ -50,13 +49,13 @@ export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessP
         throw new Error(error.message || "Impossible de renvoyer l'email.");
       }
 
-      toast.success("Email de vérification renvoyé avec succès !");
-      setCooldown(60); // Bloque le bouton pendant 60 secondes
+      toast.success("Email de vérification renvoyé avec succès !", { duration: 5000 });
+      setCooldown(60);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        toast.error(err.message);
+        toast.error(err.message, { duration: 5000 });
       } else {
-        toast.error("Une erreur critique est survenue.");
+        toast.error("Une erreur critique est survenue.", { duration: 5000 });
       }
     } finally {
       setIsResending(false);

@@ -5,7 +5,7 @@ import React, { Suspense } from "react";
 import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-
+import { Toaster } from "sonner";
 import { Navbar } from "@/components/navbar-primo";
 import { NavbarSecondary } from "@/components/Navbar-secundo/navbar-secondary";
 import { LeftSidebar } from "@/components/toggle/left-sidebar";
@@ -43,21 +43,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CartSyncManager />
           {/* Injection directe de la session pour supprimer le délai d'hydratation */}
           <Navbar />
-          
+
           {/* Suspense est crucial ici car NavbarSecondary utilise useSearchParams */}
           <Suspense fallback={<div className="h-14 w-full bg-cyan-100 animate-pulse border-b border-cyan-700" />}>
             <NavbarSecondary />
           </Suspense>
-          
+
           <LeftSidebar />
           <RightSidebar />
-         
+
           <UIWrapper>
-              { /* pt-28 correspond à la hauteur de navbar (14) + navbar-secondary (14) */ }
+            { /* pt-28 correspond à la hauteur de navbar (14) + navbar-secondary (14) */}
             <main className="min-h-screen pt-28">
-              { children }
+              {children}
+              <Toaster
+                position="top-center"
+                duration={5000}
+                toastOptions={{
+                  style: {
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                  },
+                }}
+              />
               {/* Chargez vos scripts ici de manière optimisée */}
-               
+
             </main>
           </UIWrapper>
 

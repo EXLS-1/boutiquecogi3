@@ -3,6 +3,7 @@
 
 import { useState, type ComponentPropsWithoutRef } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 
@@ -32,11 +33,12 @@ export function SignOutButton({
 
       if (error) {
         console.error("[AUTH_SIGNOUT_ERROR]", error.message);
-        // Insérer ici votre système de Toast global (ex: sonner, toast) sans bloquer la UI
+        toast.error(error.message || "Erreur lors de la déconnexion.", { duration: 5000 });
         setIsPending(false);
         return;
       }
 
+      toast.success("Déconnexion réussie.", { duration: 5000 });
       onSuccessCallback?.();
 
       if (redirectTo) {
@@ -45,6 +47,7 @@ export function SignOutButton({
       router.refresh();
     } catch (err) {
       console.error("[AUTH_SIGNOUT_UNEXPECTED]", err);
+      toast.error("Erreur inattendue lors de la déconnexion.", { duration: 5000 });
       setIsPending(false);
     }
   };

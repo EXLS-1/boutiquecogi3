@@ -2,13 +2,14 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core";
 import * as commonTransitions from "@zxcvbn-ts/language-common";
+import { toast } from "sonner";
 import Link from "next/link";
 
 import { authClient } from "@/lib/auth/auth-client";
@@ -45,13 +46,12 @@ type SignUpFormValues = z.infer<typeof signUpSchema>;
 export function SignUpForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -59,14 +59,15 @@ export function SignUpForm() {
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
-  // Limiter useWatch STRICTEMENT au mot de passe pour zxcvbn
+  // Nettoyage impératif au chargement/rafraîchissement de la page (F5)
+  useEffect(() => {
+    reset({ name: "", email: "", password: "", confirmPassword: "" });
+  }, [reset]);
+
   const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
   const passwordScore = useMemo(() => (passwordValue ? zxcvbn(passwordValue).score : -1), [passwordValue]);
 
   const onSubmit = async (data: SignUpFormValues) => {
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
     try {
       const { error } = await authClient.signUp.email({
         email: data.email,
@@ -75,18 +76,21 @@ export function SignUpForm() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Une erreur est survenue lors de l'inscription.");
+        // En cas d'erreur, purge immédiate des mots de passe
+        reset({ name: data.name, email: data.email, password: "", confirmPassword: "" });
+        toast.error(error.message || "Une erreur est survenue lors de l'inscription.", { duration: 5000 });
         return;
       }
 
-      setSuccessMessage("Inscription réussie ! Redirection...");
-      setTimeout(() => {
-        router.push("/");
-        router.refresh();
-      }, 2000); // 2 secondes suffisent, 5 secondes créent de la frustration
+      toast.success("Inscription réussie !", { duration: 5000 });
+      reset({ name: "", email: "", password: "", confirmPassword: "" });
+
+      router.push("/");
+      router.refresh();
     } catch (err) {
       console.error("[AUTH_SIGNUP_ERROR]", err);
-      setErrorMessage("Erreur réseau. Veuillez réessayer.");
+      reset({ name: data.name, email: data.email, password: "", confirmPassword: "" });
+      toast.error("Erreur réseau. Veuillez réessayer.", { duration: 5000 });
     }
   };
 
@@ -108,14 +112,14 @@ export function SignUpForm() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate autoComplete="off">
             <div className="grid gap-2">
               <Label htmlFor="name">Nom complet</Label>
               <Input
                 id="name"
                 type="text"
-                autoComplete="name"
-                disabled={isSubmitting || !!successMessage}
+                autoComplete="off"
+                disabled={isSubmitting}
                 aria-invalid={!!errors.name}
                 {...register("name")}
                 className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -128,8 +132,8 @@ export function SignUpForm() {
               <Input
                 id="email"
                 type="email"
-                autoComplete="email"
-                disabled={isSubmitting || !!successMessage}
+                autoComplete="off"
+                disabled={isSubmitting}
                 aria-invalid={!!errors.email}
                 {...register("email")}
                 className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -143,7 +147,7 @@ export function SignUpForm() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
-                disabled={isSubmitting || !!successMessage}
+                disabled={isSubmitting}
                 aria-invalid={!!errors.password}
                 {...register("password")}
                 className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -177,7 +181,7 @@ export function SignUpForm() {
                 id="confirmPassword"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
-                disabled={isSubmitting || !!successMessage}
+                disabled={isSubmitting}
                 aria-invalid={!!errors.confirmPassword}
                 {...register("confirmPassword")}
                 className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}
@@ -190,29 +194,17 @@ export function SignUpForm() {
                 id="show-passwords"
                 checked={showPassword}
                 onCheckedChange={(checked) => setShowPassword(!!checked)}
-                disabled={isSubmitting || !!successMessage}
+                disabled={isSubmitting}
               />
               <Label htmlFor="show-passwords" className="text-sm font-normal cursor-pointer text-cyan-800">
                 Afficher les mots de passe
               </Label>
             </div>
 
-            {errorMessage && (
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
-                {errorMessage}
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="alert">
-                {successMessage}
-              </div>
-            )}
-
             <Button
               type="submit"
               className="w-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:cursor-not-allowed"
-              disabled={!isValid || isSubmitting || !!successMessage}
+              disabled={!isValid || isSubmitting}
             >
               {isSubmitting ? "Inscription en cours..." : "S'inscrire"}
             </Button>
