@@ -25,7 +25,7 @@ export const RightSidebar = () => {
           >
             <User className="w-5 h-5 text-sky-500 group-hover:text-rose-500 transition-colors" />
             <span className="font-lato font-bold uppercase tracking-wider text-slate-950 group-hover:text-rose-500 transition-colors">
-              Mon Profil
+              Mon Profile
             </span>
           </Link>
 
