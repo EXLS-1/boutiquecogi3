@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth/auth-client";
-import toast from "sonner";
+import { toast } from "sonner";
 import { MailCheck, ArrowLeft, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,8 +52,12 @@ export default function SignedUp({ email = "votre boîte mail" }: SignUpSuccessP
 
       toast.success("Email de vérification renvoyé avec succès !");
       setCooldown(60); // Bloque le bouton pendant 60 secondes
-    } catch (err: any) {
-      toast.error(err.message || "Une erreur critique est survenue.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Une erreur critique est survenue.");
+      }
     } finally {
       setIsResending(false);
     }

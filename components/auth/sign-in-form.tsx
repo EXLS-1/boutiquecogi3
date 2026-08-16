@@ -1,41 +1,16 @@
 // components/auth/sign-in-form.tsx
-// 1. Importation des dépendances nécessaires
-// 2. Définition du schéma de validation avec Zod
-// 3. Création du composant SignInForm avec gestion de l'état et des erreurs
-// 4. Intégration de BetterAuth pour la connexion email/password et les redirections
-// 5. Ajout de boutons pour les connexions sociales (Google, Facebook) via le composant SocialAuthButtons
-// 6. Utilisation de composants UI personnalisés pour une meilleure expérience utilisateur
-// 7. Gestion des erreurs et des états de chargement pour une interface réactive et informative
-// 8. Redirection vers la page d'inscription pour les nouveaux utilisateurs
-// 9. Redirection vers la page de mot de passe oublié pour les utilisateurs ayant des problèmes de connexion
-// 10. Utilisation de toast pour les notifications de succès et d'erreur
-// 11. Optimisation des performances avec React Hook Form et Zod pour une validation rapide et efficace
-// 12. Utilisation de Next.js pour la navigation et les liens internes
-// 13. Application de styles cohérents avec les composants UI personnalisés pour une interface attrayante et moderne
-// 14. Gestion de l'affichage du mot de passe pour une meilleure expérience utilisateur
-// 15. Séparation claire des responsabilités entre les composants pour une meilleure maintenabilité et réutilisabilité du code
-// 16. Utilisation de TypeScript pour une meilleure sécurité de type et une meilleure expérience de développement
-// 17. Intégration de la logique d'authentification avec BetterAuth pour une gestion sécurisée et efficace des utilisateurs
-// 18. Utilisation de la validation côté client pour une meilleure expérience utilisateur et une réduction des erreurs de soumission
-// 19. Utilisation de la validation côté serveur via BetterAuth pour une sécurité renforcée et une gestion centralisée des erreurs
-// 20. Mise en place d'une interface utilisateur réactive et informative pour guider les utilisateurs tout au long du processus de connexion
-// 21. Utilisation de la gestion d'état pour contrôler les éléments de l'interface en fonction des actions de l'utilisateur et des réponses du serveur
-// 22. Utilisation de la navigation de Next.js pour une expérience utilisateur fluide et rapide
-// 23. Utilisation de la bibliothèque de composants UI pour une interface cohérente et attrayante
-// 24. Gestion des erreurs de validation avec des messages clairs et précis pour aider les utilisateurs à corriger leurs entrées
-// 25. Utilisation de la logique de chargement pour informer les utilisateurs que leur action est en cours de traitement et éviter les soumissions multiples
-// 26. Utilisation de la gestion d'état pour contrôler l'affichage du mot de passe
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+
 import { authClient } from "@/lib/auth/auth-client";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,277 +21,208 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import Link from "next/link";
 
 const signinSchema = z.object({
-  email: z.string().email({ message: "Adresse email invalide." }),
-  password: z.string().min(6, { message: "Le mot de passe est requis." }),
+  email: z.string().trim().email({ message: "Adresse email invalide." }),
+  password: z.string().min(1, { message: "Le mot de passe est requis." }),
 });
 
 type SignInFormValues = z.infer<typeof signinSchema>;
 
-type StatusToast = {
-  type: "success" | "error";
-  message: string;
-};
-
 export function SignInForm() {
-  const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [statusToast, setStatusToast] = useState<StatusToast | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
-  useEffect(() => {
-    if (cooldown <= 0) return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<SignInFormValues>({
+    resolver: zodResolver(signinSchema),
+    mode: "onChange",
+    defaultValues: { email: "", password: "" },
+  });
 
-    const timer = setInterval(() => {
+  const checkRequires2FA = async (): Promise<boolean> => {
+    const statusRes = await fetch("/api/auth/2fa/status", {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!statusRes.ok) {
+      throw new Error("Impossible de vérifier le statut 2FA.");
+    }
+
+    const data = await statusRes.json();
+    return Boolean(data?.requires2FA);
+  };
+
+  const startCooldown = (seconds: number) => {
+    setCooldown(seconds);
+    const interval = setInterval(() => {
       setCooldown((prev) => {
         if (prev <= 1) {
+          clearInterval(interval);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
-    return () => clearInterval(timer);
-  }, [cooldown]);
-
-  const isLocked = cooldown > 0;
-  const router = useRouter();
-
-  const emptyValues = { email: "", password: "" };
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<SignInFormValues>({
-    resolver: zodResolver(signinSchema),
-    defaultValues: emptyValues,
-  });
-
-  const clearForm = useCallback(() => {
-    reset(emptyValues);
-    setShowPassword(false);
-    setErrorMessage(null);
-  }, [reset]);
-
-  useEffect(() => {
-    clearForm();
-  }, [clearForm]);
-
-  useEffect(() => {
-    const handlePageShow = () => {
-      clearForm();
-    };
-
-    window.addEventListener("pageshow", handlePageShow);
-    return () => window.removeEventListener("pageshow", handlePageShow);
-  }, [clearForm]);
-
-  const emailValue = useWatch({ control, name: "email", defaultValue: "" });
-  const passwordValue = useWatch({ control, name: "password", defaultValue: "" });
-  const isFormValid = signinSchema.safeParse({ email: emailValue, password: passwordValue }).success;
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!statusToast) return;
-
-    const timer = window.setTimeout(() => {
-      setStatusToast(null);
-      setIsPending(false);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
-  }, [statusToast]);
-
-  const showStatusToast = (type: "success" | "error", message: string) => {
-    setStatusToast({ type, message });
-  };
-
-  const checkRequires2FA = async (): Promise<boolean> => {
-    try {
-      const statusRes = await fetch("/api/auth/2fa/status", {
-        cache: "no-store",
-        headers: { Accept: "application/json" },
-      });
-
-      if (!statusRes.ok) return false;
-
-      const contentType = statusRes.headers.get("content-type") ?? "";
-      if (!contentType.includes("application/json")) return false;
-
-      const status = await statusRes.json();
-      return Boolean(status?.requires2FA);
-    } catch (error) {
-      console.warn("[AUTH_2FA_STATUS] Unable to check 2FA status", error);
-      return false;
-    }
   };
 
   const onSubmit = async (data: SignInFormValues) => {
-    if (isLocked || isPending || !isFormValid) return;
-
-    setIsPending(true);
+    if (cooldown > 0) return;
     setErrorMessage(null);
-    reset({ email: "", password: "" });
-    setShowPassword(false);
 
     try {
-      const res = await authClient.signIn.email(
-        {
-          email: data.email,
-          password: data.password,
-        },
-        {
-          onSuccess: async () => {
-            const requires2FA = await checkRequires2FA();
+      const { error } = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+      });
 
-            if (requires2FA) {
-              showStatusToast("success", "Vérification 2FA requise");
-              router.push("/auth/2fa-challenge");
-              return;
-            }
-
-            showStatusToast("success", "Connexion réussie !");
-            setTimeout(() => {
-              router.push("/");
-              router.refresh();
-            }, 5000);
-          },
-          onError: (ctx) => {
-            const msg = ctx.error.message || "Email ou mot de passe incorrect.";
-            setErrorMessage(msg);
-            showStatusToast("error", msg);
-          },
+      if (error) {
+        if (error.status === 429) {
+          startCooldown(60);
+          setErrorMessage("Trop de tentatives. Veuillez patienter 60 secondes.");
+          return;
         }
-      );
-
-      if (res?.error) {
-        const msg = res.error.message || "Email ou mot de passe incorrect.";
-        setErrorMessage(msg);
-        showStatusToast("error", msg);
+        setErrorMessage(error.message || "Email ou mot de passe incorrect.");
+        return;
       }
-    } catch (error) {
-      console.error("[AUTH_SIGNIN_ERROR]", error);
-      const msg = "Une erreur est survenue. Veuillez reessayer.";
-      setErrorMessage(msg);
-      showStatusToast("error", msg);
+
+      const requires2FA = await checkRequires2FA();
+
+      if (requires2FA) {
+        router.push("/auth/2fa-challenge");
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      console.error("[AUTH_SIGNIN_ERROR]", err);
+      setErrorMessage(
+        err instanceof Error ? err.message : "Une erreur réseau est survenue."
+      );
     }
   };
 
+  const isFormDisabled = isSubmitting || cooldown > 0;
+
   return (
-    <>
-      {statusToast && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
-          <div
-            role={statusToast.type === "success" ? "status" : "alert"}
-            className={`rounded-xl border px-5 py-3 text-sm font-medium shadow-lg ${
-              statusToast.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-red-200 bg-red-50 text-red-700"
-            }`}
-          >
-            {statusToast.message}
-          </div>
-        </div>
-      )}
+    <Card className="w-full max-w-sm shadow-xl bg-cyan-100">
+      <CardHeader>
+        <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-6">
+          <SocialAuthButtons />
 
-      <Card className="w-full bg-cyan-100 max-w-sm shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-6">
-            <SocialAuthButtons />
-
-            <div className="relative items-center">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-cyan-200" />
-              </div>
-              <div className="relative flex items-center justify-center text-xs">
-                <span className="px-2 text-cyan-400 bg-cyan-200 rounded-full">ou avec votre email</span>
-              </div>
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-cyan-200" />
             </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-              <div className="grid bg-cyan-100 gap-2">
-                <Label htmlFor="email-signin">Email</Label>
-                <Input
-                  id="email-signin"
-                  type="email"
-                  placeholder="votre_email@example.com"
-                  {...register("email")}
-                  disabled={isPending || isLocked}
-                  className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-                />
-                {errors.email && (
-                  <span className="text-sm text-red-500">{errors.email.message}</span>
-                )}
-              </div>
+            <div className="relative text-xs bg-cyan-200 px-2 py-0.5 rounded-full text-cyan-700">
+              ou avec votre email
+            </div>
+          </div>
 
-              <div className="grid gap-2 bg-cyan-100">
-                <div className="flex items-center bg-cyan-100 justify-between">
-                  <Label htmlFor="password-signin">Mot de passe</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-cyan-400 underline-offset-4 hover:underline"
-                  >
-                    Mot de passe oublié ?
-                  </Link>
-                </div>
-                <Input
-                  id="password-signin"
-                  type={showPassword ? "text" : "password"}
-                  {...register("password")}
-                  disabled={isPending || isLocked}
-                  className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
-                />
-                {errors.password && (
-                  <span className="text-sm text-red-500">{errors.password.message}</span>
-                )}
-                <div className="flex items-center gap-2 mt-1">
-                  <Checkbox
-                    id="show-password"
-                    checked={showPassword}
-                    onCheckedChange={(checked) => setShowPassword(!!checked)}
-                    disabled={isLocked}
-                  />
-                  <Label htmlFor="show-password" className="text-sm font-normal cursor-pointer text-cyan-700">
-                    Afficher le mot de passe
-                  </Label>
-                </div>
-              </div>
-
-              {errorMessage && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-md p-3">
-                  {errorMessage}
-                </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+            <div className="grid gap-2">
+              <Label htmlFor="email-signin">Email</Label>
+              <Input
+                id="email-signin"
+                type="email"
+                autoComplete="email"
+                placeholder="votre_email@example.com"
+                disabled={isFormDisabled}
+                aria-invalid={!!errors.email}
+                {...register("email")}
+                className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {errors.email && (
+                <span className="text-xs text-red-600" role="alert">
+                  {errors.email.message}
+                </span>
               )}
+            </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-cyan-400 text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-70"
-                disabled={!isFormValid || isPending || isLocked}
-              >
-                {isPending ? "En cours..." : isLocked ? `Réessayer dans ${cooldown}s` : "Se connecter"}
-              </Button>
-
-              <div className="text-center text-sm text-cyan-400">
-                Pas encore de compte ?{" "}
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password-signin">Mot de passe</Label>
                 <Link
-                  href="/auth/sign-up"
-                  className="text-cyan-400 underline underline-offset-4 hover:text-rose-700 dark:text-cyan-700"
+                  href="/auth/forgot-password"
+                  className="text-xs text-cyan-600 underline-offset-4 hover:underline"
                 >
-                  S&apos;inscrire
+                  Mot de passe oublié ?
                 </Link>
               </div>
-            </form>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+              <Input
+                id="password-signin"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                disabled={isFormDisabled}
+                aria-invalid={!!errors.password}
+                {...register("password")}
+                className={errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}
+              />
+              {errors.password && (
+                <span className="text-xs text-red-600" role="alert">
+                  {errors.password.message}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="show-password"
+                checked={showPassword}
+                onCheckedChange={(checked) => setShowPassword(!!checked)}
+                disabled={isFormDisabled}
+              />
+              <Label
+                htmlFor="show-password"
+                className="text-sm font-normal cursor-pointer text-cyan-800"
+              >
+                Afficher le mot de passe
+              </Label>
+            </div>
+
+            {errorMessage && (
+              <div
+                className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                role="alert"
+              >
+                {errorMessage}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:cursor-not-allowed"
+              disabled={!isValid || isFormDisabled}
+            >
+              {isSubmitting
+                ? "Connexion en cours..."
+                : cooldown > 0
+                  ? `Réessayer dans ${cooldown}s`
+                  : "Se connecter"}
+            </Button>
+
+            <div className="text-center text-sm text-cyan-700">
+              Pas encore de compte ?{" "}
+              <Link
+                href="/auth/sign-up"
+                className="font-medium underline underline-offset-4 hover:text-cyan-900"
+              >
+                S&apos;inscrire
+              </Link>
+            </div>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
