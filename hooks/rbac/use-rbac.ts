@@ -1,15 +1,20 @@
 // hooks/rbac/use-rbac.ts
-// Hook global RBAC - HIÉRARCHIE DESCENDANTE
-// Level 1 = SUPER_ADMIN (plus haut) → Level 7 = GUEST (plus bas)
-
 "use client";
 
 import { useCallback, useMemo } from "react";
 import { useRBACStore } from "@/store/use-rbac-store";
-import { Permission, Role, getRoleLevel } from "@/lib/auth/rbac-shared";
+import {
+  Permission,
+  Role,
+  getRoleLevel,
+  normalizeRole,
+  getRoleConfig,
+  isAdminOrSuperAdmin,
+  isStaffOrAbove,
+  type RoleConfig,
+} from "@/lib/auth/rbac-shared";
 
 type RoleLevel = ReturnType<typeof getRoleLevel>;
-
 
 interface RBACRestriction {
   restrictedToOwn: boolean;
@@ -23,26 +28,40 @@ interface PermissionToggle {
   [key: string]: unknown;
 }
 
+export interface UserSessionData {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role?: string;
+}
+
 interface UseRBACReturn {
   // État
   role: Role | null;
   level: RoleLevel | null;
   permissions: Permission[];
   isLoading: boolean;
+  isPending: boolean; // Alias UI
   isAuthenticated: boolean;
+  user: UserSessionData | null;
 
-  // Vérifications de niveau (hiérarchie descendante)
-  // Level 1 = plus haut, Level 7 = plus bas
+  // Métadonnées d'affichage UI & Rôles
+  roleConfig: RoleConfig;
+  isAdmin: boolean;
+  isStaff: boolean;
+
+  // Vérifications de niveau & permissions
   hasPermission: (permission: Permission) => boolean;
   hasAnyPermission: (permissions: Permission[]) => boolean;
   hasAllPermissions: (permissions: Permission[]) => boolean;
 
   // Comparaison de niveaux
-  isAboveLevel: (targetLevel: RoleLevel) => boolean;      // userLevel < targetLevel (plus haut)
-  isAtLeastLevel: (targetLevel: RoleLevel) => boolean;    // userLevel <= targetLevel (plus haut ou égal)
-  isAtMostLevel: (targetLevel: RoleLevel) => boolean;       // userLevel >= targetLevel (plus bas ou égal)
+  isAboveLevel: (targetLevel: RoleLevel) => boolean;
+  isAtLeastLevel: (targetLevel: RoleLevel) => boolean;
+  isAtMostLevel: (targetLevel: RoleLevel) => boolean;
   isExactlyLevel: (exactLevel: RoleLevel) => boolean;
-  isBelowLevel: (targetLevel: RoleLevel) => boolean;       // userLevel > targetLevel (plus bas)
+  isBelowLevel: (targetLevel: RoleLevel) => boolean;
 
   // Métadonnées
   getRestriction: (permission: Permission) => RBACRestriction | null;
@@ -51,8 +70,8 @@ interface UseRBACReturn {
   getRoleName: () => string;
 
   // Hiérarchie
-  canModifyUser: (targetUserLevel: RoleLevel) => boolean;   // peut modifier si userLevel < targetUserLevel
-  canAssignRole: (targetRoleLevel: RoleLevel) => boolean;        // peut assigner si userLevel < targetRoleLevel
+  canModifyUser: (targetUserLevel: RoleLevel) => boolean;
+  canAssignRole: (targetRoleLevel: RoleLevel) => boolean;
   canAccess: (requiredPermissions: Permission[], requireAll?: boolean) => boolean;
 }
 
@@ -60,14 +79,24 @@ export function useRBAC(): UseRBACReturn {
   const store = useRBACStore();
   const { session, isLoading } = store;
 
-  // RBACSession may not expose role/level directly in typings; safely fallback to possible shapes
-  const role = (session as unknown as { role?: Role; user?: { role?: Role } } | null)?.role ??
-    (session as unknown as { user?: { role?: Role } } | null)?.user?.role ?? null;
+  // Extraction sécurisée de l'utilisateur et du rôle
+  const user = useMemo(() => {
+    return ((session as unknown as { user?: UserSessionData })?.user ?? null);
+  }, [session]);
+
+  const rawRole = (session as unknown as { role?: Role; user?: { role?: Role } } | null)?.role ??
+    user?.role ?? null;
+
   const level =
     (session as unknown as { level?: RoleLevel; user?: { level?: RoleLevel } } | null)?.level ??
-      (session as unknown as { user?: { level?: RoleLevel } } | null)?.user?.level ?? null;
+    (session as unknown as { user?: { level?: RoleLevel } } | null)?.user?.level ?? null;
 
-  const permissions = useMemo(() => 
+  const normalizedRole = useMemo(() => normalizeRole(rawRole), [rawRole]);
+  const roleConfig = useMemo(() => getRoleConfig(normalizedRole), [normalizedRole]);
+  const isAdmin = useMemo(() => isAdminOrSuperAdmin(normalizedRole), [normalizedRole]);
+  const isStaff = useMemo(() => isStaffOrAbove(normalizedRole), [normalizedRole]);
+
+  const permissions = useMemo(() =>
     Array.from(session?.effectivePermissions || []),
     [session?.effectivePermissions]
   );
@@ -84,19 +113,16 @@ export function useRBAC(): UseRBACReturn {
     return store.hasAllPermissions(perms);
   }, [store]);
 
-  // userLevel < targetLevel → plus haut dans la hiérarchie
   const isAboveLevel = useCallback((targetLevel: RoleLevel): boolean => {
     if (!level) return false;
     return level < targetLevel;
   }, [level]);
 
-  // userLevel <= targetLevel → plus haut ou égal
   const isAtLeastLevel = useCallback((targetLevel: RoleLevel): boolean => {
     if (!level) return false;
     return level <= targetLevel;
   }, [level]);
 
-  // userLevel >= targetLevel → plus bas ou égal
   const isAtMostLevel = useCallback((targetLevel: RoleLevel): boolean => {
     if (!level) return false;
     return level >= targetLevel;
@@ -106,7 +132,6 @@ export function useRBAC(): UseRBACReturn {
     return level === exactLevel;
   }, [level]);
 
-  // userLevel > targetLevel → plus bas
   const isBelowLevel = useCallback((targetLevel: RoleLevel): boolean => {
     if (!level) return false;
     return level > targetLevel;
@@ -114,7 +139,7 @@ export function useRBAC(): UseRBACReturn {
 
   const getRestriction = useCallback(
     (permission: Permission): RBACRestriction | null => {
-      if (!role) return null;
+      if (!rawRole) return null;
 
       type RolePermissionToggle = {
         permission: Permission;
@@ -122,7 +147,7 @@ export function useRBAC(): UseRBACReturn {
         conditions?: Record<string, unknown>;
       };
 
-      const perms = (role as unknown as {
+      const perms = (rawRole as unknown as {
         permissions?: RolePermissionToggle[];
       })?.permissions;
 
@@ -134,14 +159,12 @@ export function useRBAC(): UseRBACReturn {
         conditions: toggle.conditions || null,
       };
     },
-    [role],
+    [rawRole],
   );
 
-  // Return safe typed data for permission toggles
-  // (Runtime shape comes from RBAC role config; typings for Role may be incomplete.)
   const getPermissionToggle = useCallback(
     (permission: Permission): PermissionToggle | null => {
-      if (!role) return null;
+      if (!rawRole) return null;
 
       type RolePermissionToggle = {
         permission: Permission;
@@ -149,37 +172,27 @@ export function useRBAC(): UseRBACReturn {
         conditions?: Record<string, unknown>;
       };
 
-      const perms = (role as unknown as {
+      const perms = (rawRole as unknown as {
         permissions?: RolePermissionToggle[];
       })?.permissions;
       return perms?.find((p) => p.permission === permission) ?? null;
     },
-    [role],
+    [rawRole],
   );
 
-
-
-
-
   const getRoleColor = useCallback((): string => {
-    // Role type is a string union; mapping color is handled by UI if needed.
-    // Default fallback keeps hook stable.
     return "#6b7280";
   }, []);
 
   const getRoleName = useCallback((): string => {
-    return role ?? "Invité";
-  }, [role]);
+    return rawRole ?? "Invité";
+  }, [rawRole]);
 
-
-  // Un utilisateur ne peut modifier que des utilisateurs de niveau STRICTEMENT INFÉRIEUR
-  // (plus grand numériquement = plus bas dans la hiérarchie)
   const canModifyUser = useCallback((targetUserLevel: RoleLevel): boolean => {
     if (!level) return false;
     return level < targetUserLevel;
   }, [level]);
 
-  // Ne peut assigner que des rôles de niveau STRICTEMENT INFÉRIEUR au sien
   const canAssignRole = useCallback((targetRoleLevel: RoleLevel): boolean => {
     if (!level) return false;
     return level < targetRoleLevel;
@@ -195,11 +208,16 @@ export function useRBAC(): UseRBACReturn {
   }, [session]);
 
   return useMemo(() => ({
-    role,
+    role: rawRole,
     level,
     permissions,
     isLoading,
+    isPending: isLoading,
     isAuthenticated: !!session?.isAuthenticated,
+    user,
+    roleConfig,
+    isAdmin,
+    isStaff,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
@@ -216,7 +234,8 @@ export function useRBAC(): UseRBACReturn {
     canAssignRole,
     canAccess,
   }), [
-    role, level, permissions, isLoading, session?.isAuthenticated,
+    rawRole, level, permissions, isLoading, session?.isAuthenticated, user,
+    roleConfig, isAdmin, isStaff,
     hasPermission, hasAnyPermission, hasAllPermissions,
     isAboveLevel, isAtLeastLevel, isAtMostLevel, isExactlyLevel, isBelowLevel,
     getRestriction, getPermissionToggle, getRoleColor, getRoleName,
