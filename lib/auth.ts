@@ -224,9 +224,9 @@ export const auth = betterAuth({
           (ctx.context.returned as Record<string, unknown>).requires2FA = true;
         }
 
-        // Audit log
-        try {
-          await prisma.auditLog.create({
+        // Audit log : non bloquant pour ne pas rallonger la réponse auth.
+        void prisma.auditLog
+          .create({
             data: {
               id: crypto.randomUUID(),
               userId: session.user.id,
@@ -245,10 +245,10 @@ export const auth = betterAuth({
               createdAt: new Date(),
               updatedAt: new Date(),
             },
+          })
+          .catch(() => {
+            // Non-blocking
           });
-        } catch {
-          // Non-blocking
-        }
       }
       // SUPER_ADMIN sans 2FA → session conservée, redirigé par layout vers /admin/setup-2fa
     }),

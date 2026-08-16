@@ -71,8 +71,14 @@ export default function WishlistPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {items.map((item) => (
           <div key={item.id} className="group relative border rounded-xl overflow-hidden bg-white hover:shadow-lg transition-shadow">
-            <div className="aspect-square relative overflow-hidden">
-              <Image src={item.image} alt={item.name} fill className="object-cover transition-transform group-hover:scale-105" />
+            <div className="relative h-48 w-full overflow-hidden">
+              <Image
+                src={item.image || "/placeholder.webp"}
+                alt={item.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover transition-transform group-hover:scale-105"
+              />
               <button 
                 onClick={() => removeItem(item.id)}
                 className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"

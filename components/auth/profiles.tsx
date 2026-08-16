@@ -107,7 +107,7 @@ export function Profile() {
                 <span className="text-xs text-slate-500">— Accès complet au tableau de bord</span>
               )}
               {isStaff && !isAdmin && (
-                <span className="text-xs text-slate-500">— Accès à l&apos;espace staff</span>
+                <span className="text-xs text-slate-500">— Accès à l'espace staff</span>
               )}
             </div>
           </div>

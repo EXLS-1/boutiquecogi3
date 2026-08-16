@@ -39,17 +39,23 @@ export async function publishAuthBusinessEvent(input: PublishInput) {
     metadata = {},
   } = input;
 
-  await prisma.auditLog.create({
-    data: {
-      id: generateUUIDv7(),
-      action,
-      entityType,
-      entityId,
-      userId: userId ?? undefined,
-      ip,
-      userAgent,
-      metadata,
-      createdAt: new Date(),
-    },
-  });
+  void prisma.auditLog
+    .create({
+      data: {
+        id: generateUUIDv7(),
+        action,
+        entityType,
+        entityId,
+        userId: userId ?? undefined,
+        ip,
+        userAgent,
+        metadata,
+        createdAt: new Date(),
+      },
+    })
+    .catch((err) => {
+      console.error("[AUTH_HOOK] failed to persist auth event:", err);
+    });
+
+  return null;
 }
