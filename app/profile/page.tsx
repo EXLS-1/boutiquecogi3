@@ -9,7 +9,6 @@ import { getServerSession } from "@/lib/auth/server";
 import { OrderCardData } from "@/types/order";
 import { mapOrdersToCards } from "@/lib/orders/map-order-to-card";
 
-// Forcer le rendu dynamique exécuté côté serveur à chaque requête
 export const dynamic = "force-dynamic";
 
 const ORDERS_PAGE_SIZE = 5;
@@ -27,7 +26,7 @@ export default async function ProfilePage() {
   }
 
   let orders: OrderCardData[] = [];
-  let totalCount = 0;
+  let totalCount: number = 0;
   let errorMessage: string | null = null;
 
   try {

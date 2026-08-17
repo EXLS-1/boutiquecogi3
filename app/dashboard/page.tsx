@@ -11,10 +11,9 @@ export default async function DashboardPage() {
 
   // Non authentifié → login
   if (!session) {
-    redirect("/login?callbackUrl=/dashboard");
+    redirect("/auth/sign-in?callbackUrl=/dashboard");
   }
 
-  const { level } = session;
 
   // =============================================================================
   // BLOCAGE LEVEL 6 (USER/CLIENT) — REDIRECTION VERS PAGE D'ERREUR
@@ -22,7 +21,7 @@ export default async function DashboardPage() {
   // Le dashboard est STRICTEMENT réservé au staff (niveaux 1-5)
   // Level 6 = CLIENT = aucun accès, même en lecture seule
 
-  if (level >= 6) {
+  if (session.level >= 6) {
     redirect("/unauthorized");
   }
 

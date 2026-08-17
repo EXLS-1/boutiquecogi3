@@ -19,6 +19,7 @@ import {
   CHALLENGE_COOKIE_NAME,
   extractIP,
 } from "@/lib/security/2fa";
+import { customSession } from "better-auth/plugins";
 import { createAuthMiddleware } from "better-auth/api";
 
 const COOKIE_PREFIX = process.env.BETTER_AUTH_COOKIE_PREFIX || "better-auth";
@@ -78,8 +79,7 @@ export const auth = betterAuth({
     },
   },
   user: {
-    // Role is managed via Prisma schema directly (enum Role with @default(USER)).
-    // No additionalFields needed to avoid conflicts.
+    // Role is managed via Prisma schema and enriched in session via customSession
   },
   socialProviders: {
     google: {
@@ -96,7 +96,41 @@ export const auth = betterAuth({
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? "",
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    nextCookies(),
+    customSession(async ({ user, session }) => {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          roleConfig: {
+            select: {
+              role: true,
+              level: true,
+              permissions: true,
+            },
+          },
+          roleAssignment: {
+            select: {
+              role: true,
+            },
+          },
+        },
+      });
+
+      const role =
+        dbUser?.roleConfig?.role ?? dbUser?.roleAssignment?.role ?? "USER";
+      const level = dbUser?.roleConfig?.level ?? 6;
+
+      return {
+        user: {
+          ...user,
+          role,
+          level,
+        },
+        session,
+      };
+    }),
+  ],
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,

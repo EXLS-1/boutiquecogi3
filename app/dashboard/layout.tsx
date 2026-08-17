@@ -19,10 +19,10 @@ type DashboardLayoutProps = { children: ReactNode };
 const DASHBOARD_MAX_ALLOWED_LEVEL = 5;
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  const role = await requireAuth("/login");
+  const role = await requireAuth("/auth/sign-in");
   const userData = await getCurrentUserWithRole();
 
-  if (!userData) redirect("/login");
+  if (!userData) redirect("/auth/sign-in");
 
   const userLevel = getRoleLevel(role);
 

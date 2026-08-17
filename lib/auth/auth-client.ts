@@ -5,7 +5,10 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import { inferAdditionalFields } from "better-auth/client/plugins";
+import {
+  inferAdditionalFields,
+  customSessionClient,
+} from "better-auth/client/plugins";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition, createContext, useContext } from "react";
 import type { auth } from "@/lib/auth";
@@ -28,9 +31,10 @@ export { normalizeRole, getRoleLevel, getRoleConfig, isAdminOrSuperAdmin, isStaf
 export interface User {
   id: string;
   role: string;
+  level?: number;
   email: string;
   name: string;
-image?: string | null;
+  image?: string | null;
   emailVerified?: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -50,8 +54,11 @@ export const authClient = createAuthClient({
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
     (typeof window !== "undefined" ? window.location.origin : ""),
-  // inferAdditionalFields propage les additionalFields du serveur (ex: role) vers les types client
-  plugins: [inferAdditionalFields<typeof auth>()],
+  // plugins pour inférer les champs personnalisés (role, level)
+  plugins: [
+    inferAdditionalFields<typeof auth>(),
+    customSessionClient<typeof auth>(),
+  ],
 });
 
 // Destructuration sécurisée (sans SessionProvider qui cause l'erreur TS2339)

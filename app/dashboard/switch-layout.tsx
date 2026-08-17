@@ -10,10 +10,10 @@ export function AuditToolbar() {
       <p className="text-sm font-medium text-amber-800">
         Mode actif : <strong>{activeRole}</strong> {isAuditMode && "(Simulation)"}
       </p>
-      
+
       {isAuditMode ? (
         <button onClick={stopAudit} disabled={isTransitioning} className="px-2 py-1 bg-amber-600 text-white text-xs rounded">
-          Quitter l'audit
+          Quitter l&apos;audit
         </button>
       ) : (
         <div className="flex gap-2">

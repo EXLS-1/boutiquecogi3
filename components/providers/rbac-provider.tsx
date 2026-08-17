@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useMemo } from "react";
 import type { Role, Permission, Restriction, ToggleState } from "@/lib/auth/rbac-shared";
 
-type RBACContextType = {
+export type RBACContextType = {
   user: { id: string; email: string; name?: string | null; image?: string | null };
   role: Role;
   level: number;
@@ -18,6 +18,7 @@ type RBACContextType = {
   isRestrictionEnabled: (restriction: Restriction) => boolean;
 };
 
+// ── Définition du contexte React ──────────────────────────────
 const RBACContext = createContext<RBACContextType | null>(null);
 
 export function RBACProvider({

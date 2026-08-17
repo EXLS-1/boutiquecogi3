@@ -16,8 +16,6 @@ import UserActivityHeatmap from "@/components/dashboard/widgets/user-activity-he
 import QuickActions from "@/components/dashboard/widgets/quick-actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// ... (tous les fetchers getOverviewStats, getRecentOrders, etc. identiques)
-
 interface DashboardContentProps {
   session: {
     level: number;
@@ -28,7 +26,7 @@ interface DashboardContentProps {
 
 export async function DashboardContent({ session }: DashboardContentProps) {
   const { level, effectivePermissions } = session;
-  const hasPermission = (p: string) => effectivePermissions.has(p as any);
+  const hasPermission = (p: string) => effectivePermissions.has(p);
 
   return (
     <div className="space-y-6">
@@ -38,16 +36,16 @@ export async function DashboardContent({ session }: DashboardContentProps) {
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Niveau d&apos;accès :{" "}
-            <span className="font-semibold" style={{ "--role-color": session.role.color } as any}>
+            <span className="font-semibold" style={{ "--role-color": session.role.color } as React.CSSProperties}>
               {session.role.name} (Level {level})
             </span>
           </p>
         </div>
-        <QuickActions level={level} permissions={Array.from(effectivePermissions)} />
+        <QuickActions className="w-full" />
       </div>
 
       {/* LEVEL 5 */}
-      {level <= 5 && (
+      {hasPermission("analytics:view") && (
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Suspense fallback={<Skeleton className="h-64" />}>
             <RevenueChart />
@@ -62,7 +60,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       )}
 
       {/* LEVEL 4 */}
-      {level <= 4 && (
+      {hasPermission("analytics:view") && (
         <section className="grid gap-4 md:grid-cols-2">
           <Suspense fallback={<Skeleton className="h-96" />}>
             <RecentOrders />
@@ -74,7 +72,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       )}
 
       {/* LEVEL 3 */}
-      {level <= 3 && (
+      {hasPermission("analytics:view") && (
         <>
           <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Suspense fallback={<Skeleton className="h-64" />}>
@@ -99,7 +97,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       )}
 
       {/* LEVEL 2 */}
-      {level <= 2 && (
+      {hasPermission("analytics:view") && (
         <section className="grid gap-4">
           <Suspense fallback={<Skeleton className="h-96" />}>
             <AuditLogPreview />
@@ -108,7 +106,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       )}
 
       {/* LEVEL 1 */}
-      {level <= 1 && (
+      {hasPermission("analytics:view") && (
         <section className="grid gap-4">
           <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
             <h3 className="text-lg font-semibold text-destructive">

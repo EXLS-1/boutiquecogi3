@@ -10,13 +10,13 @@ import { ROLE_TO_LEVEL } from "@/lib/auth/rbac-shared";
 
 const CLIENT_ROLE_LEVELS = ROLE_TO_LEVEL;
 
-type AuditState =
+export type AuditState =
   | { status: "idle" }
   | { status: "pending_approval"; requestId: string; message: string }
   | { status: "approved"; token: string; expiresAt: Date }
   | { status: "rejected"; reason: string };
 
-type SwitchContextType = {
+export type SwitchContextType = {
   // Identité réelle
   realRole: Role;
   realLevel: number;
