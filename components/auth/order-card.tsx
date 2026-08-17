@@ -1,6 +1,7 @@
 // components/auth/order-card.tsx
 
-import { formatDateFR, formatPriceUSD } from "@/lib/currency/format-currency";
+import { formatDateFR } from "@/lib/utils/date";
+import Price from "@/components/product-price/price";
 import { formatOrderShortId } from "@/lib/orders/format-order-id";
 
 import type { OrderCardData } from "@/types/order";
@@ -41,7 +42,7 @@ export function OrderCard({
 
         <div className="flex flex-col justify-between gap-2 sm:items-end">
           <p className="text-xl font-black text-slate-900">
-            {formatPriceUSD(order.totalAmount)}
+            {Price(order.totalAmount)}
           </p>
 
           <span

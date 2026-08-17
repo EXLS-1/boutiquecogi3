@@ -1,6 +1,6 @@
 // lib/utils/currency.ts
 
-export type CurrencyCode = "USD" | "CDF" | "XOF";
+export type CurrencyCode = "USD" | "CDF";
 
 interface FormatCurrencyOptions {
   currency?: CurrencyCode;
@@ -18,11 +18,11 @@ export function roundToFinancial(amount: number, decimals: number = 2): number {
 
 /**
  * Détermine le nombre de décimales par défaut selon la devise.
- * - CDF et XOF : 0 décimale (pas de centimes en caisse)
+ * - CDF : 0 décimale (pas de centimes en caisse)
  * - USD : 2 décimales
  */
 function getDefaultDecimals(currency: CurrencyCode): number {
-  return currency === "CDF" || currency === "XOF" ? 0 : 2;
+  return currency === "CDF" ? 0 : 2;
 }
 
 /**

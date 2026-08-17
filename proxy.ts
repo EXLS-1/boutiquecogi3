@@ -29,8 +29,13 @@
 //   Server Components et Server Actions.
 
 import { betterFetch } from "@better-fetch/fetch";
-import type { Session } from "better-auth/types";
+import type { Session, User } from "better-auth/types";
 import { NextResponse, type NextRequest } from "next/server";
+
+interface BetterAuthSessionResponse {
+  session: Session;
+  user: User;
+}
 
 // ═══════════════════════════════════════════
 // SECTION 1: CONFIGURATION
@@ -72,7 +77,6 @@ const AUTH_ROUTES = [
 
 /** Routes protégées (nécessitent une session authentifiée) */
 const PROTECTED_ROUTES = [
-  "/products",
   "/checkout",
   "/profile",
   "/account",
@@ -117,9 +121,9 @@ function classifyRoute(pathname: string): "public" | "auth" | "protected" | "adm
 }
 
 /** Résout la session via Better-Auth (Edge-safe, zero Prisma) */
-async function resolveSession(request: NextRequest): Promise<Session | null> {
+async function resolveSession(request: NextRequest): Promise<BetterAuthSessionResponse | null> {
   try {
-    const { data } = await betterFetch<Session>("/api/auth/get-session", {
+    const { data } = await betterFetch<BetterAuthSessionResponse>("/api/auth/get-session", {
       baseURL: request.nextUrl.origin,
       headers: {
         cookie: request.headers.get("cookie") || "",
@@ -181,8 +185,8 @@ export default async function proxy(request: NextRequest) {
   // ─── Phase 4: Résolution lazy de la session ───
   // On ne résout la session QUE si la route n'est pas publique.
   // C'est l'optimisation clé : pas de fetch session pour les assets/public.
-  const session = await resolveSession(request);
-  const isAuthenticated = !!session?.userId;
+  const authSession = await resolveSession(request);
+  const isAuthenticated = Boolean(authSession?.session?.userId || authSession?.user?.id);
 
   // ─── Phase 5: Auth Zone ───
   // Si l'utilisateur est déjà authentifié, inutile d'accéder aux pages de login.

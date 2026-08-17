@@ -1,4 +1,3 @@
-// components/navbar-primo/navbar-profile-button.tsx
 "use client";
 
 import { useState } from "react";
@@ -21,10 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import SignInButton from "@/components/auth/sign-in-button";
 import SignUpButton from "@/components/auth/sign-up-button";
 
-/**
- * Fonction pure extraite du cycle de rendu React.
- * Zéro allocation dans le composant, performance maximale.
- */
 function getInitials(name?: string | null): string {
   if (!name) return "U";
   return name
@@ -41,7 +36,6 @@ export function NavbarProfileButton() {
   const { user, isLoading, isAuthenticated, roleConfig, isAdmin, isStaff } = useRBAC();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Calcul direct et ultra-rapide sans surcoût de useMemo
   const initials = getInitials(user?.name);
 
   if (isLoading) {
@@ -80,7 +74,7 @@ export function NavbarProfileButton() {
     }
   };
 
-  const RoleIcon = roleConfig.icon;
+  const RoleIcon = roleConfig?.icon;
 
   return (
     <DropdownMenu>
@@ -107,12 +101,14 @@ export function NavbarProfileButton() {
             <p className="text-xs leading-none text-cyan-700 truncate">
               {user.email}
             </p>
-            <Badge
-              className={`w-fit gap-1 text-[10px] font-semibold px-2 py-0.5 ${roleConfig.bgClass} ${roleConfig.textClass} ${roleConfig.borderClass}`}
-            >
-              <RoleIcon className="w-3 h-3" />
-              {roleConfig.label}
-            </Badge>
+            {roleConfig && (
+              <Badge
+                className={`w-fit gap-1 text-[10px] font-semibold px-2 py-0.5 ${roleConfig.bgClass || ""} ${roleConfig.textClass || ""} ${roleConfig.borderClass || ""}`}
+              >
+                {RoleIcon && <RoleIcon className="w-3 h-3" />}
+                {roleConfig.label}
+              </Badge>
+            )}
           </div>
         </DropdownMenuLabel>
 
@@ -141,8 +137,8 @@ export function NavbarProfileButton() {
         {isStaff && !isAdmin && (
           <DropdownMenuItem asChild className="text-cyan-800 font-semibold focus:bg-cyan-200 focus:text-cyan-900 cursor-pointer rounded-md">
             <Link href="/staff" className="flex items-center gap-2 w-full py-2">
-              <RoleIcon className="h-4 w-4" />
-              Espace {roleConfig.label}
+              {RoleIcon && <RoleIcon className="h-4 w-4" />}
+              Espace {roleConfig?.label || "Staff"}
             </Link>
           </DropdownMenuItem>
         )}

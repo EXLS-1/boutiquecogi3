@@ -9,7 +9,7 @@ import { useState, useTransition } from "react";
 import { OrderCardData } from "@/types/order";
 import { OrdersList } from "./order-list";
 import { Button } from "@/components/ui/button";
-import { getPaginatedOrders } from "@/lib/actions/actions/order.actions";
+import { getPaginatedOrders } from "@/lib/actions/order.actions";
 import { Loader2, PlusCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -45,7 +45,7 @@ export function OrdersContainer({
   return (
     <div className="space-y-6">
       <OrdersList orders={orders} errorMessage={initialErrorMessage} />
-      
+
       {hasMore && (
         <div className="flex justify-center pt-4">
           <Button
@@ -64,7 +64,7 @@ export function OrdersContainer({
           </Button>
         </div>
       )}
-      
+
       {!hasMore && orders.length > pageSize && (
         <p className="text-center text-sm text-slate-400 italic">
           Toutes les commandes ont été chargées.

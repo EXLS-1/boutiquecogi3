@@ -1,4 +1,3 @@
-// app/profile/page.tsx
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,6 +8,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth/server";
 import { OrderCardData } from "@/types/order";
 import { mapOrdersToCards } from "@/lib/orders/map-order-to-card";
+
+// Forcer le rendu dynamique exécuté côté serveur à chaque requête
+export const dynamic = "force-dynamic";
 
 const ORDERS_PAGE_SIZE = 5;
 
@@ -53,10 +55,8 @@ export default async function ProfilePage() {
 
   return (
     <main className="container mx-auto max-w-4xl space-y-12 px-4 py-12">
-      {/* Information du profil utilisateur */}
       <Profile />
 
-      {/* Historique des commandes avec pagination */}
       <OrdersContainer
         initialOrders={orders}
         initialErrorMessage={errorMessage}
@@ -64,7 +64,6 @@ export default async function ProfilePage() {
         pageSize={ORDERS_PAGE_SIZE}
       />
 
-      {/* Zone de danger — Suppression de compte avec couleurs harmonisées */}
       <section className="rounded-2xl border border-red-200 bg-red-50/40 overflow-hidden shadow-sm">
         <div className="border-b border-red-200 bg-red-100/50 px-6 py-4">
           <h2 className="text-lg font-bold text-red-900 flex items-center gap-2">

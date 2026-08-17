@@ -8,6 +8,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import React from "react";
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "react-hot-toast";
+import { RBACSyncManager } from "@/components/auth/rbac-sync-manager";
 
 interface RootProvidersProps {
   /**
@@ -23,6 +24,7 @@ export default function RootProvider({ children, session }: RootProvidersProps) 
   // { session, user } ou null) correspond exactement à la signature attendue par le provider.
   return (
     <BetterAuthContext.Provider value={{ session }}>
+      <RBACSyncManager />
       <ThemeProvider defaultTheme="system" storageKey="ui-theme">
         {children}
         <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
