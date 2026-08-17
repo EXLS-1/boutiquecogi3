@@ -30,9 +30,9 @@ export const RightSidebar = () => {
 
   return (
     <Sheet open={isRightSidebarOpen} onOpenChange={setRightSidebar}>
-      <SheetContent side="right" className="w-80 bg-slate-50 border-l border-slate-200 flex flex-col p-6">
+      <SheetContent side="right" className="w-80 bg-cyan-1000 border-l border-cyan-200 flex flex-col p-6">
         <SheetHeader className="mb-6 text-left">
-          <SheetTitle className="font-playfair text-2xl font-bold uppercase tracking-widest text-cyan-600">
+          <SheetTitle className="font-playfair text-2xl font-bold uppercase tracking-widest text-cyan-500">
             Espace Client
           </SheetTitle>
           <SheetDescription className="sr-only">
@@ -42,16 +42,16 @@ export const RightSidebar = () => {
 
         {/* Bloc utilisateur dynamique réactif à la SSOT */}
         {isAuthenticated && user && (
-          <div className="mb-6 p-3 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center gap-3">
-            <Avatar className="h-10 w-10 border border-cyan-100">
+          <div className="mb-6 p-3 rounded-xl bg-white border border-cyan-200 shadow-sm flex items-center gap-3">
+            <Avatar className="h-10 w-10 border border-cyan-200">
               <AvatarImage src={user.image || undefined} alt={user.name || "Utilisateur"} />
-              <AvatarFallback className="bg-cyan-700 text-white text-xs font-bold">
+              <AvatarFallback className="bg-cyan-500 text-white text-xs font-bold">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
-              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+              <p className="text-sm font-bold text-cyan-500 truncate">{user.name}</p>
+              <p className="text-xs text-cyan-500 truncate">{user.email}</p>
               {roleConfig && (
                 <Badge className={`mt-1 gap-1 text-[9px] font-semibold px-1.5 py-0 ${roleConfig.bgClass} ${roleConfig.textClass} ${roleConfig.borderClass}`}>
                   {RoleIcon && <RoleIcon className="w-2.5 h-2.5" />}
@@ -68,8 +68,8 @@ export const RightSidebar = () => {
             onClick={closeSidebar}
             className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 transition-colors group"
           >
-            <User className="w-5 h-5 text-cyan-600 group-hover:text-cyan-700 transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-xs text-slate-900 group-hover:text-cyan-700 transition-colors">
+            <User className="w-5 h-5 text-cyan-500 group-hover:text-cyan-700 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-cyan-500 transition-colors">
               Mon Profil
             </span>
           </Link>
@@ -77,10 +77,10 @@ export const RightSidebar = () => {
           <Link
             href="/favorites"
             onClick={closeSidebar}
-            className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 transition-colors group"
+            className="flex items-center gap-4 p-2 rounded-lg hover:bg-cyan-100 transition-colors group"
           >
             <Heart className="w-5 h-5 text-cyan-600 group-hover:text-rose-500 transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-xs text-slate-900 group-hover:text-rose-500 transition-colors">
+            <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-rose-500 transition-colors">
               Mes Favoris
             </span>
           </Link>
@@ -88,10 +88,10 @@ export const RightSidebar = () => {
           <Link
             href="/cart"
             onClick={closeSidebar}
-            className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 transition-colors group"
+            className="flex items-center gap-4 p-2 rounded-lg hover:bg-cyan-100 transition-colors group"
           >
-            <ShoppingBag className="w-5 h-5 text-cyan-600 group-hover:text-cyan-700 transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-xs text-slate-900 group-hover:text-cyan-700 transition-colors">
+            <ShoppingBag className="w-5 h-5 text-cyan-400 group-hover:text-cyan-500 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-cyan-500 transition-colors">
               Mon Panier
             </span>
           </Link>
@@ -103,8 +103,8 @@ export const RightSidebar = () => {
               onClick={closeSidebar}
               className="flex items-center gap-4 p-2 rounded-lg bg-cyan-50/80 border border-cyan-100 hover:bg-cyan-100/50 transition-colors mt-2"
             >
-              <LayoutDashboard className="w-5 h-5 text-cyan-700" />
-              <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-900">
+              <LayoutDashboard className="w-5 h-5 text-cyan-500" />
+              <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-500">
                 Dashboard Admin
               </span>
             </Link>
