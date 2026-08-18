@@ -126,7 +126,7 @@ export const RightSidebar = () => {
 
         {/* Bouton de connexion contextuel pour invité */}
         {!isAuthenticated && (
-          <div className="pt-4 border-t border-slate-200">
+          <div className="pt-4 border-t border-cyan-200">
             <Link
               href="/auth/sign-in"
               onClick={closeSidebar}
