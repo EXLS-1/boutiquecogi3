@@ -153,6 +153,7 @@ model Account {
 
   providerId String @map("provider")
   accountId  String @map("providerAccountId")
+  version    Int    @default(1)
 
   password              String?   @db.Text
   createdAt             DateTime  @default(now())
@@ -2073,7 +2074,8 @@ model SystemConfiguration {
 // ==========================================
 
 model DeletedAccountRegistry {
-  id String @id @default(uuid(7)) @db.Uuid
+  id      String @id @default(uuid(7)) @db.Uuid
+  version Int    @default(1)
 
   // Identité de la personne supprimée
   userId    String  @db.Uuid

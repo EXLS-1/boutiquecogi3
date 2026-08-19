@@ -1,3 +1,6 @@
+  deletedFilters: filters,
+  store.setDeletedEntries(initialEntries, initialPagination)
+  store.setDeletedEntries(data.entries, {
 // components/admin/deleted-account-table.tsx
 // ============================================
 // DELETED ACCOUNT TABLE — Registre des comptes supprimés (Admin)

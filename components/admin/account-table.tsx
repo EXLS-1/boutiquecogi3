@@ -1,3 +1,4 @@
+  accountFilters: filters,
 // components/admin/account-table.tsx
 
 'use client'
