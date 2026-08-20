@@ -1,15 +1,13 @@
 // app/dashboard/layout.tsx
-
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { getServerRBACSession } from "@/lib/auth/server";
 import {
-  requireAuth,
-  getCurrentUserWithRole,
   getClientPermissions,
   getClientRestrictions,
-  getRoleLevel,
   isRestrictionEnabled,
   RESTRICTIONS,
+  type Role,
 } from "@/lib/auth/rbac";
 import { SwitchProvider } from "@/components/providers/switch-provider";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
@@ -19,35 +17,37 @@ type DashboardLayoutProps = { children: ReactNode };
 const DASHBOARD_MAX_ALLOWED_LEVEL = 5;
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  const role = await requireAuth("/auth/sign-in");
-  const userData = await getCurrentUserWithRole();
+  const session = await getServerRBACSession();
 
-  if (!userData) redirect("/auth/sign-in");
+  if (!session) {
+    redirect("/auth/sign-in?callbackUrl=/dashboard");
+  }
 
-  const userLevel = getRoleLevel(role);
-
-  if (userLevel > DASHBOARD_MAX_ALLOWED_LEVEL) {
+  // Vérification uniforme du niveau RBAC
+  if (session.level > DASHBOARD_MAX_ALLOWED_LEVEL) {
     redirect("/unauthorized");
   }
 
+  const roleName = session.role.name as Role;
+
   const [permissions, restrictions, requiresAuditApproval] = await Promise.all([
-    getClientPermissions(role),
-    getClientRestrictions(role),
-    isRestrictionEnabled(role, RESTRICTIONS.REQUIRES_AUDIT_APPROVAL),
+    getClientPermissions(roleName),
+    getClientRestrictions(roleName),
+    isRestrictionEnabled(roleName, RESTRICTIONS.REQUIRES_AUDIT_APPROVAL),
   ]);
 
   return (
     <SwitchProvider
-      initialRole={role}
-      initialLevel={userLevel}
+      initialRole={roleName}
+      initialLevel={session.level}
       initialPermissions={permissions}
       initialRestrictions={restrictions}
       requiresAuditApproval={requiresAuditApproval}
     >
       <DashboardShell
-        userEmail={userData.user.email ?? ""}
-        userName={userData.user.name ?? null}
-        userImage={(userData.user as Record<string, unknown>).image as string | null | undefined}
+        userEmail={""}
+        userName={null}
+        userImage={null}
       >
         {children}
       </DashboardShell>

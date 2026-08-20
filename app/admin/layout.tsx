@@ -11,8 +11,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: headersList,
   });
 
   if (!session?.user?.id) {
@@ -30,8 +33,8 @@ export default async function AdminLayout({
   const isSuperAdmin = user?.roleConfig?.role === "SUPER_ADMIN";
   const has2FA = user?.userSecurities?.[0]?.twoFactorEnabled ?? false;
 
-  // SUPER_ADMIN sans 2FA = redirection forcee (sauf vers setup-2fa)
-  if (isSuperAdmin && !has2FA) {
+  // SUPER_ADMIN sans 2FA = redirection forcée (sauf si déjà sur la page de setup)
+  if (isSuperAdmin && !has2FA && pathname !== "/admin/setup-2fa") {
     redirect("/admin/setup-2fa");
   }
 

@@ -160,8 +160,16 @@ function buildAuthRedirect(request: NextRequest, path: string): URL {
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ─── Phase 0: Injection du pathname pour les Server Components en aval ───
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
+
   // ─── Phase 1: Security Headers (toujours appliqués) ───
-  const response = NextResponse.next();
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
@@ -177,20 +185,15 @@ export default async function proxy(request: NextRequest) {
   // ─── Phase 3: Classification de la route ───
   const zone = classifyRoute(pathname);
 
-  // Routes publiques : aucune vérification de session requise au proxy
   if (zone === "public") {
     return response;
   }
 
   // ─── Phase 4: Résolution lazy de la session ───
-  // On ne résout la session QUE si la route n'est pas publique.
-  // C'est l'optimisation clé : pas de fetch session pour les assets/public.
   const authSession = await resolveSession(request);
   const isAuthenticated = Boolean(authSession?.session?.userId || authSession?.user?.id);
 
   // ─── Phase 5: Auth Zone ───
-  // Si l'utilisateur est déjà authentifié, inutile d'accéder aux pages de login.
-  // On le redirige vers son callbackUrl ou son profil.
   if (zone === "auth" && isAuthenticated) {
     const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
     const redirectTarget =
@@ -199,21 +202,11 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ─── Phase 6: Protected & Admin Zones ───
-  // Nécessitent une session. Si GUEST → redirect vers login.
-  //
-  // NOTE IMPORTANTE :
-  //   La vérification fine (Level 1-6, permissions spécifiques, restrictions,
-  //   quotas) est DÉLÉGUÉE aux Server Components via @/lib/auth/server.ts.
-  //   Exemple : une page /admin/page.tsx appellera `await guardAdmin()`
-  //   qui rejettera un USER (Level 6) même s'il a passé ce proxy.
   if ((zone === "protected" || zone === "admin") && !isAuthenticated) {
     return NextResponse.redirect(buildAuthRedirect(request, "/auth/sign-in"));
   }
 
   // ─── Phase 7: Pass-through ───
-  // La requête est autorisée à passer. Le vrai RBAC métier
-  // (guardAdmin, guardPermission, enforceQuota, withAudit, etc.)
-  // est appliqué dans les Server Components / Server Actions en aval.
   return response;
 }
 

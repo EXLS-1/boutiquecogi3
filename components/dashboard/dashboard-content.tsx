@@ -1,7 +1,7 @@
 // components/dashboard/dashboard-content.tsx
-// Contenu du dashboard — reçoit la session déjà validée
 
 import { Suspense } from "react";
+import { PERMISSIONS } from "@/lib/auth/rbac-shared";
 import RevenueChart from "@/components/dashboard/widgets/revenue-chart";
 import RecentOrders from "@/components/dashboard/widgets/recent-orders";
 import TopProducts from "@/components/dashboard/widgets/top-products";
@@ -20,13 +20,20 @@ interface DashboardContentProps {
   session: {
     level: number;
     role: { name: string; color: string };
-    effectivePermissions: Set<string>;
+    effectivePermissions: Set<string> | string[];
   };
 }
 
 export async function DashboardContent({ session }: DashboardContentProps) {
   const { level, effectivePermissions } = session;
-  const hasPermission = (p: string) => effectivePermissions.has(p);
+
+  // Normalisation robuste de l'objet de permissions
+  const permissionsSet =
+    effectivePermissions instanceof Set
+      ? effectivePermissions
+      : new Set(Array.isArray(effectivePermissions) ? effectivePermissions : []);
+
+  const hasPermission = (permission: string) => permissionsSet.has(permission);
 
   return (
     <div className="space-y-6">
@@ -34,9 +41,12 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="mt-1 text-muted-foreground">
             Niveau d&apos;accès :{" "}
-            <span className="font-semibold" style={{ "--role-color": session.role.color } as React.CSSProperties}>
+            <span
+              className="font-semibold"
+              style={{ "--role-color": session.role.color } as React.CSSProperties}
+            >
               {session.role.name} (Level {level})
             </span>
           </p>
@@ -44,8 +54,8 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         <QuickActions className="w-full" />
       </div>
 
-      {/* LEVEL 5 */}
-      {hasPermission("analytics:view") && (
+      {/* LEVEL 5 : Analytics & Produits */}
+      {hasPermission(PERMISSIONS.ANALYTICS_READ) && (
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Suspense fallback={<Skeleton className="h-64" />}>
             <RevenueChart />
@@ -59,8 +69,8 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         </section>
       )}
 
-      {/* LEVEL 4 */}
-      {hasPermission("analytics:view") && (
+      {/* LEVEL 4 : Commandes & Catégories */}
+      {hasPermission(PERMISSIONS.ORDERS_READ) && (
         <section className="grid gap-4 md:grid-cols-2">
           <Suspense fallback={<Skeleton className="h-96" />}>
             <RecentOrders />
@@ -71,8 +81,8 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         </section>
       )}
 
-      {/* LEVEL 3 */}
-      {hasPermission("analytics:view") && (
+      {/* LEVEL 3 : Médias & Statistiques */}
+      {hasPermission(PERMISSIONS.MEDIA_READ) && (
         <>
           <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Suspense fallback={<Skeleton className="h-64" />}>
@@ -96,8 +106,8 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         </>
       )}
 
-      {/* LEVEL 2 */}
-      {hasPermission("analytics:view") && (
+      {/* LEVEL 2 : Audit & Logs */}
+      {hasPermission(PERMISSIONS.SYSTEM_LOGS) && (
         <section className="grid gap-4">
           <Suspense fallback={<Skeleton className="h-96" />}>
             <AuditLogPreview />
@@ -105,14 +115,14 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         </section>
       )}
 
-      {/* LEVEL 1 */}
-      {hasPermission("analytics:view") && (
+      {/* LEVEL 1 : Zone Super Admin réservée stricte */}
+      {level === 1 && (
         <section className="grid gap-4">
           <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6">
             <h3 className="text-lg font-semibold text-destructive">
               Zone Super Admin
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               Accès aux outils système, configuration globale et gestion des rôles.
             </p>
           </div>

@@ -1,7 +1,6 @@
-//app/api/admin/2fa/verify/route.ts
-
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import speakeasy from "speakeasy";
 import bcrypt from "bcryptjs";
@@ -9,7 +8,7 @@ import bcrypt from "bcryptjs";
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({
-      headers: request.headers,
+      headers: await headers(),
     });
 
     if (!session?.user?.id) {
@@ -26,24 +25,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const twoFactor = await prisma.twoFactor.findUnique({
+    // 1. Alignement sur la table userSecurity et vérification du rôle
+    const userSecurity = await prisma.userSecurity.findUnique({
       where: { userId: session.user.id },
-      include: { user: { include: { roleConfig: { select: { role: true } } } } },
+      include: {
+        user: {
+          include: { roleConfig: { select: { role: true, level: true } } },
+        },
+      },
     });
 
-    if (!twoFactor || !twoFactor.secret) {
+    if (!userSecurity || !userSecurity.twoFactorSecret) {
       return NextResponse.json(
         { error: "Configuration 2FA non initialisée" },
         { status: 400 }
       );
     }
 
-    if (twoFactor.user?.roleConfig?.role !== "SUPER_ADMIN") {
+    if (userSecurity.user?.roleConfig?.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
     }
 
+    // 2. Vérification du code TOTP
     const verified = speakeasy.totp.verify({
-      secret: twoFactor.secret,
+      secret: userSecurity.twoFactorSecret,
       encoding: "base32",
       token: code,
       window: 2,
@@ -56,46 +61,37 @@ export async function POST(request: Request) {
       );
     }
 
-    const now = new Date();
+    // 3. Génération des backup codes
     const backupCodes = Array.from({ length: 10 }, () =>
       Array.from({ length: 8 }, () =>
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".charAt(Math.floor(Math.random() * 32))
       ).join("")
     );
 
-    await prisma.$transaction(async (tx) => {
-      await tx.twoFactor.update({
-        where: { userId: session.user.id },
-        data: { enabled: true, updatedAt: now },
-      });
+    // Pré-hachage hors transaction pour la performance
+    const hashedBackupCodes = await Promise.all(
+      backupCodes.map((c) => bcrypt.hash(c, 10))
+    );
 
-      await tx.userSecurity.upsert({
+    const now = new Date();
+    const userLevel = userSecurity.user?.roleConfig?.level ?? 1;
+
+    // 4. Transaction BDD rapide
+    await prisma.$transaction(async (tx) => {
+      await tx.userSecurity.update({
         where: { userId: session.user.id },
-        update: { twoFactorEnabled: true },
-        create: {
-          id: crypto.randomUUID(),
-          userId: session.user.id,
+        data: {
           twoFactorEnabled: true,
-          isBlocked: false,
+          backupCodes: JSON.stringify(hashedBackupCodes),
+          updatedAt: now,
         },
       });
-
-      for (const backupCode of backupCodes) {
-        await tx.twoFactorBackupCode.create({
-          data: {
-            id: crypto.randomUUID(),
-            twoFactorId: twoFactor.id,
-            codeHash: await bcrypt.hash(backupCode, 10),
-            used: false,
-          },
-        });
-      }
 
       await tx.auditLog.create({
         data: {
           id: crypto.randomUUID(),
           userId: session.user.id,
-          roleLevel: 7,
+          roleLevel: userLevel,
           action: "TWO_FACTOR_ENABLED",
           targetType: "USER",
           targetId: session.user.id,

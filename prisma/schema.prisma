@@ -71,9 +71,10 @@ model User {
 }
 
 model UserSecurity {
-  id               String      @id @default(uuid(7)) @db.Uuid
-  userId           String      @unique @db.Uuid
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   twoFactorEnabled Boolean     @default(false)
   twoFactorSecret  String?     @db.Text
   twoFactor        TwoFactor[]
@@ -81,6 +82,8 @@ model UserSecurity {
   blockedUntil     DateTime?
   blockReason      String?
   isBlocked        Boolean     @default(false)
+
+  backupCodes String? // Stocke un JSON stringifié des codes de récupération
 
   @@map("user_security")
 }
