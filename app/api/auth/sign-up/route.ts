@@ -14,6 +14,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import {
+  publicSignupSchema,
+  type PublicSignupInput,
+} from "@/lib/auth/public-signup-schema";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { auditLog, UserEvent, SecurityEvent } from "@/lib/security/audit";
@@ -37,22 +41,8 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 // ─── Schéma de validation Zod ───────────────
 
-const signUpSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Le nom doit contenir au moins 2 caractères")
-    .max(100, "Le nom ne doit pas dépasser 100 caractères"),
-  email: z
-    .string()
-    .email("Adresse email invalide")
-    .max(255, "L'email ne doit pas dépasser 255 caractères"),
-  password: z
-    .string()
-    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-    .max(128, "Le mot de passe ne doit pas dépasser 128 caractères"),
-});
-
-type SignUpInput = z.infer<typeof signUpSchema>;
+const signUpSchema = publicSignupSchema;
+type SignUpInput = PublicSignupInput;
 
 // ─── Types de réponse ───────────────────────
 

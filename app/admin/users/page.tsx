@@ -1,7 +1,7 @@
 // app/admin/users/page.tsx (Server Component)
-import { UsersTable } from '@/components/admin/users-table'
-import { listUsersAction, listBlockedUsersAction } from '@/server/actions/user-admin-actions'
-import type { AdminUser, BlockedUser } from '@/store/admin-store'
+import { UsersTable } from '@/components/admin/users-table';
+import { listUsersAction, listBlockedUsersAction } from '@/server/actions/user-admin-actions';
+import type { AdminUser, BlockedUser } from '@/store/admin/admin-store.types';
 
 export default async function AdminUsersPage() {
   const [usersRes, blockedRes] = await Promise.all([

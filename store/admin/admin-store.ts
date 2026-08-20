@@ -2,33 +2,17 @@
 // ============================================
 // ADMIN STORE — Store centralisé unifié (Users, Blocked, Accounts, Deleted Registry)
 // ============================================
-// Fusion robuste avec typage strict, rollback optimiste,
-// gestion de versions (OCC), pagination & sélecteurs Zustand.
 
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { Role } from "@/lib/auth/rbac-shared";
 import type {
   AdminStore,
-  AdminUser,
-  BlockedUser,
-  AccountItem,
-  AccountDetail,
-  DeletedAccountItem,
-  DeletedAccountDetail,
-  RegistryStats,
-  UserFiltersState,
-  AccountFiltersState,
-  DeletedAccountFiltersState,
-  PaginationInfo,
   OptimisticDomain,
 } from "./admin-store.types";
 import {
   DEFAULT_USER_FILTERS,
   DEFAULT_ACCOUNT_FILTERS,
   DEFAULT_DELETED_FILTERS,
-  DEFAULT_PAGINATION,
-  DEFAULT_SNAPSHOTS,
   INITIAL_ADMIN_STATE,
 } from "./admin-store.constants";
 import {
@@ -47,8 +31,6 @@ import {
 } from "./admin-store.utils";
 
 const optimisticDomainQueues = new Map<OptimisticDomain, Promise<void>>();
-
-// ─── Store Instance ────────────────────────
 
 export const useAdminStore = create<AdminStore>()(
   devtools(
@@ -162,9 +144,8 @@ export const useAdminStore = create<AdminStore>()(
           "admin/reconcileUser"
         ),
 
-      // Users Filters & Pagination
+      // Users Filters & Pagination (core)
       setUserFilter: (key, value) =>
-          setFilter: (key, value) => get().setUserFilter(key, value),
         set(
           (state) => {
             const nextFilters = {
@@ -172,81 +153,73 @@ export const useAdminStore = create<AdminStore>()(
               [key]: value,
               ...(key !== "page" && key !== "pageSize" ? { page: 1 } : {}),
             };
-            return {
-              userFilters: nextFilters,
-            };
+            return { userFilters: nextFilters };
           },
           false,
           `admin/setUserFilter/${key}`
         ),
+
       resetUserFilters: () =>
-          resetFilters: () => get().resetUserFilters(),
-        set(
-          {
-            userFilters: { ...DEFAULT_USER_FILTERS },
-          },
-          false,
-          "admin/resetUserFilters"
-        ),
+        set({ userFilters: { ...DEFAULT_USER_FILTERS } }, false, "admin/resetUserFilters"),
+
       nextUserPage: () => {
-          nextPage: () => get().nextUserPage(),
         const total = get().getTotalPages();
         set(
-          (state) => {
-            const nextFilters = {
+          (state) => ({
+            userFilters: {
               ...state.userFilters,
               page: Math.min(state.userFilters.page + 1, total),
-            };
-            return { userFilters: nextFilters };
-          },
+            },
+          }),
           false,
           "admin/nextUserPage"
         );
       },
+
       prevUserPage: () =>
-          prevPage: () => get().prevUserPage(),
-          setPage: (page) => get().setUserPage(page),
         set(
-          (state) => {
-            const nextFilters = {
+          (state) => ({
+            userFilters: {
               ...state.userFilters,
               page: Math.max(state.userFilters.page - 1, 1),
-            };
-            return { userFilters: nextFilters };
-          },
+            },
+          }),
           false,
           "admin/prevUserPage"
         ),
 
-      setPage: (page) =>
+      setUserPage: (page) =>
         set(
-          (state) => {
-            const nextFilters = {
+          (state) => ({
+            userFilters: {
               ...state.userFilters,
               page: Math.max(1, page),
-            };
-            return { userFilters: nextFilters };
-          },
+            },
+          }),
           false,
           "admin/setUserPage"
         ),
+
       setUserPageSize: (size) =>
-          setPageSize: (size) => get().setUserPageSize(size),
-          setCurrentDetail: (detail) => get().setCurrentAccountDetail(detail),
-          setEntries: (entries, pagination) => get().setDeletedEntries(entries, pagination),
-          removeEntry: (entryId) => get().removeDeletedEntry(entryId),
         set(
-          (state) => {
-            const nextFilters = {
+          (state) => ({
+            userFilters: {
               ...state.userFilters,
               pageSize: size,
               page: 1,
-            };
-            return { userFilters: nextFilters };
-          },
+            },
+          }),
           false,
           "admin/setUserPageSize"
         ),
+
+      // Users – Aliases for compatibility
+      setFilter: (key, value) => get().setUserFilter(key, value),
+      resetFilters: () => get().resetUserFilters(),
+      nextPage: () => get().nextUserPage(),
+      prevPage: () => get().prevUserPage(),
+      setPage: (page) => get().setUserPage(page),
+      setPageSize: (size) => get().setUserPageSize(size),
 
       // ═══════════════════════════════════════
       // ACCOUNTS SLICE ACTIONS
@@ -270,12 +243,10 @@ export const useAdminStore = create<AdminStore>()(
         ),
 
       setCurrentDetail: (detail) =>
-        set(
-          { currentAccountDetail: detail },
-          false,
-          "admin/setCurrentAccountDetail"
-        ),
+        set({ currentAccountDetail: detail }, false, "admin/setCurrentAccountDetail"),
 
+      // Alias for setCurrentDetail
+      setCurrentAccountDetail: (detail) => get().setCurrentDetail(detail),
 
       removeAccount: (accountId) =>
         set(
@@ -313,11 +284,7 @@ export const useAdminStore = create<AdminStore>()(
         ),
 
       resetAccountFilters: () =>
-        set(
-          { accountFilters: { ...DEFAULT_ACCOUNT_FILTERS } },
-          false,
-          "admin/resetAccountFilters"
-        ),
+        set({ accountFilters: { ...DEFAULT_ACCOUNT_FILTERS } }, false, "admin/resetAccountFilters"),
 
       setAccountPage: (page) =>
         set(
@@ -365,6 +332,8 @@ export const useAdminStore = create<AdminStore>()(
           "admin/setDeletedEntries"
         ),
 
+      // Alias for setEntries
+      setDeletedEntries: (entries, pagination) => get().setEntries(entries, pagination),
 
       setCurrentDeletedDetail: (detail) =>
         set({ currentDeletedDetail: detail }, false, "admin/setCurrentDeletedDetail"),
@@ -392,6 +361,8 @@ export const useAdminStore = create<AdminStore>()(
           "admin/removeDeletedEntry"
         ),
 
+      // Alias for removeEntry
+      removeDeletedEntry: (entryId) => get().removeEntry(entryId),
 
       markRestored: (entryId, restoredBy, note) =>
         set(
@@ -406,9 +377,7 @@ export const useAdminStore = create<AdminStore>()(
                   }
                 : e
             );
-            return {
-              deletedEntries: updated,
-            };
+            return { deletedEntries: updated };
           },
           false,
           "admin/markRestored"
@@ -433,11 +402,7 @@ export const useAdminStore = create<AdminStore>()(
         ),
 
       resetDeletedFilters: () =>
-        set(
-          { deletedFilters: { ...DEFAULT_DELETED_FILTERS } },
-          false,
-          "admin/resetDeletedFilters"
-        ),
+        set({ deletedFilters: { ...DEFAULT_DELETED_FILTERS } }, false, "admin/resetDeletedFilters"),
 
       setDeletedPage: (page) =>
         set(
@@ -491,7 +456,7 @@ export const useAdminStore = create<AdminStore>()(
 
             return {
               _snapshots: nextSnapshots,
-              _snapshot: nextSnapshots.users, // Alias de compatibilité
+              _snapshot: nextSnapshots.users,
             };
           },
           false,
@@ -507,21 +472,14 @@ export const useAdminStore = create<AdminStore>()(
             if ((domain === "users" || domain === "all") && snapshots.users) {
               updates.users = cloneSnapshot(snapshots.users);
             }
-            if (
-              (domain === "blockedUsers" || domain === "all") &&
-              snapshots.blockedUsers
-            ) {
+            if ((domain === "blockedUsers" || domain === "all") && snapshots.blockedUsers) {
               updates.blockedUsers = cloneSnapshot(snapshots.blockedUsers);
             }
             if ((domain === "accounts" || domain === "all") && snapshots.accounts) {
               updates.accounts = cloneSnapshot(snapshots.accounts);
             }
-            if (
-              (domain === "deletedEntries" || domain === "all") &&
-              snapshots.deletedEntries
-            ) {
-              const restoredEntries = cloneSnapshot(snapshots.deletedEntries);
-              updates.deletedEntries = restoredEntries;
+            if ((domain === "deletedEntries" || domain === "all") && snapshots.deletedEntries) {
+              updates.deletedEntries = cloneSnapshot(snapshots.deletedEntries);
             }
 
             const nextSnapshots = { ...snapshots };
@@ -661,6 +619,9 @@ export const useAdminStore = create<AdminStore>()(
         return countActiveUserFilters(get().userFilters);
       },
 
+      // Alias for getActiveFiltersCount
+      getActiveUserFiltersCount: () => get().getActiveFiltersCount(),
+
       // Accounts
       getFilteredAccounts: () => {
         const { accounts, accountFilters } = get();
@@ -684,10 +645,12 @@ export const useAdminStore = create<AdminStore>()(
 
       // Deleted Accounts
       getFilteredDeletedEntries: () => {
-          getFilteredEntries: () => get().getFilteredDeletedEntries(),
         const { deletedEntries, deletedFilters } = get();
         return filterAndSortDeletedAccounts(deletedEntries, deletedFilters);
       },
+
+      // Alias for getFilteredDeletedEntries
+      getFilteredEntries: () => get().getFilteredDeletedEntries(),
 
       getPaginatedDeletedEntries: () => {
         const filtered = get().getFilteredDeletedEntries();
@@ -747,10 +710,18 @@ export const useAdminActions = () => {
     prevUserPage: s.prevUserPage,
     setUserPage: s.setUserPage,
     setUserPageSize: s.setUserPageSize,
+    // Aliases
+    setFilter: s.setFilter,
+    resetFilters: s.resetFilters,
+    nextPage: s.nextPage,
+    prevPage: s.prevPage,
+    setPage: s.setPage,
+    setPageSize: s.setPageSize,
 
     // Accounts
     setAccounts: s.setAccounts,
     setCurrentAccountDetail: s.setCurrentAccountDetail,
+    setCurrentDetail: s.setCurrentDetail,
     removeAccount: s.removeAccount,
     removeAccountOptimistic: s.removeAccountOptimistic,
     setAccountFilter: s.setAccountFilter,
@@ -760,9 +731,11 @@ export const useAdminActions = () => {
 
     // Deleted
     setDeletedEntries: s.setDeletedEntries,
+    setEntries: s.setEntries,
     setCurrentDeletedDetail: s.setCurrentDeletedDetail,
     setStats: s.setStats,
     removeDeletedEntry: s.removeDeletedEntry,
+    removeEntry: s.removeEntry,
     markRestored: s.markRestored,
     markRestoredOptimistic: s.markRestoredOptimistic,
     setDeletedFilter: s.setDeletedFilter,
@@ -785,19 +758,9 @@ export const useAdminActions = () => {
 // COMPATIBILITY HOOKS
 // ═══════════════════════════════════════════
 
-/**
- * Hook de compatibilité pour le store des comptes liés
- */
 export const useAdminAccountStore = useAdminStore;
-
-/**
- * Hook de compatibilité pour le store du registre des comptes supprimés
- */
 export const useAdminDeletedAccountStore = useAdminStore;
 
-// ═══════════════════════════════════════════
-// RE-EXPORTS
-// ═══════════════════════════════════════════
 export * from "./admin-store.types";
 export * from "./admin-store.constants";
 export * from "./admin-store.utils";

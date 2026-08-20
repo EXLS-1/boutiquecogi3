@@ -1,13 +1,37 @@
 // app/admin/account/page.tsx
 // Page admin de gestion des comptes d'authentification
+
 import { AccountTable } from '@/components/admin/account-table'
 import { listAccountsAction, getDistinctProvidersAction } from '@/server/actions/account-admin-actions'
-import type { AccountItem, PaginationInfo } from '@/store/admin-account-store'
+import type { AccountItem, PaginationInfo } from '@/store/admin/admin-store.types'
 import { Shield } from 'lucide-react'
 
-export default async function AdminAccountPage() {
+interface AdminAccountSearchParams {
+  page?: string
+  pageSize?: string
+  search?: string
+  provider?: string
+  type?: string
+  sortBy?: string
+  sortOrder?: string
+}
+
+export default async function AdminAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminAccountSearchParams>
+}) {
+  const params = await searchParams
+  const page = Number(params.page) || 1
+  const pageSize = Number(params.pageSize) || 25
+  const search = params.search || ''
+  const provider = params.provider && params.provider !== 'ALL' ? params.provider : undefined
+  const type = params.type && params.type !== 'ALL' ? params.type : undefined
+  const sortBy = params.sortBy || 'createdAt'
+  const sortOrder = params.sortOrder || 'desc'
+
   const [accountsRes, providersRes] = await Promise.all([
-    listAccountsAction(1, 25),
+    listAccountsAction(page, pageSize, search || undefined, provider, type, sortBy, sortOrder),
     getDistinctProvidersAction(),
   ])
 
@@ -42,6 +66,7 @@ export default async function AdminAccountPage() {
         initialAccounts={accounts.accounts}
         initialPagination={pagination}
         initialProviders={providers}
+        initialFilters={{ page, pageSize, search, provider: provider ?? 'ALL', type: type ?? 'ALL', sortBy, sortOrder }}
       />
     </div>
   )

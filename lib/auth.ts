@@ -21,6 +21,7 @@ import {
 } from "@/lib/security/2fa";
 import { customSession } from "better-auth/plugins";
 import { createAuthMiddleware } from "better-auth/api";
+import { hasPublicSignupPrivilegeFields } from "@/lib/auth/public-signup-schema";
 
 const COOKIE_PREFIX = process.env.BETTER_AUTH_COOKIE_PREFIX || "better-auth";
 
@@ -142,8 +143,24 @@ export const auth = betterAuth({
   // HOOKS : Rate Limiter + 2FA Challenge + Audit
   // ═══════════════════════════════════════════════════════════
   hooks: {
-    // ─── BEFORE : Rate limiter sur /sign-in/email ──────────
+    // ─── BEFORE : Refuse les privilèges fournis par un client ──
     before: createAuthMiddleware(async (ctx) => {
+      if (
+        (ctx.path === "/sign-up/email" || ctx.path === "/sign-up") &&
+        hasPublicSignupPrivilegeFields(ctx.body)
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: "role et level ne peuvent pas être définis lors de l'inscription.",
+            code: "FORBIDDEN_SIGNUP_FIELDS",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
       if (ctx.path !== "/sign-in/email") return;
 
       const body = ctx.body as Record<string, unknown> | undefined;

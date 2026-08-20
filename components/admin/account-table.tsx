@@ -1,7 +1,6 @@
-  accountFilters: filters,
 // components/admin/account-table.tsx
 
-'use client'
+'use client';
 
 // ============================================
 // ACCOUNT TABLE — Gestion admin des comptes d'authentification
@@ -15,29 +14,26 @@
 // • Dialog suppression avec confirmation
 // • RBAC guards intégrés
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useTransition, useCallback, useMemo, useRef, useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils/cn'
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { useTransition, useCallback, useRef, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils/cn';
 
 // ─── Auth & RBAC ───────────────────────────
-import { useRBAC } from '@/lib/auth/auth-client'
+import { useRBAC } from '@/lib/auth/auth-client';
 
 // ─── Store ─────────────────────────────────
 import {
-  useAdminAccountStore,
   type AccountItem,
   type AccountDetail,
   type PaginationInfo,
-} from '@/store/admin-account-store'
+} from '@/store/admin/admin-store.types';
 
 // ─── Server Actions ────────────────────────
 import {
-  listAccountsAction,
   getAccountAction,
   deleteAccountAction,
-  getDistinctProvidersAction,
 } from '@/server/actions/account-admin-actions'
 
 // ─── UI shadcn ─────────────────────────────
@@ -51,14 +47,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -66,7 +62,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,17 +70,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@/components/ui/tooltip';
 
 // ─── Icons ─────────────────────────────────
 import {
@@ -106,7 +102,7 @@ import {
   Globe,
   Clock,
   User,
-} from 'lucide-react'
+} from 'lucide-react';
 
 // ═══════════════════════════════════════════
 // TYPES & CONSTANTS
@@ -123,6 +119,15 @@ interface AccountTableProps {
   initialAccounts: AccountItem[]
   initialPagination: PaginationInfo
   initialProviders: string[]
+  initialFilters: {
+    page: number
+    pageSize: number
+    search: string
+    provider: string
+    type: string
+    sortBy: string
+    sortOrder: 'asc' | 'desc' | string
+  }
 }
 
 const ROW_HEIGHT = 68
@@ -256,43 +261,17 @@ function ProviderIcon({ provider, className }: { provider: string; className?: s
 // COMPOSANT PRINCIPAL
 // ═══════════════════════════════════════════
 
-export function AccountTable({ initialAccounts, initialPagination, initialProviders }: AccountTableProps) {
+export function AccountTable({ initialAccounts, initialPagination, initialProviders, initialFilters }: AccountTableProps) {
   const router = useRouter()
   const { isAdmin } = useRBAC()
   const [isPending, startTransition] = useTransition()
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [providers, setProviders] = useState<string[]>(initialProviders)
-
-  // ── Store ──
-  const store = useAdminAccountStore()
-  const {
-    filters,
-    setFilter,
-    resetFilters,
-    setPage,
-    setPageSize,
-    removeAccount,
-    setCurrentDetail,
-  } = store
+  const providers = initialProviders
 
   const containerRef = useRef<HTMLDivElement>(null)
 
   // ── Pure time reference for expiration checks ──
   const [currentTime, setCurrentTime] = useState(() => Date.now())
-
-  // ── Hydratation initiale ──
-  useEffect(() => {
-    store.setAccounts(initialAccounts, initialPagination)
-  }, [initialAccounts, initialPagination, store])
-
-  // ── Dynamic provider fetching ──
-  useEffect(() => {
-    getDistinctProvidersAction().then((res) => {
-      if (res.success && Array.isArray(res.data)) {
-        setProviders(res.data as string[])
-      }
-    })
-  }, [])
 
   // ── Refresh currentTime every 30s for expiration display ──
   useEffect(() => {
@@ -300,25 +279,13 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
     return () => clearInterval(id)
   }, [])
 
-  // ── Scroll reset ──
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = 0
-    }
-  }, [filters.page, filters.pageSize, filters.search])
-
-  // ── Données ──
-  const filteredAccounts = useMemo(() => store.getFilteredAccounts(), [store])
-  const paginatedAccounts = useMemo(() => {
-    const { page, pageSize } = filters
-    const start = (page - 1) * pageSize
-    return filteredAccounts.slice(start, start + pageSize)
-  }, [filteredAccounts, filters])
-  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / filters.pageSize))
-  const activeFiltersCount = store.getActiveFiltersCount()
+  const filters = initialFilters
+  const accounts = initialAccounts
+  const totalPages = initialPagination.totalPages
+  const activeFiltersCount = [filters.search, filters.provider !== 'ALL' ? filters.provider : '', filters.type !== 'ALL' ? filters.type : ''].filter(Boolean).length
 
   // ── Virtualisation ──
-  const virtual = useVirtualList(paginatedAccounts, ROW_HEIGHT, containerRef)
+  const virtual = useVirtualList(accounts, ROW_HEIGHT, containerRef)
 
   // ── Dialog states ──
   const [detailDialog, setDetailDialog] = useState<{
@@ -338,39 +305,30 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
   // ACTIONS
   // ═════════════════════════════════════════
 
-  const refreshData = useCallback(async () => {
-    startTransition(async () => {
-      const res = await listAccountsAction(
-        filters.page,
-        filters.pageSize,
-        filters.search || undefined,
-        filters.provider !== 'ALL' ? filters.provider : undefined,
-        filters.type !== 'ALL' ? filters.type : undefined,
-        filters.sortBy,
-        filters.sortOrder
-      )
-      if (res.success && res.data) {
-        const data = res.data as { accounts: AccountItem[]; total: number; page: number; pageSize: number; totalPages: number }
-        store.setAccounts(data.accounts, {
-          total: data.total,
-          page: data.page,
-          pageSize: data.pageSize,
-          totalPages: data.totalPages,
-        })
+  const navigateWithFilters = useCallback((updates: Record<string, string | number | undefined>) => {
+    const params = new URLSearchParams()
+    const next = { ...filters, ...updates }
+    Object.entries(next).forEach(([key, value]) => {
+      if (value !== undefined && value !== '' && value !== 'ALL' && !(key === 'page' && String(value) === '1') && !(key === 'pageSize' && String(value) === '25') && !(key === 'sortBy' && value === 'createdAt') && !(key === 'sortOrder' && value === 'desc')) {
+        params.set(key, String(value))
       }
     })
-  }, [filters, store])
+    startTransition(() => router.replace(`/admin/account?${params.toString()}`))
+  }, [filters, router])
+
+  const refreshData = useCallback(() => {
+    startTransition(() => router.refresh())
+  }, [router])
 
   const handleSort = useCallback(
     (field: string) => {
       if (filters.sortBy === field) {
-        setFilter('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')
+        navigateWithFilters({ sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc', page: 1 })
       } else {
-        setFilter('sortBy', field)
-        setFilter('sortOrder', 'asc')
+        navigateWithFilters({ sortBy: field, sortOrder: 'asc', page: 1 })
       }
     },
-    [filters.sortBy, filters.sortOrder, setFilter]
+    [filters.sortBy, filters.sortOrder, navigateWithFilters]
   )
 
   const openDetail = useCallback(async (account: AccountItem) => {
@@ -381,7 +339,6 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
       const res = await getAccountAction(fd) as unknown as ActionResult
       if (res.success && res.data) {
         setDetailDialog({ open: true, account: res.data as AccountDetail })
-        setCurrentDetail(res.data as AccountDetail)
       } else {
         toast.error(res.error || 'Impossible de charger les détails')
       }
@@ -390,7 +347,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
     } finally {
       setLoadingId(null)
     }
-  }, [setCurrentDetail])
+  }, [])
 
   const openDelete = useCallback((account: AccountItem) => {
     setDeleteDialog({
@@ -424,7 +381,6 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
           toast.error(res.error || 'Échec de la suppression')
         } else {
           toast.success('Compte supprimé')
-          removeAccount(accountId)
           router.refresh()
         }
       } catch {
@@ -434,15 +390,15 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
         setDeleteReason('')
       }
     })
-  }, [deleteDialog, deleteReason, removeAccount, router])
+  }, [deleteDialog, deleteReason, router])
 
   const handleFilterProvider = useCallback((value: string) => {
-    setFilter('provider', value)
-  }, [setFilter])
+    navigateWithFilters({ provider: value, page: 1 })
+  }, [navigateWithFilters])
 
   const handleFilterType = useCallback((value: string) => {
-    setFilter('type', value)
-  }, [setFilter])
+    navigateWithFilters({ type: value, page: 1 })
+  }, [navigateWithFilters])
 
   // ═════════════════════════════════════════
   // RENDER
@@ -459,7 +415,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
               <Input
                 placeholder="Rechercher par email, provider ou ID..."
                 value={filters.search}
-                onChange={(e) => setFilter('search', e.target.value)}
+                onChange={(e) => navigateWithFilters({ search: e.target.value, page: 1 })}
                 className="pl-9"
               />
             </div>
@@ -467,7 +423,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={resetFilters}
+                onClick={() => navigateWithFilters({ page: 1, pageSize: 25, search: '', provider: 'ALL', type: 'ALL', sortBy: 'createdAt', sortOrder: 'desc' })}
                 className="text-muted-foreground"
               >
                 <RotateCcw className="h-3.5 w-3.5 mr-1" />
@@ -476,8 +432,8 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{store.pagination.total}</span>
-            <span>compte{store.pagination.total > 1 ? 's' : ''}</span>
+            <span className="font-medium text-foreground">{initialPagination.total}</span>
+            <span>compte{initialPagination.total > 1 ? 's' : ''}</span>
             <span className="text-muted-foreground/50">|</span>
             <span>Page {filters.page} / {totalPages}</span>
             <Button
@@ -528,7 +484,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
 
           <Select
             value={String(filters.pageSize)}
-            onValueChange={(v) => setPageSize(Number(v))}
+            onValueChange={(v) => navigateWithFilters({ pageSize: Number(v), page: 1 })}
           >
             <SelectTrigger className="w-24 h-8 text-xs">
               <SelectValue />
@@ -732,16 +688,16 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
             </span>{' '}
             à{' '}
             <span className="font-medium text-foreground">
-              {Math.min(filters.page * filters.pageSize, filteredAccounts.length)}
+              {Math.min(filters.page * filters.pageSize, initialPagination.total)}
             </span>{' '}
-            sur <span className="font-medium text-foreground">{filteredAccounts.length}</span>
+            sur <span className="font-medium text-foreground">{initialPagination.total}</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setPage(1)}
+              onClick={() => navigateWithFilters({ page: 1 })}
               disabled={filters.page <= 1 || isPending}
             >
               <ChevronsLeft className="h-4 w-4" />
@@ -750,7 +706,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setPage(filters.page - 1)}
+              onClick={() => navigateWithFilters({ page: filters.page - 1 })}
               disabled={filters.page <= 1 || isPending}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -762,7 +718,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setPage(filters.page + 1)}
+              onClick={() => navigateWithFilters({ page: filters.page + 1 })}
               disabled={filters.page >= totalPages || isPending}
             >
               <ChevronRight className="h-4 w-4" />
@@ -771,7 +727,7 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setPage(totalPages)}
+              onClick={() => navigateWithFilters({ page: totalPages })}
               disabled={filters.page >= totalPages || isPending}
             >
               <ChevronsRight className="h-4 w-4" />
@@ -786,7 +742,6 @@ export function AccountTable({ initialAccounts, initialPagination, initialProvid
           open={detailDialog.open}
           onOpenChange={(open) => {
             setDetailDialog((d) => ({ ...d, open }))
-            if (!open) setCurrentDetail(null)
           }}
         >
           <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">

@@ -1,3 +1,5 @@
+// app/admin/setup-2fa/page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -20,16 +22,32 @@ export default function Setup2FAPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/2fa/setup")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.qrCode) {
-          setQrCode(data.qrCode);
-          setSecret(data.manualEntryKey);
-        }
-      })
-      .catch(() => setError("Impossible de charger la configuration 2FA"));
-  }, []);
+  let isMounted = true;
+
+  fetch("/api/admin/2fa/setup")
+    .then(async (res) => {
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Erreur de chargement");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      if (isMounted && data.qrCode) {
+        setQrCode(data.qrCode);
+        setSecret(data.manualEntryKey);
+      }
+    })
+    .catch((err) => {
+      if (isMounted) {
+        setError(err.message || "Impossible de charger la configuration 2FA");
+      }
+    });
+
+  return () => {
+    isMounted = false;
+  };
+}, []);
 
   const handleVerify = async () => {
     setLoading(true);
@@ -119,7 +137,9 @@ export default function Setup2FAPage() {
                 <Image
                   src={qrCode}
                   alt="QR Code 2FA"
-                  className="w-48 h-48 rounded-lg border border-neutral-800"
+                  width={192}
+                  height={192}
+                  className="rounded-lg border border-neutral-800"
                 />
                 <div className="text-center space-y-1">
                   <p className="text-xs text-neutral-500 uppercase tracking-wider">Clé manuelle</p>

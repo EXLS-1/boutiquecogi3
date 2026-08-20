@@ -1,6 +1,7 @@
 // app/page.tsx
 
 import { Suspense } from "react";
+import { getServerRBACSession } from "@/lib/auth/server";
 import { Hero } from "@/components/hero/image-show/hero";
 import Category from "@/components/product-catalog/category";
 import { ProductList } from "@/components/product/product-list";
@@ -13,6 +14,8 @@ import { getRecentProducts } from "@/lib/product-catalog/catalog-queries";
 export const revalidate = 300;
 
 export default async function Home() {
+  const session = await getServerRBACSession();
+  const userFavorites = session?.user ? await getUserFavorites(session.user.id) : [];
   const recentProducts = await getRecentProducts();
 
   return (
@@ -36,6 +39,7 @@ export default async function Home() {
               </p>
             ) : (
               <ProductList
+                favorites={userFavorites}  
                 products={recentProducts}
                 totalCount={recentProducts.length}
                 pageSize={HOME_PRODUCTS_LIMIT}
