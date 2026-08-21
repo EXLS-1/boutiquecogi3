@@ -10,7 +10,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BadgeProductStatus } from "./badge";
@@ -26,8 +26,13 @@ interface ProductCardProps {
 
 function ProductCardComponent({ product, showBadge = true, priority = false }: ProductCardProps) {
   const { toggleWishlist, isInWishlist, setQuickViewProduct } = useCatalog();
+  const [hasHydrated, setHasHydrated] = useState(false);
 
-  const isWishlisted = isInWishlist(product.id);
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
+  const isWishlisted = hasHydrated && isInWishlist(product.id);
 
   return (
     <article className="group relative flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm 

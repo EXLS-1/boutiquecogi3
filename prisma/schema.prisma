@@ -75,9 +75,11 @@ model UserSecurity {
   userId String @unique @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  twoFactorEnabled Boolean     @default(false)
-  twoFactorSecret  String?     @db.Text
-  twoFactor        TwoFactor[]
+  twoFactorEnabled  Boolean     @default(false)
+  twoFactorSecret   String?     @db.Text  // ← Secret chiffré en AES-256-GCM
+  twoFactor         TwoFactor[]
+  backupCodes       TwoFactorBackupCode[]
+
   blockedAt        DateTime?
   blockedUntil     DateTime?
   blockReason      String?
@@ -269,6 +271,18 @@ model TwoFactorAttempt {
 
   @@index([ipAddress, createdAt])
   @@map("two_factor_attempt")
+}
+
+model TwoFactorBackupCode {
+  id             String       @id @default(uuid())
+  userSecurity   UserSecurity @relation(fields: [userSecurityId], references: [id], onDelete: Cascade)
+  userSecurityId String
+  codeHash       String       // ← Hash bcrypt des codes de secours
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+  
+  @@index([userSecurityId])
+  @@map("two_factor_backup_code")
 }
 
 model RoleConfig {

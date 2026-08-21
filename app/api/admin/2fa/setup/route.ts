@@ -1,93 +1,60 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
-import speakeasy from "speakeasy";
-import QRCode from "qrcode";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { generateTOTPSecret } from '@/lib/2fa';
+import { encrypt } from '@/lib/crypto';
+import { rateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
 
-export const dynamic = "force-dynamic";
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // ─── 1. Authentification ───
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: req.headers });
+    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    // ─── 2. RBAC (niveaux 1–3 : Admin/Super-Admin) ───
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { roleConfig: true },
+    });
+    if (!user?.roleConfig || user.roleConfig.level > 3) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const userId = session.user.id;
-    const userEmail = session.user.email || "admin@boutiquecogi3.local";
-
-    // ─── 2. Vérifier si 2FA déjà actif ───
-    const existing = await prisma.userSecurity.findFirst({
-      where: { userId },
-    });
-
-    if (existing?.twoFactorEnabled) {
-      return NextResponse.json(
-        { error: "Le 2FA est déjà activé pour ce compte" },
-        { status: 400 }
-      );
+    // ─── 3. Rate Limit ───
+    const ip = req.ip ?? 'unknown';
+    const rl = rateLimit(`2fa-setup:${user.id}:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now())/1000) }, { status: 429 });
     }
 
-    // ─── 3. Génération du secret TOTP (base32) ───
-    const secret = speakeasy.generateSecret({
-      name: `Boutiquecogi3:${userEmail}`,
-      issuer: "Boutiquecogi3",
-      length: 32,
-    });
+    // ─── 4. Génération TOTP ───
+    const { base32, uri, qrUri } = generateTOTPSecret(user.id);
+    const encrypted = encrypt(base32);
 
-    // ─── 4. Construction URI otpauth strictement conforme RFC ───
-    // Format : otpauth://totp/{label}?secret={secret}&issuer={issuer}
-    // Le label DOIT être encodé. Le issuer DOIT matcher exactement.
-    const label = `Boutiquecogi3:${userEmail}`;
-    const encodedLabel = encodeURIComponent(label);
-    const encodedIssuer = encodeURIComponent("Boutiquecogi3");
-
-    const otpauthUri = `otpauth://totp/${encodedLabel}?secret=${secret.base32}&issuer=${encodedIssuer}&algorithm=SHA1&digits=6&period=30`;
-
-    // ─── 5. Génération du QR code en Data URL (PNG base64) ───
-    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUri, {
-      type: "image/png",
-      margin: 2,
-      width: 400,
-      color: {
-        dark: "#000000",
-        light: "#ffffff",
-      },
-    });
-
-    // ─── 6. Stockage temporaire du secret (non activé encore) ───
-    // On stocke le secret en clair ici pour le vérifier ensuite.
-    // En production : chiffre ce secret avec AES-256-GCM avant stockage.
+    // ─── 5. Stockage temporaire (non activé) ───
     await prisma.userSecurity.upsert({
-      where: { userId },
+      where: { userId: user.id },
       update: {
-        twoFactorSecret: secret.base32,
+        twoFactorSecret: encrypted,
         twoFactorEnabled: false,
-        backupCodes: null,
       },
       create: {
-        userId,
-        twoFactorSecret: secret.base32,
+        userId: user.id,
+        twoFactorSecret: encrypted,
         twoFactorEnabled: false,
-        backupCodes: null,
       },
     });
 
-    // ─── 7. Réponse ───
-    return NextResponse.json({
-      qrCode: qrCodeDataUrl,
-      manualEntryKey: secret.base32,
-    });
-  } catch (error) {
-    console.error("[2FA_SETUP_ERROR]", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la génération du 2FA" },
-      { status: 500 }
-    );
+    // ─── 6. Audit log (best-effort) ───
+    await prisma.auditLog?.create({
+      data: { userId: user.id, action: '2FA_SETUP_INITIATED', ipAddress: ip, userAgent: req.headers.get('user-agent') ?? undefined },
+    }).catch(() => {});
+
+    return NextResponse.json({ success: true, uri, qrUri });
+
+  } catch (err) {
+    console.error('[2FA_SETUP]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

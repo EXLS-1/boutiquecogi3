@@ -3,7 +3,6 @@
 
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
 
 import { authDatabaseHooks } from "@/lib/better-auth/hooks";
@@ -15,10 +14,7 @@ import {
   checkLoginRateLimit,
   recordLoginAttempt,
 } from "@/lib/security/auth-rate-limit";
-import {
-  CHALLENGE_COOKIE_NAME,
-  extractIP,
-} from "@/lib/security/2fa";
+import { CHALLENGE_COOKIE_NAME, extractIP } from "@/lib/security/2fa";
 import { customSession } from "better-auth/plugins";
 import { createAuthMiddleware } from "better-auth/api";
 import { hasPublicSignupPrivilegeFields } from "@/lib/auth/public-signup-schema";
@@ -98,7 +94,6 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    nextCookies(),
     customSession(async ({ user, session }) => {
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
@@ -112,21 +107,20 @@ export const auth = betterAuth({
           },
           roleAssignment: {
             select: {
-              role: true,
+              id: true,
+              assignedAt: true,
             },
           },
         },
       });
 
-      const role =
-        dbUser?.roleConfig?.role ?? dbUser?.roleAssignment?.role ?? "USER";
-      const level = dbUser?.roleConfig?.level ?? 6;
+      if (!dbUser) return { user, session };
 
       return {
         user: {
           ...user,
-          role,
-          level,
+          roleConfig: dbUser.roleConfig,
+          roleAssignment: dbUser.roleAssignment,
         },
         session,
       };
@@ -137,8 +131,6 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
   trustedOrigins,
-  debug: process.env.NODE_ENV === "development",
-
   // ═══════════════════════════════════════════════════════════
   // HOOKS : Rate Limiter + 2FA Challenge + Audit
   // ═══════════════════════════════════════════════════════════
@@ -151,7 +143,8 @@ export const auth = betterAuth({
       ) {
         return new Response(
           JSON.stringify({
-            error: "role et level ne peuvent pas être définis lors de l'inscription.",
+            error:
+              "role et level ne peuvent pas être définis lors de l'inscription.",
             code: "FORBIDDEN_SIGNUP_FIELDS",
           }),
           {
@@ -164,7 +157,9 @@ export const auth = betterAuth({
       if (ctx.path !== "/sign-in/email") return;
 
       const body = ctx.body as Record<string, unknown> | undefined;
-      const email = String(body?.email || "").toLowerCase().trim();
+      const email = String(body?.email || "")
+        .toLowerCase()
+        .trim();
       if (!email) return;
 
       const ip = ctx.request ? extractIP(ctx.request) : "unknown";
@@ -198,7 +193,9 @@ export const auth = betterAuth({
       if (ctx.path !== "/sign-in/email") return;
 
       const body = ctx.body as Record<string, unknown> | undefined;
-      const email = String(body?.email || "").toLowerCase().trim();
+      const email = String(body?.email || "")
+        .toLowerCase()
+        .trim();
 
       const ip = ctx.request ? extractIP(ctx.request) : "unknown";
       const userAgent = ctx.request?.headers?.get("user-agent") || "unknown";
@@ -228,11 +225,11 @@ export const auth = betterAuth({
       // Non SUPER_ADMIN → connexion normale, on garde la session
       if (!isSuperAdmin) return;
 
-// SUPER_ADMIN avec 2FA activé → challenge 2FA obligatoire
+      // SUPER_ADMIN avec 2FA activé → challenge 2FA obligatoire
       if (has2FA) {
         // 🔒 SUPPRESSION de la session fraîchement créée
         try {
-          await prisma.session.delete({ where: { id: session.id } });
+          await prisma.session.delete({ where: { id: session.session.id } });
         } catch {
           // Session déjà supprimée ou inexistante
         }
