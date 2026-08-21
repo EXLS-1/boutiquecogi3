@@ -119,6 +119,8 @@ export const auth = betterAuth({
       return {
         user: {
           ...user,
+          role: dbUser.roleConfig?.role ?? "GUEST",
+          level: dbUser.roleConfig?.level ?? 7,
           roleConfig: dbUser.roleConfig,
           roleAssignment: dbUser.roleAssignment,
         },

@@ -114,7 +114,7 @@ export function Profile() {
         </div>
 
         <div className="p-6 bg-cyan-50 border-t border-cyan-200 flex justify-end">
-          <SignOutButton variant="default" className="px-8 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-lg border" />
+          <SignOutButton variant="default" className="px-8 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-lg border cursor-pointer" />
         </div>
       </section>
     </div>
