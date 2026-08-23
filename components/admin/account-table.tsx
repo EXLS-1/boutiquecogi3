@@ -176,7 +176,8 @@ function formatExpiresAt(expiresAt: number | null): string {
   }
 }
 
-function formatId(id: string): string {
+function formatId(id: string | null | undefined): string {
+  if (!id) return '—'
   if (id.length > 12) return `${id.slice(0, 8)}...${id.slice(-4)}`
   return id
 }

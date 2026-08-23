@@ -1,6 +1,6 @@
 // app/admin/role/page.tsx
 
-
+import Link from 'next/link';
 import { listRolesAction } from "@/server/actions/role-actions";
 import { RolesTable } from "@/components/admin/role-table";
 import { requireMinLevel } from "@/lib/auth/rbac";
@@ -19,11 +19,12 @@ export default async function AdminRolesPage() {
         ? rolesResult.data
         : [];
 
-
-
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
-            <div className="mb-8">
+        <div className="space-y-6 p-6 max-w-[1600px] mx-auto">
+              {/* En-tête */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+       
+            <div>
                 <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                     <Shield className="w-6 h-6 text-slate-700" />
                     Gestion des rôles
@@ -32,8 +33,30 @@ export default async function AdminRolesPage() {
                     Créez, modifiez et supprimez les rôles de votre hiérarchie.
                 </p>
             </div>
-
-            <RolesTable initialRoles={roles} />
+            <div className="gap-8">
+                <Link
+                    href="/admin/users"
+                    className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                >
+                    Utilisateurs
+                </Link>
+                <Link
+                    href="/admin/account"
+                    className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                >
+                    Comptes
+                </Link>
+                <Link
+                    href="/admin"
+                    className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                >
+                    Portail Admin
+                </Link>
+            </div>
+        </header>
+        
+         <RolesTable initialRoles={roles} />
+        
         </div>
     );
 }
