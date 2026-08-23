@@ -41,7 +41,7 @@ import {
   type BlockedUser,
   type StatusFilter,
   type SortField,
-} from '@/store/admin-store'
+} from '@/store/admin/admin-store'
 
 // ─── Server Actions ────────────────────────
 import {
@@ -108,7 +108,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  UserCheck,
   AlertTriangle,
   RotateCcw,
   Eye,
@@ -308,7 +307,7 @@ export function UsersTable({ initialUsers, initialBlockedUsers }: UsersTableProp
   // ── Store ──
   const store = useAdminStore()
   const {
-    filters,
+    userFilters: filters,
     setFilter,
     resetFilters,
     nextPage,

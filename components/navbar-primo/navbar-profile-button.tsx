@@ -83,7 +83,7 @@ export function NavbarProfileButton() {
           aria-label="Menu utilisateur"
           className="relative group outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 rounded-full transition-transform active:scale-95"
         >
-          <Avatar className="h-9 w-9 border border-cyan-100 shadow-sm group-hover:border-cyan-300">
+          <Avatar className="h-9 w-9 cursor-pointer border border-cyan-100 shadow-sm group-hover:border-cyan-300">
             <AvatarImage src={user.image || undefined} alt={user.name || "Utilisateur"} />
             <AvatarFallback className="bg-cyan-700 text-white text-[10px] font-bold">
               {initials}
@@ -114,28 +114,39 @@ export function NavbarProfileButton() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem asChild className="focus:bg-cyan-200 focus:text-cyan-900 cursor-pointer rounded-md">
-          <Link href="/profile" className="flex items-center gap-2 w-full py-2 text-cyan-800">
+        <DropdownMenuItem asChild className="focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
+          <Link href="/profile" className="flex items-center gap-2 w-full py-2 text-cyan-400">
             <Avatar className="h-4 w-4">
-              <AvatarFallback className="text-[10px] bg-cyan-200 text-cyan-800">{initials}</AvatarFallback>
+              <AvatarFallback className="text-[10px] bg-cyan-200 text-cyan-400">{initials}</AvatarFallback>
             </Avatar>
             Mon Profil
           </Link>
         </DropdownMenuItem>
 
-        {/* Dashboard Admin */}
+       {/* Navigation Admin - Fragment requis pour grouper les items conditionnels */}
         {isAdmin && (
-          <DropdownMenuItem asChild className="text-cyan-800 font-semibold focus:bg-cyan-200 focus:text-cyan-900 cursor-pointer rounded-md">
-            <Link href="/admin" className="flex items-center gap-2 w-full py-2">
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard Admin
-            </Link>
-          </DropdownMenuItem>
+          <>
+            {/* Item 1 : Accès à la page Admin */}
+            <DropdownMenuItem asChild className="text-cyan-400 focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
+              <Link href="/admin" className="flex items-center gap-2 w-full py-2">
+                <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+                <span>Page Admin</span>
+              </Link>
+            </DropdownMenuItem>
+
+            {/* Item 2 : Accès au Dashboard Admin */}
+            <DropdownMenuItem asChild className="text-cyan-400 focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
+              <Link href="/dashboard" className="flex items-center gap-2 w-full py-2">
+                <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+                <span>Dashboard Admin</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
         )}
 
         {/* Espace Staff unifié */}
         {isStaff && !isAdmin && (
-          <DropdownMenuItem asChild className="text-cyan-800 font-semibold focus:bg-cyan-200 focus:text-cyan-900 cursor-pointer rounded-md">
+          <DropdownMenuItem asChild className="text-cyan-400 font-semibold focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
             <Link href="/staff" className="flex items-center gap-2 w-full py-2">
               {RoleIcon && <RoleIcon className="h-4 w-4" />}
               Espace {roleConfig?.label || "Staff"}
@@ -148,7 +159,7 @@ export function NavbarProfileButton() {
         <DropdownMenuItem
           onClick={handleSignOut}
           disabled={isSigningOut}
-          className="text-rose-600 focus:bg-rose-100 focus:text-rose-700 cursor-pointer rounded-md py-2 disabled:opacity-50"
+          className="text-rose-600 font-semibold focus:bg-rose-100 focus:text-rose-700 cursor-pointer rounded-md py-2 disabled:opacity-50"
         >
           <LogOut className="h-4 w-4 mr-2" />
           {isSigningOut ? "Déconnexion..." : "Se Déconnecter"}

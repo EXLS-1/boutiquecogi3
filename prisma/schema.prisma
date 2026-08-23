@@ -75,17 +75,15 @@ model UserSecurity {
   userId String @unique @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  twoFactorEnabled  Boolean     @default(false)
-  twoFactorSecret   String?     @db.Text  // ← Secret chiffré en AES-256-GCM
-  twoFactor         TwoFactor[]
-  backupCodes       TwoFactorBackupCode[]
+  twoFactorEnabled Boolean               @default(false)
+  twoFactorSecret  String?               @db.Text // ← Secret chiffré en AES-256-GCM
+  twoFactor        TwoFactor[]
+  backupCodes      TwoFactorBackupCode[]
 
-  blockedAt        DateTime?
-  blockedUntil     DateTime?
-  blockReason      String?
-  isBlocked        Boolean     @default(false)
-
-  backupCodes String? // Stocke un JSON stringifié des codes de récupération
+  blockedAt    DateTime?
+  blockedUntil DateTime?
+  blockReason  String?
+  isBlocked    Boolean   @default(false)
 
   @@map("user_security")
 }
@@ -273,18 +271,6 @@ model TwoFactorAttempt {
   @@map("two_factor_attempt")
 }
 
-model TwoFactorBackupCode {
-  id             String       @id @default(uuid())
-  userSecurity   UserSecurity @relation(fields: [userSecurityId], references: [id], onDelete: Cascade)
-  userSecurityId String
-  codeHash       String       // ← Hash bcrypt des codes de secours
-  usedAt         DateTime?
-  createdAt      DateTime     @default(now())
-  
-  @@index([userSecurityId])
-  @@map("two_factor_backup_code")
-}
-
 model RoleConfig {
   id       String       @id @default(uuid(7)) @db.Uuid
   role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
@@ -457,9 +443,15 @@ model TwoFactorBackupCode {
   id          String    @id @default(uuid(7)) @db.Uuid
   twoFactorId String    @db.Uuid
   twoFactor   TwoFactor @relation(fields: [twoFactorId], references: [id], onDelete: Cascade)
-  codeHash    String
-  used        Boolean   @default(false)
 
+  used           Boolean      @default(false)
+  userSecurity   UserSecurity @relation(fields: [userSecurityId], references: [id], onDelete: Cascade)
+  userSecurityId String
+  codeHash       String // ← Hash bcrypt des codes de secours
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([userSecurityId])
   @@map("twofactor_backup_code")
 }
 

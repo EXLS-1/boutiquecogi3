@@ -1,67 +1,125 @@
 // app/dashboard/settings/page.tsx
-// Configuration avec RBAC strict
-// Level 2+ (Admin+) : paramètres généraux | Level 1 (Super Admin) : config système
+import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
 
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { getServerRBACSession } from "@/lib/rbac/server";
+// Composants atomiques
+import { GeneralSettings } from '@/components/dashboard/settings/general-settings';
+import { RBACSettings } from '@/components/dashboard/settings/rbac-settings';
+import { PaymentSettings } from '@/components/dashboard/settings/payment-settings';
+import { SystemConfig } from '@/components/dashboard/settings/system-config';
 
-import { GeneralSettings } from "@/components/dashboard/settings/general-settings";
-import { RBACSettings } from "@/components/dashboard/settings/rbac-settings";
-import { PaymentSettings } from "@/components/dashboard/settings/payment-settings";
-import { SystemConfig } from "@/components/dashboard/settings/system-config";
-import { Skeleton } from "@/components/ui/skeleton";
+// Constantes et défauts pour l'anti-fragilité
+import { SETTINGS_DEFAULTS } from '@/lib/constants/settings';
+import { ROLES } from '@/lib/auth/rbac';
+import { PAYMENT_PROVIDERS } from '@/lib/payment';
+import { SYSTEM_DEFAULTS } from '@/lib/system';
 
-interface SettingsPageProps {
-  searchParams: Promise<{ tab?: string }>;
-}
+import { Separator } from '@/components/ui/separator';
+import { Settings2 } from 'lucide-react';
 
-export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+/**
+ * Metadata SEO pour la page de paramètres.
+ */
+export const metadata: Metadata = {
+  title: 'Paramètres de la plateforme | Admin',
+  description: 'Gérez les paramètres généraux, les rôles, les paiements et la configuration système de votre boutique.',
+};
 
-  const { level, effectivePermissions } = session;
+/**
+ * Page principale des paramètres.
+ * Minimaliste : se concentre uniquement sur le fetching concurrent et l'orchestration.
+ */
+export default async function SettingsPage() {
+  // 1. Vérification des droits d'accès (Sécurité)
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user || session.user.role !== ROLES.ADMIN) {
+    redirect('/login'); // Redirection si non autorisé
+  }
 
-  if (level > 2) redirect("/unauthorized");
+  // 2. Fetching concurrent de toutes les données (Performance)
+  const [generalDb, roleDb, paymentDb, systemDb] = await Promise.all([
+    db.siteSetting.findUnique({ where: { id: 'general' } }),
+    db.role.findFirst({ where: { name: ROLES.MANAGER }, include: { permissions: true } }),
+    db.paymentConfig.findUnique({ where: { provider: PAYMENT_PROVIDERS.STRIPE } }),
+    db.systemConfig.findUnique({ where: { id: 'main' } }),
+  ]);
 
-  const canManageRoles = effectivePermissions.has("settings:manage_roles");
-  const canManagePermissions = effectivePermissions.has("settings:manage_permissions");
-  const canSystemConfig = level <= 1 && effectivePermissions.has("settings:system_config");
-  const canPaymentConfig = effectivePermissions.has("payments:configure");
+  // 3. Mapping anti-fragile (Fallback sur les constantes par défaut)
+  const generalData = {
+    storeName: generalDb?.storeName ?? SETTINGS_DEFAULTS.storeName,
+    supportEmail: generalDb?.supportEmail ?? SETTINGS_DEFAULTS.supportEmail,
+    currency: generalDb?.currency ?? SETTINGS_DEFAULTS.currency,
+  };
 
-  const params = await searchParams;
-  const activeTab = params.tab || "general";
+  const rbacData = {
+    roleId: roleDb?.id ?? '',
+    roleName: roleDb?.name ?? ROLES.MANAGER,
+    currentPermissions: roleDb?.permissions.map((p) => p.permission) ?? [],
+  };
 
+  const paymentData = {
+    provider: PAYMENT_PROVIDERS.STRIPE,
+    publicKey: paymentDb?.publicKey ?? '',
+    isEnabled: paymentDb?.isEnabled ?? false,
+  };
+
+  const systemData = {
+    isMaintenanceMode: systemDb?.isMaintenanceMode ?? SYSTEM_DEFAULTS.isMaintenanceMode,
+    logLevel: systemDb?.logLevel ?? SYSTEM_DEFAULTS.logLevel,
+    cacheTtl: systemDb?.cacheTtl ?? SYSTEM_DEFAULTS.cacheTtl,
+  };
+
+  // 4. Rendu orchestré
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Paramètres</h1>
-        <p className="text-muted-foreground mt-1">Configuration de Boutiquecogi3 · Level {level}</p>
-      </div>
+    <main className="container mx-auto max-w-4xl py-8 space-y-8">
+      {/* En-tête de la page */}
+      <header className="space-y-2">
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-8 w-8 text-cyan-700" aria-hidden="true" />
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Paramètres de la plateforme</h1>
+        </div>
+        <p className="text-gray-500">
+          Configurez le comportement global, les accès, les paiements et le système de votre boutique.
+        </p>
+      </header>
 
-      {activeTab === "general" && (
-        <Suspense fallback={<Skeleton className="h-96" />}>
-          <GeneralSettings />
-        </Suspense>
-      )}
+      <Separator />
 
-      {activeTab === "rbac" && canManageRoles && (
-        <Suspense fallback={<Skeleton className="h-96" />}>
-          <RBACSettings canManageRoles={canManageRoles} canManagePermissions={canManagePermissions} />
-        </Suspense>
-      )}
+      {/* Section 1 : Paramètres Généraux */}
+      <section aria-labelledby="general-settings-title">
+        <GeneralSettings initialData={generalData} />
+      </section>
 
-      {activeTab === "payments" && canPaymentConfig && (
-        <Suspense fallback={<Skeleton className="h-96" />}>
-          <PaymentSettings />
-        </Suspense>
-      )}
+      <Separator />
 
-      {activeTab === "system" && canSystemConfig && (
-        <Suspense fallback={<Skeleton className="h-96" />}>
-          <SystemConfig />
-        </Suspense>
-      )}
-    </div>
+      {/* Section 2 : Contrôle d'accès (RBAC) */}
+      <section aria-labelledby="rbac-settings-title">
+        {rbacData.roleId ? (
+          <RBACSettings {...rbacData} />
+        ) : (
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-800">
+            <p className="font-semibold">Rôle "{ROLES.MANAGER}" introuvable.</p>
+            <p className="text-sm">Veuillez créer ce rôle dans la base de données pour configurer les permissions.</p>
+          </div>
+        )}
+      </section>
+
+      <Separator />
+
+      {/* Section 3 : Paramètres de Paiement */}
+      <section aria-labelledby="payment-settings-title">
+        <PaymentSettings {...paymentData} />
+      </section>
+
+      <Separator />
+
+      {/* Section 4 : Configuration Système */}
+      <section aria-labelledby="system-settings-title">
+        <SystemConfig initialData={systemData} />
+      </section>
+    </main>
   );
 }
