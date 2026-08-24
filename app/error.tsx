@@ -21,7 +21,7 @@ export default function GlobalError({
       <h2 className="text-4xl font-bold text-red-600">Une erreur critique est survenue...</h2>
       <pre>{error.message}</pre>
       <p className="text-cyan-500 max-w-md">
-        Désolé, un problème inattendu empêche l&apos;affichage de la Boutique COGI. Notre équipe technique a été notifiée et va s&apos;ateler à le resoudre.
+        Désolé, un problème inattendu empêche l&apos;affichage de la Boutique COGI. Notre équipe technique vient d&apos;être notifiée et va s&apos;atteler à le résoudre.
       </p>
       <Link
         href="/"

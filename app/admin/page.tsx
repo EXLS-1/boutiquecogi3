@@ -99,7 +99,7 @@ export default async function AdminPage() {
             <CardDescription className="text-neutral-400">
               Audit des utilisateurs, déblocage de comptes et attribution directe des rôles RBAC.
             </CardDescription>
-            <Button asChild variant="secondary" className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-100 border border-neutral-700">
+            <Button asChild variant="secondary" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
               <Link href="/admin/users">Administrer les Utilisateurs</Link>
             </Button>
           </CardContent>
@@ -114,7 +114,7 @@ export default async function AdminPage() {
             <CardDescription className="text-neutral-400">
               Inspection des journaux d&apos;évènements, traçabilité des mutations BDD et sessions actives.
             </CardDescription>
-            <Button asChild variant="secondary" className="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-100 border border-neutral-700">
+            <Button asChild variant="secondary" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
               <Link href="/dashboard/audit">Consulter les Logs</Link>
             </Button>
           </CardContent>
