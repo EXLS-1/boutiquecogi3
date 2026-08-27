@@ -48,14 +48,14 @@ export function useAuthActions() {
     safe(async () => {
       await authClient.signUp.email(data);
       toast.success("Compte créé");
-      router.replace("/auth/signin");
+      router.replace("/auth/sign-in");
     });
 
   const signout = () =>
     safe(async () => {
       await authClient.signOut();
       invalidateCache(); // ← INVALIDE LE CACHE RBAC AU LOGOUT
-      router.replace("/auth/signin");
+      router.replace("/auth/sign-in");
       router.refresh();
     });
 

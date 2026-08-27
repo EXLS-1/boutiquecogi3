@@ -55,7 +55,7 @@ export default function Verify2FAPage() {
             <CardTitle className="text-xl">Vérification 2FA</CardTitle>
           </div>
           <CardDescription>
-            Entrez le code généré par votre application d'authentification ou un code de secours.
+            Entrez le code généré par votre application d&apos;authentification ou un code de secours.
           </CardDescription>
         </CardHeader>
 
@@ -68,7 +68,7 @@ export default function Verify2FAPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="2fa-code">Code d'authentification</Label>
+            <Label htmlFor="2fa-code">Code d&apos;authentification</Label>
             <Input
               id="2fa-code"
               type="text"
@@ -100,3 +100,4 @@ export default function Verify2FAPage() {
     </div>
   );
 }
+

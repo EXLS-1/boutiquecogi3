@@ -1,3 +1,5 @@
+// components/admin/users/role-manager.tsx
+
 'use client'
 
 import { useState, useTransition } from 'react'

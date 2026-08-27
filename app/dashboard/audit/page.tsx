@@ -21,7 +21,7 @@ interface AuditPageProps {
 
 export default async function AuditPage({ searchParams }: AuditPageProps) {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { level, effectivePermissions } = session;
 

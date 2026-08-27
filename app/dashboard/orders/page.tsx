@@ -18,7 +18,7 @@ interface OrdersPageProps {
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { level, userId, effectivePermissions } = session;
   const params = await searchParams;

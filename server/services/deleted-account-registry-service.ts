@@ -280,4 +280,56 @@ export const DeletedAccountRegistryService = {
         const originalImage = (userSnapshot.image as string) || null;
 
         await ctx.prisma.$transaction(async (tx) => {
-         
+          await tx.user.update({
+            where: { id: entry.userId },
+            data: {
+              email: originalEmail,
+              name: originalName,
+              image: originalImage,
+            },
+          });
+
+          await tx.deletedAccountRegistry.update({
+            where: { id: registryId },
+            data: {
+              restoredAt: new Date(),
+              restoredBy: ctx.userId,
+              restoreNote: note || null,
+            },
+          });
+
+          await tx.auditLog.create({
+            data: {
+              id: generateUUIDv7(),
+              userId: ctx.userId,
+              roleLevel: ctx.roleLevel,
+              action: "ACCOUNT_RESTORED",
+              targetId: entry.userId,
+              targetType: "USER",
+              details: JSON.stringify({
+                registryId,
+                userEmail: originalEmail,
+                restoredBy: ctx.userId,
+                restoredByRole: ctx.roleName,
+                note: note || "Restauration via DeletedAccountRegistryService",
+              }),
+              ipAddress: "auto",
+              createdAt: new Date(),
+            },
+          });
+        });
+
+        return {
+          success: true,
+          userEmail: originalEmail,
+          message: `Compte ${originalEmail} restauré avec succès`,
+        };
+      },
+      {
+        minRoleLevel: 2,
+        requiredPermissions: [PERMISSIONS["users:update"]],
+        auditLog: true,
+      }
+    );
+  },
+};

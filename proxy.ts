@@ -2,21 +2,16 @@
 // ============================================
 // EDGE AUTH PROXY — Gardien d'entrée léger pour Boutiquecogi3
 // ============================================
-// proxy.ts, conçue comme un gardien d'entrée léger et strict.
-// Toute la logique métier RBAC (permissions, restrictions, niveaux, audit, quotas) est intentionnellement déléguée à votre système centralisé
-// (server.ts / rbac.ts).
-// Ce proxy ne connaît que deux états : session existante ou GUEST.
 // Ce proxy est le SEUL point d'entrée Edge pour la sécurité réseau.
 // Il est intentionnellement AGNOSTIQUE de la logique métier RBAC.
 //
 // RESPONSABILITÉS STRICTES :
 //   1. Security Headers (universels, toutes les réponses)
 //   2. Classification des routes (Public | Auth | Protected | Admin)
-//   3. Vérification binaire de session (Authentifié / GUEST)
-//   4. Redirects (legacy + préservation des query params + callbackUrl)
+//   3. Vérification binaire de session par cookie (Authentifié / GUEST) à 0ms de latence
+//   4. Redirects (legacy/typos + préservation des query params + callbackUrl)
 //
 // DÉLÉGATION EXPLICITE :
-//   • Rate Limiting     → middleware.ts (Upstash Redis)
 //   • Permissions       → @/lib/auth/server.ts (guardPermission, etc.)
 //   • Restrictions      → @/lib/auth/rbac.ts (resolveEffectiveRestrictions)
 //   • Niveaux RBAC      → @/lib/auth/server.ts (guardMinLevel, guardAdmin)
@@ -28,14 +23,7 @@
 //   Toute granularité (Level 1-7) est résolue en aval dans les
 //   Server Components et Server Actions.
 
-import { betterFetch } from "@better-fetch/fetch";
-import type { Session, User } from "better-auth/types";
 import { NextResponse, type NextRequest } from "next/server";
-
-interface BetterAuthSessionResponse {
-  session: Session;
-  user: User;
-}
 
 // ═══════════════════════════════════════════
 // SECTION 1: CONFIGURATION
@@ -68,6 +56,7 @@ const AUTH_ROUTES = [
   "/auth/sign-in",
   "/auth/sign-up",
   "/auth/forget-password",
+  "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/verify-email",
   "/auth/two-factor",
@@ -93,6 +82,9 @@ const ADMIN_ROUTES = [
   "/admin/settings",
   "/admin/analytics",
   "/admin/setup-2fa",
+  "/admin/security",
+  "/admin/verify-2fa",
+  "/dashboard",
 ];
 
 // ═══════════════════════════════════════════
@@ -116,24 +108,19 @@ function classifyRoute(pathname: string): "public" | "auth" | "protected" | "adm
     return "protected";
   }
 
-  // Par défaut : public (le downstream RBAC protège les API sensibles)
+  // Par défaut : public (le downstream RBAC protège les API et pages sensibles)
   return "public";
 }
 
-/** Résout la session via Better-Auth (Edge-safe, zero Prisma) */
-async function resolveSession(request: NextRequest): Promise<BetterAuthSessionResponse | null> {
-  try {
-    const { data } = await betterFetch<BetterAuthSessionResponse>("/api/auth/get-session", {
-      baseURL: request.nextUrl.origin,
-      headers: {
-        cookie: request.headers.get("cookie") || "",
-      },
-    });
-    return data ?? null;
-  } catch {
-    // Échec silencieux = traité comme GUEST
-    return null;
-  }
+/** Vérification binaire de session ultra-rapide par cookie (0ms latency, Edge-safe) */
+function hasSessionCookie(request: NextRequest): boolean {
+  return (
+    request.cookies.has("better-auth.session_token") ||
+    request.cookies.has("__Secure-better-auth.session_token") ||
+    request.cookies.has("better_auth.session_token") ||
+    request.cookies.has("better-auth.session_data") ||
+    request.cookies.has("__Secure-better-auth.session_data")
+  );
 }
 
 /** Construit une URL de redirection vers auth avec callbackUrl */
@@ -174,11 +161,20 @@ export default async function proxy(request: NextRequest) {
     response.headers.set(key, value);
   });
 
-  // ─── Phase 2: Redirects legacy ───
-  if (pathname === "/sign-in" || pathname === "/login" || pathname === "/auth/login") {
+  // ─── Phase 2: Redirects legacy & typos ───
+  if (
+    pathname === "/sign-in" ||
+    pathname === "/login" ||
+    pathname === "/auth/login" ||
+    pathname === "/auth/signin"
+  ) {
     return NextResponse.redirect(buildAuthRedirect(request, "/auth/sign-in"));
   }
-  if (pathname === "/sign-up" || pathname === "/register") {
+  if (
+    pathname === "/sign-up" ||
+    pathname === "/register" ||
+    pathname === "/auth/signup"
+  ) {
     return NextResponse.redirect(buildAuthRedirect(request, "/auth/sign-up"));
   }
 
@@ -189,9 +185,8 @@ export default async function proxy(request: NextRequest) {
     return response;
   }
 
-  // ─── Phase 4: Résolution lazy de la session ───
-  const authSession = await resolveSession(request);
-  const isAuthenticated = Boolean(authSession?.session?.userId || authSession?.user?.id);
+  // ─── Phase 4: Résolution binaire rapide de la session (0ms network) ───
+  const isAuthenticated = hasSessionCookie(request);
 
   // ─── Phase 5: Auth Zone ───
   if (zone === "auth" && isAuthenticated) {
@@ -213,18 +208,19 @@ export default async function proxy(request: NextRequest) {
 // ═══════════════════════════════════════════
 // SECTION 4: MATCHER
 // ═══════════════════════════════════════════
-// Exclusion stricte des assets statiques pour la performance.
+// Exclusion stricte des routes API et des assets statiques pour la performance.
 // ═══════════════════════════════════════════
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except static files:
+     * Match all request paths except:
+     * - api routes (handled directly by Route Handlers with RBAC)
      * - _next/static (Next.js static files)
      * - _next/image (image optimization)
      * - favicon.ico, sitemap.xml, robots.txt, manifest.json
      * - Static assets: svg, png, jpg, jpeg, gif, webp, ico, css, js, fonts
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$).*)",
   ],
 };

@@ -18,7 +18,7 @@ interface PromotionsPageProps {
 
 export default async function PromotionsPage({ searchParams }: PromotionsPageProps) {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { level, effectivePermissions } = session;
 

@@ -11,9 +11,8 @@ async function fetchImagesFromMedia(): Promise<HeroImage[]> {
     // Récupérer la liste des fichiers via l'API
     const response = await fetch("/api/media");
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "No response body");
       throw new Error(
-        `Failed to fetch media files: ${response.status} ${response.statusText} - ${errorText}`
+        `Failed to fetch media files: ${response.status} ${response.statusText}`
       );
     }
     const files = await response.json();

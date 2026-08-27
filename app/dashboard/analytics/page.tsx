@@ -19,7 +19,7 @@ interface AnalyticsPageProps {
 
 export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { level, effectivePermissions } = session;
 

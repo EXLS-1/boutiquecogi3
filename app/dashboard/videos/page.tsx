@@ -18,7 +18,7 @@ interface VideosPageProps {
 
 export default async function VideosPage({ searchParams }: VideosPageProps) {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { level, effectivePermissions } = session;
   const params = await searchParams;

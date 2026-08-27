@@ -307,4 +307,150 @@ export class MockRedisClient {
   private pubSubHandlers = new Map<
     string,
     Set<(channel: string, message: unknown) => void>
-  >
+  >();
+
+  public circuitBreaker: MockCircuitBreaker;
+  private options: RedisClientOptions;
+
+  constructor(options: RedisClientOptions = {}) {
+    this.options = options;
+    const cb = options.circuitBreaker ?? {};
+    this.circuitBreaker = new MockCircuitBreaker(
+      cb.failureThreshold ?? 5,
+      cb.resetTimeoutMs ?? 30000,
+      cb.halfOpenMaxCalls ?? 3
+    );
+  }
+
+  private checkCircuit(): void {
+    if (!this.circuitBreaker.canExecute()) {
+      throw new MockRedisCircuitOpenError();
+    }
+  }
+
+  async get(key: string): Promise<string | null> {
+    this.checkCircuit();
+    const expiry = this.ttlStore.get(key);
+    if (expiry && Date.now() > expiry) {
+      this.store.delete(key);
+      this.ttlStore.delete(key);
+      this.circuitBreaker.recordSuccess();
+      return null;
+    }
+    const val = this.store.get(key) ?? null;
+    this.circuitBreaker.recordSuccess();
+    return val;
+  }
+
+  async set(key: string, value: string, ttlSeconds?: number): Promise<"OK"> {
+    this.checkCircuit();
+    this.store.set(key, value);
+    if (ttlSeconds) {
+      this.ttlStore.set(key, Date.now() + ttlSeconds * 1000);
+    } else {
+      this.ttlStore.delete(key);
+    }
+    this.circuitBreaker.recordSuccess();
+    return "OK";
+  }
+
+  async setex(key: string, seconds: number, value: string): Promise<"OK"> {
+    return this.set(key, value, seconds);
+  }
+
+  async del(...keys: string[]): Promise<number> {
+    this.checkCircuit();
+    let count = 0;
+    for (const key of keys) {
+      if (this.store.delete(key)) count++;
+      this.hashStore.delete(key);
+      this.listStore.delete(key);
+      this.setStore.delete(key);
+      this.zsetStore.delete(key);
+      this.ttlStore.delete(key);
+      this.lockStore.delete(key);
+    }
+    this.circuitBreaker.recordSuccess();
+    return count;
+  }
+
+  async exists(...keys: string[]): Promise<number> {
+    this.checkCircuit();
+    let count = 0;
+    for (const key of keys) {
+      if (this.store.has(key) || this.hashStore.has(key)) count++;
+    }
+    this.circuitBreaker.recordSuccess();
+    return count;
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    this.checkCircuit();
+    if (this.store.has(key) || this.hashStore.has(key)) {
+      this.ttlStore.set(key, Date.now() + seconds * 1000);
+      this.circuitBreaker.recordSuccess();
+      return 1;
+    }
+    this.circuitBreaker.recordSuccess();
+    return 0;
+  }
+
+  async ttl(key: string): Promise<number> {
+    this.checkCircuit();
+    const expiry = this.ttlStore.get(key);
+    if (!expiry) return -1;
+    const remaining = Math.ceil((expiry - Date.now()) / 1000);
+    this.circuitBreaker.recordSuccess();
+    return remaining > 0 ? remaining : -2;
+  }
+
+  async ping(): Promise<"PONG"> {
+    this.checkCircuit();
+    this.circuitBreaker.recordSuccess();
+    return "PONG";
+  }
+
+  getMetrics() {
+    return {
+      isConnected: true,
+      circuitBreaker: this.circuitBreaker.getMetrics(),
+      config: this.options,
+    };
+  }
+
+  reset(): void {
+    this.store.clear();
+    this.hashStore.clear();
+    this.listStore.clear();
+    this.setStore.clear();
+    this.zsetStore.clear();
+    this.ttlStore.clear();
+    this.lockStore.clear();
+    this.pubSubHandlers.clear();
+    this.circuitBreaker = new MockCircuitBreaker(
+      this.options.circuitBreaker?.failureThreshold ?? 5,
+      this.options.circuitBreaker?.resetTimeoutMs ?? 30000,
+      this.options.circuitBreaker?.halfOpenMaxCalls ?? 3
+    );
+  }
+}
+
+export function createMockLogger(): RedisLogger {
+  const logs: { level: string; msg: string; meta?: Record<string, unknown> }[] = [];
+  return {
+    debug: (msg, meta) => logs.push({ level: "debug", msg, meta }),
+    info: (msg, meta) => logs.push({ level: "info", msg, meta }),
+    warn: (msg, meta) => logs.push({ level: "warn", msg, meta }),
+    error: (msg, meta) => logs.push({ level: "error", msg, meta }),
+    child: () => createMockLogger(),
+  };
+}
+
+export function createMockRedisClient(options: RedisClientOptions = {}) {
+  const mockRedis = new MockRedisClient(options);
+  return {
+    client: mockRedis as unknown as import("./redis").RedisClient,
+    mockRedis,
+    reset: () => mockRedis.reset(),
+  };
+}

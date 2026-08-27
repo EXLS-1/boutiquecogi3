@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default async function WishlistPage() {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { userId, level } = session;
 

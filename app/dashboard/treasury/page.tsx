@@ -18,7 +18,7 @@ interface TreasuryPageProps {
 
 export default async function TreasuryPage({ searchParams }: TreasuryPageProps) {
   const session = await getServerRBACSession();
-  if (!session) redirect("/auth/signin");
+  if (!session) redirect("/auth/sign-in");
 
   const { level, effectivePermissions } = session;
   const params = await searchParams;
