@@ -1,48 +1,60 @@
 // lib/products/types.ts
+// =============================================================================
+// TYPES DTO — Ajout dynamique de produits au stock
+// =============================================================================
+// Payload « minimaliste » → « ultra-complet » :
+//   - { name, basePrice }                    → produit simple (variante implicite)
+//   - { name, basePrice, description,
+//      categoryId, attributes, variants[] }  → matrice taille/couleur/...
+// Le stock est TOUJOURS créé (jamais de produit statique sans inventaire).
 
-export type AttributeType = "select" | "multiselect" | "string" | "number" | "boolean" | "rich_text";
+export type ProductCurrency = "USD" | "CDF";
 
-export interface AttributeTemplate {
-  [key: string]: {
-    type: AttributeType;
-    required: boolean;
-    options?: string[];        // Pour select / multiselect
-    isVariant: boolean;        // Si true, génère des combinaisons de variants
-    indexable: boolean;        // Si true, stocké dans ProductAttributeValue
-    min?: number;              // Pour number
-    max?: number;              // Pour number
-    unit?: string;             // Ex: "cm", "kg"
-  };
-}
+export type DynamicAttributeValue = string | number | boolean;
+export type DynamicAttributes = Record<string, DynamicAttributeValue>;
 
-export interface ProductVariantInput {
-  attributes: Record<string, string | number | boolean>;
-  priceAdjustment?: number;
+/** Variante de produit (déclinaison taille/couleur/…). */
+export interface VariantInputDto {
+  /** SKU optionnel — généré automatiquement côté serveur si absent. */
+  sku?: string;
+  /** Attributs distinctifs : { taille: "XL", couleur: "Rouge" }. */
+  attributes: DynamicAttributes;
+  /** Écart de prix en centimes par rapport au prix de base (ex: +500 = +5,00). */
+  priceOffset?: number;
+  /** Stock initial attribué à cette variante. */
   initialStock: number;
-  images?: string[];
-  isDefault?: boolean;
 }
 
-export interface CreateProductInput {
+/** Produit dynamique : tous les critères sont facultatifs sauf name + basePrice. */
+export interface CreateProductDto {
   name: string;
-  slug: string;
-  description?: string;
+  description?: string | null;
+  categoryId?: string | null;
   basePrice: number;
-  compareAtPrice?: number;
-  categoryId: string;
-  catalogId: string;
-  metadata?: Record<string, unknown>;
-  attributes: Record<string, string | number | boolean>; // Attributs du produit parent
-  variants: ProductVariantInput[]; // Si hasVariants = true, au moins 1 variante
-  images?: { url: string; altText?: string; isPrimary?: boolean }[];
+  currency?: ProductCurrency;
+  /** Attributs arbitraires du produit parent (ex: { matiere: "Coton" }). */
+  attributes?: DynamicAttributes;
+  /** Variantes. Absent ⇒ produit simple : une variante implicite unique est créée. */
+  variants?: VariantInputDto[];
+  images?: string[];
 }
 
+/** Résultat renvoyé par le service de création. */
+export interface CreatedProductResult {
+  productId: string;
+  variantCount: number;
+  totalStock: number;
+  slug: string;
+}
+
+/** Mouvement de stock rattaché à une variante. */
 export interface StockMovementInput {
   variantId: string;
-  quantity: number; // positif = entrée, négatif = sortie
-  reason: StockReason;
-  referenceId?: string;
-  referenceType?: string;
-  userId?: string;
-  notes?: string;
+  /** > 0 = entrée (restock), < 0 = sortie (vente / ajustement). */
+  quantity: number;
+  reason: string;
+  referenceId?: string | null;
+  referenceType?: string | null;
+  userId?: string | null;
+  notes?: string | null;
 }

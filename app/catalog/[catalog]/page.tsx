@@ -18,8 +18,8 @@ import { CategoryControlsSection } from "@/components/catalog/category-controls-
 import { Pagination } from "@/components/product-catalog/pagination";
 import { ProductListSkeleton } from "@/components/product/product-list-skeleton";
 import { PartialErrorBanner } from "@/components/product-catalog/partial-error-banner";
-import { EmptyState } from "@/components/product-new/empty-state";
-import { ErrorState } from "@/components/product-new/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { BackToCatalog } from "@/components/catalog/back-to-catalog";
 import {
   fetchCategoryPageData,

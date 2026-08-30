@@ -11,7 +11,7 @@
 import { Metadata, ResolvingMetadata } from "next";
 import Category from "@/components/product-catalog/category";
 import { FeaturedProductsSection } from "@/components/product-catalog/featured-products-section";
-import { isRecentProduct } from "@/components/product-recent/products-recent";
+import { RecentProductsSection } from "@/components/product-recent/product-recent";
 import { TrustSection } from "@/components/product-catalog/trust-section";
 import { PartialErrorBanner } from "@/components/product-catalog/partial-error-banner";
 import {
@@ -75,6 +75,7 @@ export default async function CatalogIndexPage() {
         products={recentProducts}
         pageSize={HOME_PRODUCTS_LIMIT}
         hasError={catalogData.fetchError !== null}
+        isAuthenticated={isAuthenticated}
       />
 
       {/* Section Engagements */}

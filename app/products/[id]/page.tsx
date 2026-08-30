@@ -12,6 +12,10 @@ import { ProductNotFound } from "./products-not-found";
 import {
   mapCatalogProduct,
 } from "@/lib/product-catalog/catalog-mappers";
+import {
+  normalizeProduct,
+  type RawCatalogProduct,
+} from "@/lib/product-catalog/catalog-types";
 
 export const revalidate = 3600;
 
@@ -56,7 +60,7 @@ const getProductData = cache(
     const product =
       await prisma.product.findFirst({
         where: {
-          id,
+          OR: [{ id }, { slug: id }],
 
           isArchived: false,
           isdeleted: false,
@@ -82,7 +86,9 @@ const getProductData = cache(
       return null;
     }
 
-    return mapCatalogProduct(product.id, product.name);
+    return mapCatalogProduct(
+      normalizeProduct(product) as unknown as RawCatalogProduct,
+    );
   },
 );
 

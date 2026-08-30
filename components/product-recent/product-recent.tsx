@@ -177,6 +177,9 @@ export const NewProductCategory = ProductRecent;
 /** Alias legacy pour l'ancien `RecentProducts`. */
 export const RecentProducts = ProductRecent;
 
+/** Alias pour `RecentProductsSection` utilisé dans la page catalogue. */
+export const RecentProductsSection = ProductRecent;
+
 // ─── Skeleton (pour Suspense côté serveur) ───────────────────────────────────
 
 interface ProductRecentSkeletonProps {

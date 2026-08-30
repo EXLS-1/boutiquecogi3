@@ -48,7 +48,10 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
     isArchived: false,
     isdeleted: false,
     deletedAt: null,
-    status: ProductStatus.PUBLISHED,
+    // Le statut legacy ACTIVE et le statut moderne PUBLISHED désignent tous
+    // deux des produits affichés publiquement. Le dashboard "activate" met
+    // ACTIVE ; le workflow de publication met PUBLISHED.
+    status: { in: [ProductStatus.PUBLISHED, ProductStatus.ACTIVE] },
   };
 }
 
@@ -395,35 +398,32 @@ export async function searchCatalogProducts(
       createdAt: { gte: ninetyDaysAgo },
     }),
 
-    // Conditions catalogOption (prioritaires sur legacy si défini)
-    ...(validated.catalogOption === "promotions" && {
-      OR: [{ isFeatured: true }, { salePrice: { not: null } }],
-    }),
-    ...(validated.catalogOption === "nouveautes" && {
-      OR: [{ createdAt: { gte: ninetyDaysAgo } }],
-    }),
+    // Conditions combinées dans UN SEUL `OR` pour éviter qu'une clause
+    // écrase l'autre (searchQuery + catalogOption).
+    ...(() => {
+      const orClauses: Prisma.ProductWhereInput[] = [];
+
+      if (validated.catalogOption === "promotions") {
+        orClauses.push({ isFeatured: true }, { salePrice: { not: null } });
+      }
+      if (validated.catalogOption === "nouveautes") {
+        orClauses.push({ createdAt: { gte: ninetyDaysAgo } });
+      }
+      if (validated.searchQuery) {
+        orClauses.push(
+          { name: { contains: validated.searchQuery, mode: "insensitive" as const } },
+          { description: { contains: validated.searchQuery, mode: "insensitive" as const } },
+        );
+      }
+
+      return orClauses.length > 0 ? { OR: orClauses } : {};
+    })(),
 
     ...(validated.minPrice !== undefined && {
       basePrice: { gte: new Prisma.Decimal(validated.minPrice) },
     }),
     ...(validated.maxPrice !== undefined && {
       basePrice: { lte: new Prisma.Decimal(validated.maxPrice) },
-    }),
-    ...(validated.searchQuery && {
-      OR: [
-        {
-          name: {
-            contains: validated.searchQuery,
-            mode: "insensitive" as const,
-          },
-        },
-        {
-          description: {
-            contains: validated.searchQuery,
-            mode: "insensitive" as const,
-          },
-        },
-      ],
     }),
   }; 
 
@@ -503,7 +503,7 @@ export const getProductBySlug = cache(
 export async function getProductCountsByStatus() {
   const [published, archived, outOfStock, total] = await Promise.all([
     prisma.product.count({
-      where: { ...buildBaseWhere(), status: ProductStatus.PUBLISHED },
+      where: buildBaseWhere(),
     }),
     prisma.product.count({ where: { isArchived: true } }),
     prisma.product.count({

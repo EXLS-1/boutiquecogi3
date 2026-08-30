@@ -1,159 +1,159 @@
 // lib/products/validationService.ts
+// =============================================================================
+// VALIDATION DYNAMIQUE — produits minimalistes → matrices complètes
+// =============================================================================
+// Schéma Zod unique, robuste et anti-fragile :
+//  - z.coerce.number() tolère les chaînes numériques venant des formulaires ;  - attributs libres (Record) mais sanitizés (type primitif strict) ;
+//  - refine cross-champs : variantes sans attributs distinctifs rejetées.
+// Aucune dépendance à une table « template de catégorie » : tous les critères
+// (category, couleur, taille, description…) sont donc facultatifs par défaut.
+
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import type { AttributeTemplate } from "./types";
+
+// ─── Constantes (source unique, anti-magic-numbers) ─────────────────────────
+
+export const PRODUCT_LIMITS = {
+  NAME_MIN: 2,
+  NAME_MAX: 200,
+  DESC_MAX: 5000,
+  SKU_MIN: 3,
+  SKU_MAX: 64,
+  PRICE_MAX: 1_000_000_000,
+  PRICE_OFFSET_ABS_MAX: 10_000_000, // 100 000,00 dans l'unité monétaire
+  STOCK_MAX: 10_000_000,
+  VARIANT_MAX: 100,
+  IMAGE_MAX: 20,
+  ATTRIBUTE_KEY_MAX: 100,
+  ATTRIBUTE_VALUE_MAX: 500,
+} as const;
+
+const attributeValueSchema = z.union([
+  z.string().trim().max(PRODUCT_LIMITS.ATTRIBUTE_VALUE_MAX),
+  z.number().finite().min(-1_000_000_000).max(1_000_000_000),
+  z.boolean(),
+]);
+
+const variantSchema = z.object({
+  sku: z
+    .string()
+    .trim()
+    .min(PRODUCT_LIMITS.SKU_MIN, "Le SKU doit contenir au moins 3 caractères.")
+    .max(PRODUCT_LIMITS.SKU_MAX)
+    .optional(),
+  attributes: z
+    .record(z.string().trim().min(1).max(PRODUCT_LIMITS.ATTRIBUTE_KEY_MAX), attributeValueSchema)
+    .default({}),
+  priceOffset: z.coerce
+    .number()
+    .int()
+    .min(-PRODUCT_LIMITS.PRICE_OFFSET_ABS_MAX)
+    .max(PRODUCT_LIMITS.PRICE_OFFSET_ABS_MAX)
+    .default(0),
+  initialStock: z.coerce.number().int().min(0).max(PRODUCT_LIMITS.STOCK_MAX).default(0),
+});
+
+/**
+ * Schéma canonique de création dynamique.
+ * - Obligatoires : name, basePrice.
+ * - Facultatifs  : description, categoryId, currency, attributes, variants, images.
+ */
+export const dynamicProductSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(PRODUCT_LIMITS.NAME_MIN, "Le nom doit contenir au moins 2 caractères.")
+      .max(PRODUCT_LIMITS.NAME_MAX),
+    description: z.string().trim().max(PRODUCT_LIMITS.DESC_MAX).optional().nullable(),
+    categoryId: z.string().uuid("categoryId doit être un UUID valide.").optional().nullable(),
+    basePrice: z.coerce
+      .number()
+      .positive("Le prix doit être supérieur à 0.")
+      .max(PRODUCT_LIMITS.PRICE_MAX),
+    currency: z.enum(["USD", "CDF"]).default("USD"),
+    attributes: z
+      .record(z.string().trim().min(1).max(PRODUCT_LIMITS.ATTRIBUTE_KEY_MAX), attributeValueSchema)
+      .default({}),
+    variants: z.array(variantSchema).max(PRODUCT_LIMITS.VARIANT_MAX).optional(),
+    images: z.array(z.string().url("Chaque image doit être une URL valide.")).max(PRODUCT_LIMITS.IMAGE_MAX).default([]),
+  })
+  .superRefine((data, ctx) => {
+    const variants = data.variants ?? [];
+
+    // Chaque variante d'une matrice doit porter au moins un attribut distinctif.
+    if (variants.length > 1) {
+      variants.forEach((variant, index) => {
+        if (Object.keys(variant.attributes).length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["variants", index, "attributes"],
+            message: "Une variante doit avoir au moins un attribut (taille, couleur…).",
+          });
+        }
+      });
+    }
+
+    // Unicité des SKU explicites au sein de la payload.
+    const seenSkus = new Set<string>();
+    for (const variant of variants) {
+      if (!variant.sku) continue;
+      if (seenSkus.has(variant.sku)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["variants"],
+          message: `SKU en double dans la payload : ${variant.sku}.`,
+        });
+      }
+      seenSkus.add(variant.sku);
+    }
+  });
+
+export type DynamicProductInput = z.infer<typeof dynamicProductSchema>;
 
 export class ProductValidationService {
   /**
-   * Génère un schéma Zod dynamique basé sur le template de la catégorie.
+   * Valide une entrée brute et renvoie le DTO normalisé.
+   * @throws z.ZodError si la validation échoue.
    */
-  static async buildSchema(categoryId: string) {
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-      select: { attributeTemplate: true },
-    });
-
-    if (!category) throw new Error("Category not found");
-
-    const template = category.attributeTemplate as AttributeTemplate;
-
-    // Schéma de base (toujours identique)
-    const baseSchema = z.object({
-      name: z.string().min(1).max(255),
-      slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/),
-      description: z.string().optional(),
-      basePrice: z.number().positive(),
-      compareAtPrice: z.number().positive().optional(),
-      categoryId: z.string().uuid(),
-      catalogId: z.string().uuid(),
-      metadata: z.record(z.unknown()).optional(),
-      images: z.array(z.object({
-        url: z.string().url(),
-        altText: z.string().optional(),
-        isPrimary: z.boolean().optional(),
-      })).optional(),
-    });
-
-    // Schéma dynamique des attributs selon le template
-    const attributeShape: Record<string, z.ZodTypeAny> = {};
-    
-    for (const [key, config] of Object.entries(template)) {
-      let fieldSchema: z.ZodTypeAny;
-
-      switch (config.type) {
-        case "select":
-          fieldSchema = config.options 
-            ? z.enum(config.options as [string, ...string[]])
-            : z.string();
-          break;
-        case "multiselect":
-          fieldSchema = z.array(z.string());
-          break;
-        case "string":
-        case "rich_text":
-          fieldSchema = z.string();
-          break;
-        case "number":
-          fieldSchema = z.number();
-          if (config.min !== undefined) fieldSchema = (fieldSchema as z.ZodNumber).min(config.min);
-          if (config.max !== undefined) fieldSchema = (fieldSchema as z.ZodNumber).max(config.max);
-          break;
-        case "boolean":
-          fieldSchema = z.boolean();
-          break;
-        default:
-          fieldSchema = z.string();
-      }
-
-      if (!config.required) {
-        fieldSchema = fieldSchema.optional();
-      }
-
-      attributeShape[key] = fieldSchema;
-    }
-
-    const attributeSchema = z.object(attributeShape);
-
-    // Schéma des variants (si le template a des attributs isVariant)
-    const hasVariantAttributes = Object.values(template).some(c => c.isVariant);
-
-    const variantSchema = z.object({
-      attributes: z.record(z.union([z.string(), z.number(), z.boolean()])),
-      priceAdjustment: z.number().default(0),
-      initialStock: z.number().int().min(0),
-      images: z.array(z.string().url()).optional(),
-      isDefault: z.boolean().optional(),
-    });
-
-    const variantsSchema = hasVariantAttributes
-      ? z.array(variantSchema).min(1, "At least one variant is required when category has variant attributes")
-      : z.array(variantSchema).optional();
-
-    // Schéma combiné final
-    const fullSchema = baseSchema.extend({
-      attributes: attributeSchema,
-      variants: variantsSchema,
-    }).superRefine((data, ctx) => {
-      // Validation cross-field : les attributs des variants doivent matcher le template
-      if (data.variants && data.variants.length > 0) {
-        for (let i = 0; i < data.variants.length; i++) {
-          const variant = data.variants[i];
-          const variantAttrs = Object.keys(variant.attributes);
-          const requiredVariantAttrs = Object.entries(template)
-            .filter(([, c]) => c.isVariant && c.required)
-            .map(([k]) => k);
-
-          for (const reqAttr of requiredVariantAttrs) {
-            if (!variantAttrs.includes(reqAttr)) {
-              ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Variant ${i}: missing required variant attribute '${reqAttr}'`,
-                path: ["variants", i, "attributes", reqAttr],
-              });
-            }
-          }
-        }
-      }
-
-      // Validation : slug unique (on ne peut pas le faire avec Zod seul, c'est du business logic)
-    });
-
-    return { fullSchema, template, hasVariantAttributes };
+  static parse(rawInput: unknown): DynamicProductInput {
+    return dynamicProductSchema.parse(rawInput);
   }
 
   /**
-   * Génère automatiquement toutes les combinaisons de variants possibles
-   * à partir des attributs isVariant fournis.
+   * Normalise la liste des variantes :
+   *  - aucun tableau ⇒ variante implicite unique (produit SIMPLE) ;
+   *  - tableau non vide ⇒ matrice telle quelle.
+   * Garantit qu'il existe TOUJOURS ≥ 1 variante (anti-produit-statique).
    */
-  static generateVariantCombinations(
-    template: AttributeTemplate,
-    attributes: Record<string, string | number | boolean>
-  ): Array<Record<string, string | number | boolean>> {
-    const variantAttrs = Object.entries(template)
-      .filter(([, config]) => config.isVariant)
-      .map(([key]) => key);
-
-    if (variantAttrs.length === 0) return [];
-
-    // Récupérer les valeurs fournies pour chaque attribut variant
-    const combinations: Array<Record<string, string | number | boolean>> = [{}];
-    
-    for (const attrKey of variantAttrs) {
-      const value = attributes[attrKey];
-      if (!value) continue; // Attribut non fourni, skip
-
-      const values = Array.isArray(value) ? value : [value];
-      const newCombinations: typeof combinations = [];
-
-      for (const combo of combinations) {
-        for (const val of values) {
-          newCombinations.push({ ...combo, [attrKey]: val });
-        }
-      }
-      combinations.length = 0;
-      combinations.push(...newCombinations);
+  static normalizeVariants(input: DynamicProductInput): Array<{
+    sku?: string;
+    attributes: Record<string, string | number | boolean>;
+    priceOffset: number;
+    initialStock: number;
+  }> {
+    if (Array.isArray(input.variants) && input.variants.length > 0) {
+      return input.variants.map((v) => ({
+        sku: v.sku?.trim() || undefined,
+        attributes: v.attributes,
+        priceOffset: v.priceOffset,
+        initialStock: v.initialStock,
+      }));
     }
 
-    return combinations;
+    // Produit simple ⇒ variante implicite unique alimentée par les attributs racine.
+    return [
+      {
+        attributes: input.attributes,
+        priceOffset: 0,
+        initialStock: 0,
+      },
+    ];
+  }
+
+  /** Calcule le stock total initial (somme des variantes). */
+  static computeTotalStock(
+    variants: Array<{ initialStock: number }>
+  ): number {
+    return variants.reduce((sum, v) => sum + v.initialStock, 0);
   }
 }

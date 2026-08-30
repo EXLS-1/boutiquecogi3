@@ -102,7 +102,11 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
           <span className="text-lg font-bold text-slate-900">
             <Price amount={product.price} currency={product.currency} />
           </span>
-          {product.discountPercent > 0}
+          {product.discountPercent > 0 && (
+            <span className="text-sm font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+              -{product.discountPercent}%
+            </span>
+          )}
         </div>
 
         {/* CTA */}
