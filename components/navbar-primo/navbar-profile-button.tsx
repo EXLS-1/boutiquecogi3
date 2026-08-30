@@ -126,21 +126,14 @@ export function NavbarProfileButton() {
        {/* Navigation Admin - Fragment requis pour grouper les items conditionnels */}
         {isAdmin && (
           <>
-            {/* Item 1 : Accès à la page Admin */}
+            {/* Item 1 : Accès au portail Admin */}
             <DropdownMenuItem asChild className="text-cyan-400 focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
               <Link href="/admin" className="flex items-center gap-2 w-full py-2">
                 <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
-                <span>Page Admin</span>
+                <span>Portail Admin</span>
               </Link>
             </DropdownMenuItem>
 
-            {/* Item 2 : Accès au Dashboard Admin */}
-            <DropdownMenuItem asChild className="text-cyan-400 focus:bg-cyan-200 focus:text-cyan-500 cursor-pointer rounded-md">
-              <Link href="/dashboard" className="flex items-center gap-2 w-full py-2">
-                <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
-                <span>Dashboard Admin</span>
-              </Link>
-            </DropdownMenuItem>
           </>
         )}
 

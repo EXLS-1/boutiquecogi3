@@ -1,0 +1,26 @@
+
+> boutiquecogi3@1.0.0 postinstall
+> prisma generate
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+
+✔ Generated Prisma Client (v7.9.1) to .\node_modules\@prisma\client in 14.31s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+
+added 81 packages, removed 338 packages, changed 6 packages, and audited 969 packages in 23m
+
+234 packages are looking for funding
+  run `npm fund` for details
+
+3 high severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+NPM_OK  

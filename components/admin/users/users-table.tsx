@@ -34,7 +34,22 @@ const Badge = ({ condition, label, colorOn, colorOff }: { condition: boolean; la
 );
 // ------------------------------------------------------------------
 
-export function UsersTable({ users }: { users: AdminUserListItem[] }) {
+interface UsersTableProps {
+  users: AdminUserListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  roles: { id: string; name: string; level: number; color: string | null; isSystem: boolean }[];
+  currentUserLevel: number;
+  canUpdate: boolean;
+  canDelete: boolean;
+  canBan: boolean;
+  canManageRoles: boolean;
+  canImpersonate: boolean;
+  canExport: boolean;
+}
+
+export function UsersTable({ users, total, page, limit }: UsersTableProps) {
   if (users.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-slate-500">
@@ -133,6 +148,9 @@ export function UsersTable({ users }: { users: AdminUserListItem[] }) {
       <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
         <p className="text-sm text-slate-600">
           Affichage de <span className="font-semibold text-slate-900">{users.length}</span> utilisateur(s)
+          {' · '}Page <span className="font-semibold text-slate-900">{page}</span> sur{' '}
+          <span className="font-semibold text-slate-900">{Math.max(1, Math.ceil(total / limit))}</span>
+          {' · '}{total} au total
           {users.filter(u => u.userAudit?.isDeleted).length > 0 && (
             <span className="text-red-600"> (dont {users.filter(u => u.userAudit?.isDeleted).length} supprimé(s))</span>
           )}

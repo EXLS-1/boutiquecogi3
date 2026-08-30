@@ -312,6 +312,9 @@ export class MockRedisClient {
   public circuitBreaker: MockCircuitBreaker;
   private options: RedisClientOptions;
 
+  // 👇 New property to use crypto – generates a unique client ID
+  public readonly clientId: string;
+
   constructor(options: RedisClientOptions = {}) {
     this.options = options;
     const cb = options.circuitBreaker ?? {};
@@ -320,6 +323,9 @@ export class MockRedisClient {
       cb.resetTimeoutMs ?? 30000,
       cb.halfOpenMaxCalls ?? 3
     );
+
+    // 👇 Use crypto to generate a unique ID for this client instance
+    this.clientId = crypto.randomUUID();
   }
 
   private checkCircuit(): void {
@@ -415,6 +421,8 @@ export class MockRedisClient {
       isConnected: true,
       circuitBreaker: this.circuitBreaker.getMetrics(),
       config: this.options,
+      // 👇 Include the client ID in metrics (optional, but shows usage)
+      clientId: this.clientId,
     };
   }
 

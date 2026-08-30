@@ -24,9 +24,11 @@ model User {
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
   name            String?
+  status          String    @default("ACTIVE") // ou un Enum UserStatus
   image           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now())
+  groupby         Role?
 
   sessions                 Session[]
   accounts                 Account[]
@@ -79,6 +81,8 @@ model UserSecurity {
   twoFactorSecret  String?               @db.Text // ← Secret chiffré en AES-256-GCM
   twoFactor        TwoFactor[]
   backupCodes      TwoFactorBackupCode[]
+
+  adminPinHash String? // Hash SHA-256 du PIN admin (6 chiffres)
 
   blockedAt    DateTime?
   blockedUntil DateTime?
@@ -446,7 +450,7 @@ model TwoFactorBackupCode {
 
   used           Boolean      @default(false)
   userSecurity   UserSecurity @relation(fields: [userSecurityId], references: [id], onDelete: Cascade)
-  userSecurityId String
+  userSecurityId String       @db.Uuid
   codeHash       String // ← Hash bcrypt des codes de secours
   usedAt         DateTime?
   createdAt      DateTime     @default(now())

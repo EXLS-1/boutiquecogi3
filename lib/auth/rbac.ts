@@ -161,6 +161,7 @@ export const PERMISSIONS = {
   "users:delete": "users:delete",
   "users:block": "users:block",
   "users:unban": "users:unban",
+  "users:export": "users:export",
   "users:impersonate": "users:impersonate",
   "users:view:any": "users:view:any",
   "users:filter:active": "users:filter:active",

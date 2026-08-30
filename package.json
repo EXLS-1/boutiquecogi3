@@ -108,7 +108,7 @@
     "eslint-config-next": "^16.3.0",
     "jsdom": "^30.0.1",
     "postcss": "^8.5.26",
-    "prisma": "^7.9.1",
+    "prisma": "7.9.1",
     "supabase": "^2.113.0",
     "tailwindcss": "^4.3.3",
     "tailwindcss-animate": "^1.0.7",
@@ -133,10 +133,12 @@
   "allowScripts": {
     "redis@6.1.0": true,
     "@prisma/engines@7.9.1": true,
-    "esbuild@0.28.1": true,
     "prisma@7.9.1": true,
     "sharp@0.34.5": true,
-    "unrs-resolver@1.12.2": true
+    "unrs-resolver@1.12.2": true,
+    "esbuild@0.28.2": true,
+    "workerd@1.20260704.1": true,
+    "msgpackr-extract@3.0.4": true
   },
   "overrides": {
     "exceljs": {

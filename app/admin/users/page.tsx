@@ -2,7 +2,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Role as PrismaRole } from '@prisma/client';
+import { Prisma, Role as PrismaRole } from '@prisma/client';
 
 import { getServerRBACSession } from '@/lib/auth/server';
 import { prisma } from '@/lib/prisma';
@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Typage strict des paramètres de recherche pour la pagination et les filtres
 interface AdminUsersPageProps {
-  searchParams: Promise<{ role?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ role?: string; page?: string }>;
 }
 
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
@@ -51,43 +51,67 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
     ? (params.role as PrismaRole)
     : undefined;
 
-  // Construction dynamique et sécurisée de la clause WHERE
-  const where = {
-    AND: [
-      ...(roleFilter ? [{ roleConfig: { role: roleFilter } }] : []),
-      ...(params.status ? [{ status: params.status }] : []),
-      // Un admin (level 2) ne peut jamais voir ni modifier les super admins (level 1)
-      ...(level === 2 ? [{ roleConfig: { level: { gt: 1 } } }] : []),
-    ],
-  };
+  // Construction dynamique et sécurisée de la clause WHERE (typée Prisma, sans 'any')
+  const baseConditions: Prisma.UserWhereInput[] = [
+    ...(roleFilter ? [{ roleConfig: { role: roleFilter } }] : []),
+    // Un admin (level 2) ne peut jamais voir ni modifier les super admins (level 1)
+    ...(level === 2 ? [{ roleConfig: { level: { gt: 1 } } }] : []),
+  ];
+
+  const where: Prisma.UserWhereInput = { AND: baseConditions };
 
   // 4. REQUÊTES BASE DE DONNÉES (Performance & Scalabilité)
-  // Exécution parallèle pour minimiser la latence. Bloc catch global pour la robustesse.
-  const [rawUsers, total, rawRoles, stats] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        roleConfig: { select: { id: true, role: true, level: true } },
-        _count: { select: { orders: true } },
-      },
-    }),
-    prisma.user.count({ where }),
-    prisma.roleConfig.findMany({
-      select: { id: true, role: true, level: true, isSystem: true },
-      orderBy: { level: 'asc' },
-    }),
-    prisma.user.groupBy({ 
-      by: ['status'], 
-      _count: { id: true } 
-    }),
-  ]).catch((error) => {
-    console.error('[AdminUsersPage] Échec critique du chargement des données:', error);
-    // Fallback anti-fragile : on pourrait rediriger vers une page d'erreur 500 personnalisée
-    throw new Error('Échec du chargement des données utilisateurs. Veuillez réessayer.');
-  });
+const [
+  rawUsers,
+  total,
+  rawRoles,
+  verifiedCount,
+  twoFactorCount,
+  blockedCount,
+  deletedCount,
+] = await Promise.all([
+  // 1. Récupération des utilisateurs paginés
+  prisma.user.findMany({
+    where,
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      roleConfig: { select: { id: true, role: true, level: true } },
+      _count: { select: { accounts: true, orders: true } },
+      userSecurities: { select: { isBlocked: true, blockReason: true, blockedUntil: true, twoFactorEnabled: true } },
+      userAudit: { select: { isDeleted: true, deletedAt: true, version: true } },
+      userQuotas: { select: { productCount: true } },
+      accounts: { select: { password: true }, take: 1 },
+    },
+  }),
+  // 2. Total des utilisateurs correspondant aux filtres
+  prisma.user.count({ where }),
+  // 3. Récupération des rôles disponibles
+  prisma.roleConfig.findMany({
+    select: { id: true, role: true, level: true, isSystem: true },
+    orderBy: { level: 'asc' },
+  }),
+  // 4. Comptage des utilisateurs vérifiés (champ scalaire)
+  prisma.user.count({
+    where: { AND: [...baseConditions, { emailVerified: true }] },
+  }),
+  // 5. Comptage des utilisateurs avec 2FA activé (via relation UserSecurity)
+  prisma.user.count({
+    where: { AND: [...baseConditions, { userSecurities: { some: { twoFactorEnabled: true } } }] },
+  }),
+  // 6. Comptage des utilisateurs bloqués (via relation)
+  prisma.user.count({
+    where: { AND: [...baseConditions, { userSecurities: { some: { isBlocked: true } } }] },
+  }),
+  // 7. Comptage des utilisateurs supprimés (via relation)
+  prisma.user.count({
+    where: { AND: [...baseConditions, { userAudit: { isDeleted: true } }] },
+  }),
+]).catch((error) => {
+  console.error('[AdminUsersPage] Échec critique du chargement des données:', error);
+  throw new Error('Échec du chargement des données utilisateurs. Veuillez réessayer.');
+});
 
   // 5. NORMALISATION DES DONNÉES (Lisible et maintenable)
   const roles = rawRoles.map((role) => ({
@@ -110,16 +134,12 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
       : { id: 'unassigned', name: 'UNASSIGNED', level: 7, color: null },
   }));
 
-  // Helper interne pour sécuriser l'extraction des statistiques (évite les undefined)
-  const getStatCount = (statusValue: string) => 
-    stats.find((s) => s.status === statusValue)?._count.id ?? 0;
-
   const normalizedStats = {
     total,
-    verified: getStatCount('VERIFIED'),
-    twoFactor: 0, // À adapter si un champ 'twoFactorEnabled' existe dans le modèle User
-    blocked: getStatCount('BLOCKED'),
-    deleted: getStatCount('DELETED'),
+    verified: verifiedCount,
+    twoFactor: twoFactorCount,
+    blocked: blockedCount,
+    deleted: deletedCount,
   };
 
   // 6. RENDU ATOMIQUE ET MINIMALISTE
