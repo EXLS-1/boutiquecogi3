@@ -4,20 +4,28 @@ import { auth } from "@/lib/auth";
 import { ProductService } from "@/lib/products/productService";
 import { z } from "zod";
 
+/**
+ * Schéma de validation de la route API.
+ * Le slug est généré côté serveur (resolveUniqueSlug) — il peut être fourni
+ * mais n'est pas requis. Le catalogId est optionnel car le service ne
+ * l'utilise pas directement. Tous les critères (category, couleur, taille,
+ * description…) restent facultatifs pour autoriser les produits minimalistes.
+ */
 const createProductSchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
+  slug: z.string().min(1).regex(/^[a-z0-9-]+$/).optional(),
   description: z.string().optional(),
   basePrice: z.number().positive(),
   compareAtPrice: z.number().positive().optional(),
-  categoryId: z.string().uuid(),
-  catalogId: z.string().uuid(),
+  categoryId: z.string().uuid().optional(),
+  catalogId: z.string().uuid().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-  attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+  attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
   variants: z.array(z.object({
-    attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
-    priceAdjustment: z.number().optional(),
-    initialStock: z.number().int().min(0),
+    sku: z.string().optional(),
+    attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
+    priceOffset: z.number().optional(),
+    initialStock: z.number().int().min(0).optional().default(0),
     images: z.array(z.string().url()).optional(),
     isDefault: z.boolean().optional(),
   })).optional(),
@@ -38,15 +46,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Vérifier permission admin (RBAC Level 4+)
     // if (session.user.roleLevel < 4) return ...
 
-    const body = await req.json();
-    
-    // Validation de base (la validation dynamique se fait dans le service)
+        const body = await req.json();
+
+    // 1. Validation stricte par Zod (critères dynamiques minimaux → matrice complète)
     const baseData = createProductSchema.parse(body);
 
-    const result = await ProductService.createProduct(
-      { ...baseData, variants: baseData.variants ?? [] },
-      session.user.id
-    );
+    // 2. Transformation vers le DTO consommé par ProductService.createDynamicProduct
+    //    - images { url, altText, isPrimary }[]  →  string[] (URL simple, Prisma attend String[])
+    //    - priceAdjustment                       →  priceOffset   (aligné sur le schema service)
+    const servicePayload = {
+      name: baseData.name,
+      ...(baseData.slug ? { slug: baseData.slug } : {}),
+      ...(baseData.description ? { description: baseData.description } : {}),
+      ...(baseData.categoryId ? { categoryId: baseData.categoryId } : {}),
+      ...(baseData.basePrice !== undefined ? { basePrice: baseData.basePrice } : {}),
+      attributes: baseData.attributes ?? {},
+      images: baseData.images?.map((img) => img.url) ?? [],
+      variants: (baseData.variants ?? []).map((v) => ({
+        ...(v.sku ? { sku: v.sku } : {}),
+        attributes: v.attributes ?? {},
+        ...(v.priceOffset !== undefined ? { priceOffset: v.priceOffset } : {}),
+        ...(v.initialStock !== undefined ? { initialStock: v.initialStock } : { initialStock: 0 }),
+      })),
+    };
+
+    // 3. Exécution atomique (transaction Serializable + validation runtime)
+    const result = await ProductService.createProduct(servicePayload, session.user.id);
 
     return NextResponse.json({
       success: true,

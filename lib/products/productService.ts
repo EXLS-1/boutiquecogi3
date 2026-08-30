@@ -235,6 +235,14 @@ export class ProductService {
     }
   }
 
+    /**
+   * Alias public — appelé par app/api/admin/products/route.ts.
+   * Délègue vers createDynamicProduct pour garder une API unifiée.
+   */
+  static createProduct(rawInput: unknown, userId: string) {
+    return ProductService.createDynamicProduct(rawInput, userId);
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MOUVEMENTS DE STOCK (anti-overselling)
   // ═══════════════════════════════════════════════════════════════════════════
