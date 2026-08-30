@@ -1,34 +1,46 @@
 // lib/actions/settings.ts
 'use server';
 
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth'; // Votre instance Better-Auth
-import { db } from '@/lib/db'; // Votre instance Prisma
+
+import { db } from '@/lib/db';
+import { resolveAuthContext } from '@/lib/auth/server';
+import { ROLES } from '@/lib/auth/rbac';
+import { SETTINGS_KEYS } from '@/lib/constants/settings';
 import { generalSettingsSchema, type GeneralSettingsValues } from '@/lib/validations/settings';
+
+export type ActionResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: string; code?: string };
 
 /**
  * Met à jour les paramètres généraux de la plateforme.
- * Sécurisé : Vérifie les droits admin avant exécution.
+ * Stockage : `SystemConfiguration` (clé = SETTINGS_KEYS, valeur = chaîne brute).
+ * Sécurisé : vérifie les droits ADMIN avant exécution.
  */
-export async function updateGeneralSettingsAction(data: GeneralSettingsValues) {
+export async function updateGeneralSettingsAction(
+  data: GeneralSettingsValues,
+): Promise<ActionResponse<GeneralSettingsValues>> {
   try {
-    // 1. Vérification de l'authentification et des rôles (Better-Auth)
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    // 1. Vérification de l'authentification et des rôles (garde RBAC canonique)
+    const authContext = await resolveAuthContext();
+    if (!authContext || authContext.user.role !== ROLES.ADMIN) {
       return { success: false, error: 'Accès non autorisé.' };
     }
 
     // 2. Validation stricte des données (Zod)
     const validatedData = generalSettingsSchema.parse(data);
 
-    // 3. Mise à jour en base de données (Prisma)
-    // Note: Adaptez 'siteSettings' au nom réel de votre modèle Prisma
-    await db.siteSettings.upsert({
-      where: { id: 'general' }, // Supposons un ID unique pour les settings globaux
-      update: validatedData,
-      create: { id: 'general', ...validatedData },
-    });
+    // 3. Écriture en base (une ligne SystemConfiguration par clé)
+    await db.$transaction(
+      Object.entries(validatedData).map(([key, value]) =>
+        db.systemConfiguration.upsert({
+          where: { key },
+          update: { value: String(value) },
+          create: { key, value: String(value) },
+        }),
+      ),
+    );
 
     // 4. Invalidations du cache pour mise à jour UI
     revalidatePath('/dashboard/settings');
@@ -37,9 +49,10 @@ export async function updateGeneralSettingsAction(data: GeneralSettingsValues) {
     return { success: true, data: validatedData };
   } catch (error) {
     console.error('[SETTINGS_ACTION_ERROR]', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Une erreur est survenue.' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Une erreur est survenue.',
     };
   }
 }
+

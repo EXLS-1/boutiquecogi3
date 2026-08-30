@@ -1,7 +1,4 @@
 // app/dashboard/settings/page.tsx
-import { db } from '@/lib/db';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -12,13 +9,38 @@ import { PaymentSettings } from '@/components/dashboard/settings/payment-setting
 import { SystemConfig } from '@/components/dashboard/settings/system-config';
 
 // Constantes et défauts pour l'anti-fragilité
-import { SETTINGS_DEFAULTS } from '@/lib/constants/settings';
+import {
+  SETTINGS_DEFAULTS,
+  SETTINGS_KEYS,
+  SYSTEM_CONFIG_KEY,
+  paymentConfigKey,
+} from '@/lib/constants/settings';
 import { ROLES } from '@/lib/auth/rbac';
-import { PAYMENT_PROVIDERS } from '@/lib/payment';
-import { SYSTEM_DEFAULTS } from '@/lib/system';
+import { PAYMENT_PROVIDERS, paymentSchema } from '@/lib/payment';
+import { SYSTEM_DEFAULTS, systemConfigSchema, type SystemConfigValues } from '@/lib/system';
+
+// Garde RBAC (règle d'or : JAMAIS auth.api.getSession() hors de lib/auth/server.ts)
+import { resolveAuthContext } from '@/lib/auth/server';
+import { db } from '@/lib/db';
 
 import { Separator } from '@/components/ui/separator';
 import { Settings2 } from 'lucide-react';
+
+/**
+ * Parse défensivement une valeur JSON de `SystemConfiguration`.
+ * Retourne null si la clé est absente, le JSON est invalide ou la validation échoue.
+ */
+function parseJsonSetting<T>(
+  raw: string | null | undefined,
+  validate: (value: unknown) => T | null,
+): T | null {
+  if (!raw) return null;
+  try {
+    return validate(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Metadata SEO pour la page de paramètres.
@@ -34,31 +56,49 @@ export const metadata: Metadata = {
  */
 export default async function SettingsPage() {
   // 1. Vérification des droits d'accès (Sécurité)
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user || session.user.role !== ROLES.ADMIN) {
+  const authContext = await resolveAuthContext();
+  if (!authContext || authContext.user.role !== ROLES.ADMIN) {
     redirect('/login'); // Redirection si non autorisé
   }
 
   // 2. Fetching concurrent de toutes les données (Performance)
-  const [generalDb, roleDb, paymentDb, systemDb] = await Promise.all([
-    db.siteSetting.findUnique({ where: { id: 'general' } }),
-    db.role.findFirst({ where: { name: ROLES.MANAGER }, include: { permissions: true } }),
-    db.paymentConfig.findUnique({ where: { provider: PAYMENT_PROVIDERS.STRIPE } }),
-    db.systemConfig.findUnique({ where: { id: 'main' } }),
+  //    Stockage : SystemConfiguration (clé/valeur) + RoleDefinition (RBAC).
+  const [generalRows, roleDb, paymentRow, systemRow] = await Promise.all([
+    db.systemConfiguration.findMany({
+      where: { key: { in: Object.values(SETTINGS_KEYS) } },
+    }),
+    db.roleDefinition.findFirst({ where: { role: ROLES.MANAGER } }),
+    db.systemConfiguration.findUnique({
+      where: { key: paymentConfigKey(PAYMENT_PROVIDERS.STRIPE) },
+    }),
+    db.systemConfiguration.findUnique({ where: { key: SYSTEM_CONFIG_KEY } }),
   ]);
 
   // 3. Mapping anti-fragile (Fallback sur les constantes par défaut)
+  const generalMap = new Map(
+    generalRows.map((row) => [row.key, row.value] as const),
+  );
+
   const generalData = {
-    storeName: generalDb?.storeName ?? SETTINGS_DEFAULTS.storeName,
-    supportEmail: generalDb?.supportEmail ?? SETTINGS_DEFAULTS.supportEmail,
-    currency: generalDb?.currency ?? SETTINGS_DEFAULTS.currency,
+    storeName: generalMap.get(SETTINGS_KEYS.STORE_NAME) ?? SETTINGS_DEFAULTS[SETTINGS_KEYS.STORE_NAME],
+    supportEmail: generalMap.get(SETTINGS_KEYS.SUPPORT_EMAIL) ?? SETTINGS_DEFAULTS[SETTINGS_KEYS.SUPPORT_EMAIL],
+    currency: generalMap.get(SETTINGS_KEYS.CURRENCY) ?? SETTINGS_DEFAULTS[SETTINGS_KEYS.CURRENCY],
   };
 
+  // Permissions stockées en JSON { code: "ON" | "OFF" } (cf. seed RBAC + moteur runtime)
+  const permissionMap = (roleDb?.permissions ?? {}) as Record<string, unknown>;
   const rbacData = {
     roleId: roleDb?.id ?? '',
     roleName: roleDb?.name ?? ROLES.MANAGER,
-    currentPermissions: roleDb?.permissions.map((p) => p.permission) ?? [],
+    currentPermissions: Object.entries(permissionMap)
+      .filter(([, state]) => state === 'ON')
+      .map(([code]) => code),
   };
+
+  const paymentDb = parseJsonSetting(paymentRow?.value, (value) => {
+    const parsed = paymentSchema.pick({ publicKey: true, isEnabled: true }).safeParse(value);
+    return parsed.success ? parsed.data : null;
+  });
 
   const paymentData = {
     provider: PAYMENT_PROVIDERS.STRIPE,
@@ -66,11 +106,13 @@ export default async function SettingsPage() {
     isEnabled: paymentDb?.isEnabled ?? false,
   };
 
-  const systemData = {
-    isMaintenanceMode: systemDb?.isMaintenanceMode ?? SYSTEM_DEFAULTS.isMaintenanceMode,
-    logLevel: systemDb?.logLevel ?? SYSTEM_DEFAULTS.logLevel,
-    cacheTtl: systemDb?.cacheTtl ?? SYSTEM_DEFAULTS.cacheTtl,
-  };
+  const systemDb = parseJsonSetting<SystemConfigValues>(systemRow?.value, (value) => {
+    const parsed = systemConfigSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
+  });
+
+  const systemData = systemDb ?? SYSTEM_DEFAULTS;
+
 
   // 4. Rendu orchestré
   return (
