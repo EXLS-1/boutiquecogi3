@@ -1,11 +1,17 @@
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Currency {
+  USD
+  CDF
 }
 
 // =============================================
@@ -18,9 +24,11 @@ model User {
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
   name            String?
+  status          String    @default("ACTIVE") // ou un Enum UserStatus
   image           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now())
+  groupby         Role?
 
   sessions                 Session[]
   accounts                 Account[]
@@ -38,41 +46,48 @@ model User {
   auditLogs       AuditLog[]
   addresses       Address[]
 
-  products        Product[]
-  productViews    ProductView[]
-  reviews         Review[]
-  createdProducts Product[]       @relation("ProductCreator")
-  editedProducts  Product[]       @relation("ProductEditor")
-  updater         Stock[]
-  stockMovements  StockMovement[]
+  products          Product[]
+  productViews      ProductView[]
+  reviews           Review[]
+  createdProducts   Product[]       @relation("ProductCreator")
+  editedProducts    Product[]       @relation("ProductEditor")
+  publishedProducts Product[]       @relation("ProductPublisher")
+  updater           Stock[]
+  stockMovements    StockMovement[]
 
-  userSecurities  UserSecurity[]
-  userPreferences UserPreferences[]
-  userQuotas      UserQuota[]
-  createdAudits   UserAudit[]       @relation("UserAuditCreatedBy")
-  updatedAudits   UserAudit[]       @relation("UserAuditUpdatedBy")
-  deletedAudits   UserAudit[]       @relation("UserAuditDeletedBy")
-  roleConfig      RoleConfig?       @relation(fields: [roleConfigId], references: [id])
-  roleConfigId    String?           @db.Uuid
-  roleAssignment  RoleAssignment?
-  twoFactor       TwoFactor?
-  notifications   Notification[]
-  userAudit       UserAudit?
+  userSecurities         UserSecurity[]
+  userPreferences        UserPreferences[]
+  userQuotas             UserQuota[]
+  createdAudits          UserAudit[]            @relation("UserAuditCreatedBy")
+  updatedAudits          UserAudit[]            @relation("UserAuditUpdatedBy")
+  deletedAudits          UserAudit[]            @relation("UserAuditDeletedBy")
+  roleConfig             RoleConfig?            @relation(fields: [roleConfigId], references: [id])
+  roleConfigId           String?                @db.Uuid
+  roleAssignment         RoleAssignment?
+  twoFactor              TwoFactor?
+  notifications          Notification[]
+  userAudit              UserAudit?
+  productStatusHistories ProductStatusHistory[]
 
   @@map("user")
 }
 
 model UserSecurity {
-  id               String      @id @default(uuid(7)) @db.Uuid
-  userId           String      @unique @db.Uuid
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  twoFactorEnabled Boolean     @default(false)
-  twoFactorSecret  String?     @db.Text
+  id     String @id @default(uuid(7)) @db.Uuid
+  userId String @unique @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  twoFactorEnabled Boolean               @default(false)
+  twoFactorSecret  String?               @db.Text // ← Secret chiffré en AES-256-GCM
   twoFactor        TwoFactor[]
-  blockedAt        DateTime?
-  blockedUntil     DateTime?
-  blockReason      String?
-  isBlocked        Boolean     @default(false)
+  backupCodes      TwoFactorBackupCode[]
+
+  adminPinHash String? // Hash SHA-256 du PIN admin (6 chiffres)
+
+  blockedAt    DateTime?
+  blockedUntil DateTime?
+  blockReason  String?
+  isBlocked    Boolean   @default(false)
 
   @@map("user_security")
 }
@@ -96,9 +111,10 @@ model UserPreferences {
   id     String @id @default(uuid(7)) @db.Uuid
   userId String @unique @db.Uuid
 
-  language      String @default("fr")
-  theme         String @default("light")
-  notifications Json   @default("{}")
+  language          String   @default("fr")
+  theme             String   @default("light")
+  notifications     Json     @default("{}")
+  preferredCurrency Currency @default(CDF)
   // autres préférences
 
   users User[]
@@ -142,8 +158,9 @@ model Account {
   userId String @db.Uuid
   type   String @default("email")
 
-  provider  String
-  accountId String @map("providerAccountId")
+  providerId String @map("provider")
+  accountId  String @map("providerAccountId")
+  version    Int    @default(1)
 
   password              String?   @db.Text
   createdAt             DateTime  @default(now())
@@ -159,7 +176,7 @@ model Account {
   sessionState          String?   @map("session_state")
   user                  User      @relation(fields: [userId], references: [id])
 
-  @@unique([provider])
+  @@unique([providerId, accountId])
   @@index([userId])
   @@map("account")
 }
@@ -214,8 +231,9 @@ model Verification {
   value      String           @db.Text
   type       VerificationType
 
-  expiresAt  DateTime
-  consumedAt DateTime?
+  attemptCount Int       @default(0)
+  expiresAt    DateTime
+  consumedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -233,6 +251,28 @@ enum VerificationType {
   EMAIL_CHANGE
   PHONE_VERIFICATION
   TWO_FACTOR
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  email     String
+  ipAddress String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@index([email, createdAt])
+  @@map("login_attempt")
+}
+
+model TwoFactorAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  ipAddress String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@map("two_factor_attempt")
 }
 
 model RoleConfig {
@@ -407,9 +447,15 @@ model TwoFactorBackupCode {
   id          String    @id @default(uuid(7)) @db.Uuid
   twoFactorId String    @db.Uuid
   twoFactor   TwoFactor @relation(fields: [twoFactorId], references: [id], onDelete: Cascade)
-  codeHash    String
-  used        Boolean   @default(false)
 
+  used           Boolean      @default(false)
+  userSecurity   UserSecurity @relation(fields: [userSecurityId], references: [id], onDelete: Cascade)
+  userSecurityId String       @db.Uuid
+  codeHash       String // ← Hash bcrypt des codes de secours
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([userSecurityId])
   @@map("twofactor_backup_code")
 }
 
@@ -639,14 +685,14 @@ model CatalogProduct {
 }
 
 model Product {
-  id          String  @id @default(uuid(7)) @db.Uuid
+  id          String   @id @default(uuid(7)) @db.Uuid
   name        String
-  sku         String  @unique
-  slug        String  @unique
-  description String  @db.Text
-  price       Decimal @db.Decimal(10, 2)
-  basePrice   Decimal @db.Decimal(10, 2)
-  currency    String  @default("USD") @db.VarChar(3)
+  sku         String   @unique
+  slug        String   @unique
+  description String   @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  basePrice   Decimal  @db.Decimal(10, 2)
+  currency    Currency @default(USD)
 
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -661,9 +707,12 @@ model Product {
 
   isFeatured     Boolean       @default(false)
   isArchived     Boolean       @default(false)
+  isActive       Boolean       @default(false)
   isdeleted      Boolean       @default(false)
   deletedAt      DateTime?
   status         ProductStatus @default(ACTIVE)
+  scheduledAt    DateTime? // Publication programmée
+  publishedAt    DateTime? // Date effective de publication
   seoTitle       String?
   seoDescription String?       @db.Text
 
@@ -677,12 +726,16 @@ model Product {
 
   orderItems OrderItem[]
 
-  createdBy String?  @db.Uuid
-  updatedBy String?  @db.Uuid
-  creator   User?    @relation("ProductCreator", fields: [createdBy], references: [id])
-  editor    User?    @relation("ProductEditor", fields: [updatedBy], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdBy     String?  @db.Uuid
+  updatedBy     String?  @db.Uuid
+  publishedById String?  @db.Uuid
+  creator       User?    @relation("ProductCreator", fields: [createdBy], references: [id])
+  editor        User?    @relation("ProductEditor", fields: [updatedBy], references: [id])
+  publisher     User?    @relation("ProductPublisher", fields: [publishedById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  statusHistory ProductStatusHistory[]
 
   variants               ProductVariant[]
   wishlistItems          WishlistItem[]
@@ -706,9 +759,30 @@ model Product {
 
   @@index([createdBy])
   @@index([updatedBy])
+  @@index([publishedById])
+  @@index([status, scheduledAt])
   @@index([isArchived, basePrice])
   @@index([slug])
   @@map("product")
+}
+
+// ==========================================
+// HISTORIQUE DES CHANGEMENTS DE STATUT PRODUIT
+// ==========================================
+
+model ProductStatusHistory {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  productId   String        @db.Uuid
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  oldStatus   ProductStatus
+  newStatus   ProductStatus
+  reason      String?       @db.Text
+  changedById String?       @db.Uuid
+  changedBy   User?         @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changedAt   DateTime      @default(now())
+
+  @@index([productId, changedAt])
+  @@map("product_status_history")
 }
 
 model ProductVariant {
@@ -816,6 +890,8 @@ model Review {
 enum ProductStatus {
   ACTIVE
   DRAFT
+  PENDING
+  SCHEDULED
   PUBLISHED
   ARCHIVED
   OUT_OF_STOCK
@@ -835,7 +911,7 @@ model ProductPrice {
   id             String    @id @default(uuid(7)) @db.Uuid
   productId      String    @db.Uuid
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  currency       String
+  currency       Currency
   amount         Int
   compareAtPrice Int?
   country        String?
@@ -989,7 +1065,7 @@ model FinancialThreshold {
   label                      String
   description                String?
   amount                     Int
-  currency                   String   @default("USD")
+  currency                   Currency @default(USD)
   whoCanOverride             String[]
   requiredPermissionOverride String
   minRoleLevelOverride       Int
@@ -1246,7 +1322,7 @@ model Order {
   grandTotal     Int
   shippingCost   Int             @default(0)
   totalAmount    Int // (subtotal + shipping + tax - discount) – redondant mais pratique
-  currency       String          @default("USD") @db.VarChar(3)
+  currency       Currency        @default(USD)
 
   billingMethodId  String?         @db.Uuid
   billingMethod    BillingMethod?  @relation(fields: [billingMethodId], references: [id])
@@ -1297,7 +1373,7 @@ model OrderItem {
   subtotal       Int
   taxAmount      Int?
   discountAmount Int?
-  currency       String?
+  currency       Currency?
   exchangeRate   Decimal?       @db.Decimal(10, 4)
   returnItems    ReturnItem[]
 
@@ -1463,7 +1539,7 @@ model Payment {
   orderId       String            @unique @db.Uuid
   order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount        Int
-  currency      String            @default("USD") @db.VarChar(3)
+  currency      Currency          @default(USD)
   status        PaymentStatus     @default(PENDING)
   method        PaymentMethodType @default(CINETPAY)
   transactionId String?           @unique
@@ -1520,7 +1596,7 @@ model PaymentMethodConfig {
   minRoleLevelView            Int
   requiresApproval            Boolean  @default(false)
   maxTransactionAmount        Int
-  currency                    String   @default("USD")
+  currency                    Currency @default(USD)
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
@@ -1542,6 +1618,39 @@ model PaymentWebhookEvent {
 
   @@index([provider, eventType])
   @@map("payment_webhook_event")
+}
+
+enum PaymentAuditStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REPLAY_ATTEMPT_BLOCKED
+  AMOUNT_MISMATCH
+}
+
+// ==========================================
+// AUDIT DES PAIEMENTS (Anti-Replay CinetPay)
+// ==========================================
+// Consigne CHAQUE tentative de notification webhook avec une contrainte
+// d'unicité stricte sur transactionId (cpm_trans_id). C'est le verrou
+// d'idempotence atomique en BDD qui bloque les Replay Attacks.
+model PaymentAuditLog {
+  id            String             @id @default(uuid(7)) @db.Uuid
+  transactionId String             @unique // Clé unique d'idempotence (cpm_trans_id)
+  orderId       String
+  amount        Decimal            @db.Decimal(12, 2)
+  currency      String             @db.VarChar(3)
+  status        PaymentAuditStatus
+  cinetpayCode  String?
+  ipAddress     String?
+  rawPayload    Json
+  failureReason String?
+  processedAt   DateTime?
+  createdAt     DateTime           @default(now())
+
+  @@index([orderId])
+  @@index([status])
+  @@map("payment_audit_log")
 }
 
 enum IdempotencyStatus {
@@ -1903,7 +2012,7 @@ model Invoice {
   issueDate     DateTime @default(now())
   dueDate       DateTime
   amountDue     Int
-  currency      String   @default("USD") @db.VarChar(3)
+  currency      Currency @default(USD)
   status        String
   pdfUrl        String?
   createdAt     DateTime @default(now())
@@ -1938,9 +2047,9 @@ model AppConfig {
 }
 
 model ExchangeRate {
-  id            String @id @default(uuid(7)) @db.Uuid
-  baseCurrency  String
-  quoteCurrency String
+  id            String   @id @default(uuid(7)) @db.Uuid
+  baseCurrency  Currency
+  quoteCurrency Currency
 
   rate Decimal @db.Decimal(18, 6)
 
@@ -1978,7 +2087,8 @@ model SystemConfiguration {
 // ==========================================
 
 model DeletedAccountRegistry {
-  id String @id @default(uuid(7)) @db.Uuid
+  id      String @id @default(uuid(7)) @db.Uuid
+  version Int    @default(1)
 
   // Identité de la personne supprimée
   userId    String  @db.Uuid
