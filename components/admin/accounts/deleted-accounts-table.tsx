@@ -1,5 +1,5 @@
 // components/admin/accounts/deleted-accounts-table.tsx
-import type { DeletedAccountItem } from '@/lib/admin/accounts';
+import type { DeletedAccountItem } from '@/lib/super_admin/accounts';
 
 const formatDate = (d: Date | null) =>
   d ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d) : '-';

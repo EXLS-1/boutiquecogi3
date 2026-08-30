@@ -1,6 +1,6 @@
 // components/admin/accounts/active-accounts-table.tsx
 import Link from 'next/link';
-import type { AccountListItem } from '@/lib/admin/accounts';
+import type { AccountListItem } from '@/lib/super_admin/accounts';
 
 const formatDate = (d: Date | null) =>
   d ? new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(d) : '-';

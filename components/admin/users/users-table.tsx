@@ -1,5 +1,5 @@
 // components/admin/users/users-table.tsx
-import type { AdminUserListItem } from '@/lib/admin/users';
+import type { AdminUserListItem } from '@/lib/super_admin/users';
 
 // --- Utilitaires de formatage (Déplaçables dans lib/utils.ts) ---
 const formatDate = (d: Date | null | undefined) =>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Import du type existant. 
 // Note : Assurez-vous que ce type contient bien les clés : total, verified, twoFactor, blocked, deleted
-import type { UsersStats } from '@/lib/admin/users';
+import type { UsersStats } from '@/lib/super_admin/users';
 
 // ============================================================================
 // 1. CONFIGURATION (DRY, modulaire et facilement maintenable)

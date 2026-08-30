@@ -1,7 +1,7 @@
 // app/admin/account/page.tsx
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { getActiveAccountsData, getDeletedAccountsData } from '@/lib/admin/accounts';
+import { getActiveAccountsData, getDeletedAccountsData } from '@/lib/super_admin/accounts';
 import { AccountStats } from '@/components/admin/accounts/account-stats';
 import { AccountTabs } from '@/components/admin/accounts/account-tabs';
 import { ActiveAccountsTable } from '@/components/admin/accounts/active-accounts-table';

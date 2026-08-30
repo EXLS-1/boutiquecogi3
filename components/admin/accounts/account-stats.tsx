@@ -1,5 +1,5 @@
 // components/admin/accounts/account-stats.tsx
-import type { AccountStats } from '@/lib/admin/accounts';
+import type { AccountStats } from '@/lib/super_admin/accounts';
 
 const STAT_CONFIG = [
   { label: 'Total comptes', key: 'total', color: 'text-blue-600', bg: 'bg-blue-50' },
