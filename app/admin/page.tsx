@@ -4,13 +4,13 @@ import Link from "next/link";
 import { getServerRBACSession } from "@/lib/auth/server";
 import { Button } from "@/components/ui/button";
 import { AdminModuleShortcuts } from "@/components/admin/admin-module-shortcuts";
-import { AdminPinSession } from "@/components/admin/admin-pin-session";
+import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { Shield, ArrowRight } from "lucide-react";
-import { isPinEnabled, isAdminPinVerified } from "@/lib/pin/admin-pin";
+import { isPinEnabled, hasFreshAdminPinEntry } from "@/lib/pin/admin-pin";
 
 export const metadata = {
-  title: "Administration Système | Central Security",
-  description: "Portail d'administration réservé au personnel de niveau 1-2",
+  title: "Administration Système Général | Central Security",
+  description: "Portail d'administration réservé au personnel de niveau 1",
 };
 
 export default async function AdminPage() {
@@ -20,11 +20,16 @@ export default async function AdminPage() {
   if (!session) redirect("/auth/sign-in?callbackUrl=/admin");
 
   // 2. Autorisation RBAC (niveaux 1-2)
-  if (session.level > 2) redirect("/unauthorized");
+  if (session.level > 1) redirect("/unauthorized");
 
-  // 3. Vérifier si le PIN est activé
+  // 3. Code PIN : exige une vérification « fraîche » à CHAQUE entrée sur la
+  //    page admin — refresh, retour depuis une autre page, ou après 1 min
+  //    d'inactivité (garde du layout). Le gate se ré-affiche dès que la
+  //    dernière saisie du code date de plus de ADMIN_PIN_ENTRY_GRACE_SEC.
   const pinEnabled = await isPinEnabled();
-  const isPinVerified = pinEnabled ? await isAdminPinVerified() : true;
+  const pinEntryFresh = pinEnabled
+    ? await hasFreshAdminPinEntry(session.userId)
+    : true;
 
   return (
     <div className="min-h-screen bg-cyan-100 text-cyan-400 p-6 md:p-10 space-y-8">
@@ -50,20 +55,16 @@ export default async function AdminPage() {
           className="border-cyan-200 bg-cyan-50 hover:bg-cyan-100 text-rouge-500"
         >
           <Link href="/" className="flex items-center gap-2">
-            Retour à l'accueil
+            Retour à l&apos;accueil
             <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
       </div>
 
-      {/* Session PIN avec timer d'inactivité */}
-      {pinEnabled ? (
-        <AdminPinSession initiallyVerified={isPinVerified}>
-          <AdminModuleShortcuts />
-        </AdminPinSession>
-      ) : (
-        <AdminModuleShortcuts />
-      )}
+      {/* Gate PIN ré-affiché à chaque refresh / retour / après inactivité.
+          La protection de toute la section (RBAC → 2FA → PIN) et la garde
+          d'inactivité sont assurées par app/admin/layout.tsx. */}
+      {pinEntryFresh ? <AdminModuleShortcuts /> : <AdminPinGate />}
     </div>
   );
 }

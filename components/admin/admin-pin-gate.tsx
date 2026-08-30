@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { verifyAdminPinAction } from "@/lib/pin/admin-pin-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,13 @@ import { Lock, Eye, EyeOff } from "lucide-react";
 /* ------------------------------------------------------------------ */
 
 export type AdminPinGateProps = {
-  onVerified: () => void;
+  /**
+   * Callback après vérification réussie.
+   * Par défaut : `router.refresh()` → le serveur re-rend la page avec la
+   * session PIN valide (le layout ré-affiche le contenu, ou le gate en cas
+   * d'échec — fail-closed).
+   */
+  onVerified?: () => void;
 };
 
 /* ------------------------------------------------------------------ */
@@ -29,6 +36,7 @@ export type AdminPinGateProps = {
 /* ------------------------------------------------------------------ */
 
 export function AdminPinGate({ onVerified }: AdminPinGateProps) {
+  const router = useRouter();
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false); // ← Masqué par défaut
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +74,8 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
       setPin("");
       inputRef.current?.focus();
     } else {
-      onVerified();
+      // Défaut : refresh → le serveur re-rend la page (fail-closed).
+      (onVerified ?? (() => router.refresh()))();
     }
 
     setIsLoading(false);
@@ -84,7 +93,7 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
             Vérification de sécurité
           </h2>
           <p className="mt-2 text-sm text-slate-600">
-            Saisissez votre code PIN à 6 caractères pour accéder à l'administration
+            Saisissez votre code PIN pour accéder à l&apos;administration
           </p>
         </div>
 
@@ -158,7 +167,7 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
 
         {/* Info */}
         <p className="text-center text-xs text-slate-500">
-          Le code est requis à chaque accès et après 5 min d'inactivité
+          Le code est requis à chaque accès et après 5 min d&apos;inactivité
         </p>
       </div>
     </div>

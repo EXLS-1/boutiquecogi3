@@ -46,7 +46,7 @@ export function PinManagement() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
-  // NOUVEAU : états pour afficher/masquer les PIN
+  // Etats pour afficher/masquer les PIN
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
@@ -84,7 +84,7 @@ export function PinManagement() {
 
   const handleCreateOrUpdate = async () => {
     if (pin.length !== 6) {
-      setError("Le PIN doit contenir exactement 6 caractères");
+      setError("Le PIN doit contenir le nombre exact des caractères");
       return;
     }
     if (pin !== confirmPin) {
@@ -101,7 +101,11 @@ export function PinManagement() {
     if (!result.success) {
       setError(result.error || "Erreur lors de la création");
     } else {
-      setSuccess("PIN créé/modifié avec succès");
+      setSuccess(
+        result.warning
+          ? `PIN créé/modifié avec succès — ${result.warning}`
+          : "PIN créé/modifié avec succès",
+      );
       setShowForm(false);
       setPin("");
       setConfirmPin("");
@@ -119,7 +123,7 @@ export function PinManagement() {
     try {
       const result = await enablePinAction();
       if (result.success) {
-        setSuccess("PIN activé");
+        setSuccess(result.warning ? `PIN activé — ${result.warning}` : "PIN activé");
         await loadPinInfo();
       } else {
         setError(result.error || "Erreur lors de l'activation du PIN");
@@ -134,7 +138,7 @@ export function PinManagement() {
   const handleDisable = async () => {
     if (
       !confirm(
-        "Désactiver le code PIN ? Les administrateurs n'auront plus besoin de saisir le code.",
+        "Désactiver le code PIN ? L&apos;administrateurs n&apos;aura plus besoin de saisir le code.",
       )
     ) {
       return;
@@ -147,7 +151,9 @@ export function PinManagement() {
     try {
       const result = await disablePinAction();
       if (result.success) {
-        setSuccess("PIN désactivé");
+        setSuccess(
+          result.warning ? `PIN désactivé — ${result.warning}` : "PIN désactivé",
+        );
         await loadPinInfo();
       } else {
         setError(result.error || "Erreur lors de la désactivation du PIN");
@@ -329,7 +335,7 @@ export function PinManagement() {
                   </label>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Lettres, chiffres et caractères spéciaux autorisés
+                  6 caractères : alphanumériques + au moins un caractère spécial
                 </p>
               </div>
 
