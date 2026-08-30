@@ -1,6 +1,6 @@
-// lib/constants/admin-shortcuts.ts
+// lib/constants/super_admin-shortcuts.ts
 /**
- * Configuration statique des raccourcis du portail admin.
+ * Configuration statique des raccourcis du portail super_admin.
  *
  * - Séparée du composant pour respecter DRY et la testabilité.
  * - Chaque groupe possède des modules spécifiques à son domaine.

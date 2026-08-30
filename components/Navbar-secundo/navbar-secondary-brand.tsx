@@ -19,7 +19,7 @@ export function NavbarBrand({ logo, href = "/", className }: NavbarBrandProps) {
     <Link
       href={href}
       className={cn(
-        "font-playfair text-2xl font-bold tracking-widest text-cyan-400 transition-colors hover:text-pink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded",
+        "font-playfair text-2xl font-bold tracking-widest text-rose-500 transition-colors hover:text-cyan-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded",
         className
       )}
     >

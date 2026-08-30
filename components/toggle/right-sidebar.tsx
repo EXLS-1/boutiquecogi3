@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useUIStore } from "@/store/use-ui-store";
 import { useRBAC } from "@/hooks/rbac/use-rbac";
-import { User, Heart, ShoppingBag, LayoutDashboard, Shield, LogIn } from "lucide-react";
+import { User, Heart, ShoppingBag, Shield, LogIn } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -95,20 +95,6 @@ export const RightSidebar = () => {
               Mon Panier
             </span>
           </Link>
-
-          {/* Rôles privilège RBAC : Liens rapides Admin / Staff */}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              onClick={closeSidebar}
-              className="flex items-center gap-4 p-2 rounded-lg bg-cyan-50/80 border border-cyan-100 hover:bg-cyan-100/50 transition-colors mt-2"
-            >
-              <LayoutDashboard className="w-5 h-5 text-cyan-500" />
-              <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-500">
-                Dashboard Admin
-              </span>
-            </Link>
-          )}
 
           {isStaff && !isAdmin && (
             <Link

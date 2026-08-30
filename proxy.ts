@@ -75,15 +75,15 @@ const PROTECTED_ROUTES = [
 
 /** Routes admin (nécessitent une session ; le RBAC détaillé est en aval) */
 const ADMIN_ROUTES = [
-  "/admin",
-  "/admin/dashboard",
-  "/admin/users",
-  "/admin/roles",
-  "/admin/settings",
-  "/admin/analytics",
-  "/admin/setup-2fa",
-  "/admin/security",
-  "/admin/verify-2fa",
+  "/super_admin",
+  "/super_admin/dashboard",
+  "/super_admin/users",
+  "/super_admin/roles",
+  "/super_admin/settings",
+  "/super_admin/analytics",
+  "/super_admin/setup-2fa",
+  "/super_admin/security",
+  "/super_admin/verify-2fa",
   "/dashboard",
 ];
 
