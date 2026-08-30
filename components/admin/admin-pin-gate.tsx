@@ -75,7 +75,11 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
       inputRef.current?.focus();
     } else {
       // Défaut : refresh → le serveur re-rend la page (fail-closed).
-      (onVerified ?? (() => router.refresh()))();
+      if (typeof onVerified === "function") {
+        onVerified();
+      } else {
+        router.refresh();
+      }
     }
 
     setIsLoading(false);
