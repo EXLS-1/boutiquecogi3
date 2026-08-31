@@ -4,9 +4,8 @@
 // permettant d'afficher une liste de liens de navigation,
 // ainsi que des actions spécifiques (comme un menu ou un panier)
 // sans être limité à des éléments spécifiques.
-// Contrairement à la version précédente,
-// ce composant ne contient plus de logique spécifique à une icône de panier,
-// ce qui le rend plus générique et adaptable à différents besoins d'interface utilisateur.
+// Le slot central affiche désormais un menu déroulant « CATEGORIES » dynamique
+// (remplace les catégories codées en dur). Les slots gauche et droit restent inchangés.
 
 "use client";
 
@@ -15,27 +14,13 @@ import { Settings, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils/utils";
 import { useUIStore } from "@/store/use-ui-store";
 import { NavbarSecondaryTrigger } from "./navbar-secondary-trigger";
-import { NavbarSecondaryLinks } from "./navbar-secondary-links";
-import type { NavItem } from "@/types/navbar-secondary";
+import { NavbarCategoriesMenu } from "./navbar-categories-menu";
 
 interface NavbarSecondaryProps {
-  items?: NavItem[];
   className?: string;
 }
 
-const DEFAULT_ITEMS: NavItem[] = [
-  { label: "Femme", href: "/products?category=femme" },
-  { label: "Homme", href: "/products?category=homme" },
-  { label: "Enfant", href: "/products?category=enfant" },
-  { label: "Sacs", href: "/products?category=sac" },
-  { label: "Chaussures", href: "/products?category=chaussure" },
-  { label: "Accessoires", href: "/products?category=accessoire" },
-];
-
-export function NavbarSecondary({
-  items = DEFAULT_ITEMS,
-  className,
-}: NavbarSecondaryProps) {
+export function NavbarSecondary({ className }: NavbarSecondaryProps) {
   const { toggleLeftSidebar, toggleRightSidebar } = useUIStore();
 
   return (
@@ -55,8 +40,8 @@ export function NavbarSecondary({
           />
         </div>
 
-        {/* Slot Central : Contenu Filtrable Autonome */}
-        <NavbarSecondaryLinks items={items} />
+        {/* Slot Central : Menu « CATEGORIES » dynamique (remplace les liens en dur) */}
+        <NavbarCategoriesMenu />
 
         {/* Slot Droit : Actions Client (Icône corrigée sémantiquement) */}
         <div className="flex items-center justify-end">
