@@ -6,6 +6,11 @@ import { generateUUIDv7 } from '@/lib/utils/uuid'
 import { generateSlug } from '@/lib/utils/slug'
 import { generateSKU } from '@/lib/utils/sku'
 import { StockService } from './stock-service'
+import {
+  normalizeCategoryIds,
+  syncProductCategories,
+  validateCategoriesExist,
+} from './product-category-sync'
 
 export class ProductServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -27,6 +32,7 @@ export const ProductService = {
     basePrice: number
     status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
     categoryId?: string | null
+    categoryIds?: string[] | null
     images?: string[]
   }) {
     // Validation manuelle des champs requis
@@ -36,25 +42,35 @@ export const ProductService = {
 
     return withSecurePrisma(
       async (ctx) => {
-        const product = await ctx.prisma.product.create({
-          data: {
-            id: input.id ?? generateUUIDv7(),
-            name: input.name.trim(),
-            slug: input.slug ?? generateSlug(input.name),
-            sku: input.sku ?? generateSKU(input.name),
-            description: input.description ?? '',
-            basePrice: input.basePrice,
-            status: input.status ?? 'ACTIVE',
-            categoryId: input.categoryId,
-            images: input.images ?? [],
-            userId: ctx.userId,
-          }
+        // 1. Résolution + validation des catégories (principale + multi)
+        const categoryIds = normalizeCategoryIds(input.categoryId, input.categoryIds)
+        await validateCategoriesExist(ctx.prisma, categoryIds)
+
+        // 2. Transaction : produit + jointure + stock
+        return ctx.prisma.$transaction(async (tx) => {
+          const product = await tx.product.create({
+            data: {
+              id: input.id ?? generateUUIDv7(),
+              name: input.name.trim(),
+              slug: input.slug ?? generateSlug(input.name),
+              sku: input.sku ?? generateSKU(input.name),
+              description: input.description ?? '',
+              basePrice: input.basePrice,
+              status: input.status ?? 'ACTIVE',
+              categoryId: categoryIds[0] ?? null,
+              images: input.images ?? [],
+              userId: ctx.userId,
+            }
+          })
+
+          // Multi-catégories via la table de jointure
+          await syncProductCategories(tx, product.id, categoryIds)
+
+          // Création automatique du stock à 0
+          await StockService.createForProduct(product.id, 0, ctx.userId)
+
+          return product
         })
-
-        // Création automatique du stock à 0
-        await StockService.createForProduct(product.id, 0, ctx.userId)
-
-        return product
       },
       {
         minRoleLevel: 4, // EDITOR minimum
@@ -72,6 +88,7 @@ export const ProductService = {
       basePrice?: number
       description?: string | null
       categoryId?: string | null
+      categoryIds?: string[] | null
       images?: string[]
       status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
       slug?: string
@@ -98,18 +115,34 @@ export const ProductService = {
         // Régénère le slug automatiquement si le nom change et pas de slug fourni
         const slug = data.slug ?? (data.name ? generateSlug(data.name) : undefined)
 
-        return ctx.prisma.product.update({
-          where: { id: productId },
-          data: {
-            ...(data.name !== undefined && { name: data.name }),
-            ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
-            ...(data.description !== undefined && { description: data.description }),
-            ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
-            ...(data.images !== undefined && { images: data.images }),
-            ...(data.status !== undefined && { status: data.status }),
-            ...(slug !== undefined && { slug }),
-            updatedAt: new Date(),
+        // Résolution + validation des catégories (principale + multi)
+        // Note : categoryIds fourni (même []) = remplacement complet.
+        const categoryProvided =
+          data.categoryId !== undefined || data.categoryIds !== undefined
+        const categoryIds = normalizeCategoryIds(data.categoryId, data.categoryIds)
+        if (categoryProvided) {
+          await validateCategoriesExist(ctx.prisma, categoryIds)
+        }
+
+        return ctx.prisma.$transaction(async (tx) => {
+          if (categoryProvided) {
+            await syncProductCategories(tx, productId, categoryIds)
           }
+
+          return tx.product.update({
+            where: { id: productId },
+            data: {
+              ...(data.name !== undefined && { name: data.name }),
+              ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
+              ...(data.description !== undefined && { description: data.description }),
+              ...(!categoryProvided &&
+                data.categoryId !== undefined && { categoryId: data.categoryId }),
+              ...(data.images !== undefined && { images: data.images }),
+              ...(data.status !== undefined && { status: data.status }),
+              ...(slug !== undefined && { slug }),
+              updatedAt: new Date(),
+            }
+          })
         })
       },
       {
@@ -158,6 +191,12 @@ export const ProductService = {
           include: {
             user: { select: { id: true, name: true, email: true } },
             category: { select: { id: true, name: true } },
+            categoryProducts: {
+              orderBy: { displayOrder: 'asc' },
+              include: {
+                category: { select: { id: true, name: true, slug: true } },
+              },
+            },
             stock: true
           },
           orderBy: { createdAt: 'desc' }
@@ -179,6 +218,10 @@ export const ProductService = {
           include: {
             user: { select: { id: true, name: true } },
             category: true,
+            categoryProducts: {
+              orderBy: { displayOrder: 'asc' },
+              include: { category: true },
+            },
             stock: {
               include: {
                 movements: {

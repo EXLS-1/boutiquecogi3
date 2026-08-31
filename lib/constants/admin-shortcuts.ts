@@ -99,7 +99,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard",
         cta: "Afficher",
         icon: ClipboardList,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Alertes opérationnelles",
@@ -147,7 +147,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard/analytics",
         cta: "Afficher",
         icon: BarChart3,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Paiements",
@@ -163,7 +163,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard/revenue",
         cta: "Afficher",
         icon: TrendingUp,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Stock",
@@ -203,7 +203,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
       },
       {
         title: "CRUD Produits",
-        description: "Reprendre les produits importés ou sauvegardés avant publication.",
+        description: "Traitement complet des produits et de leurs variants.",
         href: "/admin/product/drafts",
         cta: "Voir les brouillons",
         icon: PackagePlus,
@@ -215,7 +215,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard/categories",
         cta: "Organiser",
         icon: Tags,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Variantes",
@@ -259,7 +259,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/stock",
         cta: "Voir le stock",
         icon: Warehouse,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Mouvements",
@@ -311,7 +311,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard/checkout",
         cta: "Contrôler",
         icon: CreditCard,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Expédition",
@@ -347,7 +347,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard/checkout",
         cta: "Ouvrir",
         icon: CreditCard,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Transactions",
@@ -407,7 +407,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/users/blocked",
         cta: "Afficher",
         icon: UserCheck,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Audit utilisateur",
@@ -443,7 +443,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/role",
         cta: "Gérer les rôles",
         icon: Shield,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
        {
         title: "Gestion des Rôles",
@@ -487,7 +487,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/setup-2fa",
         cta: "Configurer",
         icon: KeyRound,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Vérification 2FA",
@@ -547,7 +547,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/role",
         cta: "Rôles",
         icon: ShieldCheck,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
     ],
   },
@@ -655,7 +655,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/dashboard/analytics/trends",
         cta: "Explorer",
         icon: TrendingUp,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Conversion",
@@ -727,7 +727,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/health/system",
         cta: "Vérifier",
         icon: Server,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Base de données",
@@ -772,7 +772,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         href: "/admin/policies/sales",
         cta: "Gérer",
         icon: Receipt,
-        tone: "text-emerald-500",
+        tone: "text-cyan-200",
       },
       {
         title: "Conditions Générales",

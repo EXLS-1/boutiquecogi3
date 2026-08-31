@@ -8,7 +8,10 @@ export const createProductSchema = z.object({
     price: z.number().positive('Le prix doit être positif'),
     currency: z.enum(Currency).default(Currency.USD),
     description: z.string().max(5000).optional(),
+    // Catégorie principale (rétrocompatibilité) — sync avec categoryIds[0]
     categoryId: z.uuid().optional(),
+    // Multi-catégories (table de jointure CategoryProduct). La première est la principale.
+    categoryIds: z.array(z.uuid()).min(1, 'Au moins une catégorie est requise si fournie').max(10, '10 catégories maximum').optional(),
     images: z.array(z.url()).optional().default([]),
     stock: z.number().int().min(0).optional().default(0),
 })

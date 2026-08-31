@@ -30,6 +30,8 @@ export interface CreateProductDto {
   name: string;
   description?: string | null;
   categoryId?: string | null;
+  /** Multi-catégories (table CategoryProduct). La première est la principale. */
+  categoryIds?: string[] | null;
   basePrice: number;
   currency?: ProductCurrency;
   /** Prix comparative (barré) en centimes — persisté dans ProductPrice. */

@@ -13,6 +13,10 @@ async function findProduct(id: string) {
     },
     include: {
       category: { select: { slug: true, name: true } },
+      categoryProducts: {
+        orderBy: { displayOrder: "asc" },
+        include: { category: { select: { id: true, name: true, slug: true } } },
+      },
       variants: { take: 1 },
     },
   });
@@ -42,6 +46,11 @@ export async function GET(
         price: Math.round(Number(product.basePrice) / 100),
         images: product.images,
         category: product.category?.slug ?? "femme",
+        categories: product.categoryProducts.map((cp) => ({
+          id: cp.category.id,
+          name: cp.category.name,
+          slug: cp.category.slug,
+        })),
         isFeatured: product.isFeatured,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
@@ -79,6 +88,7 @@ export async function PUT(
       images?: string[];
       isFeatured?: boolean;
       isArchived?: boolean;
+      categoryId?: string | null;
     } = {};
 
     if (body.name) data.name = String(body.name).trim();
@@ -92,10 +102,71 @@ export async function PUT(
     if (body.isArchived !== undefined)
       data.isArchived = Boolean(body.isArchived);
 
-    const product = await prisma.product.update({
-      where: { id: existing.id },
-      data,
-      include: { category: true, variants: true },
+    // ── Catégories : categoryId (principale) et/ou categoryIds (multi) ──
+    const categoryProvided =
+      body.categoryId !== undefined || body.categoryIds !== undefined;
+    const requestedIds: string[] = Array.isArray(body.categoryIds)
+      ? body.categoryIds.map(String).filter(Boolean)
+      : body.categoryId
+        ? [String(body.categoryId)]
+        : [];
+
+    let categories: { id: string }[] = [];
+    if (categoryProvided) {
+      if (requestedIds.length > 10) {
+        return NextResponse.json(
+          { status: "error", message: "10 catégories maximum" },
+          { status: 400 },
+        );
+      }
+      categories = requestedIds.length
+        ? await prisma.category.findMany({
+            where: { id: { in: requestedIds } },
+            select: { id: true },
+          })
+        : [];
+      if (categories.length !== requestedIds.length) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Une ou plusieurs catégories sont introuvables",
+            missing: requestedIds.filter(
+              (id) => !categories.some((c) => c.id === id),
+            ),
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    const product = await prisma.$transaction(async (tx) => {
+      if (categoryProvided) {
+        // Remplacement complet : jointure + catégorie principale = première
+        await tx.categoryProduct.deleteMany({ where: { productId: existing.id } });
+        if (categories.length > 0) {
+          await tx.categoryProduct.createMany({
+            data: categories.map((c, index) => ({
+              productId: existing.id,
+              categoryId: c.id,
+              displayOrder: index,
+            })),
+          });
+        }
+        data.categoryId = categories[0]?.id ?? null;
+      }
+
+      return tx.product.update({
+        where: { id: existing.id },
+        data,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          categoryProducts: {
+            orderBy: { displayOrder: "asc" },
+            include: { category: { select: { id: true, name: true, slug: true } } },
+          },
+          variants: true,
+        },
+      });
     });
 
     return NextResponse.json({ status: "success", data: product });

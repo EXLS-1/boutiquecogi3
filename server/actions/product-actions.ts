@@ -8,7 +8,37 @@ import { revalidatePath } from 'next/cache';
 import { AuthorizationError } from '@/server/core/secure-prisma';
 import { generateUUIDv7 } from '@/lib/utils/uuid';
 import { generateSlug } from '@/lib/utils/slug';
-import { generateSKU } from '@/lib/utils/sku';
+import { generateSKU } from '@/lib/utils/sku'
+
+/**
+ * Parse `categoryIds` depuis FormData. Formats tolérés :
+ *   - JSON array : '["<uuid>","<uuid>"]'
+ *   - CSV        : 'uuid1,uuid2'
+ *   - clés répétées : formData.getAll('categoryIds')
+ */
+function parseCategoryIds(formData: FormData): string[] | undefined {
+    const values = formData.getAll('categoryIds').map(String)
+
+    const collected: string[] = []
+    for (const value of values) {
+        const trimmed = value.trim()
+        if (!trimmed) continue
+        if (trimmed.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(trimmed)
+                if (Array.isArray(parsed)) collected.push(...parsed.map(String))
+            } catch {
+                // JSON invalide → laissé brut, la validation Zod renverra l'erreur
+                collected.push(trimmed)
+            }
+        } else {
+            collected.push(...trimmed.split(',').map((s) => s.trim()))
+        }
+    }
+
+    const unique = [...new Set(collected.filter(Boolean))]
+    return unique.length > 0 ? unique : undefined
+};
 
 type ActionResult<T = unknown> =
     | { success: true; data: T; message?: string }
@@ -26,6 +56,7 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
             price: Number(raw.price),
             description: raw.description || undefined,
             categoryId: raw.categoryId || undefined,
+            categoryIds: parseCategoryIds(formData),
             images: raw.images ? JSON.parse(raw.images as string) : [],
             stock: raw.stock ? Number(raw.stock) : 0,
         })
@@ -48,7 +79,8 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
             description: parsed.data.description,
             basePrice: parsed.data.price,        // ← Prisma attend basePrice
             status: 'ACTIVE' as const,           // ← enum ProductStatus
-            categoryId: parsed.data.categoryId,
+            categoryId: parsed.data.categoryIds?.[0] ?? parsed.data.categoryId ?? null,
+            categoryIds: parsed.data.categoryIds ?? null,
             images: parsed.data.images,
             // stock ignoré : n'existe pas dans schema.prisma
         }
@@ -87,6 +119,7 @@ export async function updateProductAction(
         if (raw.price) data.basePrice = Number(raw.price) // ← mapping price → basePrice
         if (raw.description) data.description = raw.description
         if (raw.categoryId) data.categoryId = raw.categoryId
+        if (raw.categoryIds) data.categoryIds = parseCategoryIds(formData)
         if (raw.images) data.images = JSON.parse(raw.images as string)
         
             // stock ignoré : n'existe pas dans schema.prisma

@@ -111,18 +111,58 @@ export async function POST(request: NextRequest) {
         });
         break;
 
-      case "change-category":
+      case "change-category": {
         if (!categoryId) {
           return NextResponse.json(
             { error: "categoryId required" },
             { status: 400 },
           );
         }
-        result = await prisma.product.updateMany({
-          where: { id: { in: ids } },
-          data: { categoryId },
+
+        // Validation d'existence (anti-clé étrangère orpheline)
+        const categoryExists = await prisma.category.findUnique({
+          where: { id: categoryId },
+          select: { id: true },
+        });
+        if (!categoryExists) {
+          return NextResponse.json(
+            { error: "Category not found", categoryId },
+            { status: 400 },
+          );
+        }
+
+        result = await prisma.$transaction(async (tx) => {
+          const updated = await tx.product.updateMany({
+            where: { id: { in: ids } },
+            data: { categoryId },
+          });
+
+          // Sync de la table de jointure : la catégorie devient principale et unique
+          await tx.categoryProduct.deleteMany({
+            where: { productId: { in: ids }, categoryId: { not: categoryId } },
+          });
+          const products = await tx.product.findMany({
+            where: { id: { in: ids } },
+            select: { id: true },
+          });
+          const withCategory = products.filter(
+            (p) => ids.includes(p.id),
+          );
+          if (withCategory.length > 0) {
+            await tx.categoryProduct.createMany({
+              data: withCategory.map((p) => ({
+                productId: p.id,
+                categoryId,
+                displayOrder: 0,
+              })),
+              skipDuplicates: true,
+            });
+          }
+
+          return updated;
         });
         break;
+      }
 
       case "export":
         const products = await prisma.product.findMany({

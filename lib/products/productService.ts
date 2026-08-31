@@ -36,6 +36,7 @@ export const PRODUCT_ERROR_CODES = {
   VARIANT_NOT_FOUND: "VARIANT_NOT_FOUND",
   INSUFFICIENT_STOCK: "INSUFFICIENT_STOCK",
   INVALID_QUANTITY: "INVALID_QUANTITY",
+  CATEGORY_NOT_FOUND: "CATEGORY_NOT_FOUND",
   INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;
 
@@ -103,6 +104,33 @@ export class ProductService {
           const totalStock = ProductValidationService.computeTotalStock(variants);
           const productSku = await ProductService.resolveUniqueProductSku(tx, input.name);
 
+          // 2a-bis. Résolution des catégories : union categoryId + categoryIds,
+          // dédupliquée, validée en base (existence réelle).
+          const categoryIds = [
+            ...new Set(
+              [input.categoryId, ...(input.categoryIds ?? [])].filter(
+                (id): id is string => typeof id === "string" && id.trim() !== "",
+              ),
+            ),
+          ];
+          if (categoryIds.length > 0) {
+            const found = await tx.category.findMany({
+              where: { id: { in: categoryIds } },
+              select: { id: true },
+            });
+            if (found.length !== categoryIds.length) {
+              throw new ProductError(
+                "Une ou plusieurs catégories sont introuvables.",
+                PRODUCT_ERROR_CODES.CATEGORY_NOT_FOUND,
+                {
+                  missing: categoryIds.filter(
+                    (id) => !found.some((c) => c.id === id),
+                  ),
+                },
+              );
+            }
+          }
+
           // 2a. Produit parent (publication immédiate = visible en catalogue)
           const product = await tx.product.create({
             data: {
@@ -113,7 +141,7 @@ export class ProductService {
               price: input.basePrice,
               basePrice: input.basePrice,
               currency: input.currency ?? Currency.USD,
-              categoryId: input.categoryId ?? null,
+              categoryId: categoryIds[0] ?? null,
               userId,
               images: input.images ?? [],
               status: ProductStatus.PUBLISHED,
@@ -145,6 +173,17 @@ export class ProductService {
             },
             include: { stock: true },
           });
+
+          // 2a-ter. Multi-catégories : lignes de jointure CategoryProduct
+          if (categoryIds.length > 0) {
+            await tx.categoryProduct.createMany({
+              data: categoryIds.map((categoryId, index) => ({
+                productId: product.id,
+                categoryId,
+                displayOrder: index,
+              })),
+            });
+          }
 
           const stockId = product.stock!.id;
 

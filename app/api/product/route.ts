@@ -90,6 +90,10 @@ export async function GET(request: NextRequest) {
       take: limit,
       include: {
         category: { select: { slug: true, name: true } },
+        categoryProducts: {
+          orderBy: { displayOrder: "asc" },
+          include: { category: { select: { id: true, name: true, slug: true } } },
+        },
         variants: true,
       },
     });
@@ -103,6 +107,7 @@ export async function GET(request: NextRequest) {
       basePrice: unknown; // Prisma.Decimal
       images: string[] | null;
       category?: { slug?: string } | null;
+      categoryProducts?: Array<{ category: { id: string; name: string; slug: string } }> | null;
       isFeatured: boolean;
       createdAt: Date;
       updatedAt: Date;
@@ -122,6 +127,11 @@ export async function GET(request: NextRequest) {
 
           images: p.images ?? [],
           category: p.category?.slug ?? "femme",
+          categories: (p.categoryProducts ?? []).map((cp) => ({
+            id: cp.category.id,
+            name: cp.category.name,
+            slug: cp.category.slug,
+          })),
           isFeatured: p.isFeatured,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
@@ -148,7 +158,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, price, images, category, isFeatured } = body;
+    const { name, description, price, images, category, categoryId, categoryIds, isFeatured } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -157,9 +167,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const categoryRecord = await prisma.category.findFirst({
-      where: { slug: String(category || "femme") },
-    });
+    // ── Résolution des catégories (multi prioritaire, slug/UUID rétrocompatibles) ──
+    const requestedIds: string[] = Array.isArray(categoryIds)
+      ? categoryIds.map(String).filter(Boolean)
+      : categoryId
+        ? [String(categoryId)]
+        : [];
+
+    let categories = requestedIds.length
+      ? await prisma.category.findMany({ where: { id: { in: requestedIds } } })
+      : [];
+
+    if (requestedIds.length > 0 && categories.length !== requestedIds.length) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message: "Une ou plusieurs catégories sont introuvables",
+          missing: requestedIds.filter(
+            (id) => !categories.some((c) => c.id === id),
+          ),
+        },
+        { status: 400 },
+      );
+    }
+
+    // Fallback slug (rétrocompatibilité « category: "femme" »)
+    if (categories.length === 0 && category) {
+      const slugCategory = await prisma.category.findFirst({
+        where: { slug: String(category) },
+      });
+      if (slugCategory) categories = [slugCategory];
+    }
 
     const slug = slugify(`${name}-${Date.now()}`);
     const basePrice = Math.round(Number(price) * 100);
@@ -172,8 +210,16 @@ export async function POST(request: NextRequest) {
         description: String(description || ""),
         basePrice,
         images: Array.isArray(images) ? images : [],
-        ...(categoryRecord
-          ? { category: { connect: { id: categoryRecord.id } } }
+        ...(categories.length > 0
+          ? {
+              categoryId: categories[0].id,
+              categoryProducts: {
+                create: categories.map((c, index) => ({
+                  categoryId: c.id,
+                  displayOrder: index,
+                })),
+              },
+            }
           : {}),
         isFeatured: isFeatured === true,
         variants: {
@@ -185,7 +231,14 @@ export async function POST(request: NextRequest) {
           },
         },
       } as Prisma.ProductCreateInput,
-      include: { category: true, variants: true },
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        categoryProducts: {
+          orderBy: { displayOrder: "asc" },
+          include: { category: { select: { id: true, name: true, slug: true } } },
+        },
+        variants: true,
+      },
     });
 
 

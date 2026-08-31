@@ -75,6 +75,11 @@ export const dynamicProductSchema = z
       .max(PRODUCT_LIMITS.NAME_MAX),
     description: z.string().trim().max(PRODUCT_LIMITS.DESC_MAX).optional().nullable(),
     categoryId: z.string().uuid("categoryId doit être un UUID valide.").optional().nullable(),
+    categoryIds: z
+      .array(z.string().uuid("Chaque categoryIds[] doit être un UUID valide."))
+      .max(10, "10 catégories maximum.")
+      .optional()
+      .nullable(),
     basePrice: z.coerce
       .number()
       .positive("Le prix doit être supérieur à 0.")

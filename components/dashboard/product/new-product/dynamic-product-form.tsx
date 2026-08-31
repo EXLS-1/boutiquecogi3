@@ -2,8 +2,9 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCreateProduct } from "@/hooks/use-create-product";
+import { getCategories } from "@/lib/actions/category.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,10 +29,30 @@ export function DynamicProductForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [categoriesError, setCategoriesError] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [productAttributes, setProductAttributes] = useState<Record<string, string>>({});
   const [variants, setVariants] = useState<VariantForm[]>([{ attributes: {}, priceOffset: 0, initialStock: 0 }]);
   const [activeTab, setActiveTab] = useState("simple");
+
+  // Chargement des catégories (Server Action, une fois par ouverture)
+  useEffect(() => {
+    if (!isOpen || categories.length > 0) return;
+    let cancelled = false;
+    getCategories().then((res) => {
+      if (cancelled) return;
+      if (res.success) setCategories(res.data);
+      else setCategoriesError(res.error);
+    });
+    return () => { cancelled = true; };
+  }, [isOpen, categories.length]);
+
+  const toggleCategory = (id: string) =>
+    setSelectedCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+    );
 
   const addVariant = () => setVariants((p) => [...p, { attributes: {}, priceOffset: 0, initialStock: 0 }]);
   const removeVariant = (i: number) => { if (variants.length > 1) setVariants((p) => p.filter((_, idx) => idx !== i)); };
@@ -40,7 +61,8 @@ export function DynamicProductForm() {
     const payload: any = {
       name,
       description: description || undefined,
-      categoryId: categoryId || undefined,
+      categoryId: (selectedCategoryIds[0] ?? categoryId) || undefined,
+      categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
       basePrice: parseFloat(basePrice),
       attributes: Object.keys(productAttributes).length > 0 ? productAttributes : undefined,
     };
@@ -55,10 +77,11 @@ export function DynamicProductForm() {
     const ok = await createProduct(payload);
     if (ok) {
       setName(""); setDescription(""); setCategoryId(""); setBasePrice("");
+      setSelectedCategoryIds([]);
       setProductAttributes({}); setVariants([{ attributes: {}, priceOffset: 0, initialStock: 0 }]);
       setActiveTab("simple");
     }
-  }, [name, description, categoryId, basePrice, productAttributes, variants, activeTab, createProduct]);
+  }, [name, description, categoryId, selectedCategoryIds, basePrice, productAttributes, variants, activeTab, createProduct]);
 
   const handleClose = () => { setIsOpen(false); reset(); };
   const ic = "w-full bg-background border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-ring";
@@ -72,7 +95,35 @@ export function DynamicProductForm() {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2"><Label htmlFor="name">Nom *</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Chemise Oxford" className={ic} /></div>
             <div className="col-span-2"><Label htmlFor="description">Description</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className={ic} /></div>
-            <div><Label htmlFor="categoryId">ID Catategorie</Label><Input id="categoryId" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={ic} /></div>
+            <div>
+              <Label>Catégories (la 1re cochée est la principale)</Label>
+              {categoriesError && <p className="text-xs text-destructive">{categoriesError}</p>}
+              <div className="mt-1 flex flex-wrap gap-2">
+                {categories.map((cat) => {
+                  const checked = selectedCategoryIds.includes(cat.id);
+                  return (
+                    <label
+                      key={cat.id}
+                      className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm transition-colors ${checked ? "border-primary bg-primary/10 font-medium" : "border-input bg-background"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleCategory(cat.id)}
+                        className="accent-primary"
+                      />
+                      {cat.name}
+                      {checked && selectedCategoryIds[0] === cat.id && (
+                        <Badge variant="secondary" className="ml-1">Principale</Badge>
+                      )}
+                    </label>
+                  );
+                })}
+                {categories.length === 0 && !categoriesError && (
+                  <span className="text-sm text-muted-foreground">Chargement des catégories…</span>
+                )}
+              </div>
+            </div>
             <div><Label htmlFor="basePrice">Prix de base *</Label><Input id="basePrice" type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} className={ic} /></div>
           </div>
           <AttributeSection attributes={productAttributes} onRemove={(k) => setProductAttributes((p) => { const n = { ...p }; delete n[k]; return n; })} onAdd={(k, v) => setProductAttributes((p) => ({ ...p, [k]: v }))} />
@@ -131,7 +182,7 @@ function VariantCard({ variant, index, setVariants, removeVariant, canRemove, ic
         </div>
         <div className="space-y-2"><Label>Attributs</Label>
           {ATTRIBUTE_KEYS.map((k) => (
-            <div key={k} className="flex items-center gap-2"><span className="text-xs w-20 text-muted-foreground">{k}</span><Input value={variant.attributes[k] || ""} onChange={(e) => setVariants((p: VariantForm[]) => p.map((x, idx) => idx === index ? { ...x, attributes: { ...x.attributes, [k]: e.target.value } : x))} className={ic} /></div>
+            <div key={k} className="flex items-center gap-2"><span className="text-xs w-20 text-muted-foreground">{k}</span><Input value={variant.attributes[k] || ""} onChange={(e) => setVariants((p: VariantForm[]) => p.map((x, idx) => idx === index ? { ...x, attributes: { ...x.attributes, [k]: e.target.value } } : x))} className={ic} /></div>
           ))}
         </div>
       </CardContent>
