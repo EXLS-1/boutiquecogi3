@@ -11,7 +11,10 @@
 //     17–24 éléments →  3 colonnes
 //     25–32 éléments →  4 colonnes
 //     33–40 éléments →  5 colonnes
-//     41–48 éléments →  6 colonnes   (et ainsi de suite, +1 colonne / 8 poster)
+// - Déploiement HORIZONTAL plafonné au nombre maximum de colonnes (MAX_COLUMNS) :
+//   au-delà de 40 éléments, la largeur ne croît plus, la hauteur prend le relais.
+// - Déploiement VERTICAL plafonné à la colonne la plus remplie :
+//   hauteur = (nombre d'éléments le + élevé d'une colonne) × ROW_HEIGHT_PX.
 // =============================================================================
 
 "use client";
@@ -28,13 +31,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getCategories } from "@/lib/actions/category.actions";
 
+/** Nombre maximum de colonnes autorisé (plafond du déploiement HORIZONTAL). */
+const MAX_COLUMNS = 5;
+/** Largeur approximative d'une colonne de menu (en px). */
+const COLUMN_WIDTH_PX = 220;
+/** Hauteur approximative d'une ligne d'élément (en px). */
+const ROW_HEIGHT_PX = 36;
+
 interface Category {
   id: string;
   name: string;
   slug: string;
 }
 
-/** Nombre de colonnes selon les paliers demandés. */
+/**
+ * Nombre « naturel » de colonnes selon les paliers demandés (avant plafond).
+ * 0–7 → 1 · 8–16 → 2 · 17–24 → 3 · 25–32 → 4 · 33–40 → 5 · puis +1 / 8.
+ */
 function computeColumnCount(count: number): number {
   if (count <= 0) return 1;
   if (count <= 7) return 1;
@@ -96,12 +109,29 @@ export function NavbarCategoriesMenu() {
     };
   }, []);
 
-  const columnCount = computeColumnCount(categories.length);
+  // Nombre de colonnes effectives : « naturel » mais plafonné (déploiement HORIZONTAL borné).
+  const naturalColumnCount = computeColumnCount(categories.length);
+  const columnCount = Math.max(1, Math.min(naturalColumnCount, MAX_COLUMNS));
   const columns = useMemo(
     () => chunkIntoColumns(categories, columnCount),
     [categories, columnCount],
   );
   const hasCategories = categories.length > 0;
+
+  // Nombre le plus élevé d'éléments présents dans une colonne (colonne la plus remplie).
+  const maxItemsPerColumn = hasCategories
+    ? Math.max(...columns.map((col) => col.length))
+    : 0;
+
+  // Dimensions bornées du panneau :
+  //  - largeur  ≤ MAX_COLUMNS × largeur unité
+  //  - hauteur  ≤ (éléments max d'une colonne) × hauteur ligne
+  const menuStyle: React.CSSProperties | undefined = hasCategories
+    ? {
+        maxWidth: columnCount * COLUMN_WIDTH_PX,
+        maxHeight: Math.max(maxItemsPerColumn, 1) * ROW_HEIGHT_PX,
+      }
+    : undefined;
 
   return (
     <DropdownMenu>
@@ -119,6 +149,7 @@ export function NavbarCategoriesMenu() {
       <DropdownMenuContent
         align="start"
         sideOffset={8}
+        style={menuStyle}
         className="min-w-56 rounded-md border border-cyan-700/20 bg-white p-2 shadow-lg"
       >
         {status === "loading" && (
