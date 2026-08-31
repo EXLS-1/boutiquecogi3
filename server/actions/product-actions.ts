@@ -136,7 +136,19 @@ export async function deleteProductAction(productId: string): Promise<ActionResu
 export async function listProductsAction(): Promise<ActionResult> {
     try {
         const products = await ProductService.listAll()
-        return { success: true, data: products }
+
+        // Prisma renvoie des objets Decimal (price, basePrice, salePrice...) qui ne
+        // peuvent pas traverser la frontière Server → Client Component.
+        // On les convertit en nombres via JSON round-trip (Decimal.toJSON → string).
+        const serialized = products
+            ? JSON.parse(
+                  JSON.stringify(products, (_key, value) =>
+                      typeof value === 'bigint' ? value.toString() : value
+                  )
+              )
+            : null
+
+        return { success: true, data: serialized }
     } catch (error) {
         if (error instanceof AuthorizationError) {
             return { success: false, error: error.message, code: error.code }

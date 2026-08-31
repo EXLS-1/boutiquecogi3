@@ -148,7 +148,17 @@ export class ProductService {
 
           const stockId = product.stock!.id;
 
-          // 2b. Création des variantes + audit de stock
+          // 2b. Création du prix (ProductPrice) avec compareAtPrice optionnel
+          await tx.productPrice.create({
+            data: {
+              productId: product.id,
+              currency: input.currency ?? Currency.USD,
+              amount: input.basePrice,
+              compareAtPrice: input.compareAtPrice ?? null,
+            },
+          });
+
+          // 2c. Création des variantes + audit de stock
           let variantCount = 0;
           for (let i = 0; i < variants.length; i++) {
             const variantInput = variants[i];
@@ -190,7 +200,7 @@ export class ProductService {
             }
           }
 
-          // 2c. Projection de disponibilité (source de vérité du catalogue)
+          // 2d. Projection de disponibilité (source de vérité du catalogue)
           await tx.product_Availability_Projection.upsert({
             where: { productId: product.id },
             create: { productId: product.id, isAvailable: totalStock > 0 },

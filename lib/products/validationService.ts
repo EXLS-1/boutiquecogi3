@@ -11,20 +11,29 @@
 import { z } from "zod";
 
 // ─── Constantes (source unique, anti-magic-numbers) ─────────────────────────
+// Chargées depuis les variables d'environnement (.env / .env.local)
+// avec fallback sur les valeurs par défaut pour la rétrocompatibilité.
+
+const envInt = (key: string, fallback: number): number => {
+  const raw = process.env[key];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
 
 export const PRODUCT_LIMITS = {
-  NAME_MIN: 2,
-  NAME_MAX: 200,
-  DESC_MAX: 5000,
-  SKU_MIN: 3,
-  SKU_MAX: 64,
-  PRICE_MAX: 1_000_000_000,
-  PRICE_OFFSET_ABS_MAX: 10_000_000, // 100 000,00 dans l'unité monétaire
-  STOCK_MAX: 10_000_000,
-  VARIANT_MAX: 100,
-  IMAGE_MAX: 20,
-  ATTRIBUTE_KEY_MAX: 100,
-  ATTRIBUTE_VALUE_MAX: 500,
+  NAME_MIN: envInt("PRODUCT_NAME_MIN", 2),
+  NAME_MAX: envInt("PRODUCT_NAME_MAX", 200),
+  DESC_MAX: envInt("PRODUCT_DESC_MAX", 5000),
+  SKU_MIN: envInt("PRODUCT_SKU_MIN", 3),
+  SKU_MAX: envInt("PRODUCT_SKU_MAX", 64),
+  PRICE_MAX: envInt("PRODUCT_PRICE_MAX", 1_000_000_000),
+  PRICE_OFFSET_ABS_MAX: envInt("PRODUCT_PRICE_OFFSET_ABS_MAX", 10_000_000), // 100 000,00 dans l'unité monétaire
+  STOCK_MAX: envInt("PRODUCT_STOCK_MAX", 10_000_000),
+  VARIANT_MAX: envInt("PRODUCT_VARIANT_MAX", 100),
+  IMAGE_MAX: envInt("PRODUCT_IMAGE_MAX", 20),
+  ATTRIBUTE_KEY_MAX: envInt("PRODUCT_ATTRIBUTE_KEY_MAX", 100),
+  ATTRIBUTE_VALUE_MAX: envInt("PRODUCT_ATTRIBUTE_VALUE_MAX", 500),
 } as const;
 
 const attributeValueSchema = z.union([
@@ -70,6 +79,12 @@ export const dynamicProductSchema = z
       .number()
       .positive("Le prix doit être supérieur à 0.")
       .max(PRODUCT_LIMITS.PRICE_MAX),
+    compareAtPrice: z.coerce
+      .number()
+      .positive("Le prix comparative doit être supérieur à 0.")
+      .max(PRODUCT_LIMITS.PRICE_MAX)
+      .optional()
+      .nullable(),
     currency: z.enum(["USD", "CDF"]).default("USD"),
     attributes: z
       .record(z.string().trim().min(1).max(PRODUCT_LIMITS.ATTRIBUTE_KEY_MAX), attributeValueSchema)

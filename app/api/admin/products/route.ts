@@ -60,6 +60,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ...(baseData.description ? { description: baseData.description } : {}),
       ...(baseData.categoryId ? { categoryId: baseData.categoryId } : {}),
       ...(baseData.basePrice !== undefined ? { basePrice: baseData.basePrice } : {}),
+      ...(baseData.compareAtPrice !== undefined ? { compareAtPrice: baseData.compareAtPrice } : {}),
       attributes: baseData.attributes ?? {},
       images: baseData.images?.map((img) => img.url) ?? [],
       variants: (baseData.variants ?? []).map((v) => ({

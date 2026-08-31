@@ -32,6 +32,8 @@ export interface CreateProductDto {
   categoryId?: string | null;
   basePrice: number;
   currency?: ProductCurrency;
+  /** Prix comparative (barré) en centimes — persisté dans ProductPrice. */
+  compareAtPrice?: number | null;
   /** Attributs arbitraires du produit parent (ex: { matiere: "Coton" }). */
   attributes?: DynamicAttributes;
   /** Variantes. Absent ⇒ produit simple : une variante implicite unique est créée. */

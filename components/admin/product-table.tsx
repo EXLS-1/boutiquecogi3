@@ -1,3 +1,5 @@
+// components/admin/product-table.tsx
+
 'use client'
 
 import * as React from 'react'
@@ -51,8 +53,8 @@ interface ProductTableItem {
     name: string
     slug: string
     sku: string
-    basePrice: number
-    status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
+    basePrice: number | string // Prisma Decimal sérialisé (string) via le server action
+    status: string // ProductStatus (ACTIVE, DRAFT, PENDING, SCHEDULED, PUBLISHED, ARCHIVED, OUT_OF_STOCK, DISCONTINUED)
     images: string[]
     createdAt: Date | string
     user: { id: string; name: string | null; email: string }
@@ -94,6 +96,23 @@ export function ProductTable({ products }: ProductTableProps) {
         data.sort((a, b) => {
             const aVal = a[sort.key]
             const bVal = b[sort.key]
+
+            // Prix : Prisma Decimal sérialisé en string → tri numérique
+            if (sort.key === 'basePrice') {
+                const numA = Number(aVal)
+                const numB = Number(bVal)
+                return sort.dir === 'asc' ? numA - numB : numB - numA
+            }
+
+            // Dates : createdAt peut être sérialisé en ISO string
+            const aTime = new Date(aVal as string | Date).getTime()
+            const bTime = new Date(bVal as string | Date).getTime()
+            const aIsDate = aVal instanceof Date || /^\d{4}-\d{2}-\d{2}T/.test(String(aVal))
+            const bIsDate = bVal instanceof Date || /^\d{4}-\d{2}-\d{2}T/.test(String(bVal))
+            if (aIsDate && bIsDate && !Number.isNaN(aTime) && !Number.isNaN(bTime)) {
+                return sort.dir === 'asc' ? aTime - bTime : bTime - aTime
+            }
+
             if (typeof aVal === 'string' && typeof bVal === 'string') {
                 return sort.dir === 'asc'
                     ? aVal.localeCompare(bVal)
@@ -169,12 +188,19 @@ export function ProductTable({ products }: ProductTableProps) {
 
     const statusBadge = (status: ProductTableItem['status']) => {
 
-        const map = {
+        // Couvre toutes les valeurs de l'enum Prisma ProductStatus
+        const map: Record<string, { label: string; className: string }> = {
             ACTIVE: { label: 'Actif', className: 'bg-green-100 text-green-700 border-green-200' },
             DRAFT: { label: 'Brouillon', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+            PENDING: { label: 'En attente', className: 'bg-orange-100 text-orange-700 border-orange-200' },
+            SCHEDULED: { label: 'Planifié', className: 'bg-blue-100 text-blue-700 border-blue-200' },
+            PUBLISHED: { label: 'Publié', className: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
             ARCHIVED: { label: 'Archivé', className: 'bg-gray-100 text-gray-500 border-gray-200' },
+            OUT_OF_STOCK: { label: 'Rupture', className: 'bg-red-100 text-red-700 border-red-200' },
+            DISCONTINUED: { label: 'Discontinué', className: 'bg-slate-100 text-slate-500 border-slate-200' },
         }
-        const s = map[status]
+        // Fallback robuste : statut inconnu → badge neutre au lieu de crasher
+        const s = map[status] ?? { label: status || 'Inconnu', className: 'bg-slate-100 text-slate-600 border-slate-200' }
         return (
             <Badge variant="outline" className={cn(s.className)}>
                 {s.label}
@@ -196,6 +222,25 @@ export function ProductTable({ products }: ProductTableProps) {
                     {filtered.length} produit(s)
                 </span>
             </div>
+
+            {stockDetail && (
+                <div className="flex items-center gap-4 rounded-md border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm">
+                    <Package className="h-4 w-4 text-cyan-600" />
+                    <span className="font-medium text-cyan-900">
+                        Stock consulté — Quantité : {stockDetail.quantity} · Réservé :{" "}
+                        {stockDetail.reserved} · Disponible :{" "}
+                        {Math.max(0, stockDetail.quantity - stockDetail.reserved)} · Seuil
+                        d&apos;alerte : {stockDetail.alertThreshold}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setStockDetail(null)}
+                        className="ml-auto text-xs text-cyan-700 hover:underline"
+                    >
+                        Fermer
+                    </button>
+                </div>
+            )}
 
             <div className="rounded-md border">
                 <Table>
@@ -238,6 +283,8 @@ export function ProductTable({ products }: ProductTableProps) {
                                                         <Image
                                                             src={product.images[0]}
                                                             alt={product.name}
+                                                            width={40}
+                                                            height={40}
                                                             className="h-full w-full object-cover"
                                                         />
                                                     ) : (

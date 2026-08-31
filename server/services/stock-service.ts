@@ -160,6 +160,24 @@ export const StockService = {
     );
   },
 
+  // ─── Retirer du stock (vente / sortie explicite) ───
+  async removeStock(
+    productId: string,
+    quantity: number,
+    reason?: string,
+    userId?: string,
+    orderId?: string
+  ) {
+    return this.adjust(
+      productId,
+      "OUT",
+      quantity,
+      reason ?? "Sortie de stock",
+      userId,
+      orderId
+    );
+  },
+
   // ─── Helpers privés ───
   computeDelta(type: StockMovementType, qty: number): number {
     switch (type) {
