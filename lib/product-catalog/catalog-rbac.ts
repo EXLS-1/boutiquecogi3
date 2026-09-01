@@ -6,7 +6,7 @@
  * TODO: Intégrer Better-Auth quand l'authentification sera activée.
  */
 
-import { RBAC_LEVELS, type RbacLevel } from "@/lib/product-category/category-types";
+import { RBAC_LEVELS, type RbacLevel } from "./catalog-types";
 import type { RbacContext } from "./catalog-page-types";
 
 export const FALLBACK_RBAC: RbacContext = {
@@ -41,8 +41,8 @@ export function hasRbacAccess(
   userLevel: RbacLevel,
   requiredLevel: RbacLevel
 ): boolean {
-  const levelValues = Object.values(RBAC_LEVELS) as string[];
+  const levelValues = Object.values(RBAC_LEVELS) as unknown[];
   const userIndex = levelValues.indexOf(userLevel);
   const requiredIndex = levelValues.indexOf(requiredLevel);
-  return userIndex >= requiredIndex && userIndex !== -1;
+  return userIndex !== -1 && requiredIndex !== -1 && userIndex >= requiredIndex;
 }
