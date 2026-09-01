@@ -1,4 +1,4 @@
-// components/catalog/section-promotions.tsx
+// components/product-promotion/promotions.tsx
 /**
  * =============================================================================
  * SECTION PROMOTIONS - Boutiquecogi3

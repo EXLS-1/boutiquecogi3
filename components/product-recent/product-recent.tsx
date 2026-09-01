@@ -1,4 +1,4 @@
-// components/product-recent.tsx
+// components/product-recent/product-recent.tsx
 /**
  * =============================================================================
  * PRODUCT RECENT — Boutiquecogi3

@@ -10,8 +10,10 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Settings, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils/utils";
+import { Button} from "@/components/ui/button"
 import { useUIStore } from "@/store/use-ui-store";
 import { NavbarSecondaryTrigger } from "./navbar-secondary-trigger";
 import { NavbarCategoriesMenu } from "./navbar-categories-menu";
@@ -40,8 +42,30 @@ export function NavbarSecondary({ className }: NavbarSecondaryProps) {
           />
         </div>
 
-        {/* Slot Central : Menu « CATEGORIES » dynamique (remplace les liens en dur) */}
-        <NavbarCategoriesMenu />
+        <div>
+          {/* Slot Central : Menu « CATEGORIES » dynamique (remplace les liens en dur) */}
+          <NavbarCategoriesMenu />
+
+          {/* Liens « PROMOTIONS » et « NOUVEAUTÉS » — mêmes caractéristiques que « Catégories » */}
+          <Button
+            variant="ghost"
+            asChild
+            className="px-1 font-lato text-xs uppercase tracking-wider transition-all text-cyan-600 hover:text-pink-400"
+          >
+            <Link href="/promotions" aria-label="Voir tous les produits en promotion">
+              Promotions
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            asChild
+            className="px-1 font-lato text-xs uppercase tracking-wider transition-all text-cyan-600 hover:text-pink-400"
+          >
+            <Link href="/nouveautes" aria-label="Voir tous les nouveaux produits">
+              Nouveautés
+            </Link>
+          </Button>
+        </div>
 
         {/* Slot Droit : Actions Client (Icône corrigée sémantiquement) */}
         <div className="flex items-center justify-end">
