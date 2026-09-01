@@ -138,7 +138,7 @@ export function NavbarCategoriesMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="px-3 font-lato text-xs uppercase tracking-wider transition-all text-cyan-600 hover:text-pink-400 data-open:bg-accent data-open:text-pink-500"
+          className="px-1 font-lato text-xs uppercase tracking-wider transition-all text-cyan-600 hover:text-pink-400 data-open:bg-accent data-open:text-pink-500"
           aria-label="Voir toutes les catégories de produits"
         >
           Catégories

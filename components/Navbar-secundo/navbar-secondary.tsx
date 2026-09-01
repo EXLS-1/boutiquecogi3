@@ -30,7 +30,7 @@ export function NavbarSecondary({ className }: NavbarSecondaryProps) {
         className
       )}
     >
-      <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-2 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-[auto_auto_auto] items-center justify-between gap-4 px-4 py-2">
         {/* Slot Gauche : Navigation Menu */}
         <div className="flex items-center justify-start">
           <NavbarSecondaryTrigger
