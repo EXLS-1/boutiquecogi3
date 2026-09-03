@@ -10,6 +10,9 @@ async function fetchImagesFromMedia(): Promise<HeroImage[]> {
   try {
     // Récupérer la liste des fichiers via l'API
     const response = await fetch("/api/media");
+    if (response.status === 404) {
+      return [];
+    }
     if (!response.ok) {
       throw new Error(
         `Failed to fetch media files: ${response.status} ${response.statusText}`

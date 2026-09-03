@@ -43,18 +43,18 @@ export default async function AdminAccountPage({ searchParams }: { searchParams:
               : 'Consultez l\'historique des suppressions et restaurez les comptes si nécessaire.'}
           </p>
         </div>
-        <div className="gap-8">
+        <div className="gap-6">
         <Link
           href="/admin/users"
-          className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95"
-        >
+          className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+          >
           Utilisateurs
         </Link>
         <Link
           href="/admin"
           className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
-        >
-          Portail Admin
+          >
+          Portail Super_Admin
         </Link>
         </div>
 

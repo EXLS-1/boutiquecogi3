@@ -35,8 +35,8 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
   const limit = 50;
 
   const where = {
-    ...(params.event && { event: params.event }),
-    ...(params.severity && { severity: params.severity }),
+    ...(params.event && { action: params.event }),
+    ...(params.severity && { status: params.severity }),
     ...(params.userId && { userId: params.userId }),
     ...(params.dateFrom && params.dateTo && {
       createdAt: { gte: new Date(params.dateFrom), lte: new Date(params.dateTo) },
@@ -52,8 +52,8 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
       include: { user: { select: { id: true, email: true, name: true } } },
     }),
     prisma.auditLog.count({ where }),
-    prisma.auditLog.groupBy({ by: ["severity"], _count: { id: true } }),
-    prisma.auditLog.groupBy({ by: ["event"], _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 10 }),
+    prisma.auditLog.groupBy({ by: ["status"], _count: { id: true } }),
+    prisma.auditLog.groupBy({ by: ["action"], _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 10 }),
   ]);
 
   return (
@@ -72,7 +72,7 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
       </Suspense>
 
       <Suspense fallback={<Skeleton className="h-16" />}>
-        <AuditFilters events={events.map((e) => e.event)} canExport={canExport} />
+        <AuditFilters events={events.map((e) => e.action)} canExport={canExport} />
       </Suspense>
 
       <Suspense fallback={<Skeleton className="h-96" />}>

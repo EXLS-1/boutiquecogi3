@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Hero } from "@/components/hero/image-show/hero";
-import Category from "@/components/product-catalog/category";
+
 import { ProductList } from "@/components/product/product-list";
 import VideosCart from "@/components/hero/video-show/videos-cart";
 import SocialNetworks from "@/components/social/social-network";
@@ -20,13 +20,14 @@ export default async function Home() {
     <>
       <Hero />
 
-      <Category />
+      <section className="py-16 bg-white min-h-75"> 
+        
+        {/* Ajout d'une hauteur minimale pour le loader */}
 
-      <section className="py-16 bg-white min-h-75"> {/* Ajout d'une hauteur minimale pour le loader */}
         <div className="max-w-7xl mx-auto px-4">
 
           <h2 className="text-3xl font-playfair font-bold uppercase mb-10 text-center">
-            ARTICLES DISPONIBLES
+            ARTICLES
           </h2>
 
           <Suspense fallback={<div className="text-center text-cyan-400 text-lg">Chargement des produits...</div>}>

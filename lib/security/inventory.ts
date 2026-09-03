@@ -170,10 +170,10 @@ export async function calculateRealStock(
     const [variant, aggregate] = await Promise.all([
       prisma.productVariant.findUnique({
         where: { id: variantId },
-        select: { id: true, stock: true, sku: true, productId: true },
+        select: { id: true, sku: true, productId: true, product: { select: { stock: { select: { quantity: true } } } } },
       }),
       prisma.inventoryTransaction.aggregate({
-        where: { productVariantId: variantId },
+        where: { variantId: variantId },
         _sum: { quantity: true },
       }),
     ]);
@@ -187,8 +187,8 @@ export async function calculateRealStock(
       );
     }
 
-    const ledgerTotal = aggregate._sum.quantity ?? 0;
-    const snapshot = variant.stock;
+    const ledgerTotal = aggregate._sum?.quantity ?? 0;
+    const snapshot = variant.product?.stock?.quantity ?? 0;
     const discrepancy = ledgerTotal - snapshot;
     const isReconciled = discrepancy === 0;
 
@@ -313,7 +313,7 @@ export async function adjustStock(
       // 1. Lock variant row (pessimistic locking)
       const variant = await tx.productVariant.findUnique({
         where: { id: variantId },
-        select: { id: true, stock: true, sku: true, productId: true },
+        select: { id: true, sku: true, productId: true, product: { select: { stock: { select: { id: true, quantity: true } } } } },
       });
 
       if (!variant) {
@@ -325,7 +325,7 @@ export async function adjustStock(
         );
       }
 
-      const previousStock = variant.stock;
+      const previousStock = variant.product?.stock?.quantity ?? 0;
       const newStock = previousStock + quantity;
 
       // 2. Prevent negative stock (business rule)
@@ -341,31 +341,34 @@ export async function adjustStock(
       // 3. Create ledger entry
       const ledgerEntry = await tx.inventoryTransaction.create({
         data: {
-          productVariantId: variantId,
+          productId: variant.productId,
+          variantId: variantId,
           quantity,
-          type: quantity >= 0 ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
-          reason,
-          reference: reference ?? null,
-          actorId: actorId ?? null,
-          metadata: {
-            previousStock,
-            newStock,
-            actorLevel,
-            sessionId: sessionId ?? null,
-          },
+          reason: quantity >= 0 ? "RESTOCK" : "SHRINKAGE",
+          referenceId: reference ?? null,
+          performedBy: actorId ?? null,
         },
       });
 
-      // 4. Update snapshot atomically
-      const updatedVariant = await tx.productVariant.update({
-        where: { id: variantId },
-        data: { stock: newStock },
-        select: { stock: true },
-      });
+      // 4. Update stock atomically
+      if (variant.product?.stock) {
+        await tx.stock.update({
+          where: { id: variant.product.stock.id },
+          data: { quantity: newStock },
+        });
+      } else {
+        await tx.stock.create({
+          data: {
+            productId: variant.productId,
+            quantity: newStock,
+            reserved: 0,
+          },
+        });
+      }
 
       return {
         previousStock,
-        newStock: updatedVariant.stock,
+        newStock,
         ledgerEntryId: ledgerEntry.id,
         sku: variant.sku,
         productId: variant.productId,

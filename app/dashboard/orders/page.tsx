@@ -4,6 +4,7 @@
 
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import type { OrderStatusEnum } from "@prisma/client";
 import { getServerRBACSession } from "@/lib/rbac/server";
 import { prisma } from "@/lib/prisma";
 
@@ -33,7 +34,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const statusFilter = params.status;
 
   const where = {
-    ...(statusFilter && { status: statusFilter }),
+    ...(statusFilter && { status: statusFilter as OrderStatusEnum }),
     ...(!canViewAll && { userId }),
   };
 

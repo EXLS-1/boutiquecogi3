@@ -55,11 +55,14 @@ export async function syncCartAction(localItems: unknown) {
       });
 
       if (!cart) {
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         cart = await tx.cart.create({
-          data: { userId },
+          data: { userId, expiresAt },
           include: { items: true },
         });
       }
+
+      if (!cart) throw new Error('Failed to create cart');
 
       // 2. Logique de fusion (Merging)
       // Ici, nous privilégions les quantités locales pour la simplicité,

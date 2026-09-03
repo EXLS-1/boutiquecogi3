@@ -577,7 +577,7 @@ export class RedisClient {
 
   // ─── Core Operations with Circuit Breaker ──────────────────────────────────
 
-  private async executeWithCircuit<T>(
+  public async executeWithCircuit<T>(
     operation: () => Promise<T>,
     operationName: string
   ): Promise<T> {

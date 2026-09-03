@@ -342,6 +342,7 @@ export async function createDraftProductAction(
         statusHistory: {
           create: {
             id: generateUUIDv7(),
+            oldStatus: ProductStatus.DRAFT,
             newStatus: ProductStatus.DRAFT,
             reason: "Création du brouillon",
             changedById: auth.ctx.userId,
@@ -511,6 +512,9 @@ export async function updateDraftProductAction(
       where: { id: productId },
       data: {
         ...data,
+        ...(data.description === null || data.description === undefined
+          ? { description: undefined }
+          : {}),
         ...(alignPrice !== undefined ? { price: alignPrice } : {}),
         updatedBy: auth.ctx.userId,
       },

@@ -37,8 +37,8 @@ export default async function WishlistPage() {
     prisma.wishlist.aggregate({ _count: { id: true }, where }),
     prisma.product.findMany({
       take: 10,
-      orderBy: { wishlistCount: "desc" },
-      select: { id: true, name: true, price: true, wishlistCount: true, images: true },
+      orderBy: { wishlistItems: { _count: "desc" } },
+      select: { id: true, name: true, price: true, images: true, _count: { select: { wishlistItems: true } } },
     }),
   ]);
 

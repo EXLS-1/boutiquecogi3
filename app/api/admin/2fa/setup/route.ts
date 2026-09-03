@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const ip = req.ip ?? 'unknown';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown';
     const rl = rateLimit(`2fa-setup:${user.id}:${ip}`, 5, 15 * 60 * 1000);
     if (!rl.success) {
       return NextResponse.json({ error: 'Too many requests', retryAfter: Math.ceil((rl.resetAt - Date.now()) / 1000) }, { status: 429 });

@@ -29,7 +29,7 @@ export default async function CategoriesPage() {
       _count: { select: { products: true, children: true } },
       parent: { select: { id: true, name: true } },
     },
-    orderBy: { order: "asc" },
+    orderBy: { displayOrder: "asc" },
   });
 
   return (

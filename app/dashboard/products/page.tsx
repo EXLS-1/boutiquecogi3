@@ -1,6 +1,7 @@
 // app/dashboard/products/page.tsx
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import type { ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   getSessionWithUser,
@@ -49,9 +50,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const limit = 20;
 
   const where = {
-    ...(params.type && { type: params.type }),
     ...(params.category && { categoryId: params.category }),
-    ...(params.status && { status: params.status }),
+    ...(params.status && { status: params.status as ProductStatus }),
     ...(params.search && {
       OR: [
         { name: { contains: params.search, mode: "insensitive" as const } },
@@ -69,7 +69,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       include: {
         category: { select: { id: true, name: true } },
         variants: { select: { id: true } },
-        _count: { select: { reviews: true, orderItems: true } },
+        _count: { select: { productReviews: true, orderItems: true } },
       },
     }),
     prisma.product.count({ where }),

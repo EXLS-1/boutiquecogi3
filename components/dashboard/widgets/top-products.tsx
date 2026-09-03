@@ -52,7 +52,7 @@ async function fetchTopProducts(limit: number = 6): Promise<TopProduct[]> {
       sku: true,
       soldCount: true,
       price: true,
-      imageUrl: true,
+      images: true,
     },
     where: {
       soldCount: { gt: 0 },
@@ -67,8 +67,8 @@ async function fetchTopProducts(limit: number = 6): Promise<TopProduct[]> {
     name: product.name,
     sku: product.sku,
     sold: product.soldCount ?? 0,
-    revenue: (product.soldCount ?? 0) * (product.price ?? 0),
-    imageUrl: product.imageUrl,
+    revenue: (product.soldCount ?? 0) * Number(product.price ?? 0),
+    imageUrl: product.images?.[0] ?? null,
   }));
 }
 

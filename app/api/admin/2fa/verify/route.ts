@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const session = await auth.api.getSession({ headers: h });
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const ip = req.ip ?? 'unknown';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown';
     const rl = rateLimit(`2fa-verify:${session.user.id}:${ip}`, 5, 5 * 60 * 1000);
     if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (!valid) return NextResponse.json({ error: 'Invalid code' }, { status: 400 });
 
-    await sign2FAVerified(session.user.id, session.sessionToken);
+    await sign2FAVerified(session.user.id, session.session.token);
 
     await prisma.auditLog?.create({
       data: { userId: session.user.id, action: isBackup ? '2FA_BACKUP_USED' : '2FA_VERIFIED', ipAddress: ip },

@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       }),
       prisma.twoFactorBackupCode.deleteMany({ where: { userSecurityId: security.id } }),
       // Invalide TOUTES les sessions sauf la courante
-      prisma.session.deleteMany({ where: { userId: user.id, token: { not: session.sessionToken } } }),
+      prisma.session.deleteMany({ where: { userId: user.id, token: { not: session.session.token } } }),
     ]);
 
     // Supprime le cookie de vérification 2FA

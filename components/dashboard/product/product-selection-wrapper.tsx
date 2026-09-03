@@ -11,7 +11,7 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: { select: { id: true; name: true } };
     variants: { select: { id: true } };
-    _count: { select: { reviews: true; orderItems: true } };
+    _count: { select: { productReviews: true; orderItems: true } };
   };
 }>;
 

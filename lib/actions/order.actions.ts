@@ -5,7 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { OrderCardData, OrderCardItem } from "@/types/order";
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatusEnum as OrderStatus, Prisma } from "@prisma/client";
 import { getServerSession } from "@/lib/auth/server";
 import { mapOrdersToCards } from "@/lib/orders/map-order-to-card";
 
@@ -24,7 +24,9 @@ const orderInclude = {
   user: {
     select: { id: true, name: true, email: true },
   },
-} as const;
+} satisfies Prisma.OrderInclude;
+
+type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 
 export async function getUserOrders(
   userId: string,

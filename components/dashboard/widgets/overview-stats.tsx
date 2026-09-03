@@ -67,13 +67,13 @@ async function fetchOverviewStats() {
     }),
     prisma.product.count({ where: { isActive: true } }),
     prisma.order.aggregate({
-      where: { createdAt: { gte: thirtyDaysAgo }, status: "COMPLETED" },
+      where: { createdAt: { gte: thirtyDaysAgo }, status: "DELIVERED" },
       _sum: { totalAmount: true },
     }),
     prisma.order.aggregate({
       where: {
         createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
-        status: "COMPLETED",
+        status: "DELIVERED",
       },
       _sum: { totalAmount: true },
     }),

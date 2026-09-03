@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const ip = req.ip ?? 'unknown';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown';
     const rl = rateLimit(`2fa-verify-setup:${user.id}:${ip}`, 10, 15 * 60 * 1000);
     if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
       prisma.twoFactorBackupCode.createMany({
         data: hashed.map((h) => ({ userSecurityId: security.id, codeHash: h })),
       }),
-      prisma.session.deleteMany({ where: { userId: user.id, token: { not: session.sessionToken } } }),
+      prisma.session.deleteMany({ where: { userId: user.id, token: { not: session.session.token } } }),
     ]);
 
     // Cookie 2FA vérifié pour la session courante
-    await sign2FAVerified(user.id, session.sessionToken);
+    await sign2FAVerified(user.id, session.session.token);
 
     await prisma.auditLog?.create({
       data: { userId: user.id, action: '2FA_ENABLED', ipAddress: ip },

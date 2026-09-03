@@ -5,7 +5,7 @@
 import { OrderAdminService } from "@/server/services/order-admin-service";
 import { AuthorizationError } from "@/server/core/secure-prisma";
 import { revalidatePath } from "next/cache";
-import type { OrderStatus } from "@prisma/client";
+import type { OrderStatusEnum as OrderStatus } from "@prisma/client";
 
 type ActionResult<T = unknown> =
   | { success: true; data: T; message?: string }

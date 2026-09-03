@@ -42,7 +42,16 @@ export function NavbarSecondary({ className }: NavbarSecondaryProps) {
           />
         </div>
 
-        <div>
+        <div className="gap-10">
+          <Button
+            variant="ghost"
+            asChild
+            className="px-1 font-lato text-xs uppercase tracking-wider transition-all text-cyan-600 hover:text-pink-400"
+          >
+            <Link href="/" aria-label="Voir la page d'accueil et tous les nouveaux produits">
+              Acceuil
+            </Link>
+          </Button>
           {/* Slot Central : Menu « CATEGORIES » dynamique (remplace les liens en dur) */}
           <NavbarCategoriesMenu />
 

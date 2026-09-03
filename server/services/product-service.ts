@@ -55,6 +55,7 @@ export const ProductService = {
               slug: input.slug ?? generateSlug(input.name),
               sku: input.sku ?? generateSKU(input.name),
               description: input.description ?? '',
+              price: input.basePrice,
               basePrice: input.basePrice,
               status: input.status ?? 'ACTIVE',
               categoryId: categoryIds[0] ?? null,

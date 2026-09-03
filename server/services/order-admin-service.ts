@@ -2,7 +2,7 @@
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
-import type { OrderStatus } from '@prisma/client'
+import type { OrderStatusEnum as OrderStatus } from '@prisma/client'
 
 export class OrderAdminError extends Error {
     constructor(message: string, public code: string) {
@@ -46,7 +46,7 @@ export const OrderAdminService = {
                                 },
                             },
                         },
-                        shippingAddress: true,
+                        orderAddresses: true,
                     },
                 })
 
@@ -88,7 +88,7 @@ export const OrderAdminService = {
                                 image: true,
                                 roleAssignment: {
                                     select: {
-                                        role: { select: { name: true, level: true } },
+                                        role: true,
                                     },
                                 },
                             },
@@ -112,7 +112,7 @@ export const OrderAdminService = {
                                 },
                             },
                         },
-                        shippingAddress: true,
+                        orderAddresses: true,
                     },
                 })
 

@@ -60,11 +60,14 @@ function getPaymentColor(method: string): string {
 
 function getPaymentLabel(method: string): string {
   const labels: Record<string, string> = {
-    MOBILE_MONEY: "Mobile Money",
+    CINETPAY: "CinetPay",
+    MPESA: "M-Pesa",
     ORANGE_MONEY: "Orange Money",
+    AIRTEL_MONEY: "Airtel Money",
+    CASH_ON_DELIVERY: "Paiement à la livraison",
+    MOBILE_MONEY: "Mobile Money",
     WAVE: "Wave",
     CREDIT_CARD: "Carte bancaire",
-    CASH_ON_DELIVERY: "Paiement à la livraison",
     BANK_TRANSFER: "Virement bancaire",
   };
   return labels[method] ?? method;
@@ -78,22 +81,22 @@ async function fetchPaymentDistribution(): Promise<PaymentMethod[]> {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const payments = await prisma.order.groupBy({
-    by: ["paymentMethod"],
+  const payments = await prisma.payment.groupBy({
+    by: ["method"],
     where: {
       createdAt: { gte: thirtyDaysAgo },
       status: "COMPLETED",
     },
-    _count: { paymentMethod: true },
-    _sum: { totalAmount: true },
+    _count: { method: true },
+    _sum: { amount: true },
   });
 
-  const totalAmount = payments.reduce((sum, p) => sum + (p._sum.totalAmount ?? 0), 0);
+  const totalAmount = payments.reduce((sum, p) => sum + (p._sum.amount ?? 0), 0);
 
   return payments.map((p) => {
-    const method = p.paymentMethod ?? "UNKNOWN";
-    const amount = p._sum.totalAmount ?? 0;
-    const count = p._count.paymentMethod;
+    const method = p.method ?? "UNKNOWN";
+    const amount = p._sum.amount ?? 0;
+    const count = p._count.method;
 
     return {
       method,

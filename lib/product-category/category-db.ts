@@ -24,20 +24,17 @@ import {
 export const getCategoriesFromDB = cache(
   async (): Promise<CategoryDefinition[]> => {
     const categories = await prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: "asc" },
+      where: { deletedAt: null },
+      orderBy: { displayOrder: "asc" },
       select: {
         id: true,
         slug: true,
         name: true,
         subtitle: true,
-        imageSrc: true,
-        imageAlt: true,
-        sortOrder: true,
-        isActive: true,
-        minRbacLevel: true,
-        requiresAuth: true,
-        type: true,
+        image: true,
+        displayOrder: true,
+        isNavigable: true,
+        minRoleLevel: true,
       },
     });
 
@@ -46,15 +43,15 @@ export const getCategoriesFromDB = cache(
       slug: cat.slug,
       title: cat.name,
       subtitle: cat.subtitle ?? "",
-      imageSrc: cat.imageSrc ?? "/placeholder.webp",
-      imageAlt: cat.imageAlt ?? cat.name,
+      imageSrc: cat.image ?? "/placeholder.webp",
+      imageAlt: cat.name,
       href: `/products?category=${cat.slug}`,
-      type: (cat.type as CategoryDefinition["type"]) ?? CATEGORY_TYPES.STATIC,
-      sortOrder: cat.sortOrder,
-      isActive: cat.isActive,
-      minRbacLevel: (cat.minRbacLevel ??
+      type: CATEGORY_TYPES.STATIC,
+      sortOrder: cat.displayOrder,
+      isActive: cat.isNavigable,
+      minRbacLevel: (cat.minRoleLevel ??
         RBAC_LEVELS.GUEST) as (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS],
-      requiresAuth: cat.requiresAuth ?? false,
+      requiresAuth: false,
     }));
   },
 );
@@ -70,21 +67,18 @@ export const getSpecialCategories = cache(
     const categories = await prisma.category.findMany({
       where: {
         slug: { in: specialSlugs },
-        isActive: true,
+        deletedAt: null,
       },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { displayOrder: "asc" },
       select: {
         id: true,
         slug: true,
         name: true,
         subtitle: true,
-        imageSrc: true,
-        imageAlt: true,
-        sortOrder: true,
-        isActive: true,
-        minRbacLevel: true,
-        requiresAuth: true,
-        type: true,
+        image: true,
+        displayOrder: true,
+        isNavigable: true,
+        minRoleLevel: true,
       },
     });
 
@@ -93,15 +87,15 @@ export const getSpecialCategories = cache(
       slug: cat.slug,
       title: cat.name,
       subtitle: cat.subtitle ?? "",
-      imageSrc: cat.imageSrc ?? "/placeholder.webp",
-      imageAlt: cat.imageAlt ?? cat.name,
+      imageSrc: cat.image ?? "/placeholder.webp",
+      imageAlt: cat.name,
       href: `/products?category=${cat.slug}`,
-      type: (cat.type as CategoryDefinition["type"]) ?? CATEGORY_TYPES.STATIC,
-      sortOrder: cat.sortOrder,
-      isActive: cat.isActive,
-      minRbacLevel: (cat.minRbacLevel ??
+      type: CATEGORY_TYPES.STATIC,
+      sortOrder: cat.displayOrder,
+      isActive: cat.isNavigable,
+      minRbacLevel: (cat.minRoleLevel ??
         RBAC_LEVELS.GUEST) as (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS],
-      requiresAuth: cat.requiresAuth ?? false,
+      requiresAuth: false,
     }));
   },
 );

@@ -93,21 +93,42 @@ export function ProductCrudManager() {
   const [editPrice, setEditPrice] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const loadProducts = useCallback(async () => {
     const res = await listDraftProductsAction({});
     if (res.success) {
       setProducts(res.data.products);
     } else {
       setError(formatError(res));
     }
-    setIsLoading(false);
   }, []);
 
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    await loadProducts();
+    setIsLoading(false);
+  }, [loadProducts]);
+
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    // Chargement initial : isLoading étant déjà true au montage, on fait
+    // uniquement le fetch et on bascule isLoading via une fonction async où
+    // les setState ont lieu après l'await (pas de setState synchrone).
+    let active = true;
+    async function load() {
+      const res = await listDraftProductsAction({});
+      if (!active) return;
+      if (res.success) {
+        setProducts(res.data.products);
+      } else {
+        setError(formatError(res));
+      }
+      setIsLoading(false);
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function runAction(fn: () => Promise<DraftActionResult<unknown>>) {
     startTransition(async () => {

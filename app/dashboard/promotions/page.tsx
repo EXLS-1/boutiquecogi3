@@ -32,10 +32,15 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
   const params = await searchParams;
   const tab = params.tab || "campaigns";
 
+  // Le modèle Promotion n'existe plus dans le schéma : les campagnes sont
+  // gérées via les coupons (remise appliquée directement aux produits).
   const [promotions, coupons, stats] = await Promise.all([
-    prisma.promotion.findMany({ include: { _count: { select: { orders: true } } }, orderBy: { createdAt: "desc" } }),
-    prisma.coupon.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.promotion.aggregate({ _count: { id: true }, _sum: { discountValue: true } }),
+    Promise.resolve([] as Awaited<ReturnType<typeof prisma.coupon.findMany>>),
+    prisma.coupon.findMany({
+      include: { _count: { select: { orders: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.coupon.aggregate({ _count: { id: true }, _sum: { discountValue: true } }),
   ]);
 
   return (

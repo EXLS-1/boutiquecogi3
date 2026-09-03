@@ -44,7 +44,7 @@ async function fetchRevenueData(range: TimeRange): Promise<RevenuePoint[]> {
   const orders = await prisma.order.findMany({
     where: {
       createdAt: { gte: start, lte: end },
-      status: "COMPLETED",
+      status: "DELIVERED",
     },
     select: {
       createdAt: true,

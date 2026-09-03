@@ -48,7 +48,7 @@ async function fetchTreasuryData(range: TimeRange): Promise<TreasuryData> {
     prisma.order.aggregate({
       where: {
         createdAt: { gte: start, lte: end },
-        status: "COMPLETED",
+        status: "DELIVERED",
       },
       _sum: { totalAmount: true },
     }),
@@ -69,7 +69,7 @@ async function fetchTreasuryData(range: TimeRange): Promise<TreasuryData> {
     prisma.order.aggregate({
       where: {
         createdAt: { gte: start, lte: end },
-        status: "COMPLETED",
+        status: "DELIVERED",
       },
       _avg: { totalAmount: true },
     }),

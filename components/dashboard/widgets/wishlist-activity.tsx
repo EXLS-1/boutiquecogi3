@@ -54,7 +54,7 @@ async function fetchWishlistStats(): Promise<WishlistStats> {
     prisma.wishlist.count(),
     prisma.wishlistItem.count(),
     prisma.wishlistItem.count({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: { addedAt: { gte: sevenDaysAgo } },
     }),
     prisma.wishlistItem.groupBy({
       by: ["productId"],

@@ -10,10 +10,15 @@ export type CategoryType =
   | "accessoire";
 
 export interface Product {
-  ProdutproductId: string;
+  productId: string;
   name: string;
+  price: number;
+  size: string;
+  couleur: string;
+  image: string;
   description: string;
   category: CategoryType;
+  currency: string;
 }
 
 export interface ProductVariant {
@@ -35,14 +40,6 @@ export interface ProductVariant {
 
 export interface ProductCatalog {
   products: Record<CategoryType, Product[]>;
-  image: string;
-  description: string;
-  currency: string;
-  category: CategoryType;
-  createdAt: Date;
-  createdBy: string;
-  updatedAt: Date;
-  updatedBy: string;
 }
 
 // 2. Exportation de la structure de données

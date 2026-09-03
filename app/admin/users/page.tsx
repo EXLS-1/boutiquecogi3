@@ -158,7 +158,7 @@ const [
             )}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-6">
           <Link
             href="/admin/account"
             className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
@@ -167,9 +167,9 @@ const [
           </Link>
           <Link
             href="/admin"
-            className="inline-flex items-center justify-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-900 active:scale-95 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
+            className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
           >
-            Portail Admin
+            Portail Super_Admin
           </Link>
         </div>
       </header>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import speakeasy from "speakeasy";
+import * as OTPAuth from "otpauth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { checkTwoFARateLimit, recordTwoFAAttempt } from "@/lib/security/auth-rate-limit";
@@ -73,7 +73,16 @@ export async function POST(request: Request) {
   let verified = false;
   let usedBackupCode = false;
 
-  verified = speakeasy.totp.verify({ secret: twoFactor.secret, encoding: "base32", token: cleanCode, window: 2 });
+  const totp = new OTPAuth.TOTP({
+    issuer: "Boutiquecogi3",
+    label: userId,
+    algorithm: "SHA1",
+    digits: 6,
+    period: 30,
+    secret: twoFactor.secret,
+  });
+
+  verified = totp.validate({ token: cleanCode, window: 2 }) !== null;
 
   if (!verified) {
     for (const backup of twoFactor.backupCodes) {

@@ -42,7 +42,7 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: { select: { id: true; name: true } };
     variants: { select: { id: true } };
-    _count: { select: { reviews: true; orderItems: true } };
+    _count: { select: { productReviews: true; orderItems: true } };
   };
 }>;
 
@@ -267,7 +267,7 @@ export function ProductsTable({
                     </TableCell>
 
                     <TableCell className="text-center font-mono text-xs text-muted-foreground">
-                      {product._count?.reviews ?? 0}
+                      {product._count?.productReviews ?? 0}
                     </TableCell>
 
                     <TableCell className="text-center">

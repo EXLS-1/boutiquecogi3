@@ -1,8 +1,8 @@
-// server/services/account-admin-service.ts
+﻿// server/services/account-admin-service.ts
 // ============================================
-// AccountAdminService — Gestion admin des comptes (Account model)
+// AccountAdminService â€” Gestion admin des comptes (Account model)
 // ============================================
-// Sécurité : Toutes les opérations passent par withSecurePrisma
+// SÃ©curitÃ© : Toutes les opÃ©rations passent par withSecurePrisma
 // RBAC requis : ADMIN+ (minRoleLevel: 2)
 // Permissions : accounts:read, accounts:delete
 
@@ -25,16 +25,16 @@ export class AccountAdminServiceError extends Error {
   }
 }
 
-// ─── Types exports ──────────────────────────
+// â”€â”€â”€ Types exports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface AccountListItem {
   id: string
   userId: string
   type: string
-  provider: string
-  providerAccountId: string
+  providerId: string
+  accountId: string
   expiresAt: number | null
-  /** Compteur pour le tri — pas de createdAt sur le modèle Account */
+  /** Compteur pour le tri â€” pas de createdAt sur le modÃ¨le Account */
   user: {
     id: string
     name: string | null
@@ -61,7 +61,7 @@ export interface ListAccountsResult {
   totalPages: number
 }
 
-// ─── Helpers Prisma type-safe ───────────────
+// â”€â”€â”€ Helpers Prisma type-safe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type PrismaAccountWhere = NonNullable<
   Parameters<
@@ -75,7 +75,7 @@ type PrismaAccountOrderBy = NonNullable<
   >[0]
 >['orderBy']
 
-// ─── Service ─────────────────────────────────
+// â”€â”€â”€ Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const AccountAdminService = {
   /**
@@ -84,7 +84,7 @@ export const AccountAdminService = {
   async list(input?: Partial<ListAccountsInput>): Promise<ListAccountsResult> {
     const parsed = listAccountsSchema.safeParse(input ?? {})
     if (!parsed.success) {
-      throw new AccountAdminServiceError('Données de filtre invalides', 'VALIDATION_ERROR')
+      throw new AccountAdminServiceError('DonnÃ©es de filtre invalides', 'VALIDATION_ERROR')
     }
 
     return withSecurePrisma(
@@ -95,7 +95,7 @@ export const AccountAdminService = {
         const where: PrismaAccountWhere = {}
 
         if (provider && provider !== 'ALL') {
-          where.provider = provider
+          where.providerId = provider
         }
 
         if (type && type !== 'ALL') {
@@ -105,8 +105,8 @@ export const AccountAdminService = {
         if (search.trim()) {
           const q = search.toLowerCase()
           where.OR = [
-            { provider: { contains: q, mode: 'insensitive' } },
-            { providerAccountId: { contains: q, mode: 'insensitive' } },
+            { providerId: { contains: q, mode: 'insensitive' } },
+            { accountId: { contains: q, mode: 'insensitive' } },
             { user: { email: { contains: q, mode: 'insensitive' } } },
             { user: { name: { contains: q, mode: 'insensitive' } } },
           ]
@@ -117,7 +117,7 @@ export const AccountAdminService = {
           ? { user: { email: sortOrder } }
           : { [sortBy]: sortOrder }
 
-        // Requête parallèle : comptage + données
+        // RequÃªte parallÃ¨le : comptage + donnÃ©es
         const [total, rawAccounts] = await Promise.all([
           ctx.prisma.account.count({ where }),
           ctx.prisma.account.findMany({
@@ -142,9 +142,9 @@ export const AccountAdminService = {
           id: acc.id,
           userId: acc.userId,
           type: acc.type,
-          provider: acc.provider,
-          providerAccountId: acc.providerAccountId,
-          expiresAt: acc.expires_at,
+          providerId: acc.providerId,
+          accountId: acc.accountId,
+          expiresAt: acc.expiresAt ? acc.expiresAt.getTime() : null,
           user: acc.user
             ? {
                 id: acc.user.id,
@@ -172,7 +172,7 @@ export const AccountAdminService = {
   },
 
   /**
-   * Récupérer les détails complets d'un compte (Admin+)
+   * RÃ©cupÃ©rer les dÃ©tails complets d'un compte (Admin+)
    */
   async getById(input: GetAccountInput): Promise<AccountDetail> {
     const parsed = getAccountSchema.safeParse(input)
@@ -199,7 +199,7 @@ export const AccountAdminService = {
         })
 
         if (!account) {
-          throw new AccountAdminServiceError('Compte non trouvé', 'NOT_FOUND')
+          throw new AccountAdminServiceError('Compte non trouvÃ©', 'NOT_FOUND')
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -209,9 +209,9 @@ export const AccountAdminService = {
           id: a.id,
           userId: a.userId,
           type: a.type,
-          provider: a.provider,
-          providerAccountId: a.providerAccountId,
-          expiresAt: a.expires_at,
+          providerId: a.providerId,
+          accountId: a.accountId,
+          expiresAt: a.expiresAt ? a.expiresAt.getTime() : null,
           password: a.password,
           refreshToken: a.refresh_token,
           accessToken: a.access_token,
@@ -237,19 +237,19 @@ export const AccountAdminService = {
   },
 
   /**
-   * Supprimer un compte avec vérifications de sécurité (Admin+)
+   * Supprimer un compte avec vÃ©rifications de sÃ©curitÃ© (Admin+)
    */
   async delete(input: DeleteAccountInput): Promise<{ success: boolean; deletedAccountId: string; userEmail: string }> {
     const parsed = deleteAccountSchema.safeParse(input)
     if (!parsed.success) {
-      throw new AccountAdminServiceError('Données invalides', 'VALIDATION_ERROR')
+      throw new AccountAdminServiceError('DonnÃ©es invalides', 'VALIDATION_ERROR')
     }
 
     return withSecurePrisma(
       async (ctx) => {
         const { accountId, reason } = parsed.data
 
-        // 1. Vérifier que le compte existe
+        // 1. VÃ©rifier que le compte existe
         const account = await ctx.prisma.account.findUnique({
           where: { id: accountId },
           include: {
@@ -265,10 +265,10 @@ export const AccountAdminService = {
         })
 
         if (!account) {
-          throw new AccountAdminServiceError('Compte non trouvé', 'NOT_FOUND')
+          throw new AccountAdminServiceError('Compte non trouvÃ©', 'NOT_FOUND')
         }
 
-        // 2. Vérifier que ce n'est pas le seul compte de l'utilisateur
+        // 2. VÃ©rifier que ce n'est pas le seul compte de l'utilisateur
         if (account.user && account.user._count.accounts <= 1) {
           throw new AccountAdminServiceError(
             `Impossible de supprimer le dernier compte de ${account.user.email}. L'utilisateur doit avoir au moins un moyen de connexion.`,
@@ -293,7 +293,7 @@ export const AccountAdminService = {
             targetId: accountId,
             targetType: 'ACCOUNT',
             details: JSON.stringify({
-              deletedAccountProvider: account.provider,
+              deletedAccountProvider: account.providerId,
               deletedAccountType: account.type,
               userEmail: account.user?.email,
               reason: reason || 'Aucune raison fournie',
@@ -322,17 +322,17 @@ export const AccountAdminService = {
   },
 
   /**
-   * Récupérer la liste de tous les providers distincts (pour filtres)
+   * RÃ©cupÃ©rer la liste de tous les providers distincts (pour filtres)
    */
   async getDistinctProviders(): Promise<string[]> {
     return withSecurePrisma(
       async (ctx) => {
         const result = await ctx.prisma.account.findMany({
-          select: { provider: true },
-          distinct: ['provider'],
-          orderBy: { provider: 'asc' },
+          select: { providerId: true },
+          distinct: ["providerId"],
+          orderBy: { providerId: "asc" },
         })
-        return result.map((r) => r.provider)
+        return result.map((r) => r.providerId)
       },
       {
         minRoleLevel: 2,
@@ -341,4 +341,5 @@ export const AccountAdminService = {
     )
   },
 }
+
 

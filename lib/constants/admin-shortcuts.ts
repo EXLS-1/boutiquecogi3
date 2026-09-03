@@ -462,9 +462,9 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         tone: "text-cyan-500",
       },
       {
-        title: "Audit permissions",
+        title: "Roles: attributs & audit ",
         description: "Contrôler les changements de droits et les opérations critiques.",
-        href: "/dashboard/audit",
+        href: "/dashboard/role_audit",
         cta: "Auditer",
         icon: FileClock,
         tone: "text-amber-500",
