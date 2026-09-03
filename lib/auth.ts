@@ -18,8 +18,9 @@ import { CHALLENGE_COOKIE_NAME, extractIP } from "@/lib/security/2fa";
 import { customSession } from "better-auth/plugins";
 import { createAuthMiddleware } from "better-auth/api";
 import { hasPublicSignupPrivilegeFields } from "@/lib/auth/public-signup-schema";
+import { getAuthCookiePrefix } from "@/lib/auth/session-cookie";
 
-const COOKIE_PREFIX = process.env.BETTER_AUTH_COOKIE_PREFIX || "better-auth";
+const COOKIE_PREFIX = getAuthCookiePrefix();
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -60,6 +61,7 @@ export const auth = betterAuth({
   baseURL,
   databaseHooks: authDatabaseHooks,
   advanced: {
+    cookiePrefix: COOKIE_PREFIX,
     database: {
       generateId: "uuid",
     },

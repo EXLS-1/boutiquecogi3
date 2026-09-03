@@ -24,6 +24,7 @@
 //   Server Components et Server Actions.
 
 import { NextResponse, type NextRequest } from "next/server";
+import { hasSessionCookieHeader } from "@/lib/auth/session-cookie";
 
 // ═══════════════════════════════════════════
 // SECTION 1: CONFIGURATION
@@ -114,13 +115,7 @@ function classifyRoute(pathname: string): "public" | "auth" | "protected" | "adm
 
 /** Vérification binaire de session ultra-rapide par cookie (0ms latency, Edge-safe) */
 function hasSessionCookie(request: NextRequest): boolean {
-  return (
-    request.cookies.has("better-auth.session_token") ||
-    request.cookies.has("__Secure-better-auth.session_token") ||
-    request.cookies.has("better_auth.session_token") ||
-    request.cookies.has("better-auth.session_data") ||
-    request.cookies.has("__Secure-better-auth.session_data")
-  );
+  return hasSessionCookieHeader(request.headers.get("cookie"));
 }
 
 /** Construit une URL de redirection vers auth avec callbackUrl */

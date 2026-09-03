@@ -23,6 +23,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/lib/auth"; // ✅ Singleton
+import { getSessionTokenFromCookieHeader } from "@/lib/auth/session-cookie";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { getRedisClient } from "@/lib/redis";
@@ -127,11 +128,9 @@ const _cachedGetSession = cache(async () => {
   let cacheKey: string | null = null;
 
   if (cookieHeader) {
-    const match = cookieHeader.match(
-      /(?:better-auth\.session_token|__Secure-better-auth\.session_token)=([^;]+)/,
-    );
-    if (match?.[1]) {
-      cacheKey = `session:raw:${match[1]}`;
+    const sessionToken = getSessionTokenFromCookieHeader(cookieHeader);
+    if (sessionToken) {
+      cacheKey = `session:raw:${sessionToken}`;
       try {
         const redis = getRedisClient();
         const cached = await redis.get<

@@ -33,7 +33,11 @@ function getInitials(name?: string | null): string {
 
 export function NavbarProfileButton() {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, roleConfig, isAdmin, isStaff } = useRBAC();
+  const { data: session, isPending } = authClient.useSession();
+  const { roleConfig, isAdmin, isStaff } = useRBAC();
+  const user = session?.user ?? null;
+  const isLoading = isPending;
+  const isAuthenticated = !!user;
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const initials = getInitials(user?.name);
