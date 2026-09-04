@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getServerRBACSession } from '@/lib/auth/server';
-import { RoleAuditDashboard } from '@/components/dashboard/role-audit/role-audit-dashboard';
+import { RoleAuditAdmin } from '@/components/admin/role-audit/role-audit-admin';
 import { prisma } from '@/lib/prisma';
 import { UserAdminService } from '@/server/services/user-admin-service';
 
@@ -8,7 +8,7 @@ export default async function RoleAuditPage() {
   const session = await getServerRBACSession();
 
   if (!session) {
-    redirect('/auth/sign-in?callbackUrl=/dashboard/role_audit');
+    redirect('/auth/sign-in?callbackUrl=/Admin/role_audit');
   }
 
   const level = session.level;
@@ -44,7 +44,7 @@ export default async function RoleAuditPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <RoleAuditDashboard
+        <RoleAuditAdmin
           currentUserLevel={level}
           currentUserRole={roleName}
           users={users}

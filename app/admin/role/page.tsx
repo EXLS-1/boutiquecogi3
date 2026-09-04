@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { listRolesAction } from "@/server/actions/role-actions";
-import { RolesTable } from "@/components/admin/role-table";
+import { RolesTable } from "@/components/admin/Role/role-table";
 import { requireMinLevel } from "@/lib/auth/rbac";
 import { redirect } from "next/navigation";
 import { Shield } from "lucide-react";

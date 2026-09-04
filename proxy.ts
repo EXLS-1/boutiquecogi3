@@ -168,7 +168,8 @@ export default async function proxy(request: NextRequest) {
   if (
     pathname === "/sign-up" ||
     pathname === "/register" ||
-    pathname === "/auth/signup"
+    pathname === "/auth/signup" ||
+    pathname === "/auth/register"
   ) {
     return NextResponse.redirect(buildAuthRedirect(request, "/auth/sign-up"));
   }

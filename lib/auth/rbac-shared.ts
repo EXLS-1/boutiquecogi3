@@ -15,7 +15,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import type { ComponentType } from "react";
+import type { ComponentType, CSSProperties } from "react";
 
 // ─── Types ──────────────────────────────────
 
@@ -72,7 +72,7 @@ export const ROLE_TO_LEVEL: Record<Role, number> = {
 
 export interface RoleLevelConfigEntry {
   label: string;
-  icon: ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string; style?: CSSProperties }>;
   color: string;
   /** Tailwind CSS background color class for badge */
   bgClass: string;

@@ -130,7 +130,7 @@ interface FilterState {
 
 const ITEMS_PER_PAGE = 10
 
-const ROLE_LEVELS = [
+const ROLE_LEVELS: RoleLevelOption[] = [
     { value: '1', label: '1 — Super Admin', disabled: true },
     { value: '2', label: '2 — Admin' },
     { value: '3', label: '3 — Manager' },
@@ -138,13 +138,14 @@ const ROLE_LEVELS = [
     { value: '5', label: '5 — Superviseur' },
     { value: '6', label: '6 — Utilisateur' },
     { value: '7', label: '7 — Invité', disabled: true },
-] as const
+]
 
 // ─── Composant Principal ───
 
 export function RolesTable({ initialRoles }: RolesTableProps) {
     const router = useRouter()
-    const { role: currentRole, level: currentLevel, isAdmin } = useRBAC()
+    const { role: currentRole, isAdmin } = useRBAC()
+    const currentLevel = getRoleLevel(currentRole)
 
     // ─── États ───
     const [roles, setRoles] = React.useState<RoleTableItem[]>(initialRoles)
@@ -163,6 +164,12 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
 
     // Pagination
     const [currentPage, setCurrentPage] = React.useState(1)
+
+    // Reset la page quand les filtres changent (sans setState synchrone dans un effet)
+    const updateFilters = (updater: (f: FilterState) => FilterState) => {
+        setFilters(updater)
+        setCurrentPage(1)
+    }
 
     // Dialogs
     const [detailRole, setDetailRole] = React.useState<RoleTableItem | null>(null)
@@ -288,13 +295,9 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
         currentPage * ITEMS_PER_PAGE
     )
 
-    // Reset page quand les filtres changent
-    React.useEffect(() => {
-        setCurrentPage(1)
-    }, [filters])
-
     // ─── Helpers ───
-    const isImmutable = (level: number) => level === 1 || level === 7
+    const isImmutable = (level: number) =>
+        level === getRoleLevel(ROLES.SUPER_ADMIN) || level === getRoleLevel(ROLES.GUEST)
     const canModify = (level: number) => !isImmutable(level) && level > currentLevel
     const canDelete = (role: RoleTableItem) =>
         !isImmutable(role.level) && role.level > currentLevel && role.userCount === 0
@@ -311,7 +314,7 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
             } else {
                 setError(res.error)
             }
-        } catch (err) {
+        } catch {
             setError('Erreur lors du rafraîchissement')
         } finally {
             setLoading(false)
@@ -359,7 +362,7 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
             } else {
                 setCreateErrors({ submit: res.error })
             }
-        } catch (err) {
+        } catch {
             setCreateErrors({ submit: 'Erreur lors de la création' })
         } finally {
             setActionLoading(null)
@@ -386,7 +389,7 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
             } else {
                 setError(res.error)
             }
-        } catch (err) {
+        } catch {
             setError('Erreur lors de la modification')
         } finally {
             setActionLoading(null)
@@ -407,7 +410,7 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
             } else {
                 setError(res.error)
             }
-        } catch (err) {
+        } catch {
             setError('Erreur lors de la suppression')
         } finally {
             setActionLoading(null)
@@ -512,14 +515,14 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
                                     placeholder="Rechercher..."
                                     value={filters.search}
                                     onChange={(e) =>
-                                        setFilters((f) => ({ ...f, search: e.target.value }))
+                                        updateFilters((f) => ({ ...f, search: e.target.value }))
                                     }
                                     className="pl-9"
                                 />
                             </div>
                             <Select
                                 value={filters.level}
-                                onValueChange={(v) => setFilters((f) => ({ ...f, level: v }))}
+                                onValueChange={(v) => updateFilters((f) => ({ ...f, level: v }))}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Niveau" />
@@ -540,7 +543,7 @@ export function RolesTable({ initialRoles }: RolesTableProps) {
                             <Select
                                 value={filters.status}
                                 onValueChange={(v) =>
-                                    setFilters((f) => ({ ...f, status: v as FilterState['status'] }))
+                                    updateFilters((f) => ({ ...f, status: v as FilterState['status'] }))
                                 }
                             >
                                 <SelectTrigger>

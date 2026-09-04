@@ -146,7 +146,7 @@ function prettyRestrictionName(key: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export function RoleAuditDashboard({
+export function RoleAuditAdmin({
   currentUserLevel,
   currentUserRole,
   users,
