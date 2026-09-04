@@ -27,7 +27,7 @@ export default async function RBACSettingsPage() {
   }
 
   // 2. Chargement du rôle MANAGER (config RBAC) et de ses permissions
-  const roleDb = await db.roleDefinition.findFirst({
+  const roleDb = await db.roleConfig.findFirst({
     where: { role: ROLES.MANAGER },
   });
 
@@ -35,7 +35,7 @@ export default async function RBACSettingsPage() {
   const permissionMap = (roleDb?.permissions ?? {}) as Record<string, unknown>;
   const rbacData = {
     roleId: roleDb?.id ?? '',
-    roleName: roleDb?.name ?? ROLES.MANAGER,
+    roleName: roleDb?.role ?? ROLES.MANAGER,
     currentPermissions: Object.entries(permissionMap)
       .filter(([, state]) => state === 'ON')
       .map(([code]) => code),

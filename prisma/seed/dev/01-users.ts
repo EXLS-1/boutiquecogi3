@@ -57,12 +57,11 @@ export const DevUsersSeeder: Seeder = {
       // 3. RoleAssignment (pour la hiérarchie RBAC)
       await ctx.prisma.roleAssignment.upsert({
         where: { userId: user.id },
-        update: { role: u.role, isBlocked: false },
+        update: { roleConfig: { connect: { role: u.role } }, isBlocked: false },
         create: {
           id: generateUUIDv7(),
-          userId: user.id,
-          role: u.role,
-          roleId: generateUUIDv7(),
+          user: { connect: { id: user.id } },
+          roleConfig: { connect: { role: u.role } },
           isBlocked: false,
         },
       });

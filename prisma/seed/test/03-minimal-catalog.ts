@@ -20,7 +20,7 @@ export const TestMinimalCatalogSeeder: Seeder = {
 
     // Créateur (admin test)
     const creator = await ctx.prisma.user.findFirst({
-      where: { roleAssignment: { role: "ADMIN" } },
+      where: { roleAssignment: { roleConfig: { role: "ADMIN" } } },
       select: { id: true },
     }) ?? await ctx.prisma.user.findFirst({ select: { id: true } });
 

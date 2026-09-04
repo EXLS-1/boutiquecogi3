@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       // ── Vérification utilisateurs actifs ──
       // Le rôle d'un utilisateur vit sur le modèle RoleAssignment (pas User.role)
       const activeUsers = await prisma.user.findMany({
-        where: { roleAssignment: { role: sanitizedRole } },
+        where: { roleAssignment: { roleConfig: { role: sanitizedRole } } },
         select: { id: true, email: true, name: true },
       });
 
@@ -221,10 +221,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Réassigne tous les utilisateurs (le rôle est porté par RoleAssignment)
+        // Réassigne tous les utilisateurs (le rôle est porté par RoleAssignment via RoleConfig)
         const updateResult = await prisma.roleAssignment.updateMany({
-          where: { role: sanitizedRole },
-          data: { role: sanitizedReassign },
+          where: { roleConfig: { role: sanitizedRole } },
+          data: { roleId: targetRoleConfig.id },
         });
 
         reassignedCount = updateResult.count;

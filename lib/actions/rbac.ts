@@ -15,8 +15,8 @@ export type ActionResponse<T> =
 
 /**
  * Synchronise les permissions d'un rôle (RBAC).
- * Stockage : JSON `permissions` ({ code: "ON" | "OFF" }) sur `RoleDefinition`,
- * répliqué sur `RoleConfig` (source du moteur RBAC runtime, cf. rbac-cache.ts).
+ * Stockage : JSON `permissions` ({ code: "ON" | "OFF" }) sur `RoleConfig`,
+ * source du moteur RBAC runtime (cf. rbac-cache.ts).
  * Sécurisé : vérifie les droits ADMIN avant exécution.
  */
 export async function syncRolePermissionsAction(
@@ -33,8 +33,8 @@ export async function syncRolePermissionsAction(
     const { roleId, permissions } = rbacSchema.parse(data);
 
     // 3. Le rôle doit exister
-    const roleDefinition = await db.roleDefinition.findUnique({ where: { id: roleId } });
-    if (!roleDefinition) {
+    const roleConfig = await db.roleConfig.findUnique({ where: { id: roleId } });
+    if (!roleConfig) {
       return { success: false, error: 'Rôle introuvable.' };
     }
 
@@ -44,26 +44,14 @@ export async function syncRolePermissionsAction(
       permissionMap[code] = permissions.includes(code) ? 'ON' : 'OFF';
     }
 
-    // 5. Écriture : RoleDefinition (page) + RoleConfig (moteur RBAC runtime)
-    await db.$transaction([
-      db.roleDefinition.update({
-        where: { id: roleDefinition.id },
-        data: { permissions: permissionMap },
-      }),
-      db.roleConfig.upsert({
-        where: { role: roleDefinition.role },
-        update: { permissions: permissionMap },
-        create: {
-          role: roleDefinition.role,
-          level: roleDefinition.level,
-          description: roleDefinition.description ?? `Rôle système ${roleDefinition.role}`,
-          permissions: permissionMap,
-        },
-      }),
-    ]);
+    // 5. Écriture dans RoleConfig (source unique du moteur RBAC runtime)
+    await db.roleConfig.update({
+      where: { id: roleConfig.id },
+      data: { permissions: permissionMap },
+    });
 
     // 6. Invalider le cache RBAC pour prise en compte immédiate
-    await invalidateRoleCache(roleDefinition.role);
+    await invalidateRoleCache(roleConfig.role);
 
     revalidatePath('/dashboard/settings');
     return { success: true, data: null };

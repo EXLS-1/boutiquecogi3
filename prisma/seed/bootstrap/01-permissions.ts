@@ -85,7 +85,6 @@ export const PermissionsSeeder: Seeder = {
           update: {},
           create: {
             id: generateUUIDv7(),
-            roleId: roleConfig.id,
             roleconfigId: roleConfig.id,
             permissionId: permission.id,
           },

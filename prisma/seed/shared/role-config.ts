@@ -2,7 +2,7 @@
 // ============================================
 // CONFIGURATION DES RÔLES (Level 1 à Level 7)
 // ============================================
-// Source de vérité partagée pour la table `RoleConfig` et `RoleDefinition`.
+// Source de vérité partagée pour la table `RoleConfig`.
 // Réutilise DEFAULT_ROLE_CONFIG depuis @/lib/auth/rbac pour rester aligné.
 
 import { Role } from "@prisma/client";

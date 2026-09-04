@@ -18,11 +18,11 @@ export default async function RoleAuditPage() {
     redirect('/unauthorized');
   }
 
-  const [users, roles, auditLogs] = await Promise.all([
+  const [users, rawRoles, auditLogs] = await Promise.all([
     UserAdminService.listUsers(),
-    prisma.roleDefinition.findMany({
+    prisma.roleConfig.findMany({
       where: { isActive: true },
-      select: { id: true, role: true, level: true, name: true },
+      select: { id: true, role: true, level: true },
       orderBy: { level: 'asc' },
     }),
     prisma.auditLog.findMany({
@@ -40,6 +40,14 @@ export default async function RoleAuditPage() {
       take: 12,
     }),
   ]);
+
+  // RoleConfig n'a pas de champ `name` libre : on réutilise le Role enum comme libellé.
+  const roles = rawRoles.map((r) => ({
+    id: r.id,
+    role: r.role,
+    level: r.level,
+    name: r.role,
+  }));
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">

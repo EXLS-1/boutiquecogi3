@@ -41,7 +41,7 @@ export async function notifyProductPendingApproval(
     // ── 1. Récupérer les admins notifiables ──
     const admins = await prisma.roleAssignment.findMany({
       where: {
-        role: { in: ["SUPER_ADMIN", "ADMIN"] },
+        roleConfig: { role: { in: ["SUPER_ADMIN", "ADMIN"] } },
         isBlocked: false,
       },
       include: {

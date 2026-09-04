@@ -27,7 +27,7 @@ export const DevProductsSeeder: Seeder = {
 
     // Trouver un utilisateur admin (créateur de produits)
     const creator = await ctx.prisma.user.findFirst({
-      where: { roleAssignment: { role: "ADMIN" } },
+      where: { roleAssignment: { roleConfig: { role: "ADMIN" } } },
       select: { id: true },
     }) ?? await ctx.prisma.user.findFirst({ select: { id: true } });
 

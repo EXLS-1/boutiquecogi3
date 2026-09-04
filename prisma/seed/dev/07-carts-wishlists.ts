@@ -16,7 +16,7 @@ export const DevCartsWishlistsSeeder: Seeder = {
 
     // Récupérer les clients (role USER) et les variantes
     const users = await ctx.prisma.user.findMany({
-      where: { roleAssignment: { role: "USER" } },
+      where: { roleAssignment: { roleConfig: { role: "USER" } } },
       select: { id: true },
       take: 30,
     });

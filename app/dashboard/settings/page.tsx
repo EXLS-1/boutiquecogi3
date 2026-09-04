@@ -62,12 +62,12 @@ export default async function SettingsPage() {
   }
 
   // 2. Fetching concurrent de toutes les données (Performance)
-  //    Stockage : SystemConfiguration (clé/valeur) + RoleDefinition (RBAC).
+  //    Stockage : SystemConfiguration (clé/valeur) + RoleConfig (RBAC).
   const [generalRows, roleDb, paymentRow, systemRow] = await Promise.all([
     db.systemConfiguration.findMany({
       where: { key: { in: Object.values(SETTINGS_KEYS) } },
     }),
-    db.roleDefinition.findFirst({ where: { role: ROLES.MANAGER } }),
+    db.roleConfig.findFirst({ where: { role: ROLES.MANAGER } }),
     db.systemConfiguration.findUnique({
       where: { key: paymentConfigKey(PAYMENT_PROVIDERS.STRIPE) },
     }),
@@ -89,7 +89,7 @@ export default async function SettingsPage() {
   const permissionMap = (roleDb?.permissions ?? {}) as Record<string, unknown>;
   const rbacData = {
     roleId: roleDb?.id ?? '',
-    roleName: roleDb?.name ?? ROLES.MANAGER,
+    roleName: roleDb?.role ?? ROLES.MANAGER,
     currentPermissions: Object.entries(permissionMap)
       .filter(([, state]) => state === 'ON')
       .map(([code]) => code),

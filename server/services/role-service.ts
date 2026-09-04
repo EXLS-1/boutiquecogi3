@@ -23,31 +23,13 @@ export const RoleService = {
 
     return withSecurePrisma(
       async (ctx) => {
-        // 1. Vérifier si le nom existe déjà
-        const existing = await ctx.prisma.roleDefinition.findUnique({
-          where: { name: parsed.data.name }
-        })
+        // ➜ Logique consolidée dans
+        //    `RoleConfig` + `RolePermission` (rôle identifié par le niveau → Role enum)
 
-        if (existing) {
-          throw new RoleServiceError(
-            `Le rôle "${parsed.data.name}" existe déjà`,
-            'DUPLICATE_NAME'
-          )
-        }
+        // 1. Déterminer le rôle système à partir du niveau (RoleConfig.role est un Role enum)
+        const roleNameFromLevel = ROLE_HIERARCHY[parsed.data.level]?.name ?? 'USER'
 
-        // 2. Vérifier si le niveau existe déjà
-        const existingLevel = await ctx.prisma.roleDefinition.findUnique({
-          where: { level: parsed.data.level }
-        })
-
-        if (existingLevel) {
-          throw new RoleServiceError(
-            `Le niveau ${parsed.data.level} est déjà attribué au rôle "${existingLevel.name}"`,
-            'DUPLICATE_LEVEL'
-          )
-        }
-
-        // 3. Vérifier que les permissions demandées existent
+        // 2. Vérifier que les permissions demandées existent
         const permissions = await ctx.prisma.permission.findMany({
           where: { code: { in: parsed.data.defaultPermissionCodes } }
         })
@@ -64,38 +46,41 @@ export const RoleService = {
           )
         }
 
-        // ─── Déterminer le nom du rôle à partir du niveau ───
-        const roleNameFromLevel = ROLE_HIERARCHY[parsed.data.level]?.name ?? 'USER'
-
-        // ─── Création du RoleDefinition ───
-        const roleDefinition = await ctx.prisma.roleDefinition.create({
-          data: {
-            role: roleNameFromLevel,
-            name: parsed.data.name,
+        // 3. Upsert du RoleConfig
+        const roleConfig = await ctx.prisma.roleConfig.upsert({
+          where: { role: roleNameFromLevel },
+          update: {
             level: parsed.data.level,
-            description: parsed.data.description,
+            description: parsed.data.description || `Rôle système ${roleNameFromLevel}`,
+            isActive: parsed.data.isActive,
+          },
+          create: {
+            role: roleNameFromLevel,
+            level: parsed.data.level,
+            description: parsed.data.description || `Rôle système ${roleNameFromLevel}`,
+            permissions: {},
+            restrictions: {},
             isActive: parsed.data.isActive,
           }
         })
 
-        // ─── Création des permissions par défaut ───
+        // 4. Remplacer les permissions relation (RolePermission)
+        await ctx.prisma.rolePermission.deleteMany({
+          where: { roleconfigId: roleConfig.id }
+        })
         if (permissions.length > 0) {
-          await ctx.prisma.roleDefaultPermission.createMany({
+          await ctx.prisma.rolePermission.createMany({
             data: permissions.map(p => ({
-              roleId: roleDefinition.id,
-              role: roleNameFromLevel,
+              roleconfigId: roleConfig.id,
               permissionId: p.id,
             }))
           })
         }
 
-        // Re-fetch des permissions par défaut créées
-        const defaultPerms = permissions.length > 0
-          ? await ctx.prisma.roleDefaultPermission.findMany({
-              where: { roleId: roleDefinition.id },
-              include: { permission: true }
-            })
-          : []
+        const perms = await ctx.prisma.rolePermission.findMany({
+          where: { roleconfigId: roleConfig.id },
+          include: { permission: true }
+        })
 
         // ─── Audit log ───
         await ctx.prisma.auditLog.create({
@@ -103,11 +88,11 @@ export const RoleService = {
             userId: ctx.userId,
             roleLevel: ctx.roleLevel,
             action: 'ROLE_CREATED',
-            targetId: roleDefinition.id,
+            targetId: roleConfig.id,
             targetType: 'ROLE',
             details: JSON.stringify({
-              roleName: roleDefinition.name,
-              level: roleDefinition.level,
+              roleName: roleNameFromLevel,
+              level: roleConfig.level,
               permissions: parsed.data.defaultPermissionCodes,
               createdBy: ctx.userId,
             }),
@@ -115,13 +100,13 @@ export const RoleService = {
         })
 
         return {
-          id: roleDefinition.id,
-          name: roleDefinition.name,
-          level: roleDefinition.level,
-          description: roleDefinition.description,
-          isActive: roleDefinition.isActive,
-          permissions: defaultPerms.map(dp => dp.permission.code),
-          createdAt: roleDefinition.createdAt,
+          id: roleConfig.id,
+          name: roleNameFromLevel,
+          level: roleConfig.level,
+          description: roleConfig.description,
+          isActive: roleConfig.isActive,
+          permissions: perms.map(p => p.permission.code),
+          createdAt: roleConfig.createdAt,
         }
       },
       {
@@ -139,26 +124,26 @@ export const RoleService = {
   async list() {
     return withSecurePrisma(
       async (ctx) => {
-        const roles = await ctx.prisma.roleDefinition.findMany({
+        const roles = await ctx.prisma.roleConfig.findMany({
           include: {
-            defaultPermissions: {
+            rolePermissions: {
               include: { permission: { select: { code: true, name: true } } }
             },
-            _count: { select: { assignments: true } }
+            _count: { select: { roleAssignments: true } }
           },
           orderBy: { level: 'asc' }
         })
 
         return roles.map(role => ({
           id: role.id,
-          name: role.name,
+          name: role.role,
           level: role.level,
           description: role.description,
           isActive: role.isActive,
-          userCount: role._count.assignments,
-          permissions: role.defaultPermissions.map(dp => ({
-            code: dp.permission.code,
-            name: dp.permission.name,
+          userCount: role._count.roleAssignments,
+          permissions: role.rolePermissions.map(rp => ({
+            code: rp.permission.code,
+            name: rp.permission.name,
           })),
         }))
       },
@@ -178,9 +163,8 @@ export const RoleService = {
   ) {
     return withSecurePrisma(
       async (ctx) => {
-        const role = await ctx.prisma.roleDefinition.findUnique({
-          where: { id: roleId },
-          include: { defaultPermissions: true }
+        const role = await ctx.prisma.roleConfig.findUnique({
+          where: { id: roleId }
         })
 
         if (!role) {
@@ -200,24 +184,23 @@ export const RoleService = {
             where: { code: { in: data.defaultPermissionCodes } }
           })
 
-          // Supprimer toutes les permissions existantes
-          await ctx.prisma.roleDefaultPermission.deleteMany({
-            where: { roleId }
+          // Remplacer les permissions relationnelles (RolePermission)
+          await ctx.prisma.rolePermission.deleteMany({
+            where: { roleconfigId: roleId }
           })
 
           // Créer les nouvelles permissions
           if (permissions.length > 0) {
-            await ctx.prisma.roleDefaultPermission.createMany({
+            await ctx.prisma.rolePermission.createMany({
               data: permissions.map(p => ({
-                roleId,
-                role: role.role,
+                roleconfigId: roleId,
                 permissionId: p.id,
               }))
             })
           }
         }
 
-        const updated = await ctx.prisma.roleDefinition.update({
+        const updated = await ctx.prisma.roleConfig.update({
           where: { id: roleId },
           data: {
             description: data.description,
@@ -251,11 +234,10 @@ export const RoleService = {
   async delete(roleId: string) {
     return withSecurePrisma(
       async (ctx) => {
-        const role = await ctx.prisma.roleDefinition.findUnique({
+        const role = await ctx.prisma.roleConfig.findUnique({
           where: { id: roleId },
           include: {
-            assignments: { take: 1 },
-            defaultPermissions: true
+            _count: { select: { roleAssignments: true } }
           }
         })
 
@@ -270,16 +252,16 @@ export const RoleService = {
           )
         }
 
-        if (role.assignments.length > 0) {
+        if (role._count.roleAssignments > 0) {
           throw new RoleServiceError(
-            `Impossible de supprimer: ${role.assignments.length} utilisateur(s) assigné(s)`,
+            `Impossible de supprimer: ${role._count.roleAssignments} utilisateur(s) assigné(s)`,
             'ROLE_IN_USE'
           )
         }
 
         await ctx.prisma.$transaction([
-          ctx.prisma.roleDefaultPermission.deleteMany({ where: { roleId } }),
-          ctx.prisma.roleDefinition.delete({ where: { id: roleId } })
+          ctx.prisma.rolePermission.deleteMany({ where: { roleconfigId: roleId } }),
+          ctx.prisma.roleConfig.delete({ where: { id: roleId } })
         ])
 
         await ctx.prisma.auditLog.create({
@@ -289,11 +271,11 @@ export const RoleService = {
             action: 'ROLE_DELETED',
             targetId: roleId,
             targetType: 'ROLE',
-            details: JSON.stringify({ roleName: role.name, level: role.level }),
+            details: JSON.stringify({ roleName: role.role, level: role.level }),
           }
         })
 
-        return { success: true, deletedRole: role.name }
+        return { success: true, deletedRole: role.role }
       },
       {
         minRoleLevel: 1,

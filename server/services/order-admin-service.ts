@@ -88,7 +88,7 @@ export const OrderAdminService = {
                                 image: true,
                                 roleAssignment: {
                                     select: {
-                                        role: true,
+                                        roleConfig: { select: { role: true } },
                                     },
                                 },
                             },

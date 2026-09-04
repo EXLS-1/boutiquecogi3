@@ -98,11 +98,9 @@ model UserRole {
   name        String  @unique
   description String?
 
-  role             Role            @default(USER)
-  roleConfig       RoleConfig?     @relation(fields: [roleConfigId], references: [id])
-  roleConfigId     String?         @db.Uuid
-  roleAssignment   RoleAssignment? @relation(fields: [roleAssignmentid], references: [id])
-  roleAssignmentid String?         @db.Uuid
+  role         Role        @default(USER)
+  roleConfig   RoleConfig? @relation(fields: [roleConfigId], references: [id])
+  roleConfigId String?     @db.Uuid
 
   @@map("user_role")
 }
@@ -224,57 +222,6 @@ enum Role {
   GUEST
 }
 
-model Verification {
-  id String @id @default(uuid(7)) @db.Uuid
-
-  identifier String
-  value      String           @db.Text
-  type       VerificationType
-
-  attemptCount Int       @default(0)
-  expiresAt    DateTime
-  consumedAt   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([identifier, type, value])
-  @@index([identifier])
-  @@index([expiresAt])
-  @@map("verification")
-}
-
-enum VerificationType {
-  EMAIL_VERIFICATION
-  PASSWORD_RESET
-  MAGIC_LINK
-  EMAIL_CHANGE
-  PHONE_VERIFICATION
-  TWO_FACTOR
-}
-
-model LoginAttempt {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  email     String
-  ipAddress String
-  success   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([ipAddress, createdAt])
-  @@index([email, createdAt])
-  @@map("login_attempt")
-}
-
-model TwoFactorAttempt {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  ipAddress String
-  success   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([ipAddress, createdAt])
-  @@map("two_factor_attempt")
-}
-
 model RoleConfig {
   id       String       @id @default(uuid(7)) @db.Uuid
   role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
@@ -288,6 +235,7 @@ model RoleConfig {
   description     String
   permissions     Json             @default("{}") // { "users:read": "ON", "users:delete": "OFF" }
   rolePermissions RolePermission[]
+  roleAssignments RoleAssignment[]
   restrictions    Json?            @default("{}") // { "max_daily_orders": "50", "can_access_analytics": "OFF" }
 
   isSystem  Boolean  @default(false)
@@ -313,43 +261,15 @@ model RoleConfig {
   @@map("role_config")
 }
 
-model RoleDefinition {
-  id    String @id @default(uuid(7)) @db.Uuid
-  role  Role   @unique
-  level Int    @unique // 1-7, correspond à l'enum
-
-  assignments RoleAssignment[]
-  name        String?          @unique
-
-  description        String?
-  permissions        Json                    @default("{}") // { "users:read": "ON", "users:delete": "OFF" }
-  defaultPermissions RoleDefaultPermission[]
-  rolePermissions    RolePermission[]
-  restrictions       Json                    @default("{}") // { "max_daily_orders": "50", "can_access_analytics": "OFF" }
-
-  isSystem  Boolean  @default(false)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdBy String?
-  updatedBy String?
-
-  blockedAt     DateTime?
-  blockedReason String?
-  blockedBy     String?
-
-  unblockedAt     DateTime?
-  unblockedBy     String?
-  unblockedReason String?
-}
-
 model RoleAssignment {
   id     String @id @default(uuid(7)) @db.Uuid
   userId String @unique @db.Uuid
   roleId String @db.Uuid
 
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role                Role
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roleConfig RoleConfig @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
   // Overrides spécifiques à cet utilisateur (ON/OFF)
   permissionOverrides PermissionOverride[]
 
@@ -364,22 +284,9 @@ model RoleAssignment {
   assignedAt     DateTime @default(now())
   lastVerifiedAt DateTime @default(now())
 
-  roleDefinitions RoleDefinition[]
-
-  userRoles UserRole[]
-}
-
-model RoleDefaultPermission {
-  id           String @id @default(uuid(7)) @db.Uuid
-  roleId       String @db.Uuid
-  permissionId String @db.Uuid
-
-  role            Role
-  permission      Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  roleDefinitions RoleDefinition[]
-
-  @@unique([roleId, permissionId])
-  @@map("role_default_permission")
+  @@index([roleId])
+  @@index([isBlocked])
+  @@map("role_assignment")
 }
 
 model Permission {
@@ -392,22 +299,20 @@ model Permission {
   category    String // ex: "PRODUCT", "ORDER", "USER", "FINANCE"
   isDangerous Boolean          @default(false) // Nécessite confirmation additionnelle
 
-  roleDefaults RoleDefaultPermission[]
   overrides    PermissionOverride[]
 
   @@map("permission")
 }
 
 model RolePermission {
-  id              String           @id @default(uuid(7)) @db.Uuid
-  roleId          String           @db.Uuid
-  roleconfig      RoleConfig       @relation(fields: [roleconfigId], references: [id], onDelete: Cascade)
-  roleconfigId    String           @db.Uuid
-  permissionId    String           @db.Uuid
-  permission      Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  roleDefinitions RoleDefinition[]
+  id           String     @id @default(uuid(7)) @db.Uuid
+  roleconfig   RoleConfig @relation(fields: [roleconfigId], references: [id], onDelete: Cascade)
+  roleconfigId String     @db.Uuid
+  permissionId String     @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([roleconfigId, permissionId])
+  @@index([permissionId])
   @@map("role_permission")
 }
 
@@ -457,6 +362,57 @@ model TwoFactorBackupCode {
 
   @@index([userSecurityId])
   @@map("twofactor_backup_code")
+}
+
+model TwoFactorAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  ipAddress String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@map("two_factor_attempt")
+}
+
+model Verification {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  identifier String
+  value      String           @db.Text
+  type       VerificationType
+
+  attemptCount Int       @default(0)
+  expiresAt    DateTime
+  consumedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([identifier, type, value])
+  @@index([identifier])
+  @@index([expiresAt])
+  @@map("verification")
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  MAGIC_LINK
+  EMAIL_CHANGE
+  PHONE_VERIFICATION
+  TWO_FACTOR
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  email     String
+  ipAddress String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+  @@index([email, createdAt])
+  @@map("login_attempt")
 }
 
 // =============================================

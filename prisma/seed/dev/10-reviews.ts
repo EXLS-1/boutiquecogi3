@@ -15,7 +15,7 @@ export const DevReviewsSeeder: Seeder = {
     ctx.logger.start(this.name);
 
     const users = await ctx.prisma.user.findMany({
-      where: { roleAssignment: { role: "USER" } },
+      where: { roleAssignment: { roleConfig: { role: "USER" } } },
       select: { id: true },
       take: 30,
     });

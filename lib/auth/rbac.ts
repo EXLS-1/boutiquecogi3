@@ -1281,11 +1281,13 @@ export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluati
     include: {
       roleAssignment: {
         select: {
-          role: true,
           isBlocked: true,
           blockedReason: true,
           blockedUntil: true,
           assignedAt: true,
+          roleConfig: {
+            select: { role: true },
+          },
         },
       },
     },
@@ -1294,7 +1296,7 @@ export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluati
   if (!user || !user.roleAssignment) return null;
 
   const assignment = user.roleAssignment;
-  const roleName = assignment.role as Role;
+  const roleName = assignment.roleConfig.role as Role;
   
   const effectivePermissions = await resolveEffectivePermissions(roleName);
 

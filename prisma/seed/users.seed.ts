@@ -83,22 +83,6 @@ export async function seedUsers(
       },
     });
 
-    const roleDefinition = await tx.roleDefinition.upsert({
-      where: { role: prismaRole },
-      update: { level: roleLevel, description: `Rôle système ${role}`, isSystem: true, isActive: true },
-      create: {
-        id: generateUUIDv7(),
-        role: prismaRole,
-        level: roleLevel,
-        name: role,
-        description: `Rôle système ${role}`,
-        permissions: {},
-        restrictions: {},
-        isSystem: true,
-        isActive: true,
-      },
-    });
-
     // 2. Création/Mise à jour de l'utilisateur root
     const user = await tx.user.upsert({
       where: { email },
@@ -142,22 +126,18 @@ export async function seedUsers(
     const roleAssignment = await tx.roleAssignment.upsert({
       where: { userId: user.id },
       update: {
-        role: prismaRole,
-        roleId: roleDefinition.id,
+        roleId: roleConfig.id,
         assignedAt: now,
         lastVerifiedAt: now,
         isBlocked: false,
-        roleDefinitions: { connect: { id: roleDefinition.id } },
       },
       create: {
         id: generateUUIDv7(),
         userId: user.id,
-        role: prismaRole,
-        roleId: roleDefinition.id,
+        roleId: roleConfig.id,
         assignedAt: now,
         lastVerifiedAt: now,
         isBlocked: false,
-        roleDefinitions: { connect: { id: roleDefinition.id } },
       },
     });
 
@@ -168,7 +148,6 @@ export async function seedUsers(
         name: role,
         role: prismaRole,
         roleConfigId: roleConfig.id,
-        roleAssignmentid: roleAssignment.id,
       },
       create: {
         id: generateUUIDv7(),
@@ -176,7 +155,6 @@ export async function seedUsers(
         name: role,
         role: prismaRole,
         roleConfigId: roleConfig.id,
-        roleAssignmentid: roleAssignment.id,
       },
     });
 

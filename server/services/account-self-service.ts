@@ -82,7 +82,7 @@ export const AccountSelfService = {
                 payment: true,
               },
             },
-            roleAssignment: true,
+            roleAssignment: { include: { roleConfig: true } },
             wishlist: {
               include: {
                 items: true,
@@ -192,7 +192,7 @@ export const AccountSelfService = {
           })),
           roleAssignment: user.roleAssignment
             ? {
-                role: user.roleAssignment.role,
+                role: user.roleAssignment.roleConfig?.role,
                 assignedAt: user.roleAssignment.assignedAt.toISOString(),
               }
             : null,

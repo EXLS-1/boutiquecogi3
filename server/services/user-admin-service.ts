@@ -37,7 +37,7 @@ export const UserAdminService = {
         // 2. Vérifier que la cible existe
         const targetUser = await ctx.prisma.user.findUnique({
           where: { id: userId },
-          include: { roleAssignment: true }
+          include: { roleAssignment: { include: { roleConfig: true } } }
         })
 
         if (!targetUser) {
@@ -45,7 +45,7 @@ export const UserAdminService = {
         }
 
         // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
-        if (targetUser.roleAssignment?.role === 'SUPER_ADMIN') {
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
           throw new UserAdminError(
             'Impossible de bloquer un SUPER_ADMIN',
             'SUPER_ADMIN_IMMUNITY'
@@ -202,7 +202,7 @@ export const UserAdminService = {
           where: { isBlocked: true },
           include: {
             user: { select: { id: true, email: true, name: true, createdAt: true } },
-            role: { select: { name: true, level: true } }
+            roleConfig: { select: { role: true, level: true } }
           },
           orderBy: { blockedAt: 'desc' }
         })
@@ -212,8 +212,8 @@ export const UserAdminService = {
           userId: b.userId,
           email: b.user.email,
           name: b.user.name,
-          role: b.role,
-          roleLevel: getRoleLevel(b.role),
+          role: b.roleConfig ? { name: b.roleConfig.role, level: b.roleConfig.level } : null,
+          roleLevel: b.roleConfig ? getRoleLevel(b.roleConfig.role) : 7,
           blockedAt: b.blockedAt,
           blockedUntil: b.blockedUntil,
           blockedReason: b.blockedReason,
@@ -242,14 +242,14 @@ export const UserAdminService = {
 
         const targetUser = await ctx.prisma.user.findUnique({
           where: { id: userId },
-          include: { roleAssignment: true }
+          include: { roleAssignment: { include: { roleConfig: true } } }
         })
 
         if (!targetUser) {
           throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
         }
 
-        const role = await ctx.prisma.roleDefinition.findUnique({
+        const role = await ctx.prisma.roleConfig.findUnique({
           where: { id: roleId }
         })
 
@@ -266,7 +266,7 @@ export const UserAdminService = {
         }
 
         // Protection : ne pas modifier un SUPER_ADMIN existant
-        if (targetUser.roleAssignment?.role === 'SUPER_ADMIN') {
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
           throw new UserAdminError(
             'Impossible de modifier le rôle d\u2019un SUPER_ADMIN',
             'SUPER_ADMIN_IMMUNITY'
@@ -286,21 +286,17 @@ export const UserAdminService = {
           where: { userId },
           update: {
             roleId: role.id,
-            role: role.role,
             assignedBy: ctx.userId,
             assignedAt: new Date(),
             isBlocked: false,
             blockedReason: null,
             blockedAt: null,
             blockedUntil: null,
-            roleDefinitions: { connect: { id: role.id } },
           },
           create: {
             userId,
-            role: role.role,
             roleId: role.id,
             assignedBy: ctx.userId,
-            roleDefinitions: { connect: { id: role.id } },
           }
         })
 
@@ -314,7 +310,7 @@ export const UserAdminService = {
             details: JSON.stringify({
               assignedRole: role.role,
               assignedRoleLevel: role.level,
-              previousRole: targetUser.roleAssignment?.role,
+              previousRole: targetUser.roleAssignment?.roleConfig?.role,
             }),
           }
         })
@@ -322,7 +318,7 @@ export const UserAdminService = {
         return {
           success: true,
           userId,
-          assignedRole: role.name,
+          assignedRole: role.role,
           assignedAt: assignment.assignedAt,
         }
       },
@@ -342,7 +338,7 @@ export const UserAdminService = {
       async (ctx) => {
         const users = await ctx.prisma.user.findMany({
           include: {
-            roleAssignment: true
+            roleAssignment: { include: { roleConfig: true } }
           },
           orderBy: { createdAt: 'desc' }
         })
@@ -352,8 +348,8 @@ export const UserAdminService = {
           email: u.email,
           name: u.name,
           createdAt: u.createdAt,
-          role: u.roleAssignment?.role ?? ROLES.GUEST,
-          roleLevel: u.roleAssignment ? getRoleLevel(u.roleAssignment.role) : 7,
+          role: u.roleAssignment?.roleConfig?.role ?? ROLES.GUEST,
+          roleLevel: u.roleAssignment?.roleConfig ? getRoleLevel(u.roleAssignment.roleConfig.role) : 7,
           isBlocked: u.roleAssignment?.isBlocked ?? false,
         }))
       },

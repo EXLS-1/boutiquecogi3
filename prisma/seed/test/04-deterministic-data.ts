@@ -15,7 +15,7 @@ export const TestDeterministicDataSeeder: Seeder = {
 
     // Récupérer un user test, un produit/variante
     const user = await ctx.prisma.user.findFirst({
-      where: { roleAssignment: { role: "USER" } },
+      where: { roleAssignment: { roleConfig: { role: "USER" } } },
       select: { id: true },
     });
     const product = await ctx.prisma.product.findFirst({ select: { id: true } });

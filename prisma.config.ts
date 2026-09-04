@@ -1,5 +1,9 @@
 // prisma.config.ts
-import "dotenv/config"; 
+import dotenv from "dotenv";
+// Charger .env.local (où vivent DATABASE_URL / DIRECT_URL) puis .env par défaut
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
 import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({

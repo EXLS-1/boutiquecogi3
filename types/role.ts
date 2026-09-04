@@ -2,8 +2,8 @@
 // ============================================================
 // Contrats de données pour la gestion des rôles admin.
 // Reflètent la forme renvoyée par `RoleService.list()` :
-// les rôles sont des `RoleDefinition` (base), avec leurs
-// `RoleDefaultPermission` → `Permission` (code + nom).
+// les rôles sont des `RoleConfig` (base), avec leurs
+// `RolePermission` → `Permission` (code + nom).
 // ============================================================
 
 /** Référence d'une permission rattachée à un rôle. */
@@ -12,7 +12,7 @@ export interface RolePermissionRef {
   name: string;
 }
 
-/** Un rôle de la hiérarchie (RoleDefinition + permissions + nb d'utilisateurs). */
+/** Un rôle de la hiérarchie (RoleConfig + permissions + nb d'utilisateurs). */
 export interface Role {
   id: string;
   name: string | null;
