@@ -6,9 +6,11 @@
 // que l'USD utilise 2 décimales. On travaille exclusivement avec des entiers
 // (cents / francs) pour éviter tout problème d'arrondi dans les agrégations.
 
+import type { Currency } from "@prisma/client";
+
 export interface Money {
   amount: number; // entier : cents pour USD, francs pour CDF
-  currency: "USD" | "CDF";
+  currency: Currency;
 }
 
 /** Taux de change fixe pour le seed (déterministe, pas de fetch réseau). */

@@ -1,9 +1,11 @@
 // data/types/common.types.ts
 // Base commune pour tout le système
 
+import type { Currency } from "@prisma/client";
+
 export interface Price {
   amount: number;
-  currencyCode: string;
+  currencyCode: Currency;
   isTaxIncluded: boolean; // Essentiel pour un e-commerce robuste
 }
 

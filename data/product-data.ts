@@ -1,5 +1,7 @@
 // data/product-data.ts
 
+import type { Currency } from "@prisma/client";
+
 // 1. Définition des types stricts pour garantir l'intégrité des données
 export type CategoryType =
   | "femme"
@@ -18,7 +20,7 @@ export interface Product {
   image: string;
   description: string;
   category: CategoryType;
-  currency: string;
+  currency: Currency;
 }
 
 export interface ProductVariant {
@@ -30,7 +32,7 @@ export interface ProductVariant {
   couleur: string;
   image: string;
   description: string;
-  currency: string;
+  currency: Currency;
   category: CategoryType;
   createdAt: Date;
   createdBy: string;

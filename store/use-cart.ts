@@ -13,6 +13,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
+import type { Currency } from "@prisma/client";
 
 interface CartItem {
   product: CatalogProduct;
@@ -40,7 +41,7 @@ interface CartStoreActions {
   openCart: () => void;
   closeCart: () => void;
   getTotalItems: () => number;
-  getTotalPrice: (currency: string) => number;
+  getTotalPrice: (currency: Currency) => number;
   getItemQuantity: (productId: string) => number;
   isInCart: (productId: string) => boolean;
 }

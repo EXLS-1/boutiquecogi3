@@ -2,9 +2,10 @@
 // 7. usePaymentMethodRBAC - Méthode paiement
 // ============================================================
 // hooks/rbac/use-payment-method-rbac.ts
-("use client");
+"use client";
 
 import { useMemo } from "react";
+import type { Currency } from "@prisma/client";
 import { useRBAC } from "./use-rbac";
 
 export type PaymentMethod =
@@ -28,7 +29,7 @@ interface PaymentMethodMetadata {
   minRoleLevel: number; // Plus petit = plus haut
   requires2FA: boolean;
   isEnabled: boolean;
-  currencySupport: string[];
+  currencySupport: Currency[];
   processingFee: number;
 }
 
@@ -53,7 +54,7 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
     minRoleLevel: 6, // Tous (Client+)
     requires2FA: false,
     isEnabled: true,
-    currencySupport: ["XOF", "XAF", "EUR"],
+    currencySupport: ["USD", "CDF"],
     processingFee: 2.5,
   },
   cinetpay_mobile: {
@@ -62,7 +63,7 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
     minRoleLevel: 6,
     requires2FA: false,
     isEnabled: true,
-    currencySupport: ["XOF", "XAF"],
+    currencySupport: ["USD", "CDF"],
     processingFee: 1.5,
   },
   cinetpay_bank: {
@@ -77,7 +78,7 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
     minRoleLevel: 3, // Manager+
     requires2FA: true,
     isEnabled: true,
-    currencySupport: ["XOF", "XAF", "EUR", "USD"],
+    currencySupport: ["USD", "CDF"],
     processingFee: 1.0,
   },
   cash_on_delivery: {
@@ -86,7 +87,7 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
     minRoleLevel: 4, // Moderator+
     requires2FA: false,
     isEnabled: true,
-    currencySupport: ["XOF"],
+    currencySupport: ["CDF"],
     processingFee: 0,
   },
   bank_transfer: {
@@ -95,7 +96,7 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
     minRoleLevel: 3, // Manager+
     requires2FA: true,
     isEnabled: false,
-    currencySupport: ["XOF", "EUR", "USD"],
+    currencySupport: ["USD", "CDF"],
     processingFee: 0.5,
   },
   crypto: {
@@ -104,7 +105,7 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, PaymentMethodMetadata> = {
     minRoleLevel: 2, // Admin+
     requires2FA: true,
     isEnabled: false,
-    currencySupport: ["BTC", "ETH", "USDT"],
+    currencySupport: ["USD", "CDF"],
     processingFee: 1.0,
   },
 };

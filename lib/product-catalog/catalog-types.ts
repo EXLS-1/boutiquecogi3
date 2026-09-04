@@ -11,6 +11,7 @@
  */
 
 import { z } from "zod";
+import { Currency } from "@prisma/client";
 import { ProductStatus as PrismaProductStatus } from "@prisma/client";
 import {
   STOCK_THRESHOLDS,
@@ -115,7 +116,7 @@ export interface CatalogProduct {
    * Ces champs sont conservés pour compatibilité avec ProductCard.
    */
   readonly price: number; // amount en cents USD
-  readonly currency: "USD" | "CDF";
+  readonly currency: Currency;
 
   // Champs domaine actuels
   readonly basePrice: number;
@@ -282,7 +283,7 @@ export const catalogProductSchema = z.object({
 
   // Compat UI: montants attendus par components/product-price/price.tsx
   price: z.number().nonnegative(),
-  currency: z.enum(["USD", "CDF"]),
+  currency: z.enum(Currency),
 
   basePrice: z.number().nonnegative().max(100_000_000),
   image: z.string().min(1),

@@ -142,7 +142,7 @@ export async function notifyProductPendingApproval(
 export async function notifyProductPublished(
   params: ProductPublishedNotification,
 ): Promise<void> {
-  const { productId, productName, sku, publishedBy } = params;
+  const { productId, productName, sku } = params;
 
   try {
     // Notifier le créateur du produit

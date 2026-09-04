@@ -1,3 +1,4 @@
+import { Currency } from "@prisma/client";
 // lib/cinetpay-security.ts
 
 import crypto from "crypto";
@@ -29,7 +30,7 @@ export const cinetPayWebhookSchema = z.object({
   cpm_site_id: z.string(),
   cpm_trans_id: z.string(),
   cpm_amount: z.union([z.string(), z.number()]),
-  cpm_currency: z.string(),
+  cpm_currency: z.enum(Currency),
   cpm_result: z.string(),
   cpm_custom: z.string().min(1, "Order ID reference (cpm_custom) is required"),
   cpm_payment_date: z.string().optional(),
@@ -126,7 +127,7 @@ export async function verifyTransactionWithCinetPay(transactionId: string) {
 export async function verifyOrderAmountAndCurrency(
   orderId: string,
   amount: number,
-  currency: string,
+  currency: Currency,
 ): Promise<boolean> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -141,7 +142,7 @@ export async function verifyOrderAmountAndCurrency(
 
   return (
     orderAmountFixed === payloadAmountFixed &&
-    order.currency.toUpperCase() === currency.toUpperCase()
+    order.currency === currency
   );
 }
 

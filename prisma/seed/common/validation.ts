@@ -6,11 +6,12 @@
 // de structure (typo, champs manquants) avant injection en base.
 
 import { z } from "zod";
+import { Currency } from "@prisma/client";
 
 export const CountrySchema = z.object({
   code: z.string().length(2),
   name: z.string(),
-  currency: z.enum(["USD", "CDF"]),
+  currency: z.enum(Currency),
 });
 
 export type CountrySeed = z.infer<typeof CountrySchema>;
@@ -24,7 +25,7 @@ export const ProvinceSchema = z.object({
 export type ProvinceSeed = z.infer<typeof ProvinceSchema>;
 
 export const CurrencySchema = z.object({
-  code: z.enum(["USD", "CDF"]),
+  code: z.enum(Currency),
   symbol: z.string(),
   decimals: z.number().int().min(0).max(2),
   rateToUsd: z.number().positive(),

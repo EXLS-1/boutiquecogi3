@@ -1,3 +1,4 @@
+import { Currency } from "@prisma/client";
 // lib/security/mail.ts
 /**
  * =============================================================================
@@ -75,7 +76,7 @@ const SendOrderConfirmationOptionsSchema = BaseEmailOptionsSchema.omit({ subject
   username: UsernameSchema,
   orderNumber: z.string().min(1).max(50),
   orderTotal: z.number().positive(),
-  currency: z.enum(["USD", "CDF"]).default("USD"),
+  currency: z.enum(Currency).default(Currency.USD),
   items: z.array(z.object({
     name: z.string(),
     quantity: z.number().int().positive(),
@@ -86,7 +87,7 @@ const SendPaymentReceiptOptionsSchema = BaseEmailOptionsSchema.omit({ subject: t
   username: UsernameSchema,
   orderNumber: z.string().min(1).max(50),
   amount: z.number().positive(),
-  currency: z.enum(["USD", "CDF"]).default("USD"),
+  currency: z.enum(Currency).default(Currency.USD),
   transactionId: z.string().min(1).max(100),
   paymentMethod: z.string().max(50).default("CinetPay"),
   paidAt: z.date(),

@@ -13,6 +13,7 @@
 import { useMemo, useCallback } from "react";
 import { create } from "zustand";
 import { z } from "zod";
+import { Currency } from "@prisma/client";
 import { cn } from "@/lib/utils/cn";
 import {
   Check,
@@ -93,7 +94,7 @@ export const ProductVariantSchema = z.object({
 export const ProductVariantConfigSchema = z.object({
   productId: z.uuid(),
   basePrice: z.number().positive(),
-  currency: z.string().default("USD"),
+  currency: z.enum(Currency).default(Currency.USD),
   variants: z.array(ProductVariantSchema).min(1),
   allowBackorder: z.boolean().default(false),
   maxQuantityPerOrder: z.number().int().positive().default(10),
@@ -146,7 +147,7 @@ export const createVariantStore = (defaultVariantId: string | null) =>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatPrice(amount: number, currency: string): string {
+function formatPrice(amount: number, currency: Currency): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency,

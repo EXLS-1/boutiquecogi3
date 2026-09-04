@@ -50,7 +50,7 @@ function normalizeCurrency(raw: string): Currency {
 export async function createOrderFromCart(params: {
   userId: string;
   items: CheckoutCartItem[];
-  currency: string;
+  currency: Currency;
   phone: string;
   cinetpayTransId: string;
 }) {

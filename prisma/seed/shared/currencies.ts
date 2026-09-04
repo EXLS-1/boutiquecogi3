@@ -3,8 +3,10 @@
 // DEVISES SUPPORTÉES & TAUX DE CHANGE INITIAUX
 // ============================================
 
+import { Currency } from "@prisma/client";
+
 export interface SeedCurrency {
-  code: "USD" | "CDF";
+  code: Currency;
   symbol: string;
   decimals: number;
   rateToUsd: number; // 1 unité de cette devise = X USD
@@ -32,7 +34,7 @@ export const CURRENCIES: SeedCurrency[] = [
 ];
 
 /** Devise par défaut de la boutique. */
-export const DEFAULT_CURRENCY = "USD";
+export const DEFAULT_CURRENCY: Currency = Currency.USD;
 
 /** Convertit un montant USD cents vers CDF francs. */
 export function usdCentsToCdf(usdCents: number, rate = SEED_EXCHANGE_RATE_USD_CDF): number {

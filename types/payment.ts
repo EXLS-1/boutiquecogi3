@@ -1,10 +1,12 @@
 // types/payment.ts
 // Types pour les transactions, modes de paiement et réponses des passerelles.
 
+import type { Currency } from "@prisma/client";
+
 export type PaymentIntent = {
   id: string;
   amount: number;
-  currency: string;
+  currency: Currency;
   status:
     | "requires_payment_method"
     | "requires_confirmation"

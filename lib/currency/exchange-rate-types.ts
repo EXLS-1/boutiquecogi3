@@ -24,7 +24,7 @@ export interface CurrencyMetadata {
 export interface ExchangeRateApiResponse {
   readonly success: boolean;
   readonly rate?: string;
-  readonly currency?: string;
+  readonly currency?: Currency;
   readonly base?: string;
   readonly timestamp?: string;
   readonly error?: { readonly code: string; readonly message: string };

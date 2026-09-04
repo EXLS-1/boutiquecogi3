@@ -4,6 +4,7 @@
 // champs décrits dans l'architecture anti-replay (code, message, cpm_page_action).
 
 import { z } from "zod";
+import { Currency } from "@prisma/client";
 
 export const cinetPayWebhookSchema = z.object({
   cpm_trans_id: z.string().min(1, "Transaction ID obligatoire"),
@@ -14,7 +15,7 @@ export const cinetPayWebhookSchema = z.object({
       const n = typeof val === "number" ? val : Number.parseFloat(val.replace(",", "."));
       return Number.isNaN(n) ? 0 : n;
     }),
-  cpm_currency: z.string().length(3, "Devise ISO 4217 attendue (3 caractères)"),
+  cpm_currency: z.enum(Currency),
   cpm_trans_date: z.string().optional(),
   cpm_payment_config: z.string().optional(),
   cpm_page_action: z.string().optional(),

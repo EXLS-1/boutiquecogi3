@@ -3,6 +3,7 @@
 import { cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import type { Currency } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { isValidUuid } from "@/lib/utils";
@@ -388,11 +389,11 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-function formatPrice(amount: number, currency: string) {
+function formatPrice(amount: number, currency: Currency) {
   try {
     return new Intl.NumberFormat("fr-FR", {
       style: "currency",
-      currency: currency || "USD",
+      currency,
     }).format(amount);
   } catch {
     return `${amount.toFixed(2)} ${currency}`;

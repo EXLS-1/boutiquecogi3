@@ -4,6 +4,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import type { Currency } from "@prisma/client";
 import { cn } from "@/lib/utils/utils";
 import { useCurrencyStore } from "@/store/use-currency-store";
 import {
@@ -15,7 +16,7 @@ interface PriceProps {
   /** Montant en unité de base (Cents pour USD) */
   amount: number;
   /** Devise selon le store (conservée pour compatibilité props historiques) */
-  currency: "USD" | "CDF";
+  currency: Currency;
   className?: string;
   /** Affiche le prix original si promo (en cents USD) */
   originalAmount?: number;

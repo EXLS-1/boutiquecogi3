@@ -8,6 +8,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { Currency } from "@prisma/client";
 
 // ─── Types (alignés sur lib/products/types.ts) ───────────────────────────────
 
@@ -29,7 +30,7 @@ export interface CreateProductPayload {
   description?: string | null;
   categoryId?: string | null;
   basePrice: number;
-  currency?: "USD" | "CDF";
+  currency?: Currency;
   /** Attributs libres du produit (ex: { matiere: "Coton" }). */
   attributes?: Record<string, DynamicAttributeValue>;
   /** Absent ⇒ produit simple : une variante implicite unique est créée. */

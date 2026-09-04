@@ -1,0 +1,17 @@
+
+<--- Last few GCs --->
+
+[1644:0000024279D27000]   156235 ms: Scavenge (during sweeping) 692.9 (726.4) -> 672.3 (732.9) MB, pooled: 0.0 MB, 83.95 / 0.00 ms (average mu = 0.942, current mu = 0.935) allocation failure; 
+[1644:0000024279D27000]   157333 ms: Scavenge (during sweeping) 700.2 (734.6) -> 678.6 (740.4) MB, pooled: 0.0 MB, 159.07 / 0.00 ms (average mu = 0.942, current mu = 0.935) allocation failure; 
+
+FATAL ERROR: AlignedAlloc Allocation failed - process out of memory
+----- Native stack trace -----
+
+ 1: 00007FF647E77F8D 
+ 2: 00007FF648C46101 
+ 3: 00007FF648705438 
+ 4: 00007FF6487059EA 
+ 5: 00007FF6485B63C2 
+ 6: 00007FF64A1FB0BA 
+ 7: 00007FF64A1B7F03 
+ 8: 00000242087313ED 

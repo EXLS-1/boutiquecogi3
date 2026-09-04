@@ -1,8 +1,10 @@
 // data/constants/currency.constants.ts
 
+import { Currency } from "@prisma/client";
+
 export const SUPPORTED_CURRENCIES = {
   USD: { code: "USD", symbol: "$", decimals: 2 },
   CDF: { code: "CDF", symbol: "FC", decimals: 0 },
 } as const;
 
-export const DEFAULT_CURRENCY = "USD";
+export const DEFAULT_CURRENCY: Currency = Currency.USD;

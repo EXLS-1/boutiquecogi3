@@ -1,6 +1,8 @@
 // lib/utils/currency.ts
 
-export type CurrencyCode = "USD" | "CDF";
+import { Currency } from "@prisma/client";
+
+export type CurrencyCode = Currency;
 
 interface FormatCurrencyOptions {
   currency?: CurrencyCode;
@@ -32,7 +34,7 @@ export function formatCurrency(
   amount: number,
   options: FormatCurrencyOptions = {}
 ): string {
-  const { currency = "USD", locale = "fr-CD" } = options;
+  const { currency = Currency.USD, locale = "fr-CD" } = options;
 
   const decimals = getDefaultDecimals(currency);
   const safeAmount = roundToFinancial(amount, decimals);

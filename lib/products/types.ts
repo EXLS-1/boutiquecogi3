@@ -8,7 +8,7 @@
 //      categoryId, attributes, variants[] }  → matrice taille/couleur/...
 // Le stock est TOUJOURS créé (jamais de produit statique sans inventaire).
 
-export type ProductCurrency = "USD" | "CDF";
+import type { Currency } from "@prisma/client";
 
 export type DynamicAttributeValue = string | number | boolean;
 export type DynamicAttributes = Record<string, DynamicAttributeValue>;
@@ -33,7 +33,7 @@ export interface CreateProductDto {
   /** Multi-catégories (table CategoryProduct). La première est la principale. */
   categoryIds?: string[] | null;
   basePrice: number;
-  currency?: ProductCurrency;
+  currency?: Currency;
   /** Prix comparative (barré) en centimes — persisté dans ProductPrice. */
   compareAtPrice?: number | null;
   /** Attributs arbitraires du produit parent (ex: { matiere: "Coton" }). */

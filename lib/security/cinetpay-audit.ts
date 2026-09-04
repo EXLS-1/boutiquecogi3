@@ -5,13 +5,14 @@
 //   (ne JAMAIS faire confiance au contenu du webhook entrant)
 
 import { timingSafeEqual } from "node:crypto";
+import type { Currency } from "@prisma/client";
 
 export interface CinetPayCheckResponse {
   code: string;
   message: string;
   data?: {
     amount: number;
-    currency: string;
+    currency: Currency;
     status: "ACCEPTED" | "REFUSED" | "CANCELLED" | "PENDING";
     payment_method: string;
     description: string;

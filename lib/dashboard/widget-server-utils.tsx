@@ -154,7 +154,7 @@ export function getDateRange(range: TimeRange): { start: Date; end: Date } {
 }
 
 export function formatCurrency(value: number): string {
-  return formatCurrencyUtil(value, { currency: "XOF", locale: "fr-FR" });
+  return formatCurrencyUtil(value, { currency: "CDF", locale: "fr-FR" });
 }
 
 export function formatNumber(value: number): string {

@@ -8,6 +8,7 @@
  */
 
 import type { ProductStatus, AvailabilityStatus } from "./catalog-types";
+import type { Currency } from "@prisma/client";
 import { AVAILABILITY_STATUS, serializeDecimal } from "./catalog-types";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -70,7 +71,7 @@ export interface ProductDetailReview {
 
 export interface ProductDetailPrice {
   readonly id: string;
-  readonly currency: string;
+  readonly currency: Currency;
   readonly amount: number;
   readonly compareAtPrice: number | null;
   readonly country: string | null;
@@ -120,7 +121,7 @@ export interface ProductDetailData {
   readonly description: string | null;
   readonly price: number;
   readonly basePrice: number;
-  readonly currency: string;
+  readonly currency: Currency;
   readonly status: ProductStatus;
   readonly videoUrl: string | null;
   readonly seoTitle: string | null;
@@ -175,7 +176,7 @@ export function mapProductDetail(raw: {
   description: string | null;
   price: unknown;
   basePrice: unknown;
-  currency: string;
+  currency: Currency;
   status: ProductStatus;
   videoUrl: string | null;
   seoTitle: string | null;
@@ -255,7 +256,7 @@ export function mapProductDetail(raw: {
   }>;
   productPrices: Array<{
     id: string;
-    currency: string;
+    currency: Currency;
     amount: number;
     compareAtPrice: number | null;
     country: string | null;

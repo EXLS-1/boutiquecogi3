@@ -159,7 +159,7 @@ export function ProductsTable({
   );
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF" }).format(price);
+    new Intl.NumberFormat("fr-FR", { style: "currency", currency: "CDF" }).format(price);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

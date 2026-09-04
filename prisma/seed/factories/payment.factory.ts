@@ -3,7 +3,7 @@
 // GÉNÉRATEUR DE PAIEMENTS CINETPAY / MOBILE MONEY
 // ============================================
 
-import { PaymentStatus, PaymentMethodType } from "@prisma/client";
+import { Currency, PaymentStatus, PaymentMethodType } from "@prisma/client";
 import { generateDeterministicUuidV7 } from "../utils/uuid";
 import { createSeededRandom, randInt, pick } from "../utils/random";
 
@@ -11,7 +11,7 @@ export interface GeneratedPayment {
   id: string;
   orderId: string;
   amount: number; // cents
-  currency: "USD" | "CDF";
+  currency: Currency;
   status: PaymentStatus;
   method: PaymentMethodType;
   transactionId: string;
@@ -35,11 +35,11 @@ export function buildPaymentFactory(
   orderId: string,
   totalAmountCents: number,
   seedNumber: number,
-  options: { status?: PaymentStatus; currency?: "USD" | "CDF" } = {},
+  options: { status?: PaymentStatus; currency?: Currency } = {},
 ): GeneratedPayment {
   const rand = createSeededRandom(seedNumber, "payment", index);
   // Pour CDF, le montant est en francs (conversion approximative x2850)
-  const currency = options.currency ?? "USD";
+  const currency = options.currency ?? Currency.USD;
   const amount = currency === "USD" ? totalAmountCents : Math.round(totalAmountCents * 2850);
 
   const status = options.status ?? PaymentStatus.COMPLETED;

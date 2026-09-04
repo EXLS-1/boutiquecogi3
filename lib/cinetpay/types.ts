@@ -30,7 +30,7 @@ export interface CinetPayWebhookBody {
   cpm_trans_id?: string;
   cpm_result?: string;
   cpm_amount?: string;
-  cpm_currency?: string;
+  cpm_currency?: Currency;
   cpm_custom?: string;
   cpm_trans_status?: string;
   signature?: string;

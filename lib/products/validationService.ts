@@ -9,6 +9,7 @@
 // (category, couleur, taille, description…) sont donc facultatifs par défaut.
 
 import { z } from "zod";
+import { Currency } from "@prisma/client";
 
 // ─── Constantes (source unique, anti-magic-numbers) ─────────────────────────
 // Chargées depuis les variables d'environnement (.env / .env.local)
@@ -90,7 +91,7 @@ export const dynamicProductSchema = z
       .max(PRODUCT_LIMITS.PRICE_MAX)
       .optional()
       .nullable(),
-    currency: z.enum(["USD", "CDF"]).default("USD"),
+    currency: z.enum(Currency).default(Currency.USD),
     attributes: z
       .record(z.string().trim().min(1).max(PRODUCT_LIMITS.ATTRIBUTE_KEY_MAX), attributeValueSchema)
       .default({}),

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useCurrencyStore } from "@/store/use-currency-store";
+import type { Currency } from "@prisma/client";
 import { cn } from "@/lib/utils/utils";
 
 import { formatPriceFromUsdCents } from "@/lib/currency/price-format";
@@ -14,7 +15,7 @@ export default function CurrencySwitcher() {
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
   const router = useRouter();
 
-  const handleCurrencyChange = async (newCurrency: "USD" | "CDF") => {
+  const handleCurrencyChange = async (newCurrency: Currency) => {
     if (newCurrency === currency) return;
     await setCurrency(newCurrency);
     router.refresh();
@@ -63,7 +64,7 @@ export default function CurrencySwitcher() {
  */
 export function displayPrice(
   amountInUSD: number,
-  currency: "USD" | "CDF",
+  currency: Currency,
   exchangeRate: number
 ) {
   return formatPriceFromUsdCents(

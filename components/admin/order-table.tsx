@@ -23,6 +23,7 @@ import {
     AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import type { Currency } from '@prisma/client'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -115,7 +116,7 @@ interface OrderTableItem {
     taxAmount: number
     shippingAmount: number
     discountAmount: number
-    currency: string
+    currency: Currency
     isPaid: boolean
     paidAt: Date | string | null
     paymentMethod: string | null
@@ -190,7 +191,7 @@ const STATUS_CONFIG: Record<
     },
 }
 
-function formatPrice(amount: number, currency = 'EUR'): string {
+function formatPrice(amount: number, currency: Currency = 'USD'): string {
     return new Intl.NumberFormat('fr-FR', {
         style: 'currency',
         currency,
