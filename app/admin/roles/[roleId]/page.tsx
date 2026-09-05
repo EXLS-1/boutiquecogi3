@@ -71,3 +71,93 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
           </dl>
         </section>
       </div>
+
+      {/* Permissions effectives */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-950">Permissions effectives</h2>
+        {effectiveResult.success ? (
+          <>
+            <p className="text-sm text-slate-600">
+              {effectiveResult.data.effective.length} permission(s) effective(s) —{' '}
+              {effectiveResult.data.own.length} propre(s), {effectiveResult.data.inherited.length} héritée(s)
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {effectiveResult.data.effective.map((code) => (
+                <span key={code} className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700">{code}</span>
+              ))}
+            </div>
+            <Link href={`/admin/role_permissions/${role.id}`} className="mt-3 inline-block text-sm font-medium text-sky-700 hover:underline">
+              Gérer les permissions →
+            </Link>
+          </>
+        ) : (
+          <p className="text-sm text-red-600">{effectiveResult.error}</p>
+        )}
+      </section>
+
+      {/* Restrictions */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-950">Restrictions</h2>
+        {restrictionsResult.success && Object.keys(restrictionsResult.data).length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(restrictionsResult.data).map(([key, value]) => (
+              <span key={key} className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-700">
+                {key}={String(value)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Aucune restriction explicite (valeurs par défaut du RBAC).</p>
+        )}
+        <Link href={`/admin/role_restrictions/${role.id}`} className="mt-3 inline-block text-sm font-medium text-sky-700 hover:underline">
+          Gérer les restrictions →
+        </Link>
+      </section>
+
+      {/* Assignments */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-950">
+          Assignments ({assignmentsResult.success ? assignmentsResult.data.length : 0})
+        </h2>
+        {assignmentsResult.success && assignmentsResult.data.length > 0 ? (
+          <ul className="divide-y divide-slate-100 text-sm">
+            {assignmentsResult.data.map((assignment) => (
+              <li key={assignment.id} className="flex flex-wrap justify-between gap-2 py-2">
+                <span>{assignment.userName || assignment.userEmail} <span className="text-slate-500">({assignment.userEmail})</span></span>
+                <span className="text-xs text-slate-500">
+                  {assignment.isBlocked ? 'bloqué · ' : ''}
+                  assigné le {new Date(assignment.assignedAt).toLocaleDateString('fr-FR')} · {assignment.overrides.length} override(s)
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500">Aucun utilisateur assigné.</p>
+        )}
+        <Link href={`/admin/role_audit/${role.id}`} className="mt-3 inline-block text-sm font-medium text-sky-700 hover:underline">
+          Voir l&apos;audit →
+        </Link>
+      </section>
+
+      {/* Journal d'audit */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-950">Journal d&apos;audit</h2>
+        {logsResult.success && logsResult.data.length > 0 ? (
+          <ul className="divide-y divide-slate-100 text-sm">
+            {logsResult.data.map((log) => (
+              <li key={log.id} className="py-2">
+                <div className="flex flex-wrap justify-between gap-2">
+                  <strong className="text-slate-900">{log.action}</strong>
+                  <time className="text-xs text-slate-500">{new Date(log.createdAt).toLocaleString('fr-FR')}</time>
+                </div>
+                <p className="text-xs text-slate-500">par {log.actorName || log.actorEmail || 'système'}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500">Aucun événement.</p>
+        )}
+      </section>
+    </main>
+  );
+}

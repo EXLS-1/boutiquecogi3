@@ -33,7 +33,7 @@ export function RoleAssignmentsPanel({ assignments }: { assignments: AssignmentI
   function run(action: () => Promise<{ success: boolean; error?: string; message?: string }>) {
     startTransition(async () => {
       const result = await action();
-      setMessage(result.success ? (result.message ?? 'Opération effectuée.') : result.error);
+      setMessage(result.success ? (result.message ?? 'Opération effectuée.') : (result.error ?? 'Erreur'));
       router.refresh();
     });
   }

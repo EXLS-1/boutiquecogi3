@@ -599,9 +599,23 @@ export class RedisClient {
       return result;
     } catch (err) {
       this.circuitBreaker.recordFailure();
+      // Diagnostic complet : nom, code et cause (ex: "NOAUTH Authentication
+      // required." = mot de passe Redis manquant → définir REDIS_PASSWORD).
+      const message = err instanceof Error ? err.message : String(err);
+      const name = err instanceof Error ? err.name : "UnknownError";
+      const code =
+        err instanceof Error && "code" in err
+          ? String((err as { code?: unknown }).code)
+          : undefined;
+      const hint = /NOAUTH|AUTH/i.test(message)
+        ? " — Redis exige un mot de passe : définissez REDIS_PASSWORD dans .env.local"
+        : "";
       this.logger.error("Operation failed", {
         operation: operationName,
-        error: err instanceof Error ? err.message : String(err),
+        error: message,
+        errorName: name,
+        errorCode: code,
+        hint: hint || undefined,
       });
       throw err;
     }

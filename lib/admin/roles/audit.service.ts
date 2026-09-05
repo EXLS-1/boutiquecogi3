@@ -292,7 +292,7 @@ export const AuditService = {
               grantedByRoleName: null,
               grantedAt: override.grantedAt.toISOString(),
               expiresAt: override.expiresAt ? override.expiresAt.toISOString() : null,
-            } as OverrideDto),
+            } as unknown as OverrideDto),
         message: `Override ${parsed.isGranted ? 'ON' : 'OFF'} enregistré`,
       };
     } catch (error) {

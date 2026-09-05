@@ -27,7 +27,7 @@ export type RoleConfigRow = Prisma.RoleConfigGetPayload<{ include: typeof roleIn
 export type AssignmentRow = Prisma.RoleAssignmentGetPayload<{
   include: {
     user: { select: { id: true; name: true; email: true; status: true } };
-    roleConfig: { select: { id: true; role: true } };
+    roleConfig: true;
     permissionOverrides: {
       include: { permission: { select: { id: true; code: true; name: true } } };
       orderBy: { grantedAt: 'desc' };
@@ -41,7 +41,7 @@ export type AuditLogRow = Prisma.AuditLogGetPayload<{
 
 const assignmentInclude = {
   user: { select: { id: true, name: true, email: true, status: true } },
-  roleConfig: { select: { id: true, role: true } },
+  roleConfig: true,
   permissionOverrides: {
     include: { permission: { select: { id: true, code: true, name: true } } },
     orderBy: { grantedAt: 'desc' as const },

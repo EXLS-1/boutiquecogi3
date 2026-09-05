@@ -133,11 +133,16 @@ const _cachedGetSession = cache(async () => {
       cacheKey = `session:raw:${sessionToken}`;
       try {
         const redis = getRedisClient();
-        const cached = await redis.get<
-          Awaited<ReturnType<typeof auth.api.getSession>>
-        >(cacheKey);
-        if (cached !== null) {
-          return cached;
+        // Ne sollicite Redis que si le circuit breaker autorise —
+        // évite le bruit d'erreurs quand Redis est indisponible ou
+        // mal configuré (ex: NOAUTH sans REDIS_PASSWORD).
+        if (redis.isHealthy()) {
+          const cached = await redis.get<
+            Awaited<ReturnType<typeof auth.api.getSession>>
+          >(cacheKey);
+          if (cached !== null) {
+            return cached;
+          }
         }
       } catch {
         // Fallback non-bloquant en cas d'erreur Redis
@@ -150,7 +155,9 @@ const _cachedGetSession = cache(async () => {
   if (cacheKey && session) {
     try {
       const redis = getRedisClient();
-      await redis.setex(cacheKey, SESSION_CACHE_TTL_SECONDS, session);
+      if (redis.isHealthy()) {
+        await redis.setex(cacheKey, SESSION_CACHE_TTL_SECONDS, session);
+      }
     } catch {
       // Fallback non-bloquant en cas d'erreur Redis
     }

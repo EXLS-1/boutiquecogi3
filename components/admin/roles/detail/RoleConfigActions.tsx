@@ -5,10 +5,10 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   activateRoleAction,
-  deactivateRoleAction,
-  blockRoleAction,
-  unblockRoleAction,
 } from '@/server/actions/admin/roles/activate-role';
+import { deactivateRoleAction } from '@/server/actions/admin/roles/deactivate-role';
+import { blockRoleAction } from '@/server/actions/admin/roles/block-role';
+import { unblockRoleAction } from '@/server/actions/admin/roles/unblock-role';
 
 type Props = {
   roleId: string;

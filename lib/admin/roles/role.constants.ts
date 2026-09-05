@@ -7,7 +7,6 @@
 import {
   ROLES,
   LEVELS,
-  ROLE_TO_LEVEL,
   ROLE_HIERARCHY,
   PERMISSIONS,
   RESTRICTIONS,
@@ -19,11 +18,11 @@ import {
   type ToggleState,
   type PermissionCode,
 } from '@/lib/auth/rbac';
+import type { RoleName } from './role.types';
 
 export {
   ROLES,
   LEVELS,
-  ROLE_TO_LEVEL,
   ROLE_HIERARCHY,
   PERMISSIONS,
   RESTRICTIONS,
