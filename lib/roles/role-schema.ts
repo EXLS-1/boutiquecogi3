@@ -7,6 +7,20 @@
 import { z } from 'zod';
 import type { RoleFormValues, RoleUpdateValues } from '@/types/role';
 
+export const roleRestrictionsSchema = z.object({
+  MAX_DAILY_ORDERS: z.number().int().min(0).optional(),
+  MAX_PRODUCTS_PER_USER: z.number().int().min(0).optional(),
+  MAX_STORAGE_MB: z.number().int().min(0).optional(),
+  MAX_TEAM_MEMBERS: z.number().int().min(0).optional(),
+  CAN_ACCESS_API: z.boolean().optional(),
+  RATE_LIMIT_PER_MINUTE: z.number().int().min(1).optional(),
+  SESSION_DURATION_HOURS: z.number().int().min(1).optional(),
+  REQUIRE_2FA: z.boolean().optional(),
+  REQUIRES_AUDIT_APPROVAL: z.boolean().optional(),
+}).strict();
+
+export type RoleRestrictions = z.infer<typeof roleRestrictionsSchema>;
+
 /**
  * Validation du formulaire de création d'un rôle.
  * Le nom respecte la convention `MAJUSCULES_WITH_UNDERSCORES`.
@@ -54,6 +68,7 @@ export const roleUpdateSchema = z.object({
     .optional(),
   isActive: z.boolean().optional(),
   defaultPermissionCodes: z.array(z.string()).optional(),
+  restrictions: roleRestrictionsSchema.optional(),
 });
 
 export type RoleUpdateSchemaType = z.infer<typeof roleUpdateSchema>;

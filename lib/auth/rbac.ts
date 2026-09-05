@@ -1298,10 +1298,12 @@ export async function getRoleLevelByUserId(userId: string): Promise<RoleEvaluati
     },
   });
 
-  if (!user || !user.roleAssignment) return null;
+  if (!user?.roleAssignment) return null;
 
   const assignment = user.roleAssignment;
   const roleName = assignment.roleConfig.role as Role;
+
+  if (!ROLE_TO_LEVEL[roleName]) return null;
   
   const effectivePermissions = await resolveEffectivePermissions(roleName);
 

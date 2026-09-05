@@ -21,6 +21,7 @@ export interface Role {
   isActive: boolean;
   userCount: number;
   permissions: RolePermissionRef[];
+  restrictions: Record<string, unknown>;
 }
 
 /** Valeurs saisies dans le formulaire de création d'un rôle. */
@@ -37,4 +38,5 @@ export interface RoleUpdateValues {
   description?: string;
   isActive?: boolean;
   defaultPermissionCodes?: string[];
+  restrictions?: Record<string, unknown>;
 }

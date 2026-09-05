@@ -53,14 +53,19 @@ export const ProdSuperAdminSeeder: Seeder = {
 
       const user = await tx.user.upsert({
         where: { email },
-        update: { name, emailVerified: true, roleConfigId: roleConfig.id },
+        update: { name, emailVerified: true },
         create: {
           id: generateUUIDv7(),
           name,
           email,
           emailVerified: true,
-          roleConfigId: roleConfig.id,
         },
+      });
+
+      await tx.roleAssignment.upsert({
+        where: { userId: user.id },
+        update: { roleId: roleConfig.id, assignedAt: new Date(), lastVerifiedAt: new Date(), isBlocked: false },
+        create: { userId: user.id, roleId: roleConfig.id },
       });
 
       await tx.account.upsert({

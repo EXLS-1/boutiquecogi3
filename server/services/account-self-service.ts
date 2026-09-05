@@ -95,7 +95,6 @@ export const AccountSelfService = {
             },
             notifications: true,
             userSecurity: true,
-            roleConfig: true,
           },
         });
 
@@ -152,7 +151,7 @@ export const AccountSelfService = {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: user.roleConfig?.role ?? "GUEST",
+            role: user.roleAssignment?.roleConfig.role ?? "GUEST",
             emailVerified: user.emailVerified,
             image: user.image,
             twoFactorEnabled: user.userSecurity?.twoFactorEnabled ?? false,

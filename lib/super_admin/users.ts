@@ -13,7 +13,7 @@ export type AdminUserListItem = User & {
   }[];
   userQuotas: { productCount: number }[];
   userAudit: { isDeleted: boolean; deletedAt: Date | null; version: number } | null;
-  roleConfig: { role: Role } | null;
+  roleAssignment: { roleConfig: { role: Role } } | null;
   accounts: { password: string | null }[];
 };
 
@@ -38,7 +38,7 @@ export async function getAdminUsersData(): Promise<{ users: AdminUserListItem[];
       },
       userQuotas: { select: { productCount: true } },
       userAudit: { select: { isDeleted: true, deletedAt: true, version: true } },
-      roleConfig: { select: { role: true } },
+      roleAssignment: { select: { roleConfig: { select: { role: true } } } },
       accounts: { select: { password: true }, take: 1 },
     },
     orderBy: { createdAt: 'desc' },

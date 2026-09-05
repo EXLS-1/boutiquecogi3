@@ -100,17 +100,11 @@ export const auth = betterAuth({
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
         select: {
-          roleConfig: {
-            select: {
-              role: true,
-              level: true,
-              permissions: true,
-            },
-          },
           roleAssignment: {
             select: {
               id: true,
               assignedAt: true,
+              roleConfig: { select: { role: true, level: true, permissions: true } },
             },
           },
         },
@@ -121,9 +115,8 @@ export const auth = betterAuth({
       return {
         user: {
           ...user,
-          role: dbUser.roleConfig?.role ?? "GUEST",
-          level: dbUser.roleConfig?.level ?? 7,
-          roleConfig: dbUser.roleConfig,
+          role: dbUser.roleAssignment?.roleConfig.role ?? "GUEST",
+          level: dbUser.roleAssignment?.roleConfig.level ?? 7,
           roleAssignment: dbUser.roleAssignment,
         },
         session,
@@ -218,12 +211,12 @@ export const auth = betterAuth({
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
         include: {
-          roleConfig: { select: { role: true } },
+          roleAssignment: { include: { roleConfig: { select: { role: true } } } },
           userSecurities: { select: { twoFactorEnabled: true } },
         },
       });
 
-      const isSuperAdmin = user?.roleConfig?.role === "SUPER_ADMIN";
+      const isSuperAdmin = user?.roleAssignment?.roleConfig?.role === "SUPER_ADMIN";
       const has2FA = user?.userSecurities?.[0]?.twoFactorEnabled ?? false;
 
       // Non SUPER_ADMIN → connexion normale, on garde la session

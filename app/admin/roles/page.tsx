@@ -11,6 +11,7 @@ import { RoleOverview } from '@/components/admin/roles/RoleOverview';
 import { RoleDataTable } from '@/components/admin/roles/RoleDataTable';
 import { RoleFormModal } from '@/components/admin/roles/RoleFormModal';
 import { RolePermissionsMatrix } from '@/components/admin/roles/RolePermissionsMatrix';
+import { RoleModuleNav } from '@/components/admin/roles/RoleModuleNav';
 
 // Optimisation SEO stricte : page admin protégée, exclue de l'indexation.
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default async function AdminRolesPage() {
 
   return (
     <main className="container mx-auto max-w-6xl space-y-6 p-6">
+      <RoleModuleNav />
       <header className="mb-2">
         <h1 className="text-3xl font-bold tracking-tight">Gestion des Rôles</h1>
         <p className="text-muted-foreground">

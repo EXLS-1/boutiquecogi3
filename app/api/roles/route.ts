@@ -478,7 +478,7 @@ export async function DELETE(request: NextRequest) {
 
       // Vérifie qu'il n'y a pas d'utilisateurs actifs avec ce rôle
 const activeUsersCount = await prisma.user.count({
-        where: { roleConfigId: existing.id },
+        where: { roleAssignment: { roleId: existing.id } },
       });
 
       if (activeUsersCount > 0) {

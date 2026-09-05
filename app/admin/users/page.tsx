@@ -53,9 +53,9 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
 
   // Construction dynamique et sécurisée de la clause WHERE (typée Prisma, sans 'any')
   const baseConditions: Prisma.UserWhereInput[] = [
-    ...(roleFilter ? [{ roleConfig: { role: roleFilter } }] : []),
+    ...(roleFilter ? [{ roleAssignment: { roleConfig: { role: roleFilter } } }] : []),
     // Un admin (level 2) ne peut jamais voir ni modifier les super admins (level 1)
-    ...(level === 2 ? [{ roleConfig: { level: { gt: 1 } } }] : []),
+    ...(level === 2 ? [{ roleAssignment: { roleConfig: { level: { gt: 1 } } } }] : []),
   ];
 
   const where: Prisma.UserWhereInput = { AND: baseConditions };
@@ -77,7 +77,7 @@ const [
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
-      roleConfig: { select: { id: true, role: true, level: true } },
+      roleAssignment: { select: { roleConfig: { select: { id: true, role: true, level: true } } } },
       _count: { select: { accounts: true, orders: true } },
       userSecurities: { select: { isBlocked: true, blockReason: true, blockedUntil: true, twoFactorEnabled: true } },
       userAudit: { select: { isDeleted: true, deletedAt: true, version: true } },
@@ -124,11 +124,11 @@ const [
 
   const users = rawUsers.map((user) => ({
     ...user,
-    role: user.roleConfig
+    role: user.roleAssignment?.roleConfig
       ? { 
-          id: user.roleConfig.id, 
-          name: user.roleConfig.role, 
-          level: user.roleConfig.level, 
+          id: user.roleAssignment.roleConfig.id, 
+          name: user.roleAssignment.roleConfig.role, 
+          level: user.roleAssignment.roleConfig.level, 
           color: null 
         }
       : { id: 'unassigned', name: 'UNASSIGNED', level: 7, color: null },

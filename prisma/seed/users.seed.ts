@@ -89,7 +89,6 @@ export async function seedUsers(
       update: {
         emailVerified: true,
         name,
-        roleConfigId: roleConfig.id,
         updatedAt: now,
       },
       create: {
@@ -98,7 +97,6 @@ export async function seedUsers(
         email,
         emailVerified: true,
         emailVerifiedAt: now,
-        roleConfigId: roleConfig.id,
         createdAt: now,
         updatedAt: now,
       },
@@ -141,24 +139,7 @@ export async function seedUsers(
       },
     });
 
-    // 5. Projection UserRole
-    await tx.userRole.upsert({
-      where: { userId: user.id },
-      update: {
-        name: role,
-        role: prismaRole,
-        roleConfigId: roleConfig.id,
-      },
-      create: {
-        id: generateUUIDv7(),
-        userId: user.id,
-        name: role,
-        role: prismaRole,
-        roleConfigId: roleConfig.id,
-      },
-    });
-
-    // 6. Satellites 1:1
+    // 5. Satellites 1:1
     await tx.userSecurity.upsert({
       where: { userId: user.id },
       update: {},

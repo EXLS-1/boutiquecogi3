@@ -3,6 +3,7 @@
 import { withSecurePrisma } from '@/server/core/secure-prisma'
 import { createRoleSchema, type CreateRoleInput, type UpdateRoleInput } from '@/lib/validations/role'
 import { PERMISSIONS, ROLE_HIERARCHY } from '@/lib/auth/rbac'
+import { assertRoleMutationAllowed } from '@/lib/roles/role.policy'
 
 export class RoleServiceError extends Error {
   constructor(message: string, public code: string) {
@@ -141,6 +142,10 @@ export const RoleService = {
           description: role.description,
           isActive: role.isActive,
           userCount: role._count.roleAssignments,
+          restrictions:
+            role.restrictions && typeof role.restrictions === 'object' && !Array.isArray(role.restrictions)
+              ? role.restrictions as Record<string, unknown>
+              : {},
           permissions: role.rolePermissions.map(rp => ({
             code: rp.permission.code,
             name: rp.permission.name,
@@ -171,8 +176,14 @@ export const RoleService = {
           throw new RoleServiceError('Rôle non trouvé', 'NOT_FOUND')
         }
 
-        // Protection : impossible de modifier SUPER_ADMIN (level 1) ou GUEST (level 7)
-        if (role.level === 1 || role.level === 7) {
+        try {
+          assertRoleMutationAllowed(ctx, role, 'update')
+        } catch (error) {
+          throw new RoleServiceError(error instanceof Error ? error.message : 'Rôle immuable', 'FORBIDDEN')
+        }
+
+        // Les rôles système immuables ne peuvent pas être modifiés.
+        if (role.level === 7) {
           throw new RoleServiceError(
             `Le rôle ${ROLE_HIERARCHY[role.level]?.name} est immuable`,
             'IMMUTABLE_ROLE'
@@ -205,6 +216,7 @@ export const RoleService = {
           data: {
             description: data.description,
             isActive: data.isActive,
+            restrictions: data.restrictions,
           }
         })
 
@@ -245,11 +257,10 @@ export const RoleService = {
           throw new RoleServiceError('Rôle non trouvé', 'NOT_FOUND')
         }
 
-        if (role.level === 1 || role.level === 7) {
-          throw new RoleServiceError(
-            `Impossible de supprimer le rôle ${ROLE_HIERARCHY[role.level]?.name}`,
-            'IMMUTABLE_ROLE'
-          )
+        try {
+          assertRoleMutationAllowed(ctx, role, 'delete')
+        } catch (error) {
+          throw new RoleServiceError(error instanceof Error ? error.message : 'Rôle immuable', 'IMMUTABLE_ROLE')
         }
 
         if (role._count.roleAssignments > 0) {

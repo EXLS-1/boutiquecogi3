@@ -92,19 +92,6 @@ model UserSecurity {
   @@map("user_security")
 }
 
-model UserRole {
-  id          String  @id @default(uuid(7)) @db.Uuid
-  userId      String  @unique @db.Uuid
-  name        String  @unique
-  description String?
-
-  role         Role        @default(USER)
-  roleConfig   RoleConfig? @relation(fields: [roleConfigId], references: [id])
-  roleConfigId String?     @db.Uuid
-
-  @@map("user_role")
-}
-
 model UserPreferences {
   id     String @id @default(uuid(7)) @db.Uuid
   userId String @unique @db.Uuid
@@ -203,7 +190,8 @@ model Post {
   title     String
   userId    String  @db.Uuid
   content   String?
-  published Boolean @default(false)
+    roleAssignment RoleAssignment? @relation(fields: [roleAssignmentId], references: [id])
+    roleAssignmentId String? @db.Uuid
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

@@ -27,14 +27,12 @@ export const DevUsersSeeder: Seeder = {
         update: {
           name: u.name,
           emailVerified: u.emailVerified,
-          roleConfig: { connect: { role: u.role } },
         },
         create: {
           id: u.id,
           name: u.name,
           email: u.email,
           emailVerified: u.emailVerified,
-          roleConfig: { connect: { role: u.role } },
         },
       });
 

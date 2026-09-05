@@ -143,6 +143,13 @@ export async function updateRolePermissionsAction(
   return updateRoleAction(roleId, { defaultPermissionCodes: permissionCodes });
 }
 
+export async function updateRoleRestrictionsAction(
+  roleId: string,
+  restrictions: RoleUpdateValues['restrictions'],
+): Promise<RoleActionResult<{ id: string }>> {
+  return updateRoleAction(roleId, { restrictions });
+}
+
 /**
  * Supprime un rôle (impossible si des utilisateurs y sont assignés — géré par le service).
  */

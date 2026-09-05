@@ -16,9 +16,9 @@ export async function GET(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { roleConfig: true },
+      include: { roleAssignment: { include: { roleConfig: true } } },
     });
-    if (!user?.roleConfig || user.roleConfig.level > 3) {
+    if (!user?.roleAssignment || user.roleAssignment.roleConfig.level > 3) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

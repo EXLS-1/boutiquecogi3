@@ -2,6 +2,18 @@
 
 import { z } from 'zod'
 
+export const roleRestrictionsSchema = z.object({
+  MAX_DAILY_ORDERS: z.number().int().min(0).optional(),
+  MAX_PRODUCTS_PER_USER: z.number().int().min(0).optional(),
+  MAX_STORAGE_MB: z.number().int().min(0).optional(),
+  MAX_TEAM_MEMBERS: z.number().int().min(0).optional(),
+  CAN_ACCESS_API: z.boolean().optional(),
+  RATE_LIMIT_PER_MINUTE: z.number().int().min(1).optional(),
+  SESSION_DURATION_HOURS: z.number().int().min(1).optional(),
+  REQUIRE_2FA: z.boolean().optional(),
+  REQUIRES_AUDIT_APPROVAL: z.boolean().optional(),
+}).strict()
+
 export const createRoleSchema = z.object({
   name: z
     .string()
@@ -54,6 +66,8 @@ export const updateRoleSchema = z.object({
   isActive: z
     .boolean()
     .optional(),
+
+  restrictions: roleRestrictionsSchema.optional(),
 })
 
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>

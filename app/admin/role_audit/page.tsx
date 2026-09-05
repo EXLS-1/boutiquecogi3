@@ -1,65 +1,25 @@
 import { redirect } from 'next/navigation';
-import { getServerRBACSession } from '@/lib/auth/server';
-import { RoleAuditAdmin } from '@/components/admin/role-audit/role-audit-admin';
-import { prisma } from '@/lib/prisma';
-import { UserAdminService } from '@/server/services/user-admin-service';
+import type { Metadata } from 'next';
+import { RoleModuleNav } from '@/components/admin/roles/RoleModuleNav';
+import { RoleAuditPanel } from '@/components/admin/roles/RoleAuditPanel';
+import { RoleAdminService } from '@/server/services/role-admin-service';
+
+export const metadata: Metadata = { title: 'Assignments et audit des rôles', robots: 'noindex, nofollow' };
 
 export default async function RoleAuditPage() {
-  const session = await getServerRBACSession();
-
-  if (!session) {
-    redirect('/auth/sign-in?callbackUrl=/Admin/role_audit');
-  }
-
-  const level = session.level;
-  const roleName = session.role?.name ?? 'USER';
-
-  if (level > 2) {
-    redirect('/unauthorized');
-  }
-
-  const [users, rawRoles, auditLogs] = await Promise.all([
-    UserAdminService.listUsers(),
-    prisma.roleConfig.findMany({
-      where: { isActive: true },
-      select: { id: true, role: true, level: true },
-      orderBy: { level: 'asc' },
-    }),
-    prisma.auditLog.findMany({
-      where: {
-        action: { in: ['ROLE_ASSIGNED', 'USER_BLOCKED', 'USER_UNBLOCKED'] },
-      },
-      select: {
-        id: true,
-        action: true,
-        targetId: true,
-        details: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 12,
-    }),
+  const [roles, auditLogs] = await Promise.all([
+    RoleAdminService.listRoles(),
+    RoleAdminService.listAuditLogs(),
   ]);
-
-  // RoleConfig n'a pas de champ `name` libre : on réutilise le Role enum comme libellé.
-  const roles = rawRoles.map((r) => ({
-    id: r.id,
-    role: r.role,
-    level: r.level,
-    name: r.role,
-  }));
+  const assignments = (await Promise.all(roles.map((role) => RoleAdminService.listAssignments(role.id))))
+    .flat()
+    .map((assignment) => ({ ...assignment, roleId: assignment.roleId }));
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <RoleAuditAdmin
-          currentUserLevel={level}
-          currentUserRole={roleName}
-          users={users}
-          roles={roles}
-          auditLogs={auditLogs}
-        />
-      </div>
+    <main className="mx-auto max-w-6xl space-y-6 p-6">
+      <RoleModuleNav />
+      <header><h1 className="text-3xl font-bold text-slate-950">Assignments & audit</h1><p className="mt-1 text-slate-600">Suivi des utilisateurs assignés, overrides et changements de droits.</p></header>
+      <RoleAuditPanel roles={roles.map((role) => ({ id: role.id, role: role.name, level: role.level }))} assignments={assignments} auditLogs={auditLogs} />
     </main>
   );
 }

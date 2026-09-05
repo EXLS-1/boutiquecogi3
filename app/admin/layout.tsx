@@ -18,10 +18,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   // 1. Vérification RBAC niveau 1–3
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: { roleConfig: true },
+    include: { roleAssignment: { include: { roleConfig: true } } },
   });
 
-  if (!user?.roleConfig || user.roleConfig.level > 3) redirect('/');
+  if (!user?.roleAssignment || user.roleAssignment.roleConfig.level > 3) redirect('/');
 
   // 2. Vérification 2FA
   const security = await prisma.userSecurity.findUnique({
