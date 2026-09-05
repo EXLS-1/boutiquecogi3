@@ -211,12 +211,11 @@ export async function seedRoleConfigs(prisma: PrismaClient) {
   console.log("⚙️  [RBAC] Persistance des configurations de permissions...");
 
   for (const config of ROLE_CONFIGS) {
-    await prisma.roleConfig.upsert({
+    const roleConfig = await prisma.roleConfig.upsert({
       where: { role: config.role },
       update: {
         level: config.level,
         description: config.description,
-        permissions: config.permissions,
         restrictions: config.restrictions,
         isActive: true,
       },
@@ -225,13 +224,37 @@ export async function seedRoleConfigs(prisma: PrismaClient) {
         role: config.role,
         level: config.level,
         description: config.description,
-        permissions: config.permissions,
         restrictions: config.restrictions,
         isActive: true,
       },
     });
 
-    console.log(`   ✓ ${config.role} (Level ${config.level}) configuré.`);
+    // SOURCE DE VÉRITÉ : association normalisée RolePermission.
+    // Le champ déprécié RoleConfig.permissions (JSON) n'est plus écrit.
+    const grantedCodes = Object.entries(config.permissions)
+      .filter(([, state]) => state === "ON")
+      .map(([code]) => code);
+
+    const permissions = await prisma.permission.findMany({
+      where: { code: { in: grantedCodes } },
+      select: { id: true },
+    });
+
+    await prisma.rolePermission.deleteMany({
+      where: { roleconfigId: roleConfig.id },
+    });
+    if (permissions.length) {
+      await prisma.rolePermission.createMany({
+        data: permissions.map(({ id }) => ({
+          roleconfigId: roleConfig.id,
+          permissionId: id,
+        })),
+      });
+    }
+
+    console.log(
+      `   ✓ ${config.role} (Level ${config.level}) — ${permissions.length} permissions (RolePermission).`,
+    );
   }
 
   console.log(`⚙️  [RBAC] ${ROLE_CONFIGS.length} configurations de rôles synchronisées.`);

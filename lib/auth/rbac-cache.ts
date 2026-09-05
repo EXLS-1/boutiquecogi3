@@ -116,19 +116,28 @@ export async function getRoleConfigCached(
     }
   }
 
-  // Source of truth: Prisma.
+  // Source of truth: Prisma — relation normalisée RolePermission → Permission.
+  // Le champ déprécié RoleConfig.permissions (JSON) n'est plus lu.
   try {
     const dbConfig = await prisma.roleConfig.findFirst({
       where: { role, isActive: true },
-      select: { permissions: true, restrictions: true },
+      select: {
+        rolePermissions: { select: { permission: { select: { code: true } } } },
+        restrictions: true,
+      },
     });
+
+    const granted = new Set(
+      (dbConfig?.rolePermissions ?? []).map((rp) => rp.permission.code),
+    );
 
     const value: RoleConfigCacheValue = {
       level: fallback.level,
-      permissions: {
-        ...(fallback.permissions as Record<Permission, "ON" | "OFF">),
-        ...((dbConfig?.permissions ?? {}) as Record<Permission, "ON" | "OFF">),
-      },
+      permissions: Object.fromEntries(
+        Object.entries(
+          fallback.permissions as Record<Permission, "ON" | "OFF">,
+        ).map(([code, state]) => [code, granted.has(code) ? "ON" : state]),
+      ) as Record<Permission, "ON" | "OFF">,
       restrictions: {
         ...(fallback.restrictions as Record<
           Restriction,

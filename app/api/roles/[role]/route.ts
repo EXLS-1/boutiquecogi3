@@ -118,7 +118,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           role: true,
           level: true,
           description: true,
-          permissions: true,
+          rolePermissions: { select: { permission: { select: { code: true } } } },
           restrictions: true,
           isActive: true,
           isSystem: true,
@@ -144,19 +144,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       const isSuperAdmin = context.user.role === ROLES.SUPER_ADMIN;
 
+      // Source de vérité : relation normalisée RolePermission → Permission.
+      const grantedCodes = roleConfig.rolePermissions.map(
+        (rp) => rp.permission.code,
+      );
+      const permissions = isSuperAdmin
+        ? grantedCodes
+        : grantedCodes.map(() => "HIDDEN");
+
       const sanitizedResponse = {
         ...roleConfig,
-        permissions: isSuperAdmin
-          ? (roleConfig.permissions as Record<string, unknown>)
-          : Object.keys(
-              roleConfig.permissions as Record<string, unknown>,
-            ).reduce(
-              (acc, key) => {
-                acc[key] = "HIDDEN";
-                return acc;
-              },
-              {} as Record<string, string>,
-            ),
+        permissions,
         restrictions: isSuperAdmin
           ? (roleConfig.restrictions as Record<string, unknown>)
           : Object.keys(

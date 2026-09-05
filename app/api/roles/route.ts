@@ -289,7 +289,6 @@ export async function POST(request: NextRequest) {
           role: sanitizedRole,
 level: data.level,
           description: data.description ?? "",
-          permissions: data.permissions as unknown as Prisma.InputJsonValue,
           restrictions: data.restrictions as unknown as Prisma.InputJsonValue,
           isActive: data.isActive,
           isSystem: false,
@@ -382,9 +381,9 @@ export async function PATCH(request: NextRequest) {
       if (data.description !== undefined) {
         updateData.description = data.description;
       }
-      if (data.permissions !== undefined) {
-        updateData.permissions = data.permissions as unknown as Prisma.InputJsonValue;
-      }
+      // NB: les permissions d'un rôle sont gérées exclusivement via la
+      // relation normalisée RolePermission (cf. RoleAdminService.updatePermissions).
+      // Le champ déprécié RoleConfig.permissions (JSON) n'est plus écrit.
       if (data.restrictions !== undefined) {
         updateData.restrictions = data.restrictions as unknown as Prisma.InputJsonValue;
       }

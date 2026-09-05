@@ -67,7 +67,10 @@ export default async function SettingsPage() {
     db.systemConfiguration.findMany({
       where: { key: { in: Object.values(SETTINGS_KEYS) } },
     }),
-    db.roleConfig.findFirst({ where: { role: ROLES.MANAGER } }),
+    db.roleConfig.findFirst({
+      where: { role: ROLES.MANAGER },
+      include: { rolePermissions: { select: { permission: { select: { code: true } } } } },
+    }),
     db.systemConfiguration.findUnique({
       where: { key: paymentConfigKey(PAYMENT_PROVIDERS.STRIPE) },
     }),
@@ -85,14 +88,14 @@ export default async function SettingsPage() {
     currency: generalMap.get(SETTINGS_KEYS.CURRENCY) ?? SETTINGS_DEFAULTS[SETTINGS_KEYS.CURRENCY],
   };
 
-  // Permissions stockées en JSON { code: "ON" | "OFF" } (cf. seed RBAC + moteur runtime)
-  const permissionMap = (roleDb?.permissions ?? {}) as Record<string, unknown>;
+  // Permissions lues depuis la relation normalisée RolePermission → Permission
+  // (source de vérité ; le champ déprécié RoleConfig.permissions n'est plus lu).
   const rbacData = {
     roleId: roleDb?.id ?? '',
     roleName: roleDb?.role ?? ROLES.MANAGER,
-    currentPermissions: Object.entries(permissionMap)
-      .filter(([, state]) => state === 'ON')
-      .map(([code]) => code),
+    currentPermissions: (roleDb?.rolePermissions ?? []).map(
+      (rp) => rp.permission.code,
+    ),
   };
 
   const paymentDb = parseJsonSetting(paymentRow?.value, (value) => {
@@ -143,7 +146,7 @@ export default async function SettingsPage() {
           <RBACSettings {...rbacData} />
         ) : (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-800">
-            <p className="font-semibold">Rôle "{ROLES.MANAGER}" introuvable.</p>
+            <p className="font-semibold">Rôle &ldquo;{ROLES.MANAGER}&rdquo; introuvable.</p>
             <p className="text-sm">Veuillez créer ce rôle dans la base de données pour configurer les permissions.</p>
           </div>
         )}

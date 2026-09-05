@@ -221,7 +221,8 @@ model RoleConfig {
   children RoleConfig[] @relation("RoleConfigHierarchy")
 
   description     String
-  permissions     Json             @default("{}") // { "users:read": "ON", "users:delete": "OFF" }
+  // DEPRECATED — ne plus lire ni écrire. Source de vérité : Permission + RolePermission.
+  permissions     Json?            @default("{}")
   rolePermissions RolePermission[]
   roleAssignments RoleAssignment[]
   restrictions    Json?            @default("{}") // { "max_daily_orders": "50", "can_access_analytics": "OFF" }

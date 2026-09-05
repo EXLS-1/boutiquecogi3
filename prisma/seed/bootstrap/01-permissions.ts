@@ -47,7 +47,6 @@ export const PermissionsSeeder: Seeder = {
         update: {
           level: role.level,
           description: role.description,
-          permissions: role.permissions,
           restrictions: role.restrictions,
           isSystem: true,
           isActive: true,
@@ -57,7 +56,6 @@ export const PermissionsSeeder: Seeder = {
           role: role.role,
           level: role.level,
           description: role.description,
-          permissions: role.permissions,
           restrictions: role.restrictions,
           isSystem: true,
           isActive: true,

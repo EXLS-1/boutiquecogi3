@@ -953,16 +953,23 @@ const _configCache = new Map<Role, ReturnType<typeof mergeConfig>>();
 function mergeConfig(
   defaults: (typeof DEFAULT_ROLE_CONFIG)[Role],
   dbConfig: {
-    permissions?: unknown;
+    // Permissions issues de la relation normalisée RolePermission (source de vérité).
+    grantedPermissions?: string[];
     restrictions?: unknown;
   },
 ) {
+  // Le catalogue par défaut fournit la clé complète (ON/OFF) ; la base
+  // (RolePermission) écrase avec les codes explicitement accordés.
+  const granted = new Set(dbConfig.grantedPermissions ?? []);
+  const permissions = Object.fromEntries(
+    Object.entries(
+      defaults.permissions as Record<Permission, ToggleState>,
+    ).map(([code, state]) => [code, granted.has(code) ? "ON" : state]),
+  ) as Record<Permission, ToggleState>;
+
   return {
     level: defaults.level,
-    permissions: {
-      ...defaults.permissions,
-      ...((dbConfig.permissions as Record<Permission, ToggleState>) ?? {}),
-    },
+    permissions,
     restrictions: {
       ...defaults.restrictions,
       ...((dbConfig.restrictions as Record<
@@ -981,10 +988,26 @@ async function loadAllRoleConfigs(): Promise<
   try {
     const dbConfigs = await prisma.roleConfig.findMany({
       where: { isActive: true },
-      select: { role: true, permissions: true, restrictions: true },
+      select: {
+        role: true,
+        // SOURCE DE VÉRITÉ : relation normalisée RolePermission → Permission.
+        // Le champ déprécié RoleConfig.permissions (JSON) n'est plus lu.
+        rolePermissions: { select: { permission: { select: { code: true } } } },
+        restrictions: true,
+      },
     });
 
-    const dbMap = new Map(dbConfigs.map((c) => [c.role as Role, c]));
+    const dbMap = new Map(
+      dbConfigs.map((c) => [
+        c.role as Role,
+        {
+          grantedPermissions: c.rolePermissions.map(
+            (rp) => rp.permission.code,
+          ),
+          restrictions: c.restrictions,
+        },
+      ]),
+    );
 
     for (const role of Object.values(ROLES)) {
       const dbConfig = dbMap.get(role);
