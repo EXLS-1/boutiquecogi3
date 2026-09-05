@@ -61,8 +61,6 @@ model User {
   createdAudits          UserAudit[]            @relation("UserAuditCreatedBy")
   updatedAudits          UserAudit[]            @relation("UserAuditUpdatedBy")
   deletedAudits          UserAudit[]            @relation("UserAuditDeletedBy")
-  roleConfig             RoleConfig?            @relation(fields: [roleConfigId], references: [id])
-  roleConfigId           String?                @db.Uuid
   roleAssignment         RoleAssignment?
   twoFactor              TwoFactor?
   notifications          Notification[]
@@ -190,8 +188,7 @@ model Post {
   title     String
   userId    String  @db.Uuid
   content   String?
-    roleAssignment RoleAssignment? @relation(fields: [roleAssignmentId], references: [id])
-    roleAssignmentId String? @db.Uuid
+  published Boolean @default(false)
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -215,13 +212,15 @@ model RoleConfig {
   role     Role         @unique // SUPER_ADMIN, ADMIN, etc. et doit matcher ROLES
   level    Int // 1-7
   // permissions Json     // { "users:read": "ON", "users:delete": "OFF" }
-  users    User[]
   parentId String?      @db.Uuid
   parent   RoleConfig?  @relation("RoleConfigHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children RoleConfig[] @relation("RoleConfigHierarchy")
 
   description     String
-  // DEPRECATED — ne plus lire ni écrire. Source de vérité : Permission + RolePermission.
+  // DEPRECATED — ne plus lire ni écrire. Source de vérité des permissions :
+  // Permission (catalogue) → RolePermission (association rôle↔permission).
+  // Ce champ est conservé uniquement pour la transition et devra être supprimé
+  // dans une migration ultérieure.
   permissions     Json?            @default("{}")
   rolePermissions RolePermission[]
   roleAssignments RoleAssignment[]
@@ -241,7 +240,6 @@ model RoleConfig {
   unblockedAt     DateTime?
   unblockedBy     String?
   unblockedReason String?
-  userRoles       UserRole[]
 
   @@index([role])
   @@index([level])
@@ -288,7 +286,7 @@ model Permission {
   category    String // ex: "PRODUCT", "ORDER", "USER", "FINANCE"
   isDangerous Boolean          @default(false) // Nécessite confirmation additionnelle
 
-  overrides    PermissionOverride[]
+  overrides PermissionOverride[]
 
   @@map("permission")
 }
