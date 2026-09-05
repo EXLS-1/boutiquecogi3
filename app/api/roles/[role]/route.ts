@@ -348,7 +348,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
 
       const userCount = await prisma.user.count({
-        where: { roleConfig: { role: sanitizedRole } },
+        where: { roleAssignment: { roleConfig: { role: sanitizedRole } } },
       });
 
       if (userCount > 0) {
