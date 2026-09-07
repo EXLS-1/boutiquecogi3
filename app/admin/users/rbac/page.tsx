@@ -3,11 +3,12 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+import { UserModuleNav } from '@/components/admin/users/user-module-nav';
 import { RBACSettings } from '@/components/dashboard/settings/rbac-settings';
 
 // Garde RBAC (règle d'or : JAMAIS auth.api.getSession() hors de lib/auth/server.ts)
 import { resolveAuthContext } from '@/lib/auth/server';
-import { ROLES } from '@/lib/auth/rbac';
+import { getRoleLevel, normalizeRole, ROLES } from '@/lib/auth/rbac';
 import { db } from '@/lib/db';
 
 import { Separator } from '@/components/ui/separator';
@@ -20,10 +21,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RBACSettingsPage() {
-  // 1. Vérification des droits d'accès (Sécurité) — même garde que /dashboard/settings
+  // 1. Vérification des droits d'accès (Sécurité) — niveaux 1-2 : SUPER_ADMIN et ADMIN
   const authContext = await resolveAuthContext();
-  if (!authContext || authContext.user.role !== ROLES.ADMIN) {
-    redirect('/login');
+  const actorLevel = authContext ? getRoleLevel(normalizeRole(authContext.user.role)) : 0;
+  if (!authContext || !Number.isInteger(actorLevel) || actorLevel < 1 || actorLevel > 2) {
+    redirect('/auth/sign-in?callbackUrl=/admin/users/rbac');
   }
 
   // 2. Chargement du rôle MANAGER (config RBAC) et de ses permissions
@@ -43,7 +45,8 @@ export default async function RBACSettingsPage() {
   };
 
   return (
-    <main className="container mx-auto max-w-4xl py-8 space-y-8">
+    <main className="container mx-auto max-w-4xl space-y-8 py-8">
+      <UserModuleNav />
       <header className="space-y-2">
         <Link
           href="/dashboard/settings"

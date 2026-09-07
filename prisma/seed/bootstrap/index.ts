@@ -12,6 +12,7 @@ import { RoleConfigSeeder } from "./02-role-config";
 import { CurrenciesSeeder } from "./03-currencies";
 import { GeographySeeder } from "./04-geography";
 import { TaxCarriersSeeder } from "./05-tax-carriers";
+import { SuperAdminSeeder } from "./06-superadmin";
 
 export const bootstrapRegistry: SeedRegistry = [
   SystemConfigSeeder,
@@ -20,4 +21,5 @@ export const bootstrapRegistry: SeedRegistry = [
   CurrenciesSeeder,
   GeographySeeder,
   TaxCarriersSeeder,
+  SuperAdminSeeder,
 ];

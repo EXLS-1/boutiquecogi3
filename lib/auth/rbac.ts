@@ -1199,7 +1199,7 @@ export async function requireMinLevel(
 }
 
 export async function requireAuth(
-  redirectTo: string = "/login",
+  redirectTo: string = "/auth/sign-in",
 ): Promise<Role> {
   const userData = await getCurrentUserWithRole();
   if (!userData?.isAuthenticated) redirect(redirectTo);

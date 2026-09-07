@@ -67,7 +67,7 @@ export async function getActiveAccountsData(params: {
         user: {
           select: {
             id: true, name: true, email: true,
-            userSecurities: { select: { isBlocked: true }, take: 1 },
+            userSecurity: { select: { isBlocked: true } },
             userAudit: { select: { isDeleted: true } },
           },
         },
@@ -104,7 +104,7 @@ export async function getActiveAccountsData(params: {
       id: a.user.id,
       name: a.user.name,
       email: a.user.email,
-      isBlocked: a.user.userSecurities[0]?.isBlocked ?? false,
+      isBlocked: a.user.userSecurity?.isBlocked ?? false,
       isDeleted: a.user.userAudit?.isDeleted ?? false,
     } : null,
     // On ne retourne JAMAIS les valeurs brutes des tokens/mots de passe au client

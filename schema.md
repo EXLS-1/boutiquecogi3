@@ -19,7 +19,7 @@ enum Currency {
 // =============================================
 
 model User {
-  id              String    @id @unique @default(uuid(7)) @db.Uuid
+  id              String    @id @default(uuid(7)) @db.Uuid
   email           String    @unique
   emailVerified   Boolean   @default(false)
   emailVerifiedAt DateTime?
@@ -27,12 +27,13 @@ model User {
   status          String    @default("ACTIVE") // ou un Enum UserStatus
   image           String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @default(now())
-  groupby         Role?
+  updatedAt       DateTime  @updatedAt
+  role            Role      @default(USER)
 
   sessions                 Session[]
   accounts                 Account[]
-  deletedAccountRegistries DeletedAccountRegistry[]
+  deletedAccountRegistries DeletedAccountRegistry[] @relation("DeletedAccountBy")
+  restoredAccountRegistries DeletedAccountRegistry[] @relation("DeletedAccountRestoredBy")
 
   posts          Post[]
   orders         Order[]
@@ -54,10 +55,13 @@ model User {
   publishedProducts Product[]       @relation("ProductPublisher")
   updater           Stock[]
   stockMovements    StockMovement[]
+  inventoryTransactions InventoryTransaction[]
+  mediaUploads          Media[]
+  idempotencyKeys       IdempotencyKey[]
 
-  userSecurities         UserSecurity[]
-  userPreferences        UserPreferences[]
-  userQuotas             UserQuota[]
+  userSecurity            UserSecurity?
+  userPreferences         UserPreferences?
+  userQuota               UserQuota?
   createdAudits          UserAudit[]            @relation("UserAuditCreatedBy")
   updatedAudits          UserAudit[]            @relation("UserAuditUpdatedBy")
   deletedAudits          UserAudit[]            @relation("UserAuditDeletedBy")
@@ -77,7 +81,6 @@ model UserSecurity {
 
   twoFactorEnabled Boolean               @default(false)
   twoFactorSecret  String?               @db.Text // ← Secret chiffré en AES-256-GCM
-  twoFactor        TwoFactor[]
   backupCodes      TwoFactorBackupCode[]
 
   adminPinHash String? // Hash SHA-256 du PIN admin (6 chiffres)
@@ -100,7 +103,7 @@ model UserPreferences {
   preferredCurrency Currency @default(CDF)
   // autres préférences
 
-  users User[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
 }
@@ -111,7 +114,7 @@ model UserQuota {
 
   productCount Int @default(0) // 🔒 Compteur atomique pour les quotas
 
-  users User[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_quota")
 }
@@ -241,7 +244,6 @@ model RoleConfig {
   unblockedBy     String?
   unblockedReason String?
 
-  @@index([role])
   @@index([level])
   @@index([isActive])
   @@index([isSystem])
@@ -330,7 +332,6 @@ model TwoFactor {
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   backupCodes    TwoFactorBackupCode[]
-  userSecurities UserSecurity[]
 
   @@map("twofactor")
 }
@@ -419,8 +420,8 @@ model Dashboard {
 
 model AuditLog {
   id         String  @id @default(uuid(7)) @db.Uuid
-  user       User?   @relation(fields: [userId], references: [id], onDelete: Cascade) // Add this line
-  userId     String  @db.Uuid
+  user       User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String? @db.Uuid
   roleLevel  Int     @default(0)
   action     String // ex: "ROLE_CREATED", "USER_BLOCKED"
   targetId   String? @db.Uuid
@@ -595,7 +596,6 @@ model Category {
   updatedAt      DateTime  @updatedAt
   catalogs       Catalog[]
 
-  @@index([slug])
   @@index([parentId])
   @@map("category")
 }
@@ -705,7 +705,6 @@ model Product {
   @@index([publishedById])
   @@index([status, scheduledAt])
   @@index([isArchived, basePrice])
-  @@index([slug])
   @@map("product")
 }
 
@@ -924,7 +923,7 @@ model VariantAttributeConfig {
 // ============================================
 
 model Stock {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(uuid(7)) @db.Uuid
   productId      String   @unique @db.Uuid // 1:1 avec Product
   quantity       Int      @default(0) // Stock physique réel
   reserved       Int      @default(0) // Quantité réservée par des commandes en cours
@@ -967,8 +966,7 @@ model StockMovement {
   stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
   user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  // Optionnel : relation vers Order si vous avez le modèle
-  // order Order? @relation(fields: [orderId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([stockId])
   @@index([type])
@@ -1070,6 +1068,7 @@ model Media {
   type       String? // e.g. "PRODUCT_IMAGE", "BANNER", etc.
   metadata   Json? // arbitrary metadata (views, duration, dimensions, etc.)
   uploadedBy String?  @db.Uuid
+  uploader   User?    @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -1168,6 +1167,7 @@ model InventoryTransaction {
   referenceId String?
   warehouseId String?
   performedBy String?         @db.Uuid
+  performedByUser User?       @relation(fields: [performedBy], references: [id], onDelete: SetNull)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -1277,7 +1277,7 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  paidAt    DateTime @default(now())
+  paidAt    DateTime?
 
   items   OrderItem[]
   payment Payment?
@@ -1290,6 +1290,7 @@ model Order {
   refundItems          RefundItem[]
   orderAddresses       OrderAddress[]
   stockReservations    StockReservation[]
+  stockMovements       StockMovement[]
   invoice              Invoice?
   coupon               Coupon?              @relation(fields: [couponId], references: [id])
   couponId             String?              @db.Uuid
@@ -1607,7 +1608,8 @@ model IdempotencyKey {
   key    String            @unique
   scope  String
   status IdempotencyStatus @default(PENDING)
-  userId String? // L'utilisateur qui a initié la requête
+  userId String? @db.Uuid // L'utilisateur qui a initié la requête
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   method       String?
   route        String?
@@ -1628,7 +1630,6 @@ model IdempotencyKey {
   @@index([status])
   @@index([expiresAt])
   @@index([userId])
-  @@index([key])
   @@map("idempotency_key")
 }
 
@@ -1961,7 +1962,6 @@ model Invoice {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@index([invoiceNumber])
   @@map("invoice")
 }
 
@@ -2003,6 +2003,7 @@ model ExchangeRate {
 
   @@index([baseCurrency, quoteCurrency])
   @@index([effectiveAt])
+  @@unique([baseCurrency, quoteCurrency, effectiveAt])
 }
 
 model NewsletterSubscriber {
@@ -2038,12 +2039,10 @@ model DeletedAccountRegistry {
   userEmail String
   userName  String?
 
-  // Relations
-  deletedUser String
-
   // Qui a initié la suppression
-  deletedBy     String @db.Uuid // userId de la personne/Admin qui a supprimé
+  deletedBy     String? @db.Uuid // userId de la personne/Admin qui a supprimé
   deletedByRole String // Rôle de la personne ayant supprimé (SUPER_ADMIN, ADMIN, ou USER pour self-delete)
+  deletedByUser User? @relation("DeletedAccountBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
   // Snapshot complet des données utilisateur AVANT suppression (JSON)
   userSnapshot Json // Contient tout: user, accounts, orders, addresses, etc.
@@ -2056,10 +2055,10 @@ model DeletedAccountRegistry {
   createdAt DateTime @default(now())
 
   // Restauration optionnelle
-  restoredAt  DateTime?
-  restoredBy  String?   @db.Uuid
-  restoreNote String?
-  users       User[]
+  restoredAt    DateTime?
+  restoredBy    String?   @db.Uuid
+  restoredByUser User?    @relation("DeletedAccountRestoredBy", fields: [restoredBy], references: [id], onDelete: SetNull)
+  restoreNote   String?
 
   @@index([userId])
   @@index([deletedBy])

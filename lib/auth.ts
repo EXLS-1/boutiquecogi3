@@ -212,12 +212,12 @@ export const auth = betterAuth({
         where: { id: session.user.id },
         include: {
           roleAssignment: { include: { roleConfig: { select: { role: true } } } },
-          userSecurities: { select: { twoFactorEnabled: true } },
+          userSecurity: { select: { twoFactorEnabled: true } },
         },
       });
 
       const isSuperAdmin = user?.roleAssignment?.roleConfig?.role === "SUPER_ADMIN";
-      const has2FA = user?.userSecurities?.[0]?.twoFactorEnabled ?? false;
+      const has2FA = user?.userSecurity?.twoFactorEnabled ?? false;
 
       // Non SUPER_ADMIN → connexion normale, on garde la session
       if (!isSuperAdmin) return;

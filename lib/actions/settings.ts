@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { db } from '@/lib/db';
 import { resolveAuthContext } from '@/lib/auth/server';
-import { ROLES } from '@/lib/auth/rbac';
+import { getRoleLevel, normalizeRole } from '@/lib/auth/rbac';
 import { SETTINGS_KEYS } from '@/lib/constants/settings';
 import { generalSettingsSchema, type GeneralSettingsValues } from '@/lib/validations/settings';
 
@@ -23,9 +23,11 @@ export async function updateGeneralSettingsAction(
 ): Promise<ActionResponse<GeneralSettingsValues>> {
   try {
     // 1. Vérification de l'authentification et des rôles (garde RBAC canonique)
+    //    Niveaux 1-2 : SUPER_ADMIN et ADMIN
     const authContext = await resolveAuthContext();
-    if (!authContext || authContext.user.role !== ROLES.ADMIN) {
-      return { success: false, error: 'Accès non autorisé.' };
+    const actorLevel = authContext ? getRoleLevel(normalizeRole(authContext.user.role)) : 0;
+    if (!authContext || !Number.isInteger(actorLevel) || actorLevel < 1 || actorLevel > 2) {
+      return { success: false, error: 'Accès non autorisé.', code: 'FORBIDDEN' };
     }
 
     // 2. Validation stricte des données (Zod)

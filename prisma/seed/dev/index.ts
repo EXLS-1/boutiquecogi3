@@ -6,6 +6,7 @@
 // dépendances (users -> categories -> products -> inventory -> ...).
 
 import { SeedRegistry } from "../types";
+import { PurgeSeedUsersSeeder } from "./00-purge-seed-users";
 import { DevUsersSeeder } from "./01-users";
 import { DevCategoriesSeeder } from "./02-categories";
 import { DevAttributesSeeder } from "./03-attributes";
@@ -20,6 +21,7 @@ import { DevNotificationsSeeder } from "./11-notifications";
 import { DevAuditLogsSeeder } from "./12-audit-logs";
 
 export const devRegistry: SeedRegistry = [
+  PurgeSeedUsersSeeder,
   DevUsersSeeder,
   DevCategoriesSeeder,
   DevAttributesSeeder,

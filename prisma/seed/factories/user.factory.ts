@@ -100,21 +100,37 @@ export function userSlug(index: number): string {
 }
 
 /**
- * Construit un lot d'utilisateurs avec distribution de rôles :
- * index 0 -> SUPER_ADMIN (L1), 1 -> ADMIN (L2), 2 -> MANAGER (L3),
- * 3 -> EDITOR (L4), 4 -> SUPERVISOR (L5), reste -> USER (L6).
+ * Construit un lot d'utilisateurs avec distribution de rôles.
+ *
+ * CORRECTIF SÉCURITÉ (RBAC) :
+ *   - Plus AUCUN utilisateur seed n'obtient SUPER_ADMIN (L1) — le seul
+ *     SUPER_ADMIN légitime est celui du bootstrap (06-superadmin.ts), réimplémenté
+ *     depuis SUPER_ADMIN_EMAIL. Le faux "SuperAdmin 0" (@boutiquecogi3.cd) qui
+ *     interférait avec le compte réel est supprimé.
+ *   - Tout email généré entrant en collision avec le compte réel est exclu.
+ *   - Les comptes seed restent des clients simples (USER, L6) + un staff non
+ *     privilégié (L2-L5 conservé pour les tests, jamais L1).
  */
 export async function buildUsersBatch(count: number): Promise<GeneratedUser[]> {
+  const protectedEmail = (process.env.SUPER_ADMIN_EMAIL || "").trim().toLowerCase();
   const users: GeneratedUser[] = [];
+
   for (let i = 0; i < count; i++) {
     let roleLevel = 6;
-    if (i === 0) roleLevel = 1;
-    else if (i === 1) roleLevel = 2;
+    if (i === 1) roleLevel = 2;
     else if (i === 2) roleLevel = 3;
     else if (i === 3) roleLevel = 4;
     else if (i === 4) roleLevel = 5;
+    // NB : l'index 0 n'est PLUS promu SUPER_ADMIN — c'était "Client 0"/"SuperAdmin 0".
 
-    users.push(await buildUserFactory(i, { roleLevel }));
+    const user = await buildUserFactory(i, { roleLevel });
+
+    // Garde-fou : ne jamais générer un compte seed sur l'email du SUPER_ADMIN réel.
+    if (protectedEmail && user.email.toLowerCase() === protectedEmail) {
+      continue;
+    }
+
+    users.push(user);
   }
   return users;
 }

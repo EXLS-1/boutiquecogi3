@@ -15,7 +15,7 @@ import {
   SYSTEM_CONFIG_KEY,
   paymentConfigKey,
 } from '@/lib/constants/settings';
-import { ROLES } from '@/lib/auth/rbac';
+import { getRoleLevel, normalizeRole } from '@/lib/auth/rbac';
 import { PAYMENT_PROVIDERS, paymentSchema } from '@/lib/payment';
 import { SYSTEM_DEFAULTS, systemConfigSchema, type SystemConfigValues } from '@/lib/system';
 
@@ -55,10 +55,11 @@ export const metadata: Metadata = {
  * Minimaliste : se concentre uniquement sur le fetching concurrent et l'orchestration.
  */
 export default async function SettingsPage() {
-  // 1. Vérification des droits d'accès (Sécurité)
+  // 1. Vérification des droits d'accès (Sécurité) — niveaux 1-2 : SUPER_ADMIN et ADMIN
   const authContext = await resolveAuthContext();
-  if (!authContext || authContext.user.role !== ROLES.ADMIN) {
-    redirect('/login'); // Redirection si non autorisé
+  const actorLevel = authContext ? getRoleLevel(normalizeRole(authContext.user.role)) : 0;
+  if (!authContext || !Number.isInteger(actorLevel) || actorLevel < 1 || actorLevel > 2) {
+    redirect('/auth/sign-in?callbackUrl=/dashboard/settings'); // Redirection si non autorisé
   }
 
   // 2. Fetching concurrent de toutes les données (Performance)

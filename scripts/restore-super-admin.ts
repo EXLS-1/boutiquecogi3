@@ -5,6 +5,9 @@
 // Restaure (crée/met à jour/débloque) le compte Super Admin défini par
 // SUPER_ADMIN_NAME / SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD.
 // Usage : npx tsx scripts/restore-super-admin.ts
+//
+// NB : le champ User.role est aussi forcé à "SUPER_ADMIN" car les guards
+// (lib/auth/*) utilisent à la fois user.role ET user.roleAssignment.roleConfig.role.
 
 import { config } from "dotenv";
 import { config as configLocal } from "dotenv";
@@ -53,8 +56,8 @@ async function main() {
   // 2. Utilisateur (actif, vérifié)
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name, emailVerified: true, emailVerifiedAt: new Date(), status: "ACTIVE" },
-    create: { name, email, emailVerified: true, emailVerifiedAt: new Date() },
+    update: { name, emailVerified: true, emailVerifiedAt: new Date(), status: "ACTIVE", role: "SUPER_ADMIN" },
+    create: { name, email, emailVerified: true, emailVerifiedAt: new Date(), role: "SUPER_ADMIN" },
   });
 
   // 3. RoleAssignment

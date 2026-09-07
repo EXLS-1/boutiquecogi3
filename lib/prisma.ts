@@ -4,17 +4,26 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, type PoolConfig } from "pg";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+type PrismaGlobal = {
+  prisma?: PrismaClient;
+  pool?: Pool;
 };
+
+const globalForPrisma = globalThis as unknown as PrismaGlobal;
 
 // Use DIRECT_URL for the adapter (bypasses PgBouncer which is incompatible
 // with Prisma's driver adapter). Fall back to DATABASE_URL if not set.
+const connectionString =
+  process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL ou DIRECT_URL doit être défini.",
+  );
+}
+
 const poolOptions: PoolConfig = {
-
-  connectionString:
-    process.env.DIRECT_URL ?? process.env.DATABASE_URL,
-
+  connectionString,
 
   // Limite le nombre de connexions simultanées du pool — augmenté pour éviter l'épuisement.
   max: Number(process.env.PG_POOL_MAX) || 20,
@@ -36,14 +45,18 @@ const poolOptions: PoolConfig = {
 const wantsSsl =
   process.env.DATABASE_SSL === "true" ||
   process.env.PGSSLMODE === "require" ||
-  process.env.PGSSLMODE === "require" ||
   process.env.POSTGRES_SSL === "true";
 
 if (wantsSsl) {
   poolOptions.ssl = { rejectUnauthorized: false };
 }
 
-const pool = new Pool(poolOptions);
+// In development (Next.js + Turbopack hot reload), the module is re-evaluated on
+// every change. Cache BOTH the pool and the client on globalThis so we never end
+// up with multiple connection pools.
+const pool =
+  globalForPrisma.pool ??
+  new Pool(poolOptions);
 
 const adapter = new PrismaPg(pool);
 
@@ -57,7 +70,9 @@ export const prisma =
         : ["error"],
   });
 
-// En mode développement, on attache l'instance à globalThis pour éviter les fuites de connexions
+// En mode développement, on attache le pool ET le client à globalThis
+// pour éviter les fuites de connexions au hot-reload.
 if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.pool = pool;
   globalForPrisma.prisma = prisma;
 }

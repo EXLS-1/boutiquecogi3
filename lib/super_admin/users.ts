@@ -5,13 +5,13 @@ import type { User, Role } from '@prisma/client';
 // Type dérivé pour éviter les 'any' et assurer un typage strict
 export type AdminUserListItem = User & {
   _count: { accounts: number; orders: number };
-  userSecurities: {
+  userSecurity: {
     isBlocked: boolean;
     blockReason: string | null;
     blockedUntil: Date | null;
     twoFactorEnabled: boolean;
-  }[];
-  userQuotas: { productCount: number }[];
+  } | null;
+  userQuota: { productCount: number } | null;
   userAudit: { isDeleted: boolean; deletedAt: Date | null; version: number } | null;
   roleAssignment: { roleConfig: { role: Role } } | null;
   accounts: { password: string | null }[];
@@ -33,10 +33,10 @@ export async function getAdminUsersData(): Promise<{ users: AdminUserListItem[];
   const users = await prisma.user.findMany({
     include: {
       _count: { select: { accounts: true, orders: true } },
-      userSecurities: {
+      userSecurity: {
         select: { isBlocked: true, blockReason: true, blockedUntil: true, twoFactorEnabled: true },
       },
-      userQuotas: { select: { productCount: true } },
+      userQuota: { select: { productCount: true } },
       userAudit: { select: { isDeleted: true, deletedAt: true, version: true } },
       roleAssignment: { select: { roleConfig: { select: { role: true } } } },
       accounts: { select: { password: true }, take: 1 },
@@ -48,8 +48,8 @@ export async function getAdminUsersData(): Promise<{ users: AdminUserListItem[];
   const stats: UsersStats = {
     total: users.length,
     verified: users.filter((u) => u.emailVerified).length,
-    twoFactor: users.filter((u) => u.userSecurities[0]?.twoFactorEnabled).length,
-    blocked: users.filter((u) => u.userSecurities[0]?.isBlocked).length,
+    twoFactor: users.filter((u) => u.userSecurity?.twoFactorEnabled).length,
+    blocked: users.filter((u) => u.userSecurity?.isBlocked).length,
     deleted: users.filter((u) => u.userAudit?.isDeleted).length,
   };
 
