@@ -124,7 +124,7 @@ export function RBACSettings({ roleId, roleName, currentPermissions }: Props) {
               <SelectTrigger id="rbac-role-select" className="w-56" aria-label="Sélectionner le rôle">
                 <SelectValue placeholder="Choisir un rôle" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-cyan-100 text-cyan-400">
                 {Object.values(ROLES).map((role) => (
                   <SelectItem key={role} value={role}>
                     {ROLE_LABELS[role] ?? role}
@@ -138,11 +138,7 @@ export function RBACSettings({ roleId, roleName, currentPermissions }: Props) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
-            {/* Dédupliqué : PERMISSIONS contient à la fois des clés kebab-case et des
-                alias UPPER_SNAKE pointant vers les mêmes codes (ex. USERS_BLOCK et
-                USERS_BAN → "users:block"). Sans dédoublonnage, les keys React
-                seraient dupliquées. */}
-            {[...new Set(Object.values(PERMISSIONS))].map((perm) => (
+            {ALL_PERMISSIONS.map((perm) => (
               <FormField key={perm} control={form.control} name="permissions" render={({ field }) => (
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                   <FormControl>
@@ -160,8 +156,9 @@ export function RBACSettings({ roleId, roleName, currentPermissions }: Props) {
                 </FormItem>
               )} />
             ))}
-            <Button type="submit" disabled={isPending} className="col-span-2 mt-4">
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Sauvegarder les permissions
+            <Button type="submit" disabled={isPending || isLoadingRole} className="col-span-2 mt-4">
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isPending ? 'Sauvegarde…' : 'Sauvegarder les permissions'}
             </Button>
           </form>
         </Form>
