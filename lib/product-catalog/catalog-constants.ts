@@ -54,6 +54,7 @@ export const CACHE_TAGS = {
   CATALOG_PROMOTIONS: "catalog-promotions",
   CATALOG_NOUVEAUTES: "catalog-nouveautes",
   CATALOG_CATEGORY: "catalog-category",
+  CATEGORIES: "categories",
 } as const;
 
 export type CatalogCacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
@@ -64,6 +65,7 @@ export const CACHE_DURATIONS = {
   PRODUCT_DETAIL: 600,     // 10 minutes
   PROMOTIONS: 180,         // 3 minutes
   NOUVEAUTES: 180,         // 3 minutes
+  CATEGORIES: 300,         // 5 minutes
 } as const;
 
 // ═════════════════════════════════════════════════════════════════════════════

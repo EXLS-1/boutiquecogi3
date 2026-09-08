@@ -117,6 +117,17 @@ export const silentLogger: RedisLogger = {
   child: () => silentLogger,
 };
 
+export type MockLogEntry = {
+  level: "debug" | "info" | "warn" | "error";
+  message: string;
+  meta?: Record<string, unknown>;
+};
+
+export interface MockLogger extends RedisLogger {
+  /** Journal des entrées capturées (accessible pour les assertions de test). */
+  logs: MockLogEntry[];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MOCK CIRCUIT BREAKER
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -310,6 +321,7 @@ export class MockRedisClient {
   >();
 
   public circuitBreaker: MockCircuitBreaker;
+  public logger: MockLogger;
   private options: RedisClientOptions;
 
   // 👇 New property to use crypto – generates a unique client ID
@@ -317,6 +329,7 @@ export class MockRedisClient {
 
   constructor(options: RedisClientOptions = {}) {
     this.options = options;
+    this.logger = createMockLogger();
     const cb = options.circuitBreaker ?? {};
     this.circuitBreaker = new MockCircuitBreaker(
       cb.failureThreshold ?? 5,
@@ -330,6 +343,9 @@ export class MockRedisClient {
 
   private checkCircuit(): void {
     if (!this.circuitBreaker.canExecute()) {
+      this.logger.error("Circuit breaker is OPEN — operation rejected", {
+        operation: "checkCircuit",
+      });
       throw new MockRedisCircuitOpenError();
     }
   }
@@ -357,6 +373,7 @@ export class MockRedisClient {
       this.ttlStore.delete(key);
     }
     this.circuitBreaker.recordSuccess();
+    this.logger.info("Operation succeeded", { operation: "set", key });
     return "OK";
   }
 
@@ -412,8 +429,90 @@ export class MockRedisClient {
 
   async ping(): Promise<"PONG"> {
     this.checkCircuit();
+    this.logger.info("Ping succeeded", { operation: "ping" });
     this.circuitBreaker.recordSuccess();
     return "PONG";
+  }
+
+  // ─── Pub/Sub ────────────────────────────────────────────────────────────────
+
+  subscribe(
+    channels: string[],
+    handler: (channel: string, message: unknown) => void
+  ): () => void {
+    for (const channel of channels) {
+      let handlers = this.pubSubHandlers.get(channel);
+      if (!handlers) {
+        handlers = new Set();
+        this.pubSubHandlers.set(channel, handlers);
+      }
+      handlers.add(handler);
+    }
+    return () => {
+      for (const channel of channels) {
+        this.pubSubHandlers.get(channel)?.delete(handler);
+      }
+    };
+  }
+
+  async publish(channel: string, message: unknown): Promise<number> {
+    const handlers = this.pubSubHandlers.get(channel);
+    if (!handlers || handlers.size === 0) return 0;
+    let delivered = 0;
+    for (const handler of handlers) {
+      handler(channel, message);
+      delivered++;
+    }
+    return delivered;
+  }
+
+  // ─── Pattern Matching & Scan ────────────────────────────────────────────────
+
+  /** Convertit un pattern Redis glob (ex: "scan:*") en RegExp. */
+  private patternToRegex(pattern: string): RegExp {
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`^${escaped.replace(/\*/g, ".*")}$`);
+  }
+
+  private allKeys(): string[] {
+    const keys = new Set<string>();
+    for (const key of this.store.keys()) keys.add(key);
+    for (const key of this.hashStore.keys()) keys.add(key);
+    for (const key of this.listStore.keys()) keys.add(key);
+    for (const key of this.setStore.keys()) keys.add(key);
+    for (const key of this.zsetStore.keys()) keys.add(key);
+    return Array.from(keys);
+  }
+
+  async scanKeys(pattern: string): Promise<string[]> {
+    this.checkCircuit();
+    const regex = this.patternToRegex(pattern);
+    const matched = this.allKeys().filter((key) => regex.test(key));
+    this.circuitBreaker.recordSuccess();
+    return matched;
+  }
+
+  async scanAll(pattern: string): Promise<string[]> {
+    return this.scanKeys(pattern);
+  }
+
+  /**
+   * Simule la réception d'un message Redis (comme un event ioredis).
+   * Déclenche les handlers abonnés au canal, avec parsing JSON du message brut.
+   */
+  emit(event: string, channel: string, rawMessage: string): void {
+    if (event !== "message") return;
+    let parsed: unknown = rawMessage;
+    try {
+      parsed = JSON.parse(rawMessage);
+    } catch {
+      // message non-JSON : transmis tel quel
+    }
+    const handlers = this.pubSubHandlers.get(channel);
+    if (!handlers) return;
+    for (const handler of handlers) {
+      handler(channel, parsed);
+    }
   }
 
   getMetrics() {
@@ -435,6 +534,7 @@ export class MockRedisClient {
     this.ttlStore.clear();
     this.lockStore.clear();
     this.pubSubHandlers.clear();
+    this.logger.logs.length = 0;
     this.circuitBreaker = new MockCircuitBreaker(
       this.options.circuitBreaker?.failureThreshold ?? 5,
       this.options.circuitBreaker?.resetTimeoutMs ?? 30000,
@@ -443,15 +543,17 @@ export class MockRedisClient {
   }
 }
 
-export function createMockLogger(): RedisLogger {
-  const logs: { level: string; msg: string; meta?: Record<string, unknown> }[] = [];
-  return {
-    debug: (msg, meta) => logs.push({ level: "debug", msg, meta }),
-    info: (msg, meta) => logs.push({ level: "info", msg, meta }),
-    warn: (msg, meta) => logs.push({ level: "warn", msg, meta }),
-    error: (msg, meta) => logs.push({ level: "error", msg, meta }),
+export function createMockLogger(): MockLogger {
+  const logs: MockLogEntry[] = [];
+  const logger: MockLogger = {
+    logs,
+    debug: (msg, meta) => logs.push({ level: "debug", message: msg, meta }),
+    info: (msg, meta) => logs.push({ level: "info", message: msg, meta }),
+    warn: (msg, meta) => logs.push({ level: "warn", message: msg, meta }),
+    error: (msg, meta) => logs.push({ level: "error", message: msg, meta }),
     child: () => createMockLogger(),
   };
+  return logger;
 }
 
 export function createMockRedisClient(options: RedisClientOptions = {}) {
@@ -459,6 +561,7 @@ export function createMockRedisClient(options: RedisClientOptions = {}) {
   return {
     client: mockRedis as unknown as import("./redis").RedisClient,
     mockRedis,
+    logger: mockRedis.logger,
     reset: () => mockRedis.reset(),
   };
 }

@@ -185,12 +185,13 @@ export default async function proxy(request: NextRequest) {
   const isAuthenticated = hasSessionCookie(request);
 
   // ─── Phase 5: Auth Zone ───
-  if (zone === "auth" && isAuthenticated) {
-    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-    const redirectTarget =
-      callbackUrl && !callbackUrl.startsWith("/auth") ? callbackUrl : "/profile";
-    return NextResponse.redirect(new URL(redirectTarget, request.nextUrl.origin));
-  }
+  // NOTE: Pas de rebond Edge ici. La présence du cookie ne prouve PAS que la
+  // session est valide en base (Edge ne peut pas interroger la DB). Un rebond
+  // basé sur le cookie seul crée une boucle infinie 307 quand le cookie est
+  // périmé (secret changé, session expirée/supprimée) :
+  //   /profile (cookie invalide → page → redirect sign-in) → proxy → /profile → …
+  // La redirection des utilisateurs déjà connectés est gérée côté client par
+  // SignInForm, qui valide la session via /api/auth/get-session avant de rediriger.
 
   // ─── Phase 6: Protected & Admin Zones ───
   if ((zone === "protected" || zone === "admin") && !isAuthenticated) {

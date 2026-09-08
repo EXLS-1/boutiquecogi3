@@ -7,16 +7,29 @@
 
 "use server";
 
-import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { guardPermission } from "@/lib/auth/server";
 import { PERMISSIONS } from "@/lib/auth/rbac";
+import { CACHE_TAGS } from "@/lib/product-catalog/catalog-constants";
+import {
+  getCategoriesCached,
+  type ActionResponse,
+  type CategoryDTO,
+} from "@/lib/categories/queries";
 
-export type ActionResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; code?: string };
+export type { ActionResponse, CategoryDTO };
+
+/**
+ * Récupère les catégories via le cache (Data Cache + déduplication par rendu).
+ * La logique vit dans lib/categories/queries.ts (hors "use server").
+ */
+export async function getCategories(): Promise<
+  ActionResponse<CategoryDTO[]>
+> {
+  return getCategoriesCached();
+}
 
 const CategoryUpdateSchema = z.object({
   name: z
@@ -32,28 +45,6 @@ const CategoryUpdateSchema = z.object({
 });
 
 export type CategoryUpdateInput = z.infer<typeof CategoryUpdateSchema>;
-
-export const getCategories = cache(
-  async (): Promise<
-    ActionResponse<{ id: string; name: string; slug: string }[]>
-  > => {
-    try {
-      const categories = await prisma.category.findMany({
-        select: { id: true, name: true, slug: true },
-        orderBy: { name: "asc" },
-      });
-
-      return { success: true, data: categories };
-    } catch (error) {
-      console.error("[getCategories]", error);
-      return {
-        success: false,
-        error: "Impossible de charger les catégories",
-        code: "CATEGORIES_FETCH_ERROR",
-      };
-    }
-  },
-);
 
 /**
  * Met à jour une catégorie existante.
@@ -79,6 +70,7 @@ export async function updateCategoryAction(
     });
 
     // 4. Invalidation du cache pour rafraîchir l'UI partout
+    revalidateTag(CACHE_TAGS.CATEGORIES, "default");
     revalidatePath("/dashboard/admin");
     revalidatePath("/(shop)", "layout");
 

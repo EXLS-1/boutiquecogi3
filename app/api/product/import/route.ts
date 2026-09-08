@@ -10,10 +10,12 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { parseProductsCsv } from "@/lib/csv/import-parser";
 import { batchUploadRemoteImages } from "@/lib/images/remote-uploader";
 import { slugify } from "@/lib/utils/slug";
+import { CACHE_TAGS } from "@/lib/product-catalog/catalog-constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -167,6 +169,8 @@ export async function POST(request: NextRequest) {
         where: { name: { in: missingCategories } },
       });
       newCategories.forEach((c) => categoryMap.set(c.name, c.id));
+      // Invalide le cache des catégories (navbar, formulaires, etc.)
+      revalidateTag(CACHE_TAGS.CATEGORIES, "default");
     }
 
     // 7. Transaction atomique d'insertion

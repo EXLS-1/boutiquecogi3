@@ -50,6 +50,31 @@ export function SignInForm() {
     reset({ email: "", password: "" });
   }, [reset]);
 
+  // Anti-boucle : si une session VALIDE existe (cookie périmé exclu), rediriger
+  // vers le callbackUrl. On valide via l'API (et non la simple présence du
+  // cookie) pour éviter la boucle 307 /profile ↔ /auth/sign-in.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await authClient.getSession();
+        if (cancelled || !data?.user) return;
+        const params = new URLSearchParams(window.location.search);
+        const callbackUrl = params.get("callbackUrl");
+        const target =
+          callbackUrl && !callbackUrl.startsWith("/auth") ? callbackUrl : "/";
+        router.replace(target);
+        router.refresh();
+      } catch {
+        // Session absente/invalide → on reste sur le formulaire.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const checkRequires2FA = async (): Promise<boolean> => {
     const statusRes = await fetch("/api/auth/2fa/status", {
       cache: "no-store",

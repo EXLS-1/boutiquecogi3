@@ -23,19 +23,17 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   RedisClient,
   RedisError,
-  RedisConnectionError,
   RedisCircuitOpenError,
   RedisSerializationError,
   RedisNamespaces,
   KeyBuilder,
   Serializer,
-  getRedisClient,
   resetRedisClient,
   redisHelpers,
   setRedisLogger,
   type RedisLogger,
 } from "./redis";
-import { createMockRedisClient, createMockLogger } from "./redis.mock";
+import { createMockRedisClient } from "./redis.mock";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FIXTURES & UTILITAIRES
@@ -111,11 +109,11 @@ describe("RedisClient — Circuit Breaker", () => {
   });
 
   it("devrait ouvrir le circuit après 5 échecs consécutifs", async () => {
-    const { client } = createMockRedisClient();
+    const { client, mockRedis } = createMockRedisClient();
 
     // Forcer des échecs en manipulant le circuit breaker
-    // @ts-expect-error
-    const cb = client.circuitBreaker;
+   
+    const cb = mockRedis.circuitBreaker;
     for (let i = 0; i < 5; i++) {
       cb.recordFailure();
     }
@@ -126,12 +124,11 @@ describe("RedisClient — Circuit Breaker", () => {
   });
 
   it("devrait passer de OPEN à HALF_OPEN après le timeout", async () => {
-    const { client } = createMockRedisClient({
+    const { client, mockRedis } = createMockRedisClient({
       circuitBreaker: { resetTimeoutMs: 50 },
     });
 
-    // @ts-expect-error
-    const cb = client.circuitBreaker;
+    const cb = mockRedis.circuitBreaker;
     for (let i = 0; i < 5; i++) cb.recordFailure();
     expect(cb.getState()).toBe("OPEN");
 
@@ -141,12 +138,11 @@ describe("RedisClient — Circuit Breaker", () => {
   });
 
   it("devrait fermer le circuit après 3 succès en HALF_OPEN", async () => {
-    const { client } = createMockRedisClient({
+    const { client, mockRedis } = createMockRedisClient({
       circuitBreaker: { halfOpenMaxCalls: 3 },
     });
 
-    // @ts-expect-error
-    const cb = client.circuitBreaker;
+    const cb = mockRedis.circuitBreaker;
     cb.state = "HALF_OPEN";
     cb.halfOpenCalls = 0;
 
@@ -1187,12 +1183,11 @@ describe("RedisClient — Logging", () => {
   });
 
   it("devrait logger les erreurs", async () => {
-    const { client, logger, reset } = createMockRedisClient();
+    const { client, mockRedis, logger, reset } = createMockRedisClient();
     reset();
 
     // Forcer le circuit breaker en OPEN
-    // @ts-expect-error
-    const cb = client.circuitBreaker;
+    const cb = mockRedis.circuitBreaker;
     for (let i = 0; i < 5; i++) cb.recordFailure();
 
     await expect(client.get("key")).rejects.toThrow();
@@ -1255,7 +1250,7 @@ describe("RedisClient — Scan & Pattern Matching", () => {
     await client.set("keys:a", "1");
     await client.set("keys:b", "2");
 
-    const keys = await client.keys("keys:*");
+    const keys = await client.scanKeys("keys:*");
     expect(keys).toHaveLength(2);
   });
 });
@@ -1275,10 +1270,9 @@ describe("RedisClient — Health Check", () => {
   });
 
   it("devrait retourner unhealthy quand circuit breaker est OPEN", async () => {
-    const { client } = createMockRedisClient();
+    const { client, mockRedis } = createMockRedisClient();
 
-    // @ts-expect-error
-    const cb = client.circuitBreaker;
+    const cb = mockRedis.circuitBreaker;
     for (let i = 0; i < 5; i++) cb.recordFailure();
 
     expect(client.isHealthy()).toBe(false);
