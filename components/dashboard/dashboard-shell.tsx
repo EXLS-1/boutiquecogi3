@@ -41,10 +41,10 @@ export function DashboardShell({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3">
+        <nav className="flex-1 overflow-y-auto p-10">
           {nav.map((group) => (
             <div key={group.title} className="mb-5">
-              <h2 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <h2 className="mb-2 px-2 text-xs font-bold uppercase underline tracking-wide text-cyan-500">
                 {group.title}
               </h2>
               <ul className="space-y-1">
@@ -52,7 +52,7 @@ export function DashboardShell({
                   <li key={item.href}>
                     <a
                       href={item.href}
-                      className="block rounded-md px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
+                      className="block rounded-md px-6 py-1 text-sm text-cyan-400 transition-colors hover:bg-cyan-100 hover:text-cyan-500"
                     >
                       {item.label}
                     </a>
