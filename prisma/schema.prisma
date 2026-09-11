@@ -56,6 +56,7 @@ model User {
   updater               Stock[]
   stockMovements        StockMovement[]
   inventoryTransactions InventoryTransaction[]
+  variantStockUpdates   VariantStock[]
   mediaUploads          Media[]
   idempotencyKeys       IdempotencyKey[]
 
@@ -637,9 +638,14 @@ model Product {
   basePrice   Decimal  @db.Decimal(10, 2)
   currency    Currency @default(USD)
 
-  // ─── Type de produit (ProductTypeConfig.type) ───
-  // Rétrocompatibilité : PHYSICAL par défaut. Piloté par la policy product-type.
-  productType String? @default("PHYSICAL")
+  // ─── Type de produit (CONTRAT N°1 — policy métier) ───
+  // FK vers ProductTypeConfig : le type décide du RBAC (whoCan*), des
+  // permissions requises, des niveaux minimaux, de maxVariants et de
+  // requiresApproval. Nullable pendant la migration ; phase 2 : backfill
+  // (SQL) puis rendu obligatoire. onDelete: Restrict — un type utilisé par
+  // des produits ne peut pas être supprimé.
+  productTypeId String?            @db.Uuid
+  productType   ProductTypeConfig? @relation(fields: [productTypeId], references: [id], onDelete: Restrict)
 
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -708,7 +714,7 @@ model Product {
   @@index([updatedBy])
   @@index([publishedById])
   @@index([status, scheduledAt])
-  @@index([productType])
+  @@index([productTypeId])
   @@index([isArchived, basePrice])
   @@map("product")
 }
@@ -892,6 +898,9 @@ model ProductTypeConfig {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
+  // Back-relation : produits de ce type (CONTRAT N°1)
+  products Product[]
+
   @@index([type])
   @@map("product_type_config")
 }
@@ -967,23 +976,29 @@ model Stock {
 // les DEUX couches de manière transactionnelle).
 
 model VariantStock {
-  id             String         @id @default(uuid(7)) @db.Uuid
-  variantId      String         @db.Uuid
-  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  warehouse      String? // Emplacement / entrepôt (null = entrepôt principal)
-  quantity       Int            @default(0)
-  reserved       Int            @default(0)
-  alertThreshold Int            @default(10)
-  lastMovementAt DateTime       @default(now())
-  updatedBy      String?        @db.Uuid
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id        String         @id @default(uuid(7)) @db.Uuid
+  variantId String         @db.Uuid
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([variantId, warehouse])
+  // CONTRAT N°5 — entrepôt cible (null = entrepôt principal)
+  warehouseId String?    @db.Uuid
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+
+  quantity       Int @default(0)
+  reserved       Int @default(0)
+  // available = quantity - reserved → valeur DÉRIVÉE, jamais persistée
+  alertThreshold Int @default(10)
+
+  lastMovementAt DateTime @default(now())
+  updatedBy      String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  updater        User?    @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@unique([variantId, warehouseId])
   @@index([variantId])
-  @@index([warehouse])
-  @@index([quantity])
-  @@map("variant_stocks")
+  @@index([warehouseId])
+  @@map("variant_stock")
 }
 
 // ============================================
@@ -1940,6 +1955,9 @@ model Warehouse {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   purchaseOrders PurchaseOrder[]
+
+  // Back-relation : stocks de variantes hébergés (CONTRAT N°5)
+  variantStocks VariantStock[]
 
   @@map("warehouse")
 }

@@ -132,12 +132,18 @@ export async function adjustVariantStockInTx(
 
   // ── 1. Upsert de la ligne VariantStock ──
   let variantStock = await tx.variantStock.findUnique({
-    where: { variantId_warehouse: { variantId, warehouse } },
+    where: { variantId_warehouseId: { variantId, warehouseId: warehouse } },
   });
 
   if (!variantStock) {
     variantStock = await tx.variantStock.create({
-      data: { variantId, warehouse, quantity: 0, reserved: 0, updatedBy: userId },
+      data: {
+        variantId,
+        warehouseId: warehouse,
+        quantity: 0,
+        reserved: 0,
+        updatedBy: userId ?? undefined,
+      },
     });
   }
 
