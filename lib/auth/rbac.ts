@@ -517,13 +517,13 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   },
   "analytics:dashboard:filter": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "reports:export": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
