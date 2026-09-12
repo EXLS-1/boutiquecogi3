@@ -10,12 +10,12 @@ export default async function VideosCart() {
     .catch(() => []);
 
   return (
-    <section className="bg-slate-950 py-12 text-white">
+    <section className="bg-cyan-50 py-12 text-cyan-400">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <header className="mb-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">Vidéos de présentation</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-cyan-500">Vidéos de présentation</p>
           <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Nos Capsules en Continu</h2>
-          <p className="mt-3 max-w-2xl text-sm text-slate-400">Une immersion visuelle dans notre univers.</p>
+          <p className="mt-3 max-w-2xl text-sm text-cyan-500">Une immersion visuelle dans notre univers.</p>
         </header>
 
         {videos.length > 0 ? (

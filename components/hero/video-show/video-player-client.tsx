@@ -28,7 +28,7 @@ export default function VideoPlayerClient({ videos }: VideoPlayerClientProps) {
   if (videos.length === 0) return null;
 
   return (
-    <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl">
+    <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-cyan-400 bg-cyan-50 shadow-2xl">
       <video
         ref={videoRef}
         src={`/video/${videos[currentIndex]}`}

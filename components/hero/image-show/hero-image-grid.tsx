@@ -29,9 +29,9 @@ export function HeroImageGrid({
                 rounded-3xl
                 border
                 border-white/10
-                bg-black/80
+                bg-white/80
                 shadow-2xl
-                backdrop-blur-sm
+                
                 transition-all
                 duration-700
                 ease-out
@@ -69,7 +69,7 @@ export function HeroImageGrid({
                   object-cover
                   transition-transform
                   duration-700
-                  hover:scale-110
+                  hover:scale-100
                 "
               />
 

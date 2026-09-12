@@ -59,10 +59,7 @@ export function AdminShortcutSidebar({
               )}
             >
               <span className="block">{group.label}</span>
-              <span className="mt-1 block text-xs font-normal text-slate-500">
-                {group.modules.length} module
-                {group.modules.length > 1 ? "s" : ""}
-              </span>
+             
             </button>
           );
         })}

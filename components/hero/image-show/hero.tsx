@@ -53,7 +53,7 @@ export function Hero() {
   // Afficher un état de chargement
   if (loading) {
     return (
-      <section className="relative w-full overflow-hidden bg-black">
+      <section className="relative w-full overflow-hidden bg-white text-cyan-500">
         <div className="flex h-[80vh] min-h-175 items-center justify-center">
           <div className="text-white">Chargement des images...</div>
         </div>
@@ -64,7 +64,7 @@ export function Hero() {
   // Afficher un état d'erreur ou aucun contenu
   if (error || currentImages.length === 0) {
     return (
-      <section className="relative w-full overflow-hidden bg-black">
+      <section className="relative w-full overflow-hidden bg-white text-red-500">
         <div className="flex h-[80vh] min-h-175 items-center justify-center">
           <div className="text-white">Aucune image disponible</div>
         </div>
@@ -73,7 +73,7 @@ export function Hero() {
   }
 
   return (
-    <section className="relative w-full overflow-hidden bg-black">
+    <section className="relative w-full overflow-hidden bg-cyan-50">
       <div className="w-full">
         <div className="relative h-[80vh] min-h-175 w-full">
           <HeroImageGrid items={currentImages} priority />

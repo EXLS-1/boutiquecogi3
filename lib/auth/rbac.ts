@@ -487,19 +487,19 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   },
   "products:view:own": {
     category: "",
-    minLevel: 0,
+    minLevel: 6,
     isDangerous: false,
     description: ""
   },
   "products:view:any": {
     category: "",
-    minLevel: 0,
+    minLevel: 3,
     isDangerous: false,
     description: ""
   },
   "products:view:admin": {
     category: "",
-    minLevel: 0,
+    minLevel: 2,
     isDangerous: false,
     description: ""
   },

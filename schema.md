@@ -30,9 +30,9 @@ model User {
   updatedAt       DateTime  @updatedAt
   role            Role      @default(USER)
 
-  sessions                 Session[]
-  accounts                 Account[]
-  deletedAccountRegistries DeletedAccountRegistry[] @relation("DeletedAccountBy")
+  sessions                  Session[]
+  accounts                  Account[]
+  deletedAccountRegistries  DeletedAccountRegistry[] @relation("DeletedAccountBy")
   restoredAccountRegistries DeletedAccountRegistry[] @relation("DeletedAccountRestoredBy")
 
   posts          Post[]
@@ -47,21 +47,22 @@ model User {
   auditLogs       AuditLog[]
   addresses       Address[]
 
-  products          Product[]
-  productViews      ProductView[]
-  reviews           Review[]
-  createdProducts   Product[]       @relation("ProductCreator")
-  editedProducts    Product[]       @relation("ProductEditor")
-  publishedProducts Product[]       @relation("ProductPublisher")
-  updater           Stock[]
-  stockMovements    StockMovement[]
+  products              Product[]
+  productViews          ProductView[]
+  reviews               Review[]
+  createdProducts       Product[]              @relation("ProductCreator")
+  editedProducts        Product[]              @relation("ProductEditor")
+  publishedProducts     Product[]              @relation("ProductPublisher")
+  updater               Stock[]
+  stockMovements        StockMovement[]
   inventoryTransactions InventoryTransaction[]
+  variantStockUpdates   VariantStock[]
   mediaUploads          Media[]
   idempotencyKeys       IdempotencyKey[]
 
-  userSecurity            UserSecurity?
-  userPreferences         UserPreferences?
-  userQuota               UserQuota?
+  userSecurity           UserSecurity?
+  userPreferences        UserPreferences?
+  userQuota              UserQuota?
   createdAudits          UserAudit[]            @relation("UserAuditCreatedBy")
   updatedAudits          UserAudit[]            @relation("UserAuditUpdatedBy")
   deletedAudits          UserAudit[]            @relation("UserAuditDeletedBy")
@@ -324,14 +325,14 @@ model PermissionOverride {
 }
 
 model TwoFactor {
-  id             String                @id @default(uuid(7)) @db.Uuid
-  userId         String                @unique @db.Uuid
-  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  secret         String                @db.Text
-  enabled        Boolean               @default(false)
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  backupCodes    TwoFactorBackupCode[]
+  id          String                @id @default(uuid(7)) @db.Uuid
+  userId      String                @unique @db.Uuid
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret      String                @db.Text
+  enabled     Boolean               @default(false)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  backupCodes TwoFactorBackupCode[]
 
   @@map("twofactor")
 }
@@ -633,9 +634,18 @@ model Product {
   sku         String   @unique
   slug        String   @unique
   description String   @db.Text
-  price       Decimal  @db.Decimal(10, 2)
-  basePrice   Decimal  @db.Decimal(10, 2)
+  price       Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
+  basePrice   Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
   currency    Currency @default(USD)
+
+  // ─── Type de produit (CONTRAT N°1 — policy métier) ───
+  // FK vers ProductTypeConfig : le type décide du RBAC (whoCan*), des
+  // permissions requises, des niveaux minimaux, de maxVariants et de
+  // requiresApproval. PHASE 2 : OBLIGATOIRE (backfill SQL phase A puis
+  // SET NOT NULL phase B). onDelete: Restrict — un type utilisé par
+  // des produits ne peut pas être supprimé.
+  productTypeId String            @db.Uuid
+  productType   ProductTypeConfig @relation(fields: [productTypeId], references: [id], onDelete: Restrict)
 
   categoryId String?   @db.Uuid
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -653,7 +663,7 @@ model Product {
   isActive       Boolean       @default(false)
   isdeleted      Boolean       @default(false)
   deletedAt      DateTime?
-  status         ProductStatus @default(ACTIVE)
+  status         ProductStatus @default(DRAFT)
   scheduledAt    DateTime? // Publication programmée
   publishedAt    DateTime? // Date effective de publication
   seoTitle       String?
@@ -704,7 +714,8 @@ model Product {
   @@index([updatedBy])
   @@index([publishedById])
   @@index([status, scheduledAt])
-  @@index([isArchived, basePrice])
+  @@index([productTypeId])
+  @@index([status, isActive]) // PHASE 2 — remplace [isArchived, basePrice]
   @@map("product")
 }
 
@@ -741,6 +752,8 @@ model ProductVariant {
   inventoryTransactions InventoryTransaction[]
   inventorySnapshots    InventorySnapshot[]
   stockReservations     StockReservation[]
+  variantStocks         VariantStock[]
+  isActive              Boolean        @default(true) // PHASE 2 — variant « default » de transition + désactivation
 
   @@index([productId])
   @@map("product_variant")
@@ -830,13 +843,11 @@ model Review {
 }
 
 enum ProductStatus {
-  ACTIVE
   DRAFT
   PENDING
   SCHEDULED
   PUBLISHED
   ARCHIVED
-  OUT_OF_STOCK
   DISCONTINUED
 }
 
@@ -861,6 +872,9 @@ model ProductPrice {
   startsAt       DateTime?
   endsAt         DateTime?
 
+  @@index([productId, currency])
+  @@index([productId, startsAt, endsAt])
+  @@index([country, region])
   @@map("product_price")
 }
 
@@ -880,8 +894,13 @@ model ProductTypeConfig {
   minRoleLevelDelete       Int
   maxVariants              Int
   requiresApproval         Boolean  @default(false)
+  isDefault                Boolean  @default(false) // PHASE 2 — type par défaut (backfill productTypeId)
+  isActive                 Boolean  @default(true)  // PHASE 2 — désactivation douce d'un type
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
+
+  // Back-relation : produits de ce type (CONTRAT N°1)
+  products Product[]
 
   @@index([type])
   @@map("product_type_config")
@@ -948,6 +967,44 @@ model Stock {
 }
 
 // ============================================
+// VARIANT STOCK (Stock par variante/SKU)
+// ============================================
+// Couche canonique d'inventaire au niveau SKU.
+//   available = quantity - reserved
+// Le Stock au niveau produit (1:1) est conservé comme
+// agrégat rétrocompatibilité (toute écriture passe par
+// lib/product-inventory/inventory.service.ts qui maintient
+// les DEUX couches de manière transactionnelle).
+
+model VariantStock {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  variantId String         @db.Uuid
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  // CONTRAT N°5 — entrepôt cible (null = entrepôt principal)
+  warehouseId String?    @db.Uuid
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+
+  quantity       Int @default(0)
+  reserved       Int @default(0)
+  // available = quantity - reserved → valeur DÉRIVÉE, jamais persistée
+  alertThreshold Int @default(10)
+
+  lastMovementAt DateTime @default(now())
+  updatedBy      String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  updater        User?    @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  movements StockMovement[] // PHASE 2 — mouvements par VariantStock (re-rattachement)
+
+  @@unique([variantId, warehouseId])
+  @@index([variantId])
+  @@index([warehouseId])
+  @@map("variant_stock")
+}
+
+// ============================================
 // STOCK MOVEMENT (Traçabilité & Audit)
 // ============================================
 
@@ -960,15 +1017,19 @@ model StockMovement {
   reason    String? // "Vente #123", "Inventaire mensuel", "Retour client"
   orderId   String?           @db.Uuid
   userId    String?           @db.Uuid
+  // PHASE 2 — re-rattachement : les nouveaux mouvements peuvent référencer un VariantStock
+  variantStockId String?           @db.Uuid
   createdAt DateTime          @default(now())
 
   // Relations
-  stock Stock @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  stock         Stock         @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  variantStock   VariantStock? @relation(fields: [variantStockId], references: [id], onDelete: SetNull)
   user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([stockId])
+  @@index([variantStockId])
   @@index([type])
   @@index([orderId])
   @@index([createdAt])
@@ -1157,19 +1218,19 @@ model TaxRate {
 // ==========================================
 
 model InventoryTransaction {
-  id          String          @id @default(uuid(7)) @db.Uuid
-  productId   String          @db.Uuid
-  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variantId   String?         @db.Uuid
-  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  quantity    Int
-  reason      TransactionType
-  referenceId String?
-  warehouseId String?
-  performedBy String?         @db.Uuid
-  performedByUser User?       @relation(fields: [performedBy], references: [id], onDelete: SetNull)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id              String          @id @default(uuid(7)) @db.Uuid
+  productId       String          @db.Uuid
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variantId       String?         @db.Uuid
+  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity        Int
+  reason          TransactionType
+  referenceId     String?
+  warehouseId     String?
+  performedBy     String?         @db.Uuid
+  performedByUser User?           @relation(fields: [performedBy], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([productId, variantId, createdAt])
   @@map("inventory_transaction")
@@ -1275,8 +1336,8 @@ model Order {
   trackingNumber  String?
   cinetpayTransId String? @unique
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   paidAt    DateTime?
 
   items   OrderItem[]
@@ -1608,8 +1669,8 @@ model IdempotencyKey {
   key    String            @unique
   scope  String
   status IdempotencyStatus @default(PENDING)
-  userId String? @db.Uuid // L'utilisateur qui a initié la requête
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?           @db.Uuid // L'utilisateur qui a initié la requête
+  user   User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   method       String?
   route        String?
@@ -1902,6 +1963,9 @@ model Warehouse {
   updatedAt      DateTime        @updatedAt
   purchaseOrders PurchaseOrder[]
 
+  // Back-relation : stocks de variantes hébergés (CONTRAT N°5)
+  variantStocks VariantStock[]
+
   @@map("warehouse")
 }
 
@@ -2001,9 +2065,9 @@ model ExchangeRate {
   effectiveAt DateTime
   createdAt   DateTime @default(now())
 
+  @@unique([baseCurrency, quoteCurrency, effectiveAt])
   @@index([baseCurrency, quoteCurrency])
   @@index([effectiveAt])
-  @@unique([baseCurrency, quoteCurrency, effectiveAt])
 }
 
 model NewsletterSubscriber {
@@ -2042,7 +2106,7 @@ model DeletedAccountRegistry {
   // Qui a initié la suppression
   deletedBy     String? @db.Uuid // userId de la personne/Admin qui a supprimé
   deletedByRole String // Rôle de la personne ayant supprimé (SUPER_ADMIN, ADMIN, ou USER pour self-delete)
-  deletedByUser User? @relation("DeletedAccountBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  deletedByUser User?   @relation("DeletedAccountBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
   // Snapshot complet des données utilisateur AVANT suppression (JSON)
   userSnapshot Json // Contient tout: user, accounts, orders, addresses, etc.
@@ -2055,10 +2119,10 @@ model DeletedAccountRegistry {
   createdAt DateTime @default(now())
 
   // Restauration optionnelle
-  restoredAt    DateTime?
-  restoredBy    String?   @db.Uuid
-  restoredByUser User?    @relation("DeletedAccountRestoredBy", fields: [restoredBy], references: [id], onDelete: SetNull)
-  restoreNote   String?
+  restoredAt     DateTime?
+  restoredBy     String?   @db.Uuid
+  restoredByUser User?     @relation("DeletedAccountRestoredBy", fields: [restoredBy], references: [id], onDelete: SetNull)
+  restoreNote    String?
 
   @@index([userId])
   @@index([deletedBy])
