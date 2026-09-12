@@ -34,7 +34,6 @@ export const ALLOWED_TRANSITIONS: Record<ProductStatus, ProductStatus[]> = {
   [ProductStatus.PUBLISHED]: [
     ProductStatus.DRAFT,
     ProductStatus.ARCHIVED,
-    ProductStatus.OUT_OF_STOCK,
     ProductStatus.DISCONTINUED,
   ],
   [ProductStatus.ARCHIVED]: [
@@ -44,18 +43,6 @@ export const ALLOWED_TRANSITIONS: Record<ProductStatus, ProductStatus[]> = {
   [ProductStatus.SCHEDULED]: [
     ProductStatus.DRAFT,
     ProductStatus.PUBLISHED,
-    ProductStatus.ARCHIVED,
-  ],
-  [ProductStatus.ACTIVE]: [
-    ProductStatus.DRAFT,
-    ProductStatus.PUBLISHED,
-    ProductStatus.ARCHIVED,
-    ProductStatus.OUT_OF_STOCK,
-    ProductStatus.DISCONTINUED,
-  ],
-  [ProductStatus.OUT_OF_STOCK]: [
-    ProductStatus.PUBLISHED,
-    ProductStatus.DRAFT,
     ProductStatus.ARCHIVED,
   ],
   [ProductStatus.DISCONTINUED]: [
@@ -206,9 +193,7 @@ export async function updateProductStatus(
           newStatus === ProductStatus.PUBLISHED ? actedBy ?? null : undefined,
         updatedAt: new Date(),
         isArchived: newStatus === ProductStatus.ARCHIVED,
-        isActive:
-          newStatus === ProductStatus.PUBLISHED ||
-          newStatus === ProductStatus.ACTIVE,
+        isActive: newStatus === ProductStatus.PUBLISHED,
       },
       select: {
         id: true,

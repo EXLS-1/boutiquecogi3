@@ -30,13 +30,11 @@ import { cn } from "@/lib/utils/cn";
 import { ProductPreviewDialog } from "@/components/admin/product-preview-dialog";
 
 type ProductStatus =
-  | "ACTIVE"
   | "DRAFT"
   | "PENDING"
   | "SCHEDULED"
   | "PUBLISHED"
   | "ARCHIVED"
-  | "OUT_OF_STOCK"
   | "DISCONTINUED";
 
 interface DraftProduct {
@@ -66,13 +64,11 @@ const statusConfig: Record<
   ProductStatus,
   { label: string; color: string; icon: React.ReactNode }
 > = {
-  ACTIVE: { label: "Actif", color: "bg-green-500", icon: <CheckCircle2 className="h-3 w-3" /> },
   DRAFT: { label: "Brouillon", color: "bg-gray-500", icon: <FileEdit className="h-3 w-3" /> },
   PENDING: { label: "En attente", color: "bg-yellow-500", icon: <Clock className="h-3 w-3" /> },
   SCHEDULED: { label: "Programmé", color: "bg-blue-500", icon: <Calendar className="h-3 w-3" /> },
   PUBLISHED: { label: "Publié", color: "bg-green-600", icon: <Eye className="h-3 w-3" /> },
   ARCHIVED: { label: "Archivé", color: "bg-red-500", icon: <Archive className="h-3 w-3" /> },
-  OUT_OF_STOCK: { label: "Rupture", color: "bg-orange-500", icon: <Clock className="h-3 w-3" /> },
   DISCONTINUED: { label: "Arrêté", color: "bg-gray-700", icon: <Archive className="h-3 w-3" /> },
 };
 

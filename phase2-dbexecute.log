@@ -1,0 +1,7 @@
+◇ injected env (55) from .env.local // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Loaded Prisma config from prisma.config.ts.
+
+Error: ERROR: type "product_status" does not exist
+
+

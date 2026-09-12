@@ -48,10 +48,10 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
     isArchived: false,
     isdeleted: false,
     deletedAt: null,
-    // Le statut legacy ACTIVE et le statut moderne PUBLISHED désignent tous
-    // deux des produits affichés publiquement. Le dashboard "activate" met
-    // ACTIVE ; le workflow de publication met PUBLISHED.
-    status: { in: [ProductStatus.PUBLISHED, ProductStatus.ACTIVE] },
+    // Contrat phase 2 : l'enum legacy ACTIVE a été supprimé. Seul PUBLISHED
+    // désigne un produit affiché publiquement (le workflow de publication
+    // met PUBLISHED, la rupture est une projection inventaire).
+    status: { in: [ProductStatus.PUBLISHED] },
   };
 }
 
@@ -602,3 +602,53 @@ export async function getCatalogCategories(): Promise<
 // ═════════════════════════════════════════════════════════════════════════════
 
 const MAX_CATALOG_PAGE_SIZE = 100;
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 5: ADMIN QUERIES — Categories tree & Tags list
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Récupère l'arbre des catégories pour le portail admin.
+ * Inclut la hiérarchie (parentId → enfants []).
+ */
+export async function getCategoriesTree(): Promise<
+  Array<{ id: string; name: string; slug: string; parentId: string | null; children: number; productCount: number }>
+> {
+  const categories = await prisma.category.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      parentId: true,
+      _count: { select: { children: true, products: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+  return categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    parentId: c.parentId,
+    children: c._count.children,
+    productCount: c._count.products,
+  }));
+}
+
+/**
+ * Récupère les tags pour le portail admin (avec compteur de produits).
+ */
+export async function getTagsList(): Promise<
+  Array<{ id: string; name: string; slug: string; productCount: number }>
+> {
+  const tags = await prisma.tag.findMany({
+    include: { _count: { select: { products: true } } },
+    orderBy: { name: "asc" },
+  });
+  return tags.map((t) => ({
+    id: t.id,
+    name: t.name,
+    slug: t.slug,
+    productCount: t._count.products,
+  }));
+}

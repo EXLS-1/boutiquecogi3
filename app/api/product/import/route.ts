@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
             slug = `${slugify(product.name)}-${counter++}`;
           }
 
-          const status = product.isActive ? "ACTIVE" : "DRAFT";
+          const status = product.isActive ? "PUBLISHED" : "DRAFT"; // ACTIVE ≡ PUBLISHED (contrat phase 2)
 
           const createdProduct = await tx.product.create({
             data: {

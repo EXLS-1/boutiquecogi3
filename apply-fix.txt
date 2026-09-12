@@ -1,0 +1,78 @@
+const fs = require('fs');
+const path = require('path');
+
+const p = path.join(__dirname, 'prisma/migrations/20260911120000_product_domain_phase2/migration.sql');
+
+let c = fs.readFileSync(p, 'utf8');
+
+// Check if already fixed
+if (c.includes('CREATE TYPE "product_status" AS ENUM')) {
+  console.log('ALREADY FIXED');
+  process.exit(0);
+}
+
+// Find the Phase C section using a more flexible approach
+const lines = c.split('\n');
+let startIdx = -1;
+let endIdx = -1;
+
+for (let i = 0; i < lines.length; i++) {
+  if (lines[i].includes('PHASE C') && lines[i].includes('STATUT')) {
+    startIdx = i;
+  }
+  if (startIdx >= 0 && lines[i].includes('DROP TYPE "product_status_legacy"')) {
+    endIdx = i;
+    break;
+  }
+}
+
+if (startIdx < 0 || endIdx < 0) {
+  console.log('ERROR: Could not find Phase C boundaries');
+  console.log('startIdx:', startIdx, 'endIdx:', endIdx);
+  process.exit(1);
+}
+
+const newPhaseC = `-- ─── PHASE C — STATUT (enum ProductStatus : 8 → 6 valeurs) ─────────────────
+-- C.1 : Créer le nouvel enum (6 valeurs cibles) si absent
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'product_status') THEN
+    CREATE TYPE "product_status" AS ENUM ('DRAFT', 'PENDING', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED', 'DISCONTINUED');
+  END IF;
+END$$;
+
+-- C.2 : Convertir product.status avec mapping
+-- ACTIVE → PUBLISHED, OUT_OF_STOCK → PUBLISHED, autres → tel quel
+-- (gère tous les cas : type original "ProductStatus", "product_status_legacy", ou déjà converti)
+ALTER TABLE product ALTER COLUMN status DROP DEFAULT;
+ALTER TABLE product ALTER COLUMN status TYPE "product_status" USING
+  CASE status::text
+    WHEN 'ACTIVE' THEN 'PUBLISHED'::"product_status"
+    WHEN 'OUT_OF_STOCK' THEN 'PUBLISHED'::"product_status"
+    ELSE status::text::"product_status"
+  END;
+ALTER TABLE product ALTER COLUMN status SET DEFAULT 'DRAFT'::"product_status";
+
+-- C.3 : Convertir product_status_history avec mapping
+ALTER TABLE product_status_history ALTER COLUMN "oldStatus" TYPE "product_status" USING
+  CASE "oldStatus"::text
+    WHEN 'ACTIVE' THEN 'PUBLISHED'::"product_status"
+    WHEN 'OUT_OF_STOCK' THEN 'PUBLISHED'::"product_status"
+    ELSE "oldStatus"::text::"product_status"
+  END;
+ALTER TABLE product_status_history ALTER COLUMN "newStatus" TYPE "product_status" USING
+  CASE "newStatus"::text
+    WHEN 'ACTIVE' THEN 'PUBLISHED'::"product_status"
+    WHEN 'OUT_OF_STOCK' THEN 'PUBLISHED'::"product_status"
+    ELSE "newStatus"::text::"product_status"
+  END;
+
+-- C.4 : Nettoyer les types obsolètes (s'ils existent encore)
+DROP TYPE IF EXISTS "product_status_legacy";
+DROP TYPE IF EXISTS "ProductStatus";`;
+
+lines.splice(startIdx, endIdx - startIdx + 1, newPhaseC);
+c = lines.join('\n');
+
+fs.writeFileSync(p, c, 'utf8');
+console.log('SUCCESS: Phase C fixed. Lines replaced:', endIdx - startIdx + 1);

@@ -78,7 +78,7 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
             sku: generateSKU(parsed.data.name),
             description: parsed.data.description,
             basePrice: parsed.data.price,        // ← Prisma attend basePrice
-            status: 'ACTIVE' as const,           // ← enum ProductStatus
+            status: 'PUBLISHED' as const,           // enum ProductStatus (ACTIVE ≡ PUBLISHED — contrat phase 2)
             categoryId: parsed.data.categoryIds?.[0] ?? parsed.data.categoryId ?? null,
             categoryIds: parsed.data.categoryIds ?? null,
             images: parsed.data.images,

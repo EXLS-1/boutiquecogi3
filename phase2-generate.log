@@ -1,0 +1,11 @@
+◇ injected env (55) from .env.local // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+
+✔ Generated Prisma Client (v7.9.1) to .\node_modules\@prisma\client in 14.44s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+

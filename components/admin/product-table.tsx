@@ -54,7 +54,7 @@ interface ProductTableItem {
     slug: string
     sku: string
     basePrice: number | string // Prisma Decimal sérialisé (string) via le server action
-    status: string // ProductStatus (ACTIVE, DRAFT, PENDING, SCHEDULED, PUBLISHED, ARCHIVED, OUT_OF_STOCK, DISCONTINUED)
+    status: string // ProductStatus (DRAFT, PENDING, SCHEDULED, PUBLISHED, ARCHIVED, DISCONTINUED)
     images: string[]
     createdAt: Date | string
     user: { id: string; name: string | null; email: string }
@@ -190,13 +190,11 @@ export function ProductTable({ products }: ProductTableProps) {
 
         // Couvre toutes les valeurs de l'enum Prisma ProductStatus
         const map: Record<string, { label: string; className: string }> = {
-            ACTIVE: { label: 'Actif', className: 'bg-green-100 text-green-700 border-green-200' },
             DRAFT: { label: 'Brouillon', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
             PENDING: { label: 'En attente', className: 'bg-orange-100 text-orange-700 border-orange-200' },
             SCHEDULED: { label: 'Planifié', className: 'bg-blue-100 text-blue-700 border-blue-200' },
             PUBLISHED: { label: 'Publié', className: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
             ARCHIVED: { label: 'Archivé', className: 'bg-gray-100 text-gray-500 border-gray-200' },
-            OUT_OF_STOCK: { label: 'Rupture', className: 'bg-red-100 text-red-700 border-red-200' },
             DISCONTINUED: { label: 'Discontinué', className: 'bg-slate-100 text-slate-500 border-slate-200' },
         }
         // Fallback robuste : statut inconnu → badge neutre au lieu de crasher

@@ -553,7 +553,7 @@ export async function deleteDraftProductAction(
     }
 
     // Seuls les niveaux 1-3 peuvent supprimer un produit publié/actif.
-    if (auth.ctx.level > 3 && (product.status === "PUBLISHED" || product.status === "ACTIVE")) {
+    if (auth.ctx.level > 3 && product.status === "PUBLISHED") {
       return {
         success: false,
         error: "Seuls les gestionnaires peuvent supprimer un produit publié",

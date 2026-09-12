@@ -30,7 +30,7 @@ export const ProductService = {
     sku?: string
     description?: string | null
     basePrice: number
-    status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
+    status?: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED'
     categoryId?: string | null
     categoryIds?: string[] | null
     images?: string[]
@@ -57,7 +57,7 @@ export const ProductService = {
               description: input.description ?? '',
               price: input.basePrice,
               basePrice: input.basePrice,
-              status: input.status ?? 'ACTIVE',
+              status: input.status ?? 'PUBLISHED',
               categoryId: categoryIds[0] ?? null,
               images: input.images ?? [],
               userId: ctx.userId,
@@ -91,7 +91,7 @@ export const ProductService = {
       categoryId?: string | null
       categoryIds?: string[] | null
       images?: string[]
-      status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED'
+      status?: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED'
       slug?: string
     }
   ) {
