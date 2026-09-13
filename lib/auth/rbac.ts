@@ -374,7 +374,7 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   [PERMISSIONS["products:read"]]: { category: "PRODUCT", minLevel: 1, isDangerous: false, description: "Voir les produits" },
   [PERMISSIONS["products:create"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Créer un produit" },
   [PERMISSIONS["products:update"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Modifier un produit" },
-  [PERMISSIONS["products:delete"]]: { category: "PRODUCT", minLevel: 6, isDangerous: true, description: "Supprimer un produit" },
+  [PERMISSIONS["products:delete"]]: { category: "PRODUCT", minLevel: 2, isDangerous: true, description: "Supprimer un produit" },
   [PERMISSIONS["products:bulk-edit"]]: { category: "PRODUCT", minLevel: 4, isDangerous: false, description: "Édition en masse" },
   [PERMISSIONS["products:import"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Importer des produits" },
   [PERMISSIONS["products:export"]]: { category: "PRODUCT", minLevel: 4, isDangerous: false, description: "Exporter des produits" },
@@ -486,22 +486,22 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
     description: ""
   },
   "products:view:own": {
-    category: "",
+    category: "PRODUCT",
     minLevel: 6,
     isDangerous: false,
-    description: ""
+    description: "Voir ses propres produits (créés par l'utilisateur)"
   },
   "products:view:any": {
-    category: "",
+    category: "PRODUCT",
     minLevel: 3,
     isDangerous: false,
-    description: ""
+    description: "Voir tous les produits du système"
   },
   "products:view:admin": {
-    category: "",
+    category: "PRODUCT",
     minLevel: 2,
     isDangerous: false,
-    description: ""
+    description: "Voir tous les produits en mode admin (données sensibles)"
   },
   "analytics:dashboard:view": {
     category: "",
