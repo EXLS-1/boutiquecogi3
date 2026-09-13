@@ -1,17 +1,55 @@
 // components/admin/products/kpi-card.tsx
-export function KpiCard({ title, value, icon: Icon, trend }: {
-  title: string; value: number | string; icon: any; trend?: "up" | "down" | "neutral";
-}) {
+// COMPONENT — Carte KPI de base
+"use client";
+
+import { ReactNode } from "react";
+
+interface KpiCardProps {
+  title: string;
+  value: string | number;
+  icon: ReactNode;
+  trend?: { value: number; label: string };
+  color?: "blue" | "green" | "red" | "amber" | "gray";
+}
+
+export function KpiCard({ title, value, icon, trend, color = "blue" }: KpiCardProps) {
+  const colorClasses: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-600",
+    green: "bg-green-50 text-green-600",
+    red: "bg-red-50 text-red-600",
+    amber: "bg-amber-50 text-amber-600",
+    gray: "bg-gray-50 text-gray-600",
+  };
+
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4">
-      <div className="flex items-center gap-3 mb-2">
-        {Icon && <Icon className="w-5 h-5 text-slate-500" />}
-        <span className="text-sm font-medium text-slate-600">{title}</span>
+    <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+          {trend && (
+            <div
+              className={`flex items-center gap-1 mt-2 text-sm ${
+                trend.value >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 15l7-7 7 7"
+                />
+              </svg>
+              <span>{Math.abs(trend.value)}%</span>
+              <span className="text-gray-500">{trend.label}</span>
+            </div>
+          )}
+        </div>
+        <div className={`p-3 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
+          {icon}
+        </div>
       </div>
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
-      {trend && <span className={`text-xs mt-1 ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-slate-500"}`}>
-        {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}
-      </span>}
     </div>
   );
 }

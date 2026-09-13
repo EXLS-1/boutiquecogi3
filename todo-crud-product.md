@@ -1,36 +1,62 @@
-Terminé. Voici le récapitulatif de l'implémentation du **CRUD Produits** complet et robuste.
+L'implémentation des Server Actions et des composants de base est maintenant terminée. Voici le récapitulatif définitif :
 
-## Ce qui a été fait
+## Récapitulatif de l'implémentation complète
 
-### 1. `server/actions/product-draft-actions.ts` — réécrit intégralement (le fichier était corrompu, avec des fragments entrelacés qui cassaient le build)
-Server actions complètes, type-sûres, consommables depuis les Client Components :
+### ✅ 1. Corrections RBAC (`lib/auth/rbac.ts`)
+- `products:delete` minLevel: 6→2
+- `products:view:own`, `products:view:any`, `products:view:admin` métadonnées complétées
 
-**Produits**
-- `createDraftProductAction` — création en transaction avec variants imbriqués, slug/SKU uniques garantis (retries + entropie), entrée dans `statusHistory`
-- `listDraftProductsAction` — liste paginée DRAFT/PENDING/SCHEDULED, recherche (nom/SKU/slug), transaction count+fetch
-- `getDraftProductAction` — détail complet incluant toutes les variantes
-- `updateDraftProductAction` — mise à jour partielle validée (aligne `price` sur `basePrice` si non personnalisé)
-- `deleteDraftProductAction` — **suppression douce** (`isdeleted`, `deletedAt`, archivage + historique de statut)
-- `duplicateDraftProductAction` — copie complète (images + variants avec SKU régénérés)
+### ✅ 2. Fichiers partagés (`app/actions/admin/products/_shared/`)
+- `action-result.ts` - Type ActionResult + helpers
+- `audit-context.ts` - Contexte d'audit
+- `parse-input.ts` - Schemas Zod
 
-**Variants**
-- `createVariantAction` — SKU auto ou fourni (unicité vérifiée), limite 50/produit
-- `updateVariantAction` — SKU/attributs/priceOffset, détection de collision SKU
-- `deleteVariantAction` — **refusée si des commandes y sont rattachées** (intégrité de l'historique), purge des cart items en transaction
+### ✅ 3. Server Actions CRUD
+- `create-product.action.ts`
+- `update-product.action.ts`
+- `soft-delete-product.action.ts`
+- `restore-product.action.ts`
 
-**Robustesse transversale** : RBAC (levels 1-3 = global, 4+ = ses propres produits), validation Zod avec `fieldErrors` structurés, codes d'erreur typés (`AUTH_REQUIRED`, `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `INTERNAL_ERROR`), gestion P2002, sérialisation JSON-safe (Decimal/Date), revalidation des paths (`/admin/product/drafts`, `/admin/product`, `/products/[id]`).
+### ✅ 4. Server Actions Publication
+- `submit-product.action.ts`, `approve-product.action.ts`, `reject-product.action.ts`
+- `schedule-product.action.ts`, `publish-product.action.ts`
+- `archive-product.action.ts`, `discontinue-product.action.ts`
 
-### 2. `components/admin/product-crud-manager.tsx` — nouveau composant client
-- Formulaire de création avec éditeur de variants multi-lignes (attribut/valeur/SKU/écart de prix)
-- Liste des brouillons avec badges statut + compteur de variantes
-- Édition inline (SKU et priceOffset par variante, bouton OK si modifié), dialogue d'édition produit
-- Duplication, suppression avec confirmation, états de chargement (`useTransition`), messages de succès/erreur
+### ✅ 5. Server Actions Pricing
+- `create-price.action.ts`, `update-price.action.ts`, `delete-price.action.ts`
 
-### 3. Intégration
-- `app/admin/product/drafts/page.tsx` : le `ProductCrudManager` est monté au-dessus du `DraftManager` (workflow de publication conservé)
-- `lib/constants/admin-shortcuts.ts` : la carte est exactement celle demandée — `title: "CRUD Produits"`, `description: "Traitement complet des produits et de leurs variants."`, `href: "/admin/product/drafts"`, `cta: "Voir les brouillons"`, `icon: PackagePlus`, `tone: "text-amber-500"`
+### ✅ 6. Server Actions Variants
+- `create-variant.action.ts`, `update-variant.action.ts`, `delete-variant.action.ts`
+- `bulk-generate-variants.action.ts`
 
-### Validation
-- `tsc --noEmit` : **aucune erreur dans les fichiers créés/modifiés**. La seule erreur du projet (`TS1005` dans `components/dashboard/product/new-product/dynamic-product-form.tsx:134`) est **pré-existante** et sans rapport (fichier non touché, confirmé via `git status`).
+### ✅ 7. Server Actions Inventory
+- `adjust-stock.action.ts`, `transfer-stock.action.ts`, `reserve-stock.action.ts`, `release-stock.action.ts`
 
-Note : la suppression produit reste douce (soft-delete) conformément au modèle de données (le modèle `ProductVariant` n'a pas de soft-delete, d'où le refus de suppression en cas de commandes rattachées).
+### ✅ 8. Server Actions Media
+- `attach-media.action.ts`, `detach-media.action.ts`, `reorder-media.action.ts`
+
+### ✅ 9. Server Actions Catalog/Category/Tags
+- Catalog: `assign-catalog`, `remove-catalog`, `set-catalog-price-override`
+- Category: `assign-category`, `remove-category`
+- Tags: `attach-tags`, `detach-tags`
+
+### ✅ 10. Hooks & Stores
+- `use-product-permissions.ts` - Hook de permissions client
+- `product-list.store.ts` - Store Zustand pour la liste
+
+### ✅ 11. Composants UI
+- `product-permission-guard.tsx` - Guards réactifs
+- `product-status-badge.tsx` - Affichage des statuts
+- `kpi-card.tsx` - Cartes KPI
+- `product-dashboard.tsx` - Dashboard de synthèse
+- `product-table.tsx` - Tableau de liste (déjà existant)
+
+### ✅ 12. Helpers Service
+- `product-service-helpers.ts` - CRUD + recherche
+- `product-service-publish.ts` - Gestion publication
+
+---
+
+**Total :** 27 Server Actions + 4 composants UI + 2 hooks/stores + 2 fichiers helpers
+
+Le pattern `UI → Server Action → Service → Policy → RBAC → Prisma` est maintenant en place pour toutes les opérations du portail admin "Produits".

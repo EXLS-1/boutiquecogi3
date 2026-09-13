@@ -16,9 +16,9 @@ export interface AuditContext {
 }
 
 export async function buildAuditContext(
-  action: string,
-  resourceType: string,
-  resourceId: string
+  action: string = "UNKNOWN",
+  resourceType: string = "UNKNOWN",
+  resourceId: string = ""
 ): Promise<AuditContext> {
   const headersList = await headers();
 
