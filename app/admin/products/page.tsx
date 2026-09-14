@@ -1,20 +1,53 @@
-// app/admin/products/page.tsx — Server Component
+// app/admin/products/page.tsx
 // =============================================================================
 // DASHBOARD PRODUITS — Vue opérationnelle (KPIs + filtres + liste paginée)
 // =============================================================================
 
+import { ProductStatus } from "@prisma/client";
 import Link from "next/link";
-import { Package, Plus, FileClock, Archive, BarChart3 } from "lucide-react";
-import { getProductKpis, getProductList } from "@/lib/products/product.repository";
+import { Package, Plus, FileClock, BarChart3 } from "lucide-react";
+import {
+  getProductKpis,
+  getProductList,
+  type ProductStockState,
+} from "@/lib/products/product.repository";
 import { ProductKpiCards } from "@/components/admin/products/product-kpi-cards";
 import { ProductFilters } from "@/components/admin/products/product-filters";
 import { ProductTable } from "@/components/admin/products/product-table";
-import { KpiCard } from "@/components/admin/products/kpi-card";
 
 export const metadata = {
   title: "Produits | Administration",
   description: "Gestion complète du catalogue produit : création, prix, stock, publication.",
 };
+
+/** Ensemble des statuts produits valides (dérivé de l'enum Prisma). */
+const PRODUCT_STATUS_VALUES = new Set(Object.values(ProductStatus));
+
+/** Valeurs de stockState acceptées. */
+const PRODUCT_STOCK_STATES: ProductStockState[] = [
+  "IN_STOCK",
+  "LOW_STOCK",
+  "OUT_OF_STOCK",
+];
+
+/**
+ * Parse une valeur de query string en tableau de statuts produits.
+ * Retourne `undefined` si absente ou invalide (aucune assertion hasardeuse).
+ */
+function toStatus(value: string | undefined): ProductStatus[] | undefined {
+  if (!value) return undefined;
+  return PRODUCT_STATUS_VALUES.has(value as ProductStatus)
+    ? [value as ProductStatus]
+    : undefined;
+}
+
+/** Parse une valeur de query string en stockState connu, sinon `undefined`. */
+function toStockState(value: string | undefined): ProductStockState | undefined {
+  if (!value) return undefined;
+  return PRODUCT_STOCK_STATES.includes(value as ProductStockState)
+    ? (value as ProductStockState)
+    : undefined;
+}
 
 interface PageProps {
   searchParams: Promise<{
@@ -37,10 +70,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
     getProductKpis(),
     getProductList({
       search: sp.search,
-      status: sp.status ? [sp.status as any] : undefined,
+      status: toStatus(sp.status),
       productType: sp.productType,
       categoryId: sp.categoryId,
-      stockState: sp.stockState as any,
+      stockState: toStockState(sp.stockState),
       featured: sp.featured === "true" ? true : undefined,
       limit,
       cursor: sp.cursor,

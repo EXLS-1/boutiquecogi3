@@ -1,6 +1,6 @@
 // app/admin/products/drafts/page.tsx
 import { prisma } from "@/lib/prisma";
-import { DraftManager } from "@/components/admin/products/draft-manager";
+import { DraftManager } from "@/components/admin/DraftManager";
 
 export const metadata = {
   title: "Brouillons & Validation | Administration Produits",

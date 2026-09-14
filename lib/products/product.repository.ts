@@ -16,7 +16,6 @@
 import { Prisma, ProductStatus, type Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { toCents } from "@/lib/product-pricing/pricing.service";
-import type { Tx } from "@/lib/product-audit/product-audit.types";
 
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
@@ -81,6 +80,7 @@ export interface ProductListResult {
   nextCursor: string | null;
   hasMore: boolean;
   limit: number;
+  total: number;
 }
 
 // ─── Construction du WHERE (filtres admin server-side) ───────────────────────
@@ -103,7 +103,10 @@ function buildProductWhere(query: ProductQuery): Prisma.ProductWhereInput {
   }
 
   if (query.status?.length) where.status = { in: query.status };
-  if (query.productType) where.productType = query.productType;
+  if (query.productType) {
+    // `productType` est une relation → filtrer sur la clé métier ProductTypeConfig.type
+    where.productType = { is: { type: query.productType } };
+  }
   if (query.categoryId) {
     // Catégorie principale OU secondaire (CategoryProduct)
     where.OR = [
@@ -159,7 +162,7 @@ function isLowStock(quantity: number, reserved: number, threshold: number): bool
 
 // ─── Listing server-side (cursor pagination) ─────────────────────────────────
 
-export async function listProducts(
+export async function getProductList(
   query: ProductQuery
 ): Promise<ProductListResult> {
   const limit = Math.min(
@@ -188,7 +191,7 @@ export async function listProducts(
       name: true,
       sku: true,
       slug: true,
-      productType: true,
+      productType: { select: { type: true } },
       basePrice: true,
       price: true,
       currency: true,
@@ -218,7 +221,7 @@ export async function listProducts(
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
 
-  const items: ProductListItem[] = page.map((p) => {
+  const items: (ProductListItem | null)[] = page.map((p) => {
     const quantity = p.stock?.quantity ?? 0;
     const reserved = p.stock?.reserved ?? 0;
 
@@ -238,10 +241,10 @@ export async function listProducts(
       name: p.name,
       sku: p.sku,
       slug: p.slug,
-      productType: p.productType,
-      basePriceCents: toCents(p.basePrice),
+      productType: p.productType?.type ?? null,
+      basePriceCents: toCents(p.basePrice ?? 0),
       comparePriceCents:
-        p.price && toCents(p.price) > toCents(p.basePrice)
+        p.price && p.basePrice && toCents(p.price) > toCents(p.basePrice)
           ? toCents(p.price)
           : null,
       currency: p.currency,
@@ -264,23 +267,30 @@ export async function listProducts(
     };
   });
 
+  // Retire les lignes exclues (null) par le post-filtrage stock ci-dessus
+  const products: ProductListItem[] = items.filter(
+    (it): it is ProductListItem => it !== null
+  );
+
   // Post-filtrage exact du stockState (disponible = quantity - reserved)
   const filtered =
     query.stockState === "LOW_STOCK"
-      ? items.filter(
+      ? products.filter(
           (it) =>
             it.available > 0 &&
             it.available <= (it.available <= 10 ? 10 : it.available)
         )
-      : items;
+      : products;
 
   const last = page[page.length - 1];
+  const total = await prisma.product.count({ where });
 
   return {
     items: filtered,
     nextCursor: hasMore && last ? last.id : null,
     hasMore,
     limit,
+    total,
   };
 }
 
@@ -365,7 +375,7 @@ export async function getProductAnalytics(productId: string): Promise<{
   ]);
 
   const stockValueCents =
-    product?.stock?.quantity != null
+    product?.basePrice != null && product?.stock?.quantity != null
       ? toCents(product.basePrice) * product.stock.quantity
       : null;
 
@@ -380,5 +390,4 @@ export async function getProductAnalytics(productId: string): Promise<{
 }
 
 void isLowStock; // réservé au post-filtrage LOW_STOCK (page inventaire)
-void Tx;
 
