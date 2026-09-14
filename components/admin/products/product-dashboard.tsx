@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Package, FileText, Clock, AlertTriangle, Grid3X3 } from "lucide-react";
 import { KpiCard } from "./kpi-card";
 import { ProductStatusBadge } from "./product-status-badge";
+import type { ProductStatus } from "@prisma/client";
 import { useProductPermissions } from "@/hooks/admin/products/use-product-permissions";
 
 interface ProductDashboardProps {
@@ -132,7 +133,7 @@ export function ProductDashboard({ kpis, recentProducts }: ProductDashboardProps
                       </p>
                     </div>
                   </div>
-                  <ProductStatusBadge status={product.status} size="sm" />
+                  <ProductStatusBadge status={product.status as ProductStatus} size="sm" />
                 </Link>
               ))}
             </div>

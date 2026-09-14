@@ -6,7 +6,7 @@ export const metadata = { title: "Attributs | Administration Produits" };
 
 export default async function AdminProductAttributesPage() {
   const data = await prisma.productAttribute.findMany({
-    include: { values: { include: { productAttributeValues: true } } },
+    include: { values: true },
     orderBy: { name: "asc" },
   });
   const configs = await prisma.variantAttributeConfig.findMany({ orderBy: { attribute: "asc" } });

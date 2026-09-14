@@ -294,6 +294,35 @@ export async function getProductList(
   };
 }
 
+/**
+ * Retourne les variantes d'un produit avec leur stock (onglet "Variantes").
+ * Le DTO est aplati (attributs JSON conservés tels quels, stocks agrégés).
+ */
+export async function getVariantList(productId: string) {
+  const variants = await prisma.productVariant.findMany({
+    where: { productId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      sku: true,
+      attributes: true,
+      priceOffset: true,
+      isActive: true,
+      variantStocks: {
+        select: {
+          id: true,
+          quantity: true,
+          reserved: true,
+          alertThreshold: true,
+          warehouseId: true,
+        },
+        orderBy: { id: "asc" },
+      },
+    },
+  });
+  return variants;
+}
+
 // ─── KPIs du dashboard produits (requêtes agrégées) ──────────────────────────
 
 export interface ProductKpis {

@@ -8,7 +8,7 @@
 //      categoryId, attributes, variants[] }  → matrice taille/couleur/...
 // Le stock est TOUJOURS créé (jamais de produit statique sans inventaire).
 
-import type { Currency } from "@prisma/client";
+import type { Currency, ProductStatus } from "@prisma/client";
 
 export type DynamicAttributeValue = string | number | boolean;
 export type DynamicAttributes = Record<string, DynamicAttributeValue>;
@@ -165,7 +165,7 @@ export interface ProductListItem {
   basePriceCents: number;
   comparePriceCents: number | null;
   currency: Currency;
-  status: string;
+  status: ProductStatus;
   isFeatured: boolean;
   isArchived: boolean;
   isActive: boolean;

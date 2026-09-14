@@ -16,7 +16,7 @@ export default async function AdminProductCatalogsPage() {
     include: {
       _count: { select: { products: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { name: "asc" },
   });
 
   return (

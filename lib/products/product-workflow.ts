@@ -233,6 +233,13 @@ export async function updateProductStatus(
   return updated;
 }
 
+/**
+ * Nom public canonique de la transition (utilisé par le barrel `@/lib/products`
+ * et `ProductService`). Alias de `updateProductStatus`, conservé pour la route
+ * API historique `app/api/product/[id]/status/route.ts`.
+ */
+export const transitionProductStatus = updateProductStatus;
+
 // ─── Publication des produits programmés (utilisé par le cron) ───────────────
 
 /**

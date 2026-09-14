@@ -1,17 +1,17 @@
 // components/admin/products/product-table.tsx
+
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { mapProductToListItem } from "@/lib/products/product.mapper";
 import { ProductStatusBadge } from "./product-status-badge";
 import { ProductStockBadge } from "./product-stock-badge";
 import type { ProductListResult } from "@/lib/products/types";
 
 export function ProductTable({ result }: { result: ProductListResult }) {
-  if (!result?.items) return <p className="text-slate-500">Aucun produit.</p>;
+  if (!result?.items) return <p className="text-cyan-500">Aucun produit.</p>;
   return (
-    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+    <div className="overflow-x-auto border border-cyan-500 rounded-lg">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 border-b">
+        <thead className="bg-cyan-400 border-b">
           <tr>
             <th className="text-left p-3">Produit</th>
             <th className="text-left p-3">SKU</th>
@@ -24,8 +24,7 @@ export function ProductTable({ result }: { result: ProductListResult }) {
           </tr>
         </thead>
         <tbody>
-          {result.items.map((row) => {
-            const item = mapProductToListItem(row as any);
+          {result.items.map((item) => {
             return (
               <tr key={item.id} className="border-b hover:bg-slate-50">
                 <td className="p-3">

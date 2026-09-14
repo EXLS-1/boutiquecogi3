@@ -16,7 +16,7 @@ export {
 export {
   transitionProductStatus,
   isTransitionAllowed,
-  canPublishProduct,
+  canPublishProduct as canPublishProductByRules,
   publishScheduledProducts,
   ALLOWED_TRANSITIONS,
   ProductWorkflowError,
@@ -25,17 +25,12 @@ export {
 export {
   getProductKpis,
   getProductList,
-  getProductDetails,
   getProductAnalytics,
   type ProductQuery,
-  type ProductListItem,
-  type ProductListResult,
-  type ProductKpis,
 } from "./product.repository";
 export {
   ProductValidationService,
   dynamicProductSchema,
-  type DynamicProductInput,
 } from "./validationService";
 export {
   mapProductToListItem,
@@ -60,7 +55,6 @@ export {
   SERVER_ACTION_RESULT,
 } from "./product.constants";
 export type {
-  DynamicProductInput,
   VariantInputDto,
   CreateProductDto,
   CreatedProductResult,
