@@ -75,6 +75,24 @@ export const dynamicProductSchema = z
       .min(PRODUCT_LIMITS.NAME_MIN, "Le nom doit contenir au moins 2 caractères.")
       .max(PRODUCT_LIMITS.NAME_MAX),
     description: z.string().trim().max(PRODUCT_LIMITS.DESC_MAX).optional().nullable(),
+    slug: z
+      .string()
+      .trim()
+      .min(1)
+      .max(220)
+      .regex(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+        "Le slug doit être en minuscules, sans espaces ni accents (ex: robe-ete-rouge)."
+      )
+      .optional()
+      .nullable(),
+    sku: z
+      .string()
+      .trim()
+      .min(PRODUCT_LIMITS.SKU_MIN, "Le SKU doit contenir au moins 3 caractères.")
+      .max(PRODUCT_LIMITS.SKU_MAX)
+      .optional()
+      .nullable(),
     categoryId: z.string().uuid("categoryId doit être un UUID valide.").optional().nullable(),
     categoryIds: z
       .array(z.string().uuid("Chaque categoryIds[] doit être un UUID valide."))
@@ -95,6 +113,34 @@ export const dynamicProductSchema = z
     attributes: z
       .record(z.string().trim().min(1).max(PRODUCT_LIMITS.ATTRIBUTE_KEY_MAX), attributeValueSchema)
       .default({}),
+    productTypeId: z.string().uuid("productTypeId doit être un UUID valide.").optional().nullable(),
+    prices: z
+      .array(
+        z.object({
+          currency: z.string().trim().min(1),
+          amount: z.coerce.number().positive().max(PRODUCT_LIMITS.PRICE_MAX),
+          compareAtPrice: z.coerce.number().positive().max(PRODUCT_LIMITS.PRICE_MAX).optional().nullable(),
+          country: z.string().trim().max(2).optional().nullable(),
+          region: z.string().trim().max(100).optional().nullable(),
+          startsAt: z.coerce.date().optional().nullable(),
+          endsAt: z.coerce.date().optional().nullable(),
+        })
+      )
+      .max(20, "20 prix maximum.")
+      .optional(),
+    tagIds: z
+      .array(z.string().uuid("Chaque tagIds[] doit être un UUID valide."))
+      .max(20, "20 tags maximum.")
+      .optional()
+      .nullable(),
+    isFeatured: z.coerce.boolean().optional(),
+    isActive: z.coerce.boolean().optional(),
+    seoTitle: z.string().trim().max(200).optional().nullable(),
+    seoDescription: z.string().trim().max(500).optional().nullable(),
+    videoUrl: z.string().url("videoUrl doit être une URL valide.").optional().nullable(),
+    salePrice: z.coerce.number().positive().max(PRODUCT_LIMITS.PRICE_MAX).optional().nullable(),
+    saleStart: z.coerce.date().optional().nullable(),
+    saleEnd: z.coerce.date().optional().nullable(),
     variants: z.array(variantSchema).max(PRODUCT_LIMITS.VARIANT_MAX).optional(),
     images: z.array(z.string().url("Chaque image doit être une URL valide.")).max(PRODUCT_LIMITS.IMAGE_MAX).default([]),
   })
