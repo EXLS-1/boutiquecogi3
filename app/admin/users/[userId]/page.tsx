@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
 import { UserModuleNav } from "@/components/admin/users/user-module-nav";
+import { isValidUuid } from "@/lib/utils";
 import { getUserAction } from "@/server/actions/admin/users/get-user";
 
 export default async function AdminUserDetailsPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
+  // Évite l'erreur PostgreSQL « invalid input syntax for type uuid » quand le segment
+  // dynamique reçoit autre chose qu'un identifiant (segment réservé, lien obsolète…).
+  if (!isValidUuid(userId)) notFound();
   const user = await getUserAction(userId);
   if (!user) notFound();
   return (

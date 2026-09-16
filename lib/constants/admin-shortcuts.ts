@@ -187,6 +187,14 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
         icon: BarChart3,
         tone: "text-indigo-500",
       },
+      {
+        title: "Audit",
+        description: "Visualisations interactifs de l'audit.",
+        href: "/dashboard/audit",
+        cta: "Afficher",
+        icon: BarChart3,
+        tone: "text-indigo-500",
+      },
     ],
   },
 
@@ -498,7 +506,7 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
       {
         title: "Auditlog utilisateur",
         description: "Examiner les événements liés aux comptes et sessions.",
-        href: "/admin/users/auditlog",
+        href: "/admin/users/audit",
         cta: "Afficher",
         icon: FileClock,
         tone: "text-amber-500",

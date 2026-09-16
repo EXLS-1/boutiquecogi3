@@ -16,6 +16,7 @@
 
 import { Prisma, ProductStatus, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isValidUuid } from "@/lib/utils";
 import type { DynamicProductInput } from "./types";
 import { ProductValidationService } from "./validationService";
 import {
@@ -301,6 +302,9 @@ export class ProductService {
   }
 
   static async getDetails(productId: string): Promise<any | null> {
+    // Un identifiant non-UUID ferait échouer la requête PostgreSQL
+    // (« invalid input syntax for type uuid ») : on renvoie null → notFound() côté page.
+    if (!isValidUuid(productId)) return null;
     return prisma.product.findUnique({
       where: { id: productId, isdeleted: false },
       include: {

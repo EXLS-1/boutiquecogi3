@@ -1,0 +1,28 @@
+﻿ORDER {
+  "orderNumber": "BC3-2026-000005",
+  "subtotalAmount": 21000,
+  "grandTotal": 24360,
+  "totalAmount": 24360,
+  "taxAmount": 3360,
+  "discountAmount": 0,
+  "shippingCost": 0,
+  "currency": "USD",
+  "items": [
+    {
+      "unitPrice": 3500,
+      "quantity": 3,
+      "subtotal": 10500,
+      "product": {
+        "basePrice": "5000"
+      }
+    },
+    {
+      "unitPrice": 3500,
+      "quantity": 3,
+      "subtotal": 10500,
+      "product": {
+        "basePrice": "4500"
+      }
+    }
+  ]
+}
