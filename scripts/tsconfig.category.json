@@ -1,0 +1,25 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "noEmit": true, "incremental": false },
+  "include": [
+    "../lib/categories/schemas.ts",
+    "../lib/categories/repository.ts",
+    "../lib/categories/service.ts",
+    "../lib/categories/action-helpers.ts",
+    "../lib/categories/queries.ts",
+    "../lib/actions/category.actions.ts",
+    "../server/services/product-category-sync.ts",
+    "../server/services/product-service-error.ts",
+    "../server/services/product-service.ts",
+    "../server/core/secure-prisma.ts",
+    "../lib/auth/rbac.ts",
+    "../lib/products/product.service.ts",
+    "../lib/products/productService.ts",
+    "../app/api/product/route.ts",
+    "../app/api/product/[id]/route.ts",
+    "../app/actions/admin/products/category/assign-category.action.ts",
+    "../app/actions/admin/products/category/remove-category.action.ts",
+    "../__tests__/category-crud.test.ts",
+    "../__tests__/product-category.test.ts"
+  ]
+}

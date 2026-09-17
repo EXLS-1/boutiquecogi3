@@ -17,7 +17,7 @@
 import { Prisma, ProductStatus, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isValidUuid } from "@/lib/utils";
-import type { DynamicProductInput } from "./types";
+import type { DynamicProductInput } from "./validationService";
 import { ProductValidationService } from "./validationService";
 import {
   transitionProductStatus,
@@ -26,20 +26,19 @@ import {
 import { resolveProductPrice } from "@/lib/product-pricing/pricing.service";
 import { adjustVariantStock } from "@/lib/product-inventory/inventory.service";
 import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit";
-import {
-  getProductTypeConfig,
-  checkVariantLimit,
-} from "@/lib/product-type";
-import { normalizeCategoryIds, validateCategoriesExist } from "@/server/services/product-category-sync";
+import { checkVariantLimit } from "@/lib/product-type";
+import { normalizeCategoryIds, validateCategoriesExist, syncProductCategories } from "@/server/services/product-category-sync";
 
 export class ProductServiceError extends Error {
-  constructor(message: string, public code: string) {
-    super(message);
+  constructor(message: string, public code: string, public statusCode = 400, options?: ErrorOptions) {
+    super(message, options);
     this.name = "ProductServiceError";
   }
 }
 
 type Tx = Prisma.TransactionClient;
+// Les résolveurs ne dépendent que des lectures produit/variante, en transaction ou non.
+type ProductLookupClient = Pick<PrismaClient, "product" | "productVariant">;
 
 const TRANSACTION_OPTIONS = { isolationLevel: "Serializable" as const, maxWait: 5000, timeout: 15000 };
 const MAX_RETRIES = 2;
@@ -52,12 +51,24 @@ export class ProductService {
   static async create(input: DynamicProductInput, userId: string): Promise<string> {
     return this._executeInTransaction(async (tx) => {
       const validated = ProductValidationService.parse(input);
-      const config = await getProductTypeConfig(validated.productTypeId ?? null);
+      // Type produit : résolu en transaction, type réellement actif en base
+      // (jamais d'identifiant fictif) — erreur explicite avec le type manquant.
+      const typeConfig = validated.productTypeId
+        ? await tx.productTypeConfig.findUnique({ where: { id: validated.productTypeId, isActive: true } })
+        : await tx.productTypeConfig.findFirst({ where: { isDefault: true, isActive: true }, orderBy: { id: "asc" } });
+      if (!typeConfig) {
+        throw new ProductServiceError(
+          validated.productTypeId
+            ? `Type de produit actif introuvable : ${validated.productTypeId}`
+            : "Aucun ProductTypeConfig actif par défaut (type PHYSICAL attendu)",
+          "VALIDATION_ERROR",
+        );
+      }
       const variants = ProductValidationService.normalizeVariants(validated);
-      await checkVariantLimit({ allowed: true, reasons: [], config }, variants.length);
+      await checkVariantLimit({ allowed: true, reasons: [], config: typeConfig }, variants.length);
 
-      const categoryIds = normalizeCategoryIds(undefined, validated.categoryIds);
-      if (categoryIds.length > 0) await validateCategoriesExist(prisma as any, categoryIds);
+      const categoryIds = normalizeCategoryIds(validated.categoryId, validated.categoryIds);
+      await validateCategoriesExist(tx, categoryIds);
 
       const slug = await this._resolveUniqueSlug(tx, validated.name, validated.slug);
       const sku = validated.sku ?? (await this._resolveUniqueSku(tx, validated.name));
@@ -69,7 +80,7 @@ export class ProductService {
           slug,
           sku,
           description: validated.description ?? "",
-          productTypeId: config.id,
+          productTypeId: typeConfig.id,
           currency: validated.currency ?? "USD",
           categoryId: categoryIds[0] ?? null,
           userId,
@@ -94,12 +105,13 @@ export class ProductService {
             })),
           } : undefined,
           stock: { create: { quantity: totalStock, reserved: 0, updatedBy: userId } },
-          productImages: (validated.images ?? []).map((url, i) => ({ url, alt: validated.name, position: i })),
-          productOptions: Object.entries(validated.attributes ?? {}).map(([k, v]) => ({ name: k, value: String(v) })),
+          productImages: { create: (validated.images ?? []).map((url, i) => ({ url, alt: validated.name, position: i })) },
+          productOptions: { create: Object.entries(validated.attributes ?? {}).map(([k, v]) => ({ name: k, value: String(v) })) },
           categoryProducts: categoryIds.length > 0 ? {
             create: categoryIds.map((id, idx) => ({ categoryId: id, displayOrder: idx })),
           } : undefined,
         },
+        include: { stock: true },
       });
 
       // Variantes + VariantStock
@@ -132,7 +144,7 @@ export class ProductService {
       });
       await recordProductAudit({ action: PRODUCT_AUDIT_ACTIONS.CREATED, userId, productId: product.id, newValue: { name: validated.name, variantCount: variants.length, totalStock }, details: `Produit créé : ${variants.length} variante(s), ${totalStock} unité(s)` }, tx);
 
-      if (config.requiresApproval) {
+      if (typeConfig.requiresApproval) {
         await tx.product.update({ where: { id: product.id }, data: { status: ProductStatus.PENDING } });
         await tx.productStatusHistory.create({ data: { productId: product.id, oldStatus: ProductStatus.DRAFT, newStatus: ProductStatus.PENDING, reason: "Approbation requise", changedById: userId } });
         await recordProductAudit({ action: PRODUCT_AUDIT_ACTIONS.APPROVAL_REQUESTED, userId, productId: product.id }, tx);
@@ -153,12 +165,14 @@ export class ProductService {
       });
       if (!existing) throw new ProductServiceError("Produit introuvable", "NOT_FOUND");
 
-      const categoryIds = normalizeCategoryIds(undefined, input.categoryIds);
-      if (categoryIds.length > 0) await validateCategoriesExist(prisma as any, categoryIds);
+      const categoryProvided = input.categoryId !== undefined || input.categoryIds !== undefined;
+      const categoryIds = normalizeCategoryIds(input.categoryId, input.categoryIds);
+      if (categoryProvided) await validateCategoriesExist(tx, categoryIds);
 
-      const updateData: any = {
+      const updateData = {
         ...(input.name && { name: input.name }),
-        ...(input.description !== undefined && { description: input.description }),
+        // undefined conserve la description ; null la vide (colonne non nullable).
+        ...(input.description !== undefined && { description: input.description ?? "" }),
         ...(input.sku && { sku: input.sku }),
         ...(input.basePrice !== undefined && { basePrice: input.basePrice }),
         ...(input.salePrice !== undefined && { salePrice: input.salePrice }),
@@ -170,18 +184,18 @@ export class ProductService {
         ...(input.seoDescription !== undefined && { seoDescription: input.seoDescription }),
         ...(input.videoUrl !== undefined && { videoUrl: input.videoUrl }),
         updatedBy: userId,
-      };
+      } satisfies Prisma.ProductUncheckedUpdateInput;
       await tx.product.update({ where: { id: productId }, data: updateData });
 
-      if (categoryIds.length > 0) {
-        await tx.categoryProduct.deleteMany({ where: { productId } });
-        await tx.categoryProduct.createMany({ data: categoryIds.map((id, idx) => ({ productId, categoryId: id, displayOrder: idx })) });
-        await tx.product.update({ where: { id: productId }, data: { categoryId: categoryIds[0] ?? null } });
+      if (categoryProvided) {
+        await syncProductCategories(tx, productId, categoryIds);
       }
 
+      // undefined conserve les tags ; null ou [] supprime toutes les associations.
       if (input.tagIds !== undefined) {
+        const tagIds = [...new Set(input.tagIds ?? [])];
         await tx.productTag.deleteMany({ where: { productId } });
-        if (input.tagIds.length > 0) await tx.productTag.createMany({ data: input.tagIds.map((tagId) => ({ productId, tagId })) });
+        if (tagIds.length > 0) await tx.productTag.createMany({ data: tagIds.map((tagId) => ({ productId, tagId })) });
       }
 
       await recordProductAudit({
@@ -189,7 +203,11 @@ export class ProductService {
         userId,
         productId,
         oldValue: existing,
-        newValue: updateData,
+        newValue: {
+          ...updateData,
+          saleStart: input.saleStart === null ? null : input.saleStart?.toISOString(),
+          saleEnd: input.saleEnd === null ? null : input.saleEnd?.toISOString(),
+        },
         details: "Produit mis à jour",
       }, tx);
     }, MAX_RETRIES);
@@ -220,29 +238,40 @@ export class ProductService {
   // PUBLICATION (workflow via ProductWorkflow)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  private static async _transitionStatus(...args: Parameters<typeof transitionProductStatus>): Promise<void> {
+    try {
+      await transitionProductStatus(...args);
+    } catch (error) {
+      if (error instanceof ProductWorkflowError) {
+        throw new ProductServiceError(error.message, error.code, error.statusCode, { cause: error });
+      }
+      throw error;
+    }
+  }
+
   static async publish(productId: string, userId: string): Promise<void> {
-    await transitionProductStatus(productId, ProductStatus.PUBLISHED, { actedBy: userId, reason: "Publication manuelle" });
+    await this._transitionStatus(productId, ProductStatus.PUBLISHED, { actedBy: userId, reason: "Publication manuelle" });
     await recordProductAudit({ action: PRODUCT_AUDIT_ACTIONS.PUBLISHED, userId, productId, newValue: { status: ProductStatus.PUBLISHED } });
   }
 
   static async submitForReview(productId: string, userId: string): Promise<void> {
-    await transitionProductStatus(productId, ProductStatus.PENDING, { actedBy: userId, reason: "Soumis en révision", notify: true });
+    await this._transitionStatus(productId, ProductStatus.PENDING, { actedBy: userId, reason: "Soumis en révision", notify: true });
   }
 
   static async schedule(productId: string, scheduledAt: Date, userId: string): Promise<void> {
-    await transitionProductStatus(productId, ProductStatus.SCHEDULED, { actedBy: userId, reason: "Publication programmée", scheduledAt });
+    await this._transitionStatus(productId, ProductStatus.SCHEDULED, { actedBy: userId, reason: "Publication programmée", scheduledAt });
   }
 
   static async archive(productId: string, userId: string): Promise<void> {
-    await transitionProductStatus(productId, ProductStatus.ARCHIVED, { actedBy: userId, reason: "Archivage manuel" });
+    await this._transitionStatus(productId, ProductStatus.ARCHIVED, { actedBy: userId, reason: "Archivage manuel" });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // STOCK (délégué à InventoryService)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static async adjustStock(input: { variantId: string; delta: number; reason: string; userId: string }): Promise<void> {
-    await adjustVariantStock({ variantId: input.variantId, delta: input.delta, reason: input.reason as any, userId: input.userId });
+  static async adjustStock(input: { variantId: string; delta: number; reason: Parameters<typeof adjustVariantStock>[0]["reason"]; userId: string }): Promise<void> {
+    await adjustVariantStock(input);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -265,12 +294,13 @@ export class ProductService {
         const isRetryable = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
         if (isRetryable && attempt < retries) continue;
         throw error;
+
       }
     }
     throw new Error("TRANSACTION_UNREACHABLE");
   }
 
-  private static async _resolveUniqueSlug(tx: Tx, name: string, provided?: string | null): Promise<string> {
+  private static async _resolveUniqueSlug(tx: ProductLookupClient, name: string, provided?: string | null): Promise<string> {
     if (provided) {
       const exists = await tx.product.findUnique({ where: { slug: provided }, select: { id: true } });
       if (!exists) return provided;
@@ -283,25 +313,33 @@ export class ProductService {
     throw new ProductServiceError("Slug unique impossible", "SLUG_CONFLICT");
   }
 
-  private static async _resolveUniqueSku(tx: Tx, name: string): Promise<string> {
+  private static _skuName(name: string): string {
+    // Préfixe lisible, borné et ASCII ; repli pour les noms sans caractères latins.
+    return name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 16) || "PRODUCT";
+  }
+
+  private static async _resolveUniqueSku(tx: ProductLookupClient, name: string): Promise<string> {
+    const prefix = this._skuName(name);
     for (let i = 0; i < 10; i++) {
-      const sku = `SKU-${Date.now()}-${i}`;
+      const sku = `SKU-${prefix}-${Date.now()}-${i}`;
       const exists = await tx.product.findUnique({ where: { sku }, select: { id: true } });
       if (!exists) return sku;
     }
     throw new ProductServiceError("SKU produit unique impossible", "SKU_CONFLICT");
   }
 
-  private static async _resolveUniqueVariantSku(tx: Tx, name: string, index: number): Promise<string> {
+  private static async _resolveUniqueVariantSku(tx: ProductLookupClient, name: string, index: number): Promise<string> {
+    const prefix = this._skuName(name);
     for (let i = 0; i < 10; i++) {
-      const sku = `VAR-${Date.now()}-${index}-${i}`;
+      const sku = `VAR-${prefix}-${Date.now()}-${index}-${i}`;
       const exists = await tx.productVariant.findUnique({ where: { sku }, select: { id: true } });
       if (!exists) return sku;
     }
     throw new ProductServiceError("SKU variante unique impossible", "SKU_CONFLICT");
   }
 
-  static async getDetails(productId: string): Promise<any | null> {
+  static async getDetails(productId: string) {
     // Un identifiant non-UUID ferait échouer la requête PostgreSQL
     // (« invalid input syntax for type uuid ») : on renvoie null → notFound() côté page.
     if (!isValidUuid(productId)) return null;

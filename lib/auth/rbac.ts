@@ -7,7 +7,7 @@
 
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { PrismaClient, Role as PrismaRole } from "@prisma/client";
+import { Role as PrismaRole } from "@prisma/client";
 import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
 import {
   Crown,
@@ -23,9 +23,7 @@ import {
 // 1. TYPES & CONSTANTS & INSTANCE PRISMA
 // ───────────────────────────────────────────
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import { prisma } from "@/lib/prisma";
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 export type Level = (typeof LEVELS)[keyof typeof LEVELS];

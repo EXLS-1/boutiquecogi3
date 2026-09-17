@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { slugify } from "@/lib/utils/slug";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
+import { ProductServiceError } from "@/server/services/product-service-error";
+import { normalizeCategoryIds, validateCategoriesExist } from "@/server/services/product-category-sync";
 
 const MAX_LIMIT = 50;
 const DEFAULT_LIMIT = 20;
@@ -168,35 +170,24 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Résolution des catégories (multi prioritaire, slug/UUID rétrocompatibles) ──
-    const requestedIds: string[] = Array.isArray(categoryIds)
-      ? categoryIds.map(String).filter(Boolean)
-      : categoryId
-        ? [String(categoryId)]
-        : [];
-
-    let categories = requestedIds.length
-      ? await prisma.category.findMany({ where: { id: { in: requestedIds } } })
-      : [];
-
-    if (requestedIds.length > 0 && categories.length !== requestedIds.length) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message: "Une ou plusieurs catégories sont introuvables",
-          missing: requestedIds.filter(
-            (id) => !categories.some((c) => c.id === id),
-          ),
-        },
-        { status: 400 },
-      );
-    }
-
-    // Fallback slug (rétrocompatibilité « category: "femme" »)
-    if (categories.length === 0 && category) {
-      const slugCategory = await prisma.category.findFirst({
-        where: { slug: String(category) },
-      });
-      if (slugCategory) categories = [slugCategory];
+    // UUID normalisés (trim/casse), catégories supprimées refusées, invariant
+    // categoryId = categoryIds[0] garanti par le helper partagé.
+    let categories: Awaited<ReturnType<typeof validateCategoriesExist>> = [];
+    try {
+      const requestedIds = normalizeCategoryIds(categoryId, categoryIds);
+      categories = await validateCategoriesExist(prisma, requestedIds);
+      // Fallback slug (rétrocompatibilité « category: "femme" »)
+      if (categories.length === 0 && category) {
+        const slugCategory = await prisma.category.findFirst({
+          where: { slug: String(category), deletedAt: null },
+        });
+        if (slugCategory) categories = [slugCategory];
+      }
+    } catch (error) {
+      if (error instanceof ProductServiceError) {
+        return NextResponse.json({ status: "error", message: error.message }, { status: 400 });
+      }
+      throw error;
     }
 
     const slug = slugify(`${name}-${Date.now()}`);

@@ -23,6 +23,8 @@ import { prisma } from "@/lib/prisma";
 import { generateSKU } from "@/lib/utils/sku";
 import { slugify } from "@/lib/utils/slug";
 import { ProductValidationService } from "./validationService";
+import { normalizeCategoryIds, validateCategoriesExist } from "@/server/services/product-category-sync";
+import { ProductServiceError } from "@/server/services/product-service-error";
 import type { StockMovementInput } from "./types";
 
 // ─── Erreur métier typée ─────────────────────────────────────────────────────
@@ -106,34 +108,26 @@ export class ProductService {
 
           // 2a-bis. Résolution des catégories : union categoryId + categoryIds,
           // dédupliquée, validée en base (existence réelle).
-          const categoryIds = [
-            ...new Set(
-              [input.categoryId, ...(input.categoryIds ?? [])].filter(
-                (id): id is string => typeof id === "string" && id.trim() !== "",
-              ),
-            ),
-          ];
-          if (categoryIds.length > 0) {
-            const found = await tx.category.findMany({
-              where: { id: { in: categoryIds } },
-              select: { id: true },
-            });
-            if (found.length !== categoryIds.length) {
-              throw new ProductError(
-                "Une ou plusieurs catégories sont introuvables.",
-                PRODUCT_ERROR_CODES.CATEGORY_NOT_FOUND,
-                {
-                  missing: categoryIds.filter(
-                    (id) => !found.some((c) => c.id === id),
-                  ),
-                },
-              );
+          const categoryIds = normalizeCategoryIds(input.categoryId, input.categoryIds);
+          try {
+            await validateCategoriesExist(tx, categoryIds);
+          } catch (error) {
+            if (error instanceof ProductServiceError) {
+              throw new ProductError(error.message, error.code === "CATEGORY_NOT_FOUND" ? "CATEGORY_NOT_FOUND" : "VALIDATION_ERROR");
             }
+            throw error;
           }
+
+          // Un identifiant fourni doit désigner un type actif réellement stocké.
+          const typeConfig = input.productTypeId
+            ? await tx.productTypeConfig.findUnique({ where: { id: input.productTypeId, isActive: true } })
+            : await tx.productTypeConfig.findFirst({ where: { isDefault: true, isActive: true }, orderBy: { id: "asc" } });
+          if (!typeConfig) throw new ProductError("Type de produit actif introuvable", "VALIDATION_ERROR");
 
           // 2a. Produit parent (publication immédiate = visible en catalogue)
           const product = await tx.product.create({
             data: {
+              productTypeId: typeConfig.id,
               name: input.name,
               slug,
               sku: productSku,

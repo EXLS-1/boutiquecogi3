@@ -26,6 +26,7 @@ export type ActionResponse<T> =
 const getCachedCategories = unstable_cache(
   async (): Promise<CategoryDTO[]> => {
     const categories = await prisma.category.findMany({
+      where: { deletedAt: null },
       select: { id: true, name: true, slug: true },
       orderBy: { name: "asc" },
     });

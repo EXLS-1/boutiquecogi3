@@ -212,3 +212,91 @@ export interface ProductMutationResult {
   code?: string;
   details?: unknown;
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DTO DÉTAIL — Sortie de mapProductToDetails (lib/products/product.mapper.ts)
+// ═════════════════════════════════════════════════════════════════════════════
+
+export interface ProductDetails {
+  id: string;
+  name: string;
+  sku: string;
+  slug: string;
+  description: string | null;
+  /** Prix de base en centimes. */
+  basePrice: number;
+  /** Ancien prix (comparatif) en centimes, null si absent. */
+  price: number | null;
+  currency: Currency;
+  status: ProductStatus;
+  isActive: boolean;
+  isFeatured: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  scheduledAt: Date | null;
+  publishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  productType: {
+    id: string;
+    type: string;
+    label: string;
+    maxVariants: number;
+    requiresApproval: boolean;
+  } | null;
+  variants: {
+    id: string;
+    sku: string;
+    attributes: Record<string, unknown> | null;
+    priceOffset: number;
+    isActive: boolean;
+    stock: {
+      id: string;
+      quantity: number;
+      reserved: number;
+      available: number;
+      alertThreshold: number;
+      warehouseId: string | null;
+    }[];
+  }[];
+  prices: {
+    id: string;
+    currency: string;
+    amount: number;
+    compareAtPrice: number | null;
+    country: string | null;
+    region: string | null;
+    startsAt: Date | null;
+    endsAt: Date | null;
+  }[];
+  images: { id: string; url: string; alt: string | null; position: number }[];
+  tags: { id: string; name: string; slug: string }[];
+  categories: { id: string; name: string; slug: string; displayOrder: number }[];
+  catalogs: {
+    id: string;
+    name: string;
+    /** Surcharge catalogue convertie en centimes, null si absente. */
+    priceOverride: number | null;
+    isActive: boolean;
+  }[];
+  attributes: { id: string; attribute: string; value: string }[];
+  options: { id: string; name: string; value: string }[];
+  reviews: {
+    id: string;
+    rating: number;
+    comment: string | null;
+    isVerifiedPurchase: boolean;
+    createdAt: Date;
+    user: { id: string; name: string | null } | null;
+  }[];
+  statusHistory: {
+    id: string;
+    oldStatus: ProductStatus;
+    newStatus: ProductStatus;
+    reason: string | null;
+    changedAt: Date;
+    changedBy: { id: string; name: string | null } | null;
+  }[];
+  availability: boolean;
+  stock: { quantity: number; reserved: number; available: number } | null;
+}

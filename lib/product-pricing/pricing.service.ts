@@ -134,7 +134,9 @@ export function resolvePriceFromProduct(
   }
 
   // ── 4. Prix de base (toujours actif) ──
-  const basePrice = toCents(product.basePrice);
+  // `Product.basePrice` est nullable (colonne dépréciée au profit de ProductPrice) :
+  // absente ⇒ 0 centime, ce qui correspond exactement au comportement runtime de toCents(null).
+  const basePrice: MoneyCents = product.basePrice == null ? 0 : toCents(product.basePrice);
   layers.push({ source: "BASE_PRICE", amount: basePrice, matched: true });
 
   // ── Couche gagnante : première couche active de la hiérarchie ──
@@ -147,14 +149,11 @@ export function resolvePriceFromProduct(
           ? "SALE_PRICE"
           : "BASE_PRICE";
 
+  // Montant retenu : chaîne `??` calquée sur la hiérarchie. Chaque couche absente
+  // (null/undefined) retombe sur la suivante : le typage reste nullable-safe sans
+  // dépendre du narrowing de `winner` sur un littéral.
   const amount: MoneyCents =
-    winner === "CATALOG_OVERRIDE"
-      ? catalogOverride
-      : winner === "PRODUCT_PRICE"
-        ? planned.amount
-        : winner === "SALE_PRICE"
-          ? product.salePrice
-          : basePrice;
+    catalogOverride ?? planned?.amount ?? (saleActive ? product.salePrice : null) ?? basePrice;
 
   // Prix barré : base si une couche est gagnante, sinon Product.price si supérieur
   let compareAtPrice: MoneyCents | null = null;
@@ -207,7 +206,9 @@ export function validatePricingRules(
   }
 ): string[] {
   const errors: string[] = [];
-  const base = toCents(product.basePrice);
+  // Idem resolvePriceFromProduct : basePrice nullable ⇒ 0 centime, ce qui déclenche
+  // l'erreur de validation ci-dessous au lieu d'un throw TypeScript.
+  const base = product.basePrice == null ? 0 : toCents(product.basePrice);
 
   if (base <= 0) errors.push("Le prix de base doit être supérieur à 0");
   if (product.salePrice != null && product.salePrice >= base) {

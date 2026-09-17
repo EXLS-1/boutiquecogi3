@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "noEmit": true, "incremental": false },
+  "include": [
+    "../lib/products/product.mapper.ts",
+    "../lib/products/types.ts",
+    "../lib/product-pricing/pricing.service.ts",
+    "../__tests__/product-mapper.test.ts"
+  ]
+}

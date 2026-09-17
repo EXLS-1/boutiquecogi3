@@ -4,6 +4,8 @@
 // La route GET supporte la recherche par ID, slug ou SKU pour plus de flexibilité dans l'accès aux produits. Les mises à jour et suppressions sont basées sur l'ID du produit trouvé.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ProductServiceError } from "@/server/services/product-service-error";
+import { normalizeCategoryIds, syncProductCategories } from "@/server/services/product-category-sync";
 
 async function findProduct(id: string) {
   return prisma.product.findFirst({
@@ -105,54 +107,13 @@ export async function PUT(
     // ── Catégories : categoryId (principale) et/ou categoryIds (multi) ──
     const categoryProvided =
       body.categoryId !== undefined || body.categoryIds !== undefined;
-    const requestedIds: string[] = Array.isArray(body.categoryIds)
-      ? body.categoryIds.map(String).filter(Boolean)
-      : body.categoryId
-        ? [String(body.categoryId)]
-        : [];
 
-    let categories: { id: string }[] = [];
-    if (categoryProvided) {
-      if (requestedIds.length > 10) {
-        return NextResponse.json(
-          { status: "error", message: "10 catégories maximum" },
-          { status: 400 },
-        );
-      }
-      categories = requestedIds.length
-        ? await prisma.category.findMany({
-            where: { id: { in: requestedIds } },
-            select: { id: true },
-          })
-        : [];
-      if (categories.length !== requestedIds.length) {
-        return NextResponse.json(
-          {
-            status: "error",
-            message: "Une ou plusieurs catégories sont introuvables",
-            missing: requestedIds.filter(
-              (id) => !categories.some((c) => c.id === id),
-            ),
-          },
-          { status: 400 },
-        );
-      }
-    }
+    const categoryIds = normalizeCategoryIds(body.categoryId, body.categoryIds);
 
     const product = await prisma.$transaction(async (tx) => {
       if (categoryProvided) {
-        // Remplacement complet : jointure + catégorie principale = première
-        await tx.categoryProduct.deleteMany({ where: { productId: existing.id } });
-        if (categories.length > 0) {
-          await tx.categoryProduct.createMany({
-            data: categories.map((c, index) => ({
-              productId: existing.id,
-              categoryId: c.id,
-              displayOrder: index,
-            })),
-          });
-        }
-        data.categoryId = categories[0]?.id ?? null;
+        // Remplacement complet via le helper partagé (ordre + principale = première)
+        await syncProductCategories(tx, existing.id, categoryIds);
       }
 
       return tx.product.update({
@@ -171,6 +132,12 @@ export async function PUT(
 
     return NextResponse.json({ status: "success", data: product });
   } catch (error) {
+    if (error instanceof ProductServiceError) {
+      return NextResponse.json(
+        { status: "error", code: error.code, message: error.message },
+        { status: 400 },
+      );
+    }
     console.error("Error updating product:", error);
     return NextResponse.json(
       { status: "error", message: "Failed to update product" },

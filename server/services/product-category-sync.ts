@@ -9,37 +9,32 @@
 // CategoryProduct reflète EXACTEMENT la liste fournie (remplacement complet).
 
 import type { Prisma, Category } from '@prisma/client'
-import { ProductServiceError } from './product-service'
+import { z } from 'zod'
+import { ProductServiceError } from './product-service-error'
 
 export const MAX_CATEGORIES_PER_PRODUCT = 10
 
-type PrismaClientLike = {
-  category: {
-    findMany(args: { where: { id: { in: string[] } } }): Promise<Category[]>
-  }
-}
-
-type TxLike = {
-  categoryProduct: {
-    deleteMany(args: { where: { productId: string } }): Promise<unknown>
-    createMany(args: { data: Array<{ productId: string; categoryId: string; displayOrder: number }> }): Promise<unknown>
-  }
-  product: {
-    update(args: {
-      where: { id: string }
-      data: { categoryId: string | null }
-    }): Promise<unknown>
-  }
-}
+type PrismaClientLike = Pick<Prisma.TransactionClient, 'category'>
+type TxLike = Pick<Prisma.TransactionClient, 'category' | 'categoryProduct' | 'product'>
 
 /** Concatène categoryId + categoryIds en une liste unique et dédupliquée. */
 export function normalizeCategoryIds(
   categoryId?: string | null,
   categoryIds?: Array<string | null | undefined> | null,
 ): string[] {
+  if ((categoryId != null && typeof categoryId !== 'string') ||
+      (categoryIds != null && (!Array.isArray(categoryIds) ||
+        categoryIds.some(id => id != null && typeof id !== 'string')))) {
+    throw new ProductServiceError('Catégories invalides.', 'VALIDATION_ERROR')
+  }
   const all = [categoryId ?? undefined, ...(categoryIds ?? [])]
     .filter((id): id is string => typeof id === 'string' && id.trim() !== '')
-  return [...new Set(all)]
+    .map(id => id.trim().toLowerCase())
+  const ids = [...new Set(all)]
+  if (!z.array(z.string().uuid()).max(MAX_CATEGORIES_PER_PRODUCT).safeParse(ids).success) {
+    throw new ProductServiceError('Catégories invalides (UUID, maximum 10).', 'VALIDATION_ERROR')
+  }
+  return ids
 }
 
 /**
@@ -50,26 +45,19 @@ export async function validateCategoriesExist(
   client: PrismaClientLike,
   ids: string[],
 ): Promise<Category[]> {
-  if (ids.length === 0) return []
-  if (ids.length > MAX_CATEGORIES_PER_PRODUCT) {
-    throw new ProductServiceError(
-      `Trop de catégories (${ids.length}). Maximum : ${MAX_CATEGORIES_PER_PRODUCT}.`,
-      'VALIDATION_ERROR',
-    )
-  }
-
-  const found = await client.category.findMany({ where: { id: { in: ids } } })
-  const foundIds = new Set(found.map((c) => c.id))
-  const missing = ids.filter((id) => !foundIds.has(id))
-
-  if (missing.length > 0) {
-    throw new ProductServiceError(
-      `Catégorie(s) introuvable(s) : ${missing.join(', ')}`,
-      'CATEGORY_NOT_FOUND',
-    )
-  }
-
-  return found
+  const normalized = normalizeCategoryIds(undefined, ids)
+  if (normalized.length === 0) return []
+  const found = await client.category.findMany({
+    where: { id: { in: normalized }, deletedAt: null },
+  })
+  const byId = new Map(found.filter(c => c.deletedAt === null).map(c => [c.id, c]))
+  return normalized.map(id => {
+    const category = byId.get(id)
+    if (!category) {
+      throw new ProductServiceError('Catégorie introuvable ou supprimée.', 'CATEGORY_NOT_FOUND')
+    }
+    return category
+  })
 }
 
 /**
@@ -83,6 +71,8 @@ export async function syncProductCategories(
   productId: string,
   categoryIds: string[],
 ): Promise<void> {
+  categoryIds = normalizeCategoryIds(undefined, categoryIds)
+  await validateCategoriesExist(tx, categoryIds)
   await tx.categoryProduct.deleteMany({ where: { productId } })
 
   if (categoryIds.length > 0) {

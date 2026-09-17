@@ -1,7 +1,7 @@
 // lib/products/product-service-helpers.ts
 // Helpers essentiels pour les Server Actions
 
-import { ProductStatus } from "@prisma/client";
+import { ProductStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit/product-audit.index";
 import { ProductServiceError } from "./product.service";
@@ -63,14 +63,16 @@ export async function updateProduct(
     if (!existing) throw new ProductServiceError("Produit introuvable", "NOT_FOUND");
     if (existing.isdeleted) throw new ProductServiceError("Produit supprimé", "ALREADY_DELETED");
 
-    const updateData: Record<string, unknown> = {};
-    if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.sku !== undefined) updateData.sku = input.sku;
-    if (input.basePrice !== undefined) updateData.basePrice = input.basePrice;
-    if (input.salePrice !== undefined) updateData.salePrice = input.salePrice;
-    if (input.isActive !== undefined) updateData.isActive = input.isActive;
-    if (input.isFeatured !== undefined) updateData.isFeatured = input.isFeatured;
+    const updateData = {
+      ...(input.name !== undefined && { name: input.name }),
+      // undefined conserve la description ; null la vide (colonne non nullable).
+      ...(input.description !== undefined && { description: input.description ?? "" }),
+      ...(input.sku !== undefined && { sku: input.sku }),
+      ...(input.basePrice !== undefined && { basePrice: input.basePrice }),
+      ...(input.salePrice !== undefined && { salePrice: input.salePrice }),
+      ...(input.isActive !== undefined && { isActive: input.isActive }),
+      ...(input.isFeatured !== undefined && { isFeatured: input.isFeatured }),
+    } satisfies Prisma.ProductUncheckedUpdateInput & Prisma.InputJsonObject;
 
     await tx.product.update({ where: { id: productId }, data: updateData });
 

@@ -12,12 +12,8 @@ import {
   validateCategoriesExist,
 } from './product-category-sync'
 
-export class ProductServiceError extends Error {
-  constructor(message: string, public code: string) {
-    super(message)
-    this.name = 'ProductServiceError'
-  }
-}
+import { ProductServiceError } from './product-service-error'
+export { ProductServiceError } from './product-service-error'
 
 // ─── Service ───
 
@@ -48,9 +44,22 @@ export const ProductService = {
 
         // 2. Transaction : produit + jointure + stock
         return ctx.prisma.$transaction(async (tx) => {
+          // Un identifiant fictif ne doit jamais atteindre la clé étrangère :
+          // on résout un type RÉELLEMENT actif en base, sinon on échoue tôt.
+          const typeConfig = await tx.productTypeConfig.findFirst({
+            where: { isDefault: true, isActive: true },
+            orderBy: { id: 'asc' },
+          })
+          if (!typeConfig) {
+            throw new ProductServiceError(
+              'Aucun ProductTypeConfig actif par défaut (type PHYSICAL attendu)',
+              'VALIDATION_ERROR',
+            )
+          }
           const product = await tx.product.create({
             data: {
               id: input.id ?? generateUUIDv7(),
+              productTypeId: typeConfig.id,
               name: input.name.trim(),
               slug: input.slug ?? generateSlug(input.name),
               sku: input.sku ?? generateSKU(input.name),
@@ -135,9 +144,7 @@ export const ProductService = {
             data: {
               ...(data.name !== undefined && { name: data.name }),
               ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
-              ...(data.description !== undefined && { description: data.description }),
-              ...(!categoryProvided &&
-                data.categoryId !== undefined && { categoryId: data.categoryId }),
+              ...(data.description !== undefined && { description: data.description ?? '' }),
               ...(data.images !== undefined && { images: data.images }),
               ...(data.status !== undefined && { status: data.status }),
               ...(slug !== undefined && { slug }),
