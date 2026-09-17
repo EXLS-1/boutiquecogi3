@@ -10,7 +10,7 @@ export default function CheckoutCancelPage() {
         Paiement annulé
       </h1>
       <p className="mb-8 text-zinc-600">
-        Votre paiement n&apos;a pas été finalisé. Votre panier est toujours
+        Votre paiement n&apos;a pas été finalisé. Toutefois, votre panier est toujours
         disponible.
       </p>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
