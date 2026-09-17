@@ -16,6 +16,7 @@ import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BadgeProductStatus } from "./badge";
 import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
+import { getProductHref } from "@/lib/product-catalog/product-quick-view";
 import { useCatalog } from "@/store/use-catalog-store";
 import { useWishlist } from "@/store/use-wishlist";
 import { addWishlistItemAction, removeWishlistItemAction } from "@/lib/actions/wishlist.actions";
@@ -29,7 +30,8 @@ interface ProductCardProps {
 }
 
 function ProductCardComponent({ product, showBadge = true, priority = false }: ProductCardProps) {
-  const { setQuickViewProduct } = useCatalog();
+  const setQuickViewProduct = useCatalog((state) => state.setQuickViewProduct);
+  const productHref = getProductHref(product);
   const { toggleItem, isInWishlist, setItems } = useWishlist();
   const hasHydrated = useMounted();
 
@@ -52,7 +54,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
 
       {/* ─── Image Container ───────────────────────────────────────────────── */}
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-        <Link href={`/products/${product.slug}`} aria-label={`Voir ${product.name}`}>
+        <Link href={productHref} aria-label={`Voir ${product.name}`}>
           <Image
             src={product.image}
             alt={product.name}
@@ -71,8 +73,9 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
         )}
 
         {/* Actions rapides (hover) */}
-        <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-0 translate-x-2 
-                        group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+        <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-100 translate-x-0
+                        md:opacity-0 md:translate-x-2 group-hover:opacity-100 group-hover:translate-x-0
+                        group-focus-within:opacity-100 group-focus-within:translate-x-0 transition-all duration-300">
           <Button
             size="icon"
             variant="secondary"
@@ -86,8 +89,10 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
             size="icon"
             variant="secondary"
             className="h-9 w-9 rounded-full shadow-md"
+            type="button"
             onClick={() => setQuickViewProduct(product.id)}
-            aria-label="Aperçu rapide"
+            aria-haspopup="dialog"
+            aria-label={`Aperçu rapide de ${product.name}`}
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -97,7 +102,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
       {/* ─── Content ───────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-4">
        
-        <Link href={`/products/${product.slug}`} className="group/link">
+        <Link href={productHref} className="group/link">
           <h3 className="font-semibold text-cyan-400 text-sm leading-tight line-clamp-2
                          group-hover/link:text-rose-500 transition-colors">
             {product.name}
@@ -114,7 +119,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
             <Price amount={product.price} currency={product.currency} />
           </span>
           {product.discountPercent > 0 && (
-            <span className="text-sm font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+            <span className="text-sm font-medium text-rose-500 bg-rose-50 px-2 py-0.5 rounded">
               -{product.discountPercent}%
             </span>
           )}

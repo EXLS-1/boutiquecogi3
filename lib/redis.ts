@@ -21,7 +21,7 @@
  */
 
 import crypto from "node:crypto";
-import { Redis, Cluster } from "ioredis";
+import { Redis, Cluster, type ChainableCommander } from "ioredis";
 import { z } from "zod";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -68,7 +68,8 @@ let externalLogger: RedisLogger | null = null;
  * ```ts
  * import { setRedisLogger } from "@/lib/redis";
  * import { logger } from "@/lib/logger";
- * setRedisLogger(logger.child({ module: "redis" }));
+ * import { createRedisLogger } from "@/lib/redis-logger";
+ * setRedisLogger(createRedisLogger(logger));
  * ```
  */
 export function setRedisLogger(logger: RedisLogger): void {
@@ -641,24 +642,37 @@ export class RedisClient {
       keepTtl?: boolean;
     }
   ): Promise<void> {
+    if (options?.nx && options.xx) {
+      throw new TypeError("SET options NX and XX are mutually exclusive");
+    }
+    if (options?.ttlSeconds !== undefined) {
+      if (!Number.isSafeInteger(options.ttlSeconds) || options.ttlSeconds <= 0) {
+        throw new RangeError("SET ttlSeconds must be a positive integer");
+      }
+      if (options.keepTtl) {
+        throw new TypeError("SET options EX and KEEPTTL are mutually exclusive");
+      }
+    }
     await this.connect();
     const serialized = Serializer.serialize(value);
 
     return this.executeWithCircuit(async () => {
-      const args: (string | number)[] = [key, serialized];
-
-      if (options?.ttlSeconds) {
-        args.push("EX", options.ttlSeconds);
+      const client = this.client!;
+      if (options?.ttlSeconds !== undefined) {
+        if (options.nx) await client.set(key, serialized, "EX", options.ttlSeconds, "NX");
+        else if (options.xx) await client.set(key, serialized, "EX", options.ttlSeconds, "XX");
+        else await client.set(key, serialized, "EX", options.ttlSeconds);
+      } else if (options?.keepTtl) {
+        if (options.nx) await client.set(key, serialized, "KEEPTTL", "NX");
+        else if (options.xx) await client.set(key, serialized, "KEEPTTL", "XX");
+        else await client.set(key, serialized, "KEEPTTL");
+      } else if (options?.nx) {
+        await client.set(key, serialized, "NX");
+      } else if (options?.xx) {
+        await client.set(key, serialized, "XX");
+      } else {
+        await client.set(key, serialized);
       }
-      if (options?.nx) args.push("NX");
-      if (options?.xx) args.push("XX");
-      if (options?.keepTtl) args.push("KEEPTTL");
-
-      await this.client!.set(
-        key,
-        serialized,
-        ...(args.slice(2) as (string | number)[])
-      );
     }, "SET");
   }
 
@@ -968,19 +982,13 @@ export class RedisClient {
     return this.executeWithCircuit(async () => {
       let result: string[];
       if (options?.rev) {
-        result = await this.client!.zrevrange(
-          key,
-          start,
-          stop,
-          ...(options.withScores ? ["WITHSCORES"] : [])
-        );
+        result = options.withScores
+          ? await this.client!.zrevrange(key, start, stop, "WITHSCORES")
+          : await this.client!.zrevrange(key, start, stop);
       } else {
-        result = await this.client!.zrange(
-          key,
-          start,
-          stop,
-          ...(options?.withScores ? ["WITHSCORES"] : [])
-        );
+        result = options?.withScores
+          ? await this.client!.zrange(key, start, stop, "WITHSCORES")
+          : await this.client!.zrange(key, start, stop);
       }
 
       if (options?.withScores) {
@@ -1070,14 +1078,19 @@ export class RedisClient {
   ): Promise<{ cursor: number; keys: string[] }> {
     await this.connect();
     return this.executeWithCircuit(async () => {
-      const args: (string | number)[] = [cursor];
-      if (options?.match) args.push("MATCH", options.match);
-      if (options?.count) args.push("COUNT", options.count);
-
-      const [nextCursor, keys] = await this.client!.scan(...args);
+      const client = this.client!;
+      const match = options?.match;
+      const count = options?.count;
+      const [nextCursor, keys] = match !== undefined
+        ? count !== undefined
+          ? await client.scan(cursor, "MATCH", match, "COUNT", count)
+          : await client.scan(cursor, "MATCH", match)
+        : count !== undefined
+          ? await client.scan(cursor, "COUNT", count)
+          : await client.scan(cursor);
       return {
-        cursor: parseInt(nextCursor as string, 10),
-        keys: keys as string[],
+        cursor: parseInt(nextCursor, 10),
+        keys,
       };
     }, "SCAN");
   }
@@ -1104,13 +1117,17 @@ export class RedisClient {
   // ─── Transactions (Multi/Exec) ─────────────────────────────────────────────
 
   async multi(
-    operations: (pipeline: Redis.Pipeline) => void
+    operations: (pipeline: ChainableCommander) => void
   ): Promise<unknown[]> {
     await this.connect();
     return this.executeWithCircuit(async () => {
       const pipeline = this.client!.multi();
       operations(pipeline);
-      return await pipeline.exec();
+      const results = await pipeline.exec();
+      if (results === null) {
+        throw new RedisError("Redis transaction aborted", "REDIS_TRANSACTION_ABORTED");
+      }
+      return results;
     }, "MULTI");
   }
 
@@ -1395,7 +1412,7 @@ export class RedisClient {
 
   // ─── Pipeline (batch operations) ────────────────────────────────────────────
 
-  pipeline(): Redis.Pipeline {
+  pipeline(): ChainableCommander {
     if (!this.client) {
       throw new RedisConnectionError("Redis client not initialized");
     }
@@ -1414,7 +1431,9 @@ export class RedisClient {
   async info(section?: string): Promise<string> {
     await this.connect();
     return this.executeWithCircuit(async () => {
-      return await this.client!.info(section);
+      return section === undefined
+        ? await this.client!.info()
+        : await this.client!.info(section);
     }, "INFO");
   }
 
@@ -1460,7 +1479,7 @@ export function resetRedisClient(): void {
   RedisClient.resetInstance();
 }
 
-export { RedisClient, RedisNamespaces, KeyBuilder, Serializer };
+export { Serializer };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DOMAIN-SPECIFIC HELPERS (Boutiquecogi3)
@@ -2071,7 +2090,7 @@ const RedisClusterConfigSchema = z.object({
       enableOfflineQueue: z.boolean().default(true),
       scaleReads: z.enum(["master", "slave", "all"]).default("master"),
     })
-    .default({}),
+    .prefault({}),
 });
 
 type RedisClusterConfig = z.infer<typeof RedisClusterConfigSchema>;
@@ -2280,6 +2299,19 @@ export interface StreamConsumerGroup {
  * Redis Streams pour l'event sourcing et le traitement asynchrone.
  * Idéal pour : logs d'audit, notifications, traitement de commandes, analytics.
  */
+const StreamEntryReplySchema = z.tuple([
+  z.string(),
+  z.array(z.string()).refine((fields) => fields.length % 2 === 0, {
+    message: "Stream fields must contain key/value pairs",
+  }),
+]);
+const StreamReadReplySchema = z.array(
+  z.tuple([z.string(), z.array(StreamEntryReplySchema)])
+).nullable();
+const PendingReplySchema = z.array(z.tuple([
+  z.string(), z.string(), z.number().nonnegative(), z.number().int().nonnegative(),
+]));
+
 export class RedisStreamManager {
   private client: RedisClient;
   private logger: RedisLogger;
@@ -2333,15 +2365,13 @@ export class RedisStreamManager {
     options?: { mkStream?: boolean; id?: string }
   ): Promise<void> {
     await this.client.executeWithCircuit(async () => {
-      const args: (string | number)[] = ["CREATE", streamKey, groupName];
-      if (options?.mkStream) args.push("MKSTREAM");
-      args.push(options?.id || "$"); // $ = only new messages
-
-      await this.client
-        .getClient()
-        .xgroup(
-          ...(args as [string, string, string, ...Array<string | number>])
-        );
+      const client = this.client.getClient();
+      const id = options?.id ?? "$";
+      if (options?.mkStream) {
+        await client.xgroup("CREATE", streamKey, groupName, id, "MKSTREAM");
+      } else {
+        await client.xgroup("CREATE", streamKey, groupName, id);
+      }
       this.logger.info("Consumer group created", {
         stream: streamKey,
         group: groupName,
@@ -2361,17 +2391,12 @@ export class RedisStreamManager {
     }
   ): Promise<StreamMessage[]> {
     return this.client.executeWithCircuit(async () => {
-      const args: (string | number)[] = ["STREAMS", streamKey];
-      args.push(options?.lastId || "0");
-
-      const results = await this.client
-        .getClient()
-        .xread(
-          "COUNT",
-          options?.count || 10,
-          ...(options?.block !== undefined ? ["BLOCK", options.block] : []),
-          ...args
-        );
+      const client = this.client.getClient();
+      const count = options?.count ?? 10;
+      const lastId = options?.lastId ?? "0";
+      const results = options?.block === undefined
+        ? await client.xread("COUNT", count, "STREAMS", streamKey, lastId)
+        : await client.xread("COUNT", count, "BLOCK", options.block, "STREAMS", streamKey, lastId);
 
       if (!results || results.length === 0) return [];
 
@@ -2418,9 +2443,10 @@ export class RedisStreamManager {
 
       args.push("STREAMS", group.stream, ">"); // > = only undelivered messages
 
-      const results = await this.client
-        .getClient()
-        .xreadgroup(...(args as [string, ...Array<string | number>]));
+      // Les combinaisons BLOCK/NOACK sont dynamiques ; valider la réponse brute.
+      const results = StreamReadReplySchema.parse(
+        await this.client.getClient().call("XREADGROUP", ...args)
+      );
 
       if (!results || results.length === 0) return [];
 
@@ -2480,23 +2506,17 @@ export class RedisStreamManager {
     }>
   > {
     return this.client.executeWithCircuit(async () => {
-      const args: (string | number)[] = [streamKey, groupName];
+      const client = this.client.getClient();
+      const start = options?.start ?? "-";
+      const end = options?.end ?? "+";
+      const count = options?.count ?? 10;
+      // Toujours utiliser la forme détaillée, pas le résumé XPENDING.
+      const result = options?.consumer === undefined
+        ? await client.xpending(streamKey, groupName, start, end, count)
+        : await client.xpending(streamKey, groupName, start, end, count, options.consumer);
 
-      if (options?.start) {
-        args.push(options.start, options.end || "+", options.count || 10);
-      }
-
-      const result = await this.client
-        .getClient()
-        .xpending(...(args as [string, string, ...Array<string | number>]));
-
-      if (!Array.isArray(result)) return [];
-
-      return result.map((item: unknown[]) => ({
-        id: item[0] as string,
-        consumer: item[1] as string,
-        elapsedMs: item[2] as number,
-        deliveries: item[3] as number,
+      return PendingReplySchema.parse(result).map(([id, consumer, elapsedMs, deliveries]) => ({
+        id, consumer, elapsedMs, deliveries,
       }));
     }, "XPENDING");
   }
@@ -2516,16 +2536,11 @@ export class RedisStreamManager {
         .getClient()
         .xclaim(streamKey, groupName, consumerName, minIdleTime, ...messageIds);
 
-      return results.map((item: unknown[]) => ({
-        id: item[0] as string,
-        data: (() => {
-          const fields = item[1] as string[];
-          const data: Record<string, string> = {};
-          for (let i = 0; i < fields.length; i += 2) {
-            data[fields[i]] = fields[i + 1];
-          }
-          return data;
-        })(),
+      return z.array(StreamEntryReplySchema).parse(results).map(([id, fields]) => ({
+        id,
+        data: Object.fromEntries(
+          Array.from({ length: fields.length / 2 }, (_, i) => [fields[i * 2], fields[i * 2 + 1]])
+        ),
       }));
     }, "XCLAIM");
   }
@@ -2555,10 +2570,12 @@ export class RedisStreamManager {
     lastEntry: StreamMessage | null;
   }> {
     return this.client.executeWithCircuit(async () => {
-      const info = await this.client.getClient().xinfo("STREAM", streamKey);
+      const info = z.array(z.unknown()).refine((values) => values.length % 2 === 0, {
+        message: "XINFO must contain key/value pairs",
+      }).parse(await this.client.getClient().xinfo("STREAM", streamKey));
       const parsed: Record<string, unknown> = {};
       for (let i = 0; i < info.length; i += 2) {
-        parsed[info[i] as string] = info[i + 1];
+        parsed[z.string().parse(info[i])] = info[i + 1];
       }
 
       return {
@@ -2610,13 +2627,10 @@ export class RedisStreamManager {
     approximate = true
   ): Promise<number> {
     return this.client.executeWithCircuit(async () => {
-      const args: (string | number)[] = ["MAXLEN"];
-      if (approximate) args.push("~");
-      args.push(maxLen);
-
-      return await this.client
-        .getClient()
-        .xtrim(streamKey, ...(args as [string, ...Array<string | number>]));
+      const client = this.client.getClient();
+      return approximate
+        ? await client.xtrim(streamKey, "MAXLEN", "~", maxLen)
+        : await client.xtrim(streamKey, "MAXLEN", maxLen);
     }, "XTRIM");
   }
 }
@@ -3419,20 +3433,4 @@ export const redisAdvancedHelpers = {
 // TYPES EXPORTS (supplémentaires)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type {
-  RedisClusterConfig,
-  StreamMessage,
-  StreamConsumerGroup,
-  L1CacheConfig,
-  RedisMetrics,
-  NotificationPayload,
-  RoomSubscription,
-};
-
-export {
-  RedisClusterClient,
-  RedisStreamManager,
-  L1CacheManager,
-  RedisMetricsCollector,
-  RealtimeNotificationManager,
-};
+export type { RedisClusterConfig };

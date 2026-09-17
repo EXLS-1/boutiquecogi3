@@ -1,17 +1,16 @@
 // app/products/[id]/page.tsx
 
-import { cache } from "react";
+import { getProductData } from "@/lib/product-catalog/product-detail-query";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Currency } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { isValidUuid } from "@/lib/utils";
 
+import { ProductDetailPrice, ProductAvailability } from "@/components/product/product-detail-summary";
 import { ProductNotFound } from "./products-not-found";
 
 import {
-  mapProductDetail,
   type ProductDetailData,
 } from "@/lib/product-catalog/product-detail";
 
@@ -52,98 +51,6 @@ export async function generateStaticParams() {
     return [];
   }
 }
-
-const getProductData = cache(
-  async (id: string): Promise<ProductDetailData | null> => {
-    // Si l'identifiant n'est pas un UUID valide, on interroge uniquement le slug
-    // pour éviter l'erreur "invalid input syntax for type uuid" de PostgreSQL.
-    const whereClause = isValidUuid(id)
-      ? {
-          OR: [{ id }, { slug: id }],
-          isArchived: false,
-          isdeleted: false,
-          deletedAt: null,
-        }
-      : {
-          slug: id,
-          isArchived: false,
-          isdeleted: false,
-          deletedAt: null,
-        };
-
-    const product = await prisma.product.findFirst({
-      where: whereClause,
-
-      include: {
-        // Catégorie
-        category: true,
-
-        // Stock (quantité, réservé, seuil d'alerte, entrepôt)
-        stock: true,
-
-        // Projection de disponibilité
-        availabilityProjection: true,
-
-        // Images produit (ordonnées par position)
-        productImages: {
-          orderBy: {
-            position: "asc",
-          },
-        },
-
-        // Variantes (SKU, attributs, prix additionnel)
-        variants: true,
-
-        // Options produit (taille, couleur, etc.)
-        productOptions: true,
-
-        // Tags (via table de jointure)
-        productTags: {
-          include: {
-            tag: true,
-          },
-        },
-
-        // Attributs personnalisés (via table de jointure)
-        productAttributeValues: {
-          include: {
-            attribute: true,
-          },
-        },
-
-        // Avis clients (avec utilisateur)
-        productReviews: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-
-        // Prix régionaux
-        productPrices: true,
-
-        // Coupon de promotion
-        coupon: true,
-
-        // Classe de taxe
-        taxClass: true,
-      },
-    });
-
-    if (!product) {
-      return null;
-    }
-
-    return mapProductDetail(product as Parameters<typeof mapProductDetail>[0]);
-  },
-);
 
 export async function generateMetadata({
   params,
@@ -310,11 +217,11 @@ function ProductInfo({ product }: { product: ProductDetailData }) {
           <span className="text-sm text-muted-foreground">({product.reviewCount} avis)</span>
         </div>
       )}
-      <ProductPriceSection product={product} />
+      <ProductDetailPrice product={product} />
       {product.description && (
         <p className="text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>
       )}
-      <StockInfo product={product} />
+      <ProductAvailability product={product} />
       {product.variants.length > 0 && <ProductVariants variants={product.variants} />}
       {product.productOptions.length > 0 && <ProductOptions options={product.productOptions} />}
       {product.coupon && <CouponBadge coupon={product.coupon} />}
@@ -399,74 +306,6 @@ function formatPrice(amount: number, currency: Currency) {
     return `${amount.toFixed(2)} ${currency}`;
   }
 }
-
-function ProductPriceSection({ product }: { product: ProductDetailData }) {
-  const hasSale =
-    product.salePrice !== null && product.salePrice < product.basePrice;
-
-  return (
-    <div className="flex flex-wrap items-baseline gap-3">
-      <span className="text-3xl font-bold text-slate-900">
-        {formatPrice(
-          hasSale ? product.salePrice : product.basePrice,
-          product.currency,
-        )}
-      </span>
-      {hasSale && (
-        <>
-          <span className="text-lg text-slate-400 line-through">
-            {formatPrice(product.basePrice, product.currency)}
-          </span>
-          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-            -{Math.round(
-              ((product.basePrice - product.salePrice) / product.basePrice) * 100,
-            )}
-            %
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
-
-function StockInfo({ product }: { product: ProductDetailData }) {
-  const status = product.availabilityStatus;
-
-  if (status === "out_of_stock") {
-    return (
-      <div className="flex items-center gap-2 text-sm font-medium text-red-600">
-        <span className="h-2 w-2 rounded-full bg-red-500" />
-        Rupture de stock
-      </div>
-    );
-  }
-
-  if (status === "pre_order") {
-    return (
-      <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
-        <span className="h-2 w-2 rounded-full bg-blue-500" />
-        Précommande disponible
-      </div>
-    );
-  }
-
-  if (status === "low_stock") {
-    return (
-      <div className="flex items-center gap-2 text-sm font-medium text-amber-600">
-        <span className="h-2 w-2 rounded-full bg-amber-500" />
-        Stock faible — {product.availableStock} restant(s)
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-      <span className="h-2 w-2 rounded-full bg-emerald-500" />
-      En stock{product.availableStock > 0 ? ` — ${product.availableStock} disponible(s)` : ""}
-    </div>
-  );
-}
-
 
 function ProductVariants({
   variants,

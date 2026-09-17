@@ -14,16 +14,18 @@ import Footer from "@/components/footer";
 import RootProvider from "@/components/providers/root-provider";
 import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { CartSyncManager } from "@/components/cart/cart-sync-manager";
+import { ProductQuickView } from "@/components/product/product-quick-view";
 import { WishlistSyncManager } from "@/components/wishlist/wishlist-sync-manager";
 import { setRedisLogger } from "@/lib/redis";
-import { logger } from "@/lib/logger"; // Votre logger Winston/Pino
+import { logger } from "@/lib/logger";
+import { createRedisLogger } from "@/lib/redis-logger";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 const lato = Lato({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-lato" });
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-cormorant" });
 
-setRedisLogger(logger.child({ module: "redis" }));
+setRedisLogger(createRedisLogger(logger));
 
 export const metadata: Metadata = {
   metadataBase: new URL('http://localhost:3000'),
@@ -43,6 +45,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <RootProvider session={authSession}>
           <CartSyncManager />
           <WishlistSyncManager />
+          <Suspense fallback={null}>
+            <ProductQuickView />
+          </Suspense>
           {/* Injection directe de la session pour supprimer le délai d'hydratation */}
           <Navbar />
 
