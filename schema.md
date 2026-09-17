@@ -9,11 +9,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Currency {
-  USD
-  CDF
-}
-
 // =============================================
 // AUTHENTIFICATION & UTILISATEURS (BetterAuth)
 // =============================================
@@ -753,7 +748,7 @@ model ProductVariant {
   inventorySnapshots    InventorySnapshot[]
   stockReservations     StockReservation[]
   variantStocks         VariantStock[]
-  isActive              Boolean        @default(true) // PHASE 2 — variant « default » de transition + désactivation
+  isActive              Boolean                @default(true) // PHASE 2 — variant « default » de transition + désactivation
 
   @@index([productId])
   @@map("product_variant")
@@ -864,7 +859,7 @@ model ProductPrice {
   id             String    @id @default(uuid(7)) @db.Uuid
   productId      String    @db.Uuid
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  currency       Currency
+  currency       String    @default("USD")
   amount         Int
   compareAtPrice Int?
   country        String?
@@ -872,10 +867,14 @@ model ProductPrice {
   startsAt       DateTime?
   endsAt         DateTime?
 
-  @@index([productId, currency])
   @@index([productId, startsAt, endsAt])
   @@index([country, region])
   @@map("product_price")
+}
+
+enum Currency {
+  USD
+  CDF
 }
 
 model ProductTypeConfig {
@@ -895,7 +894,7 @@ model ProductTypeConfig {
   maxVariants              Int
   requiresApproval         Boolean  @default(false)
   isDefault                Boolean  @default(false) // PHASE 2 — type par défaut (backfill productTypeId)
-  isActive                 Boolean  @default(true)  // PHASE 2 — désactivation douce d'un type
+  isActive                 Boolean  @default(true) // PHASE 2 — désactivation douce d'un type
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
@@ -1009,22 +1008,22 @@ model VariantStock {
 // ============================================
 
 model StockMovement {
-  id        String            @id @default(uuid()) @db.Uuid
-  stockId   String            @db.Uuid
-  type      StockMovementType
-  quantity  Int // Positif = entrée, Négatif = sortie (selon contexte)
-  delta     Int // Variation réelle (+1 ou -1) — utile pour l'audit
-  reason    String? // "Vente #123", "Inventaire mensuel", "Retour client"
-  orderId   String?           @db.Uuid
-  userId    String?           @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
+  stockId        String            @db.Uuid
+  type           StockMovementType
+  quantity       Int // Positif = entrée, Négatif = sortie (selon contexte)
+  delta          Int // Variation réelle (+1 ou -1) — utile pour l'audit
+  reason         String? // "Vente #123", "Inventaire mensuel", "Retour client"
+  orderId        String?           @db.Uuid
+  userId         String?           @db.Uuid
   // PHASE 2 — re-rattachement : les nouveaux mouvements peuvent référencer un VariantStock
   variantStockId String?           @db.Uuid
-  createdAt DateTime          @default(now())
+  createdAt      DateTime          @default(now())
 
   // Relations
-  stock         Stock         @relation(fields: [stockId], references: [id], onDelete: Cascade)
-  variantStock   VariantStock? @relation(fields: [variantStockId], references: [id], onDelete: SetNull)
-  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stock        Stock         @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  variantStock VariantStock? @relation(fields: [variantStockId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 

@@ -7,19 +7,15 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import { Heart } from "lucide-react";
 import { useWishlist } from "@/store/use-wishlist";
 import Link from "next/link";
 import { cn } from "@/lib/utils/utils";
 
 export function WishlistBadge() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const totalItems = useWishlist((state) => state.totalItems);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) return (
     <div className="p-2">

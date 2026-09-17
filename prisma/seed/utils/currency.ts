@@ -7,14 +7,16 @@
 // (cents / francs) pour éviter tout problème d'arrondi dans les agrégations.
 
 import type { Currency } from "@prisma/client";
+import { DEFAULT_USD_TO_CDF_RATE as SEED_EXCHANGE_RATE_USD_CDF } from "../../../lib/currency/exchange-rate-constants";
+
 
 export interface Money {
   amount: number; // entier : cents pour USD, francs pour CDF
   currency: Currency;
 }
 
-/** Taux de change fixe pour le seed (déterministe, pas de fetch réseau). */
-export const SEED_EXCHANGE_RATE_USD_CDF = 2850;
+/** Même taux configuré que l'application, sans fetch réseau. */
+export { DEFAULT_USD_TO_CDF_RATE as SEED_EXCHANGE_RATE_USD_CDF } from "../../../lib/currency/exchange-rate-constants";
 
 /**
  * Convertit un montant USD (en cents) vers un montant CDF (en francs),

@@ -9,6 +9,8 @@ import { Seeder } from "../types";
 import { buildOrderFactory } from "../factories/order.factory";
 import type { GeneratedVariant } from "../factories/variant.factory";
 import { generateUUIDv7 } from "../utils/uuid";
+import { usdCentsToCdf } from "../utils/currency";
+
 
 export const DevOrdersSeeder: Seeder = {
   name: "dev:orders",
@@ -50,7 +52,7 @@ export const DevOrdersSeeder: Seeder = {
           attributes: {},
           priceOffset: 0,
           priceUSD: product.price.toString(),
-          priceCDF: String(Math.round(priceUsdCents * 2850 / 100)),
+          priceCDF: String(usdCentsToCdf(priceUsdCents)),
         });
       }
     }

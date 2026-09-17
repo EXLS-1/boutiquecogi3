@@ -4,6 +4,10 @@ import Link from "next/link";
 import { getServerRBACSession } from "@/lib/auth/server";
 import { Button } from "@/components/ui/button";
 import { AdminModuleShortcuts } from "@/components/admin/admin-module-shortcuts";
+import {
+  AdminModuleNav,
+  ADMIN_NAV,
+} from "@/components/admin/shared/admin-module-nav";
 import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { Shield, ArrowRight } from "lucide-react";
 import { isPinEnabled, hasFreshAdminPinEntry } from "@/lib/pin/admin-pin";
@@ -60,6 +64,16 @@ export default async function AdminPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Navigation entre les modules d'administration (Server Component :
+          liens réels rendus au HTML initial, l'onglet courant est déterminé
+          par `activeHref`). */}
+      <AdminModuleNav
+        ariaLabel="Modules d'administration"
+        links={ADMIN_NAV}
+        activeHref="/admin"
+        className="rounded-xl border border-cyan-200 bg-white/80 p-3"
+      />
 
       {/* Gate PIN ré-affiché à chaque refresh / retour / après inactivité.
           La protection de toute la section (RBAC → 2FA → PIN) et la garde

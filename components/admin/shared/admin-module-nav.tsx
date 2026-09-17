@@ -33,7 +33,7 @@ export function AdminModuleNav({
     <nav
       aria-label={ariaLabel}
       className={cn(
-        "flex flex-wrap gap-2 border-b border-slate-200 pb-3",
+        "flex flex-wrap gap-2 border-b border-cyan-200 pb-3",
         className,
       )}
     >
@@ -47,8 +47,8 @@ export function AdminModuleNav({
             className={cn(
               "rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500",
               isActive
-                ? "bg-cyan-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-cyan-50 hover:text-cyan-700",
+                ? "bg-cyan-500 text-white shadow-sm"
+                : "bg-cyan-100 text-cyan-500 hover:bg-cyan-50 hover:text-cyan-500",
             )}
           >
             {link.label}
@@ -118,4 +118,22 @@ export const DASHBOARD_NAV: readonly AdminModuleLink[] = [
   { href: "/dashboard/revenue", label: "Chiffre d'affaires" },
   { href: "/dashboard/treasury", label: "Trésorerie" },
   { href: "/dashboard/audit", label: "Audit" },
+];
+
+/**
+ * Navigation transversale du portail d'administration (`/admin`) : accès
+ * direct aux modules d'administration depuis la table de bord.
+ * Rendue sur `/admin` avec `activeHref="/admin"` (onglet « Portail » actif).
+ * Toutes les cibles ci-dessous sont des routes existantes de `app/admin`.
+ */
+export const ADMIN_NAV: readonly AdminModuleLink[] = [
+  { href: "/admin", label: "Portail" },
+  { href: "/admin/products", label: "Produits" },
+  { href: "/admin/stock", label: "Stock" },
+  { href: "/admin/order", label: "Commandes" },
+  { href: "/admin/users", label: "Utilisateurs" },
+  { href: "/admin/roles", label: "Rôles" },
+  { href: "/admin/auditlog", label: "Journaux d'audit" },
+  { href: "/admin/security", label: "Sécurité (2FA)" },
+  { href: "/admin/settings/pin", label: "Code PIN" },
 ];

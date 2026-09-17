@@ -28,7 +28,7 @@ import {
   SORTABLE_FIELDS,
   type SortableField,
   type CatalogQueryParams,
-  type RawCatalogProduct,
+  type CatalogProduct,
   normalizeProducts,
   normalizeProduct,
   catalogQueryParamsSchema,
@@ -84,6 +84,10 @@ function buildBaseInclude() {
     },
   } as const satisfies Prisma.ProductInclude;
 }
+
+type CatalogDbProduct = Prisma.ProductGetPayload<{
+  include: ReturnType<typeof buildBaseInclude>;
+}>;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 2: CACHE STRATEGY
@@ -181,7 +185,7 @@ export const getRecentProducts = cache(
 
       // Step 2: Only fetch full data with includes if products exist
       // This avoids Prisma generating IN (NULL) queries for relations
-      let products;
+      let products: CatalogDbProduct[];
       if (idResults.length > 0) {
         const ids = idResults.map((p) => p.id);
         products = await prisma.product.findMany({
@@ -195,7 +199,7 @@ export const getRecentProducts = cache(
 
       // Sérialisation des Decimals + mapping domaine
       return mapCatalogProducts(
-        normalizeProducts(products as unknown as RawCatalogProduct[]),
+        normalizeProducts(products),
       );
     },
     [CACHE_TAGS.CATALOG_RECENT],
@@ -231,7 +235,7 @@ export const getProductsByCategory = cache(
 
       // Step 2: Only fetch full data with includes if products exist
       // This avoids Prisma generating IN (NULL) queries for relations
-      let products;
+      let products: CatalogDbProduct[];
       if (idResults.length > 0) {
         const ids = idResults.map((p) => p.id);
         products = await prisma.product.findMany({
@@ -244,7 +248,7 @@ export const getProductsByCategory = cache(
       }
 
       return mapCatalogProducts(
-        normalizeProducts(products as unknown as RawCatalogProduct[]),
+        normalizeProducts(products),
       );
     },
     [CACHE_TAGS.CATALOG_CATEGORY],
@@ -282,7 +286,7 @@ export const getPromotionalProducts = cache(
       });
 
       // Step 2: Only fetch full data with includes if products exist
-      let products;
+      let products: CatalogDbProduct[];
       if (idResults.length > 0) {
         const ids = idResults.map((p) => p.id);
         products = await prisma.product.findMany({
@@ -295,7 +299,7 @@ export const getPromotionalProducts = cache(
       }
 
       return mapCatalogProducts(
-        normalizeProducts(products as unknown as RawCatalogProduct[]),
+        normalizeProducts(products),
       );
     },
     [CACHE_TAGS.CATALOG_PROMOTIONS],
@@ -323,7 +327,7 @@ export const getNewArrivalProducts = cache(
       });
 
       // Step 2: Only fetch full data with includes if products exist
-      let products;
+      let products: CatalogDbProduct[];
       if (idResults.length > 0) {
         const ids = idResults.map((p) => p.id);
         products = await prisma.product.findMany({
@@ -336,7 +340,7 @@ export const getNewArrivalProducts = cache(
       }
 
       return mapCatalogProducts(
-        normalizeProducts(products as unknown as RawCatalogProduct[]),
+        normalizeProducts(products),
       );
     },
     [CACHE_TAGS.CATALOG_NOUVEAUTES],
@@ -441,7 +445,7 @@ export async function searchCatalogProducts(
 
   // Step 2: Only fetch full data with includes if products exist
   // This avoids Prisma generating IN (NULL) queries for relations
-  let products;
+  let products: CatalogDbProduct[];
   if (idResults.length > 0) {
     const ids = idResults.map((p) => p.id);
     products = await prisma.product.findMany({
@@ -455,7 +459,7 @@ export async function searchCatalogProducts(
 
   return {
     products: mapCatalogProducts(
-      normalizeProducts(products as unknown as RawCatalogProduct[]),
+      normalizeProducts(products),
     ),
     totalCount,
   };
@@ -486,13 +490,56 @@ export const getProductBySlug = cache(
       if (!product) return null;
 
       return mapCatalogProduct(
-        normalizeProduct(product as unknown as RawCatalogProduct)!,
+        normalizeProduct(product)!,
       );
     },
     [CACHE_TAGS.CATALOG_PRODUCTS],
     CACHE_DURATIONS.PRODUCT_DETAIL,
   ),
 );
+
+// ─── Query : Produits par identifiants (résolution panier / wishlist) ────────
+
+/**
+ * Récupère plusieurs produits publiés à partir de leurs identifiants.
+ *
+ * La résolution accepte indifféremment un `id` produit OU un `slug` : les
+ * stores clients légers (liste de souhaits, récemment vus…) ne conservent pas
+ * toujours la même clé selon le point d'entrée.
+ *
+ * Le retour utilise le pipeline officiel du catalogue
+ * (`buildBaseWhere` → `buildBaseInclude` → `normalizeProducts` →
+ * `mapCatalogProducts`) afin de produire des `CatalogProduct` COMPLETS. Les
+ * consommateurs (panier Zustand notamment) ne doivent jamais reconstruire un
+ * objet produit partiel : un `CatalogProduct` incomplet casse le typage et
+ * provoque des ajouts silencieusement ignorés (`isAvailable` manquant).
+ *
+ * Non caché : appelé depuis une Server Action au moment de l'action utilisateur,
+ * les identifiants étant arbitraires (donc non cachables par tag).
+ */
+export async function getCatalogProductsByIds(
+  ids: readonly string[],
+): Promise<readonly CatalogProduct[]> {
+  const uniqueIds = Array.from(
+    new Set(ids.map((id) => id.trim()).filter((id) => id.length > 0)),
+  );
+
+  if (uniqueIds.length === 0) return Object.freeze([]);
+
+  const products = await prisma.product.findMany({
+    where: {
+      ...buildBaseWhere(),
+      OR: [{ id: { in: uniqueIds } }, { slug: { in: uniqueIds } }],
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: Math.min(uniqueIds.length, MAX_CATALOG_PAGE_SIZE),
+    include: buildBaseInclude(),
+  });
+
+  return mapCatalogProducts(
+    normalizeProducts(products),
+  );
+}
 
 // ─── Query : Comptage ───────────────────────────────────────────────────────
 
@@ -544,7 +591,7 @@ export const getFeaturedProducts = cache(
       });
 
       // Step 2: Only fetch full data with includes if products exist
-      let products;
+      let products: CatalogDbProduct[];
       if (idResults.length > 0) {
         const ids = idResults.map((p) => p.id);
         products = await prisma.product.findMany({
@@ -557,7 +604,7 @@ export const getFeaturedProducts = cache(
       }
 
       return mapCatalogProducts(
-        normalizeProducts(products as unknown as RawCatalogProduct[]),
+        normalizeProducts(products),
       );
     },
     [CACHE_TAGS.CATALOG_PROMOTIONS],

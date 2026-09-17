@@ -7,8 +7,7 @@
     "pageSize": 24
   },
   "exchange": {
-    "rate": 2850,
     "source": "seed-bootstrap"
   }
 }
-</content>
+

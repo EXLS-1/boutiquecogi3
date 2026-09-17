@@ -2,7 +2,7 @@
 /**
  * Store Zustand unique pour le catalogue.
  * Gère : filtres de requête, filtres de facettes, catégorie active,
- * arborescence dépliée, wishlist et quick view.
+ * arborescence dépliée et quick view.
  */
 
 "use client";
@@ -28,9 +28,6 @@ interface CatalogState {
   // ─── Catégories dépliées dans l'arborescence ──────────────────────────────
   readonly expandedCategories: readonly string[];
 
-  // ─── Wishlist ─────────────────────────────────────────────────────────────
-  readonly wishlistIds: readonly string[];
-
   // ─── Quick View ───────────────────────────────────────────────────────────
   readonly quickViewProductId: string | null;
 
@@ -42,9 +39,6 @@ interface CatalogState {
 
   readonly setActiveCategory: (slug: string | null) => void;
   readonly toggleExpandedCategory: (slug: string) => void;
-
-  readonly toggleWishlist: (productId: string) => void;
-  readonly isInWishlist: (productId: string) => boolean;
 
   readonly setQuickViewProduct: (id: string | null) => void;
 
@@ -66,7 +60,6 @@ const initialState = {
   selectedFilters: [] as readonly string[],
   activeCategory: null as string | null,
   expandedCategories: [] as readonly string[],
-  wishlistIds: [] as readonly string[],
   quickViewProductId: null as string | null,
 };
 
@@ -115,16 +108,6 @@ export const useCatalog = create<CatalogState>()(
             : [...state.expandedCategories, slug],
         })),
 
-      // Wishlist
-      toggleWishlist: (productId) =>
-        set((state) => ({
-          wishlistIds: state.wishlistIds.includes(productId)
-            ? state.wishlistIds.filter((id) => id !== productId)
-            : [...state.wishlistIds, productId],
-        })),
-
-      isInWishlist: (productId) => get().wishlistIds.includes(productId),
-
       // Quick view
       setQuickViewProduct: (id) => set({ quickViewProductId: id }),
 
@@ -134,7 +117,6 @@ export const useCatalog = create<CatalogState>()(
     {
       name: "boutiquecogi3-catalog-store",
       partialize: (state) => ({
-        wishlistIds: state.wishlistIds,
         activeFilters: state.activeFilters,
         expandedCategories: state.expandedCategories,
       }),

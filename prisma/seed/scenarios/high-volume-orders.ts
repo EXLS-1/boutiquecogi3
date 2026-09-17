@@ -10,6 +10,8 @@ import { Seeder } from "../types";
 import { executeInBatches } from "../transaction";
 import { buildOrderFactory } from "../factories/order.factory";
 import type { GeneratedOrder } from "../factories/order.factory";
+import { usdCentsToCdf } from "../utils/currency";
+
 
 const TOTAL_ORDERS = 2500;
 const BATCH_SIZE = 500;
@@ -42,7 +44,7 @@ export const HighVolumeOrdersScenario: Seeder = {
       attributes: v.attributes as Record<string, string>,
       priceOffset: v.priceOffset,
       priceUSD: ((v.priceOffset + 2500) / 100).toFixed(2),
-      priceCDF: String((v.priceOffset + 2500) * 2850),
+      priceCDF: String(usdCentsToCdf(v.priceOffset + 2500)),
     }));
 
     const productIds = products.map((p) => p.id);

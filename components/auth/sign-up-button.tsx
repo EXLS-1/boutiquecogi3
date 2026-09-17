@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,15 +17,8 @@ import { authClient } from "@/lib/auth/auth-client";
 export default function SignUpButton() {
   const { data: session, isPending } = authClient.useSession();
 
-  // Subscriber vide (nous n'avons pas besoin de nous abonner à des changements externes)
-  const subscribe = () => () => {};
-
-  // Vérifie si nous sommes côté client (hydraté)
-  const mounted = useSyncExternalStore(
-    subscribe,
-    () => true,  // getSnapshot côté client
-    () => false  // getServerSnapshot côté serveur
-  );
+  // Garde d'hydratation côté client (évite tout mismatch SSR)
+  const mounted = useMounted();
 
   // Evite les erreurs d'hydratation en rendant un skeleton jusqu'à ce que le client soit monté
   if (!mounted || isPending) return <Skeleton className="h-10 w-32 rounded-md" />;

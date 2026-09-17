@@ -1,3 +1,4 @@
+// lib/security/product.ts
 /**
  * =============================================================================
  * BOUTIQUECOGI3 — SECURE PRODUCT CATALOG SYSTEM
@@ -20,6 +21,7 @@
  */
 
 import { cache } from "react";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { productData } from "@/data/product-data";
@@ -30,7 +32,7 @@ import type { Product } from "@/types/products";
 // ENVIRONMENT CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-const EXCHANGE_RATE_CDF = Number(process.env.EXCHANGE_RATE_CDF) || 2400;
+import { DEFAULT_USD_TO_CDF_RATE as EXCHANGE_RATE_CDF } from "@/lib/currency/exchange-rate-constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ZOD SCHEMAS (Input Validation & Type Safety)
@@ -166,6 +168,37 @@ export class ProductValidationError extends ProductError {
   }
 }
 
+/** Validation uniquement : les mutations doivent authentifier l'acteur côté serveur. */
+function parseProductInput<T>(schema: z.ZodType<T>, input: unknown): T {
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    throw new ProductValidationError(
+      result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; "),
+    );
+  }
+  return result.data;
+}
+
+export function parseCreateProductInput(input: unknown): CreateProductInput {
+  return parseProductInput(CreateProductSchema, input);
+}
+
+export function parseUpdateProductInput(input: unknown): UpdateProductInput {
+  const parsed = parseProductInput(UpdateProductSchema, input);
+  const changes = [
+    parsed.name, parsed.description, parsed.basePrice, parsed.categoryId,
+    parsed.images, parsed.isPublished, parsed.isArchived,
+  ];
+  if (changes.every((value) => value === undefined)) {
+    throw new ProductValidationError("At least one product field must be updated", parsed.id);
+  }
+  return parsed;
+}
+
+export function parseDeleteProductInput(input: unknown): DeleteProductInput {
+  return parseProductInput(DeleteProductSchema, input);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MAPPERS (JSON ↔ Domain ↔ DB)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,21 +229,15 @@ function mapJsonProduct(p: Record<string, unknown>): Product {
   };
 }
 
-function mapDbProduct(
-  p: {
-    id: string;
-    name: string;
-    description: string | null;
-    basePrice: number;
-    images: string[];
-    category: { slug: string } | null;
-    variants: { sku: string; stock: number }[];
-  } & {
-    isPublished: boolean;
-    isArchived: boolean;
-  },
-): Product {
-  const priceUSD = Math.round(p.basePrice / 100);
+type DbProduct = Prisma.ProductGetPayload<{
+  include: {
+    category: { select: { slug: true } };
+    variants: { select: { sku: true; stock: true } };
+  };
+}>;
+
+function mapDbProduct(p: DbProduct): Product {
+  const priceUSD = Math.round(Number(p.basePrice ?? 0)) / 100;
   const image = p.images[0] ?? "/media/placeholder.webp";
 
   return {
@@ -272,12 +299,15 @@ export const getAllProducts = cache(
       actorLevel = "GUEST",
     } = options;
 
+    if (!hasPermission(actorLevel, "VIEW_PRODUCTS")) {
+      throw new ProductPermissionError(actorLevel, "viewProducts");
+    }
     if (includeArchived && !hasPermission(actorLevel, "VIEW_ARCHIVED")) {
       throw new ProductPermissionError(actorLevel, "viewArchivedProducts");
     }
 
     try {
-      const where: Record<string, unknown> = {};
+      const where: Prisma.ProductWhereInput = {};
       if (!includeArchived) where.isArchived = false;
       if (categorySlug) where.category = { slug: categorySlug };
 
@@ -289,11 +319,10 @@ export const getAllProducts = cache(
       }
 
       if (minPrice !== undefined || maxPrice !== undefined) {
-        where.basePrice = {};
-        if (minPrice !== undefined)
-          (where.basePrice as Record<string, number>).gte = minPrice * 100;
-        if (maxPrice !== undefined)
-          (where.basePrice as Record<string, number>).lte = maxPrice * 100;
+        where.basePrice = {
+          ...(minPrice !== undefined ? { gte: minPrice * 100 } : {}),
+          ...(maxPrice !== undefined ? { lte: maxPrice * 100 } : {}),
+        };
       }
 
       const [dbProducts, total] = await Promise.all([
@@ -312,7 +341,7 @@ export const getAllProducts = cache(
 
       if (dbProducts.length > 0) {
         return {
-          products: dbProducts.map(mapDbProduct as any),
+          products: dbProducts.map(mapDbProduct),
           total,
           hasMore: offset + dbProducts.length < total,
         };
@@ -346,6 +375,9 @@ export async function getProductById(
   id: string,
   actorLevel: RBACLevel = "GUEST",
 ): Promise<Product | null> {
+  if (!hasPermission(actorLevel, "VIEW_PRODUCTS")) {
+    throw new ProductPermissionError(actorLevel, "viewProduct");
+  }
   const validatedId = ProductIdSchema.safeParse(id);
   if (!validatedId.success) {
     throw new ProductValidationError(`Invalid product identifier: ${id}`, id);
@@ -364,7 +396,9 @@ export async function getProductById(
       },
     });
 
-    if (byVariant?.product) return mapDbProduct(byVariant.product as any);
+    if (byVariant?.product && !byVariant.product.isArchived) {
+      return mapDbProduct(byVariant.product);
+    }
 
     const byProduct = await prisma.product.findFirst({
       where: { OR: [{ id }, { slug: id }], isArchived: false },
@@ -374,7 +408,7 @@ export async function getProductById(
       },
     });
 
-    if (byProduct) return mapDbProduct(byProduct as any);
+    if (byProduct) return mapDbProduct(byProduct);
   } catch (error) {
     console.warn("[PRODUCTS] Database fallback to JSON for ID:", id, error);
   }
@@ -387,6 +421,9 @@ export async function getProductsByIds(
   ids: string[],
   actorLevel: RBACLevel = "GUEST",
 ): Promise<Map<string, Product>> {
+  if (!hasPermission(actorLevel, "VIEW_PRODUCTS")) {
+    throw new ProductPermissionError(actorLevel, "viewProducts");
+  }
   const validatedIds = z.array(ProductIdSchema).max(50).safeParse(ids);
   if (!validatedIds.success) {
     throw new ProductValidationError("Invalid product IDs array");
@@ -411,7 +448,7 @@ export async function getProductsByIds(
     });
 
     for (const product of dbProducts) {
-      const mapped = mapDbProduct(product as any);
+      const mapped = mapDbProduct(product);
       productMap.set(product.id, mapped);
       if (product.variants[0]?.sku)
         productMap.set(product.variants[0].sku, mapped);

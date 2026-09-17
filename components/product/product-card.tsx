@@ -10,12 +10,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BadgeProductStatus } from "./badge";
 import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 import { useCatalog } from "@/store/use-catalog-store";
+import { useWishlist } from "@/store/use-wishlist";
+import { addWishlistItemAction, removeWishlistItemAction } from "@/lib/actions/wishlist.actions";
+import toast from "react-hot-toast";
 import Price from "@/components/product-price/price";
 
 interface ProductCardProps {
@@ -25,17 +29,25 @@ interface ProductCardProps {
 }
 
 function ProductCardComponent({ product, showBadge = true, priority = false }: ProductCardProps) {
-  const { toggleWishlist, isInWishlist, setQuickViewProduct } = useCatalog();
-  const [hasHydrated, setHasHydrated] = useState(false);
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
+  const { setQuickViewProduct } = useCatalog();
+  const { toggleItem, isInWishlist, setItems } = useWishlist();
+  const hasHydrated = useMounted();
 
   const isWishlisted = hasHydrated && isInWishlist(product.id);
 
+  const handleWishlistToggle = async () => {
+    const wishlistProduct = { id: product.id, name: product.name, price: product.price, image: product.image, slug: product.slug, category: product.categoryName ?? undefined };
+    toggleItem(wishlistProduct);
+    const result = isWishlisted ? await removeWishlistItemAction(product.id) : await addWishlistItemAction(product.id);
+    if (result.success) setItems(result.items);
+    else if (result.error !== "Non authentifié") {
+      toggleItem(wishlistProduct);
+      toast.error(result.error);
+    }
+  };
+
   return (
-    <article className="group relative flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm 
+    <article className="group relative flex flex-col bg-white rounded-2xl border border-cyan-200 shadow-sm
                         hover:shadow-xl hover:border-cyan-400/30 transition-all duration-300 overflow-hidden">
 
       {/* ─── Image Container ───────────────────────────────────────────────── */}
@@ -65,7 +77,7 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
             size="icon"
             variant="secondary"
             className={`h-9 w-9 rounded-full shadow-md ${isWishlisted ? "bg-rose-100 text-rose-600" : ""}`}
-            onClick={() => toggleWishlist(product.id)}
+            onClick={handleWishlistToggle}
             aria-label={isWishlisted ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
             <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
@@ -84,22 +96,21 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
 
       {/* ─── Content ───────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-4">
+       
+        <Link href={`/products/${product.slug}`} className="group/link">
+          <h3 className="font-semibold text-cyan-400 text-sm leading-tight line-clamp-2
+                         group-hover/link:text-rose-500 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
         {product.categoryName && (
           <span className="text-xs font-medium text-cyan-600 uppercase tracking-wide mb-1">
             {product.categoryName}
           </span>
         )}
-
-        <Link href={`/products/${product.slug}`} className="group/link">
-          <h3 className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2 
-                         group-hover/link:text-cyan-700 transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-
         {/* Prix */}
         <div className="mt-auto pt-3 flex items-baseline gap-2">
-          <span className="text-lg font-bold text-slate-900">
+          <span className="text-lg font-bold text-cyan-500">
             <Price amount={product.price} currency={product.currency} />
           </span>
           {product.discountPercent > 0 && (

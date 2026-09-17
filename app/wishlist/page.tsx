@@ -3,39 +3,105 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import { useWishlist } from "@/store/use-wishlist";
 import useCart from "@/store/use-cart";
+import { resolveCartProductsAction } from "@/lib/actions/cart.actions";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Trash2, HeartOff, ArrowRight } from "lucide-react";
+import { ShoppingCart, Trash2, HeartOff, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import { clearWishlistAction, removeWishlistItemAction } from "@/lib/actions/wishlist.actions";
 
 export default function WishlistPage() {
-  const [mounted, setMounted] = useState(false);
-  const { items, removeItem, clearWishlist } = useWishlist();
+  const mounted = useMounted();
+  const { items, removeItem, clearWishlist, setItems } = useWishlist();
   const { addItem: addToCart } = useCart();
-
-  useEffect(() => setMounted(true), []);
+  const [isAddingAll, setIsAddingAll] = useState(false);
 
   if (!mounted) return null;
 
-  const handleAddAllToCart = () => {
-    if (items.length === 0) return;
-    
-    items.forEach((product) => {
-      addToCart({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: 1,
-        variantId: product.id // Simplification pour l'exemple
-      });
-    });
-    
-    toast.success(`${items.length} produits ajoutés au panier`);
+  const handleAddAllToCart = async () => {
+    if (items.length === 0 || isAddingAll) return;
+
+    setIsAddingAll(true);
+
+    try {
+      // Le panier exige des `CatalogProduct` COMPLETS (`isAvailable`, prix
+      // CDF/USD, remise, politique d'accès…). La wishlist ne conserve que
+      // l'essentiel : on résout donc les produits depuis le catalogue via une
+      // Server Action, au lieu de fabriquer un objet partiel côté client
+      // (source du TS2353 et d'ajouts silencieusement ignorés).
+      const result = await resolveCartProductsAction(
+        items.map((item) => item.slug || item.id),
+      );
+
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
+      let addedCount = 0;
+      let skippedCount = 0;
+
+      for (const product of result.products) {
+        // Le store refuse les produits indisponibles : on le dit à
+        // l'utilisateur au lieu de laisser un échec silencieux.
+        if (!product.isAvailable) {
+          skippedCount += 1;
+          continue;
+        }
+
+        // La quantité est le 2ᵉ argument de `addItem` — elle n'appartient
+        // pas au produit (`CatalogProduct`).
+        addToCart(product, 1);
+        addedCount += 1;
+      }
+
+      // Favoris dépubliés / supprimés / introuvables côté catalogue.
+      skippedCount += result.missingIds.length;
+
+      if (addedCount === 0) {
+        toast.error("Aucun favori disponible n'a pu être ajouté au panier");
+        return;
+      }
+
+      toast.success(
+        skippedCount === 0
+          ? `${addedCount} produit(s) ajouté(s) au panier`
+          : `${addedCount} produit(s) ajouté(s) • ${skippedCount} ignoré(s) : indisponible ou introuvable`,
+      );
+    } catch (error) {
+      console.error("Ajout des favoris au panier impossible:", error);
+      toast.error("Impossible d'ajouter les favoris au panier");
+    } finally {
+      setIsAddingAll(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    const item = items.find((wishlistItem) => wishlistItem.id === id);
+    if (!item) return;
+    removeItem(id);
+    const result = await removeWishlistItemAction(id);
+    if (result.success) setItems(result.items);
+    else if (result.error !== "Non authentifié") {
+      useWishlist.getState().addItem(item);
+      toast.error(result.error);
+    }
+  };
+
+  const handleClear = async () => {
+    const previousItems = items;
+    clearWishlist();
+    const result = await clearWishlistAction();
+    if (result.success) setItems(result.items);
+    else if (result.error !== "Non authentifié") {
+      setItems(previousItems);
+      toast.error(result.error);
+    }
   };
 
   if (items.length === 0) {
@@ -43,7 +109,7 @@ export default function WishlistPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <HeartOff className="h-16 w-16 text-slate-300" />
         <h1 className="text-2xl font-semibold text-slate-700">Votre liste est vide</h1>
-        <p className="text-slate-500">Vous n'avez pas encore ajouté de coups de cœur.</p>
+        <p className="text-slate-500">Vous n&apos;avez pas encore ajouté de coups de cœur.</p>
         <Button asChild className="bg-cyan-600 hover:bg-cyan-700">
           <Link href="/products">Visitez la boutique</Link>
         </Button>
@@ -59,11 +125,25 @@ export default function WishlistPage() {
           <p className="text-slate-500">{items.length} article(s) sauvegardé(s)</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={clearWishlist} className="text-rose-500 border-rose-200 hover:bg-rose-50">
+          <Button variant="outline" onClick={handleClear} className="text-rose-500 border-rose-200 hover:bg-rose-50">
             <Trash2 className="h-4 w-4 mr-2" /> Vider
           </Button>
-          <Button onClick={handleAddAllToCart} className="bg-cyan-600 hover:bg-cyan-700">
-            <ShoppingCart className="h-4 w-4 mr-2" /> Tout ajouter au panier
+          <Button
+            onClick={handleAddAllToCart}
+            disabled={isAddingAll}
+            className="bg-cyan-600 hover:bg-cyan-700"
+          >
+            {isAddingAll ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Ajout en cours…
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Tout ajouter au panier
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -80,7 +160,7 @@ export default function WishlistPage() {
                 className="object-cover transition-transform group-hover:scale-105"
               />
               <button 
-                onClick={() => removeItem(item.id)}
+                onClick={() => void handleRemove(item.id)}
                 className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"
               >
                 <Trash2 className="h-4 w-4" />

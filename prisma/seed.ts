@@ -5,7 +5,7 @@
 // Le seed atomique canonique vit dans @/prisma/seed/index.ts.
 // Ce fichier sert uniquement de point d'entrée pour Prisma CLI.
 
-import "dotenv/config";
+import "./seed/load-env";
 import { prisma } from "@/lib/prisma";
 import { main } from "@/prisma/seed/index";
 

@@ -13,8 +13,8 @@ export interface SeedCurrency {
   isDefault: boolean;
 }
 
-/** Taux de change initial déterministe (pas de fetch réseau). */
-export const SEED_EXCHANGE_RATE_USD_CDF = 2850;
+import { SEED_EXCHANGE_RATE_USD_CDF } from "../utils/currency";
+export { SEED_EXCHANGE_RATE_USD_CDF } from "../utils/currency";
 
 export const CURRENCIES: SeedCurrency[] = [
   {

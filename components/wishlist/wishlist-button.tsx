@@ -5,12 +5,14 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import { Heart } from "lucide-react";
 import { useWishlist, WishlistItem } from "@/store/use-wishlist";
 import { cn } from "@/lib/utils/utils";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { addWishlistItemAction, removeWishlistItemAction } from "@/lib/actions/wishlist.actions";
 
 interface WishlistButtonProps {
   product: WishlistItem;
@@ -19,24 +21,27 @@ interface WishlistButtonProps {
 }
 
 export function WishlistButton({ product, showLabel = false, className }: WishlistButtonProps) {
-  const [mounted, setMounted] = useState(false);
-  const { toggleItem, isInWishlist } = useWishlist();
+  const mounted = useMounted();
+  const { toggleItem, isInWishlist, setItems } = useWishlist();
   
   // Sécurité : Vérifie l'existence de product avant d'accéder à .id
   const active = (mounted && product?.id) ? isInWishlist(product.id) : false;
 
   if (!product) return null; // Un bouton de toggle sans produit n'a pas de sens visuel
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const handleToggle = (e: React.MouseEvent) => {
+  const handleToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     toggleItem(product);
-    
-    if (!active) {
+    const result = active ? await removeWishlistItemAction(product.id) : await addWishlistItemAction(product.id);
+    if (result.success) {
+      setItems(result.items);
+    } else if (result.error !== "Non authentifié") {
+      toggleItem(product);
+      toast.error(result.error);
+      return;
+    }
+    if (!active && (result.success || result.error === "Non authentifié")) {
       toast.success(`${product.name} ajouté aux favoris`);
     }
   };

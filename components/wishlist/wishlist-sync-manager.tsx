@@ -6,26 +6,34 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useWishlist } from "@/store/use-wishlist";
-import { syncWishlistAction } from "@/lib/actions/actions/wishlist.actions";
+import { syncWishlistAction } from "@/lib/actions/wishlist.actions";
 
 export function WishlistSyncManager() {
-  const { data: session } = authClient.useSession();
-  const { items } = useWishlist();
+  const { data: session, isPending } = authClient.useSession();
+  const items = useWishlist((state) => state.items);
+  const setItems = useWishlist((state) => state.setItems);
+  const syncedUserId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (session?.user && items.length > 0) {
-      const handleSync = async () => {
-        const result = await syncWishlistAction(items);
-        if (result.success) {
-          console.log("Wishlist synchronisée");
-        }
-      };
-      handleSync();
+    if (isPending || !session?.user?.id || syncedUserId.current === session.user.id) return;
+    const localItems = items;
+    syncedUserId.current = session.user.id;
+    void syncWishlistAction(localItems).then((result) => {
+      if (result.success) setItems(result.items);
+      else syncedUserId.current = null;
+    });
+  }, [isPending, items, session?.user?.id, setItems]);
+
+  useEffect(() => {
+    if (!isPending && !session?.user?.id && syncedUserId.current) {
+      // Do not leak a previous account's server wishlist into the next session.
+      setItems([]);
+      syncedUserId.current = null;
     }
-  }, [session, items.length]);
+  }, [isPending, session?.user?.id, setItems]);
 
   return null;
 }

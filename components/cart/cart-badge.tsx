@@ -7,21 +7,16 @@
 "use client";
 
 import { useCartStore } from "@/store/use-cart";
-import { useEffect, useState } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 
 export function CartBadge() {
   const items = useCartStore((state) => state.items); // Accès aux articles du panier via Zustand
-  const [mounted, setMounted] = useState(false); // État pour gérer l'hydratation côté client
+  const mounted = useMounted(); // Garde d'hydratation : le store client n'est lisible qu'après montage
 
   // Calcul de la quantité totale via la logique Zustand
   const totalQuantity = items.reduce((total, item) => total + item.quantity, 0); // Somme des quantités de chaque article pour obtenir la quantité totale
 
-  // Hydratation sécurisée pour éviter les mismatches avec le SSR
-  useEffect(() => {
-    setMounted(true); // Marque le composant comme monté une fois que le composant est rendu côté client
-  }, []);
-
-  if (!mounted || totalQuantity === 0) return null; // Ne pas afficher le badge si le composant n'est pas monté ou si la quantité totale est zéro
+  if (!mounted || totalQuantity === 0) return null; // Ne pas afficher le badge tant que le store client n'est pas hydraté
 
   return (
     <div className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-600 text-[11px] font-medium text-white animate-in fade-in zoom-in duration-300">

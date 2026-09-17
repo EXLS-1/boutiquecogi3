@@ -4,6 +4,9 @@
 // Toutes les valeurs sont immutables et définies au niveau du module.
 // =============================================================================
 
+import { getConfiguredExchangeRate } from "./exchange-rate-env";
+
+
 /** URL officielle de la Banque Centrale du Congo (BCC) */
 export const BCC_URL = "https://www.bcc.cd/taux-de-change" as const;
 
@@ -16,13 +19,11 @@ export const CACHE_KEY = "LATEST_USD_CDF_RATE" as const;
 /** Durée de vie du cache mémoire L1 (1 heure en ms) */
 export const MEMORY_CACHE_TTL_MS = 3_600_000 as const;
 
-/** Taux de fallback par défaut lorsque toutes les sources sont indisponibles */
-export const DEFAULT_USD_TO_CDF_RATE = 2_400 as const;
+/** Taux par défaut et de secours : une seule source, EXCHANGE_RATE_CDF. */
+export const DEFAULT_USD_TO_CDF_RATE = getConfiguredExchangeRate();
 
-/** Taux de fallback d'urgence depuis les variables d'environnement */
-export const FALLBACK_EXCHANGE_RATE = Number(
-  process.env.FALLBACK_EXCHANGE_RATE ?? "2400",
-);
+/** Alias conservé pour les consommateurs existants. */
+export const FALLBACK_EXCHANGE_RATE = DEFAULT_USD_TO_CDF_RATE;
 
 /** Bornes de validation du taux USD/CDF */
 export const RATE_BOUNDS = {

@@ -14,6 +14,7 @@ import Footer from "@/components/footer";
 import RootProvider from "@/components/providers/root-provider";
 import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { CartSyncManager } from "@/components/cart/cart-sync-manager";
+import { WishlistSyncManager } from "@/components/wishlist/wishlist-sync-manager";
 import { setRedisLogger } from "@/lib/redis";
 import { logger } from "@/lib/logger"; // Votre logger Winston/Pino
 
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.variable} ${playfair.variable} ${lato.variable} ${cormorant.variable} antialiased font-sans`}>
         <RootProvider session={authSession}>
           <CartSyncManager />
+          <WishlistSyncManager />
           {/* Injection directe de la session pour supprimer le délai d'hydratation */}
           <Navbar />
 

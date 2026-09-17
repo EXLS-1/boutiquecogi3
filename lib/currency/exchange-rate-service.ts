@@ -6,8 +6,10 @@ import {
 } from "./exchange-rate-cache";
 import { Prisma } from "@prisma/client";
 
+import { FALLBACK_EXCHANGE_RATE } from "./exchange-rate-constants";
+
 const BCC_API_URL = "https://www.bcc.cd/..."; // Votre endpoint BCC
-const DEFAULT_RATE = new Prisma.Decimal(2800); // Fallback conservateur
+const DEFAULT_RATE = new Prisma.Decimal(FALLBACK_EXCHANGE_RATE);
 
 /**
  * Récupère le taux depuis le cache DB (lecture < 50ms).

@@ -6,11 +6,13 @@
 import { Currency, PaymentStatus, PaymentMethodType } from "@prisma/client";
 import { generateDeterministicUuidV7 } from "../utils/uuid";
 import { createSeededRandom, randInt, pick } from "../utils/random";
+import { usdCentsToCdf } from "../utils/currency";
+
 
 export interface GeneratedPayment {
   id: string;
   orderId: string;
-  amount: number; // cents
+  amount: number; // cents pour USD, francs pour CDF
   currency: Currency;
   status: PaymentStatus;
   method: PaymentMethodType;
@@ -38,9 +40,9 @@ export function buildPaymentFactory(
   options: { status?: PaymentStatus; currency?: Currency } = {},
 ): GeneratedPayment {
   const rand = createSeededRandom(seedNumber, "payment", index);
-  // Pour CDF, le montant est en francs (conversion approximative x2850)
+  // Pour CDF, convertir les cents USD en francs au taux configuré.
   const currency = options.currency ?? Currency.USD;
-  const amount = currency === "USD" ? totalAmountCents : Math.round(totalAmountCents * 2850);
+  const amount = currency === "USD" ? totalAmountCents : usdCentsToCdf(totalAmountCents);
 
   const status = options.status ?? PaymentStatus.COMPLETED;
   const paidAt =
