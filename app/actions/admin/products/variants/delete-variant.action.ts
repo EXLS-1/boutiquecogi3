@@ -58,8 +58,8 @@ export async function deleteVariantAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${variant.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("VARIANT_DELETED", "Variante supprimée avec succès", {
       variantId: data.variantId,

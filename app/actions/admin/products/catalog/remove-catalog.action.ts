@@ -58,8 +58,8 @@ export async function removeCatalogAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
     revalidatePath(`/admin/products/catalogs`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("CATALOG_REMOVED", "Catalogue retiré avec succès", {
       productId: data.productId,

@@ -5,6 +5,11 @@ import { ProductStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit/product-audit.index";
 import { ProductServiceError } from "./product.service";
+import {
+  findProductById,
+  findVariantById,
+  findPriceById,
+} from "./product-lookups";
 
 // Interface pour les données de mise à jour
 interface UpdateProductInput {
@@ -19,34 +24,17 @@ interface UpdateProductInput {
   tagIds?: string[];
 }
 
-// RECHERCHE
+// RECHERCHE — délégation au module de lectures partagé (source unique des includes)
 export async function getProductById(productId: string) {
-  return prisma.product.findUnique({
-    where: { id: productId },
-    include: {
-      variants: { include: { variantStocks: true } },
-      productPrices: true,
-      productImages: { orderBy: { position: "asc" } },
-      statusHistory: { orderBy: { changedAt: "desc" } },
-      categoryProducts: { include: { category: true } },
-      catalogs: { include: { catalog: true } },
-      productTags: { include: { tag: true } },
-    },
-  });
+  return findProductById(productId);
 }
 
 export async function getVariantById(variantId: string) {
-  return prisma.productVariant.findUnique({
-    where: { id: variantId },
-    include: { variantStocks: true, product: true },
-  });
+  return findVariantById(variantId);
 }
 
 export async function getPriceById(priceId: string) {
-  return prisma.productPrice.findUnique({
-    where: { id: priceId },
-    include: { product: { select: { id: true } } },
-  });
+  return findPriceById(priceId);
 }
 
 // MISE À JOUR

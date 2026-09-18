@@ -35,7 +35,8 @@ export interface DeletedAccountRegistryItem {
   userId: string;
   userEmail: string;
   userName: string | null;
-  deletedBy: string;
+  /** Nullable en base : `deletedBy String? @db.Uuid` (onDelete: SetNull). */
+  deletedBy: string | null;
   deletedByRole: string;
   reason: string;
   createdAt: Date;

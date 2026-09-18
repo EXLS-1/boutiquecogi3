@@ -58,8 +58,8 @@ export async function detachTagsAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
     revalidatePath(`/admin/products/tags`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("TAGS_DETACHED", "Tags détachés avec succès", result);
   } catch (error) {

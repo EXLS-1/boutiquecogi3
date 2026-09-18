@@ -55,8 +55,8 @@ export async function restoreProductAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRODUCT_RESTORED", "Produit restauré avec succès", {
       productId: data.productId,

@@ -275,6 +275,12 @@ export const PERMISSIONS = {
   "audit:approve-request": "audit:approve-request",
   "audit:view-logs": "audit:view-logs",
 
+  // ─── Permissions atomiques (canoniques) ───
+  // NOTE: les clés legacy (products:moderate, products:bulk-edit…) sont conservées
+  // mais le type PermissionCode accepte désormais toute string pour la
+  // compatibilité ascendante (aliases métier, permissions dashboard…).
+  // Le contrôle réel reste effectué via hasPermission()/resolvePermissionCode().
+
   USERS_READ: "users:read",
   USERS_CREATE: "users:create",
   USERS_UPDATE: "users:update",

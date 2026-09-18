@@ -57,8 +57,8 @@ export async function submitProductAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRODUCT_SUBMITTED", "Produit soumis pour approbation", {
       productId: data.productId,

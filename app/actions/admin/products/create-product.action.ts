@@ -32,7 +32,7 @@ const CreateProductInputSchema = z.object({
   compareAtPrice: z.number().optional(),
   variants: z.array(z.object({
     sku: z.string().optional(),
-    attributes: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
+    attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
     priceOffset: z.number().optional(),
     initialStock: z.number().min(0, "Le stock initial ne peut pas être négatif"),
   })).optional(),

@@ -62,8 +62,8 @@ export async function updatePriceAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${price.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRICE_UPDATED", "Prix mis à jour avec succès", {
       priceId: data.priceId,

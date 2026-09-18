@@ -12,6 +12,7 @@
 // RBAC requis : ADMIN+ (minRoleLevel: 2)
 // Permissions : audit:view-logs (lecture), users:update (restauration)
 
+import { Prisma } from "@prisma/client";
 import { withSecurePrisma } from "@/server/core/secure-prisma";
 import { PERMISSIONS } from "@/lib/auth/rbac";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
@@ -38,13 +39,19 @@ export interface DeletedAccountRegistryItem {
   userId: string;
   userEmail: string;
   userName: string | null;
-  deletedBy: string;
+  /**
+   * `DeletedAccountRegistry.deletedBy` est nullable en base
+   * (`String? @db.Uuid` avec `onDelete: SetNull`) : un compte supprimé par un
+   * utilisateur lui-même effacé depuis conserve donc `deletedBy === null`.
+   */
+  deletedBy: string | null;
   deletedByRole: string;
   reason: string;
   createdAt: Date;
   restoredAt: Date | null;
   restoredBy: string | null;
   restoreNote: string | null;
+  /** Relation Prisma `deletedByUser` : l'auteur de la suppression, s'il existe encore. */
   deletedByUser: {
     id: string;
     name: string | null;
@@ -55,12 +62,58 @@ export interface DeletedAccountRegistryItem {
 export interface DeletedAccountRegistryDetail extends DeletedAccountRegistryItem {
   userSnapshot: unknown;
   metadata: unknown;
+  /**
+   * Compte supprimé (la cible, pas l'auteur). Il n'existe aucune relation Prisma
+   * vers ce compte (`DeletedAccountRegistry` ne porte pas de FK vers lui) :
+   * l'objet est donc dérivé de la ligne de registre (identité figée au moment
+   * de la suppression) et de l'état de restauration.
+   */
   deletedUser: {
     id: string;
     email: string;
     name: string | null;
     isDeleted: boolean;
   } | null;
+}
+
+// ─── Sélecteurs / mappers ───────────────────
+
+/** La relation `deletedByUser` telle que sélectionnée (jamais l'auteur fantôme). */
+const DELETED_BY_USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+} as const satisfies Prisma.UserSelect;
+
+/** Ligne de registre minimale suffisante pour projeter la cible supprimée. */
+interface RegistryIdentityRow {
+  userId: string;
+  userEmail: string;
+  userName: string | null;
+  restoredAt: Date | null;
+}
+
+/**
+ * Projette le compte supprimé (cible) à partir de la ligne de registre.
+ * `isDeleted` reste vrai tant que l'entrée n'a pas été restaurée : c'est
+ * exactement la sémantique du registre (aucune suppression physique).
+ */
+function mapDeletedUser(
+  row: RegistryIdentityRow,
+): NonNullable<DeletedAccountRegistryDetail["deletedUser"]> {
+  return {
+    id: row.userId,
+    email: row.userEmail,
+    name: row.userName,
+    isDeleted: row.restoredAt === null,
+  };
+}
+
+/** Normalise la relation `deletedByUser` (undefined Prisma → null métier). */
+function mapDeletedByUser(
+  user: { id: string; name: string | null; email: string } | null | undefined,
+): DeletedAccountRegistryItem["deletedByUser"] {
+  return user ? { id: user.id, name: user.name, email: user.email } : null;
 }
 
 export interface ListDeletedAccountsResult {
@@ -120,14 +173,8 @@ export const DeletedAccountRegistryService = {
           ctx.prisma.deletedAccountRegistry.findMany({
             where,
             include: {
-              deletedUser: {
-                select: {
-                  id: true,
-                  email: true,
-                  name: true,
-                  isDeleted: true,
-                },
-              },
+              // Relation réelle du modèle (l'auteur de la suppression).
+              deletedByUser: { select: DELETED_BY_USER_SELECT },
             },
             orderBy,
             skip: (page - 1) * pageSize,
@@ -148,7 +195,7 @@ export const DeletedAccountRegistryService = {
             restoredAt: entry.restoredAt,
             restoredBy: entry.restoredBy,
             restoreNote: entry.restoreNote,
-            deletedByUser: null,
+            deletedByUser: mapDeletedByUser(entry.deletedByUser),
           })
         );
 
@@ -179,14 +226,8 @@ export const DeletedAccountRegistryService = {
         const entry = await ctx.prisma.deletedAccountRegistry.findUnique({
           where: { id: registryId },
           include: {
-            deletedUser: {
-              select: {
-                id: true,
-                email: true,
-                name: true,
-                isDeleted: true,
-              },
-            },
+            // Relation réelle du modèle (l'auteur de la suppression).
+            deletedByUser: { select: DELETED_BY_USER_SELECT },
           },
         });
 
@@ -211,8 +252,8 @@ export const DeletedAccountRegistryService = {
           restoreNote: entry.restoreNote,
           userSnapshot: entry.userSnapshot,
           metadata: entry.metadata,
-          deletedByUser: null,
-          deletedUser: entry.deletedUser,
+          deletedByUser: mapDeletedByUser(entry.deletedByUser),
+          deletedUser: mapDeletedUser(entry),
         };
       },
       {

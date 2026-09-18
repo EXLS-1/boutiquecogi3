@@ -54,8 +54,8 @@ export async function scheduleProductAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRODUCT_SCHEDULED", "Produit programmé pour publication", {
       productId: data.productId,

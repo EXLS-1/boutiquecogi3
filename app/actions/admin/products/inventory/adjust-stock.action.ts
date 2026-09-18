@@ -64,8 +64,8 @@ export async function adjustStockAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${variant.productId}`);
     revalidatePath(`/admin/products/${variant.productId}/inventory`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("STOCK_ADJUSTED", "Stock ajusté avec succès", result);
   } catch (error) {

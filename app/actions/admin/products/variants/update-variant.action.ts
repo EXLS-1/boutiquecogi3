@@ -15,7 +15,7 @@ import { ProductServiceError } from "@/lib/products/product.service";
 const UpdateVariantSchema = z.object({
   variantId: z.string().uuid("ID de variante invalide"),
   sku: z.string().min(3, "Le SKU est trop court").max(64, "Le SKU est trop long").optional(),
-  attributes: z.record(z.string()).optional(),
+  attributes: z.record(z.string(), z.string()).optional(),
   priceOffset: z.number().optional(),
   isActive: z.boolean().optional(),
 });
@@ -60,8 +60,8 @@ export async function updateVariantAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${variant.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("VARIANT_UPDATED", "Variante mise à jour avec succès", {
       variantId: data.variantId,

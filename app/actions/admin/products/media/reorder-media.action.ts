@@ -58,8 +58,8 @@ export async function reorderMediaAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
     revalidatePath(`/admin/products/${data.productId}/media`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("MEDIA_REORDERED", "Médias réordonnancés avec succès", result);
   } catch (error) {

@@ -21,7 +21,7 @@ export const CreateProductSchema = z.object({
   compareAtPrice: z.number().nullable().optional(),
   variants: z.array(z.object({
     sku: z.string().optional(),
-    attributes: z.record(z.string()).optional(),
+    attributes: z.record(z.string(), z.string()).optional(),
     priceOffset: z.number().nullable().optional(),
     initialStock: z.number().min(0),
   })).max(100).optional(),

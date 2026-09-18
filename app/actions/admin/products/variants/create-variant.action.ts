@@ -15,7 +15,7 @@ import { ProductServiceError } from "@/lib/products/product.service";
 const CreateVariantSchema = z.object({
   productId: z.string().uuid("ID de produit invalide"),
   sku: z.string().min(3, "Le SKU est trop court").max(64, "Le SKU est trop long").optional(),
-  attributes: z.record(z.string()).optional(),
+  attributes: z.record(z.string(), z.string()).optional(),
   priceOffset: z.number().optional(),
   initialStock: z.number().min(0, "Le stock initial ne peut pas être négatif"),
 });
@@ -55,8 +55,8 @@ export async function createVariantAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("VARIANT_CREATED", "Variante créée avec succès", result);
   } catch (error) {

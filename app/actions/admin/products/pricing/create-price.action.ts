@@ -58,8 +58,8 @@ export async function createPriceAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRICE_CREATED", "Prix créé avec succès", {
       productId: data.productId,

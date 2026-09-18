@@ -107,8 +107,8 @@ export async function updateProductAction(input: unknown): Promise<ActionResult>
     // 6. Revalidation du cache
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRODUCT_UPDATED", "Produit mis à jour avec succès", {
       productId: data.productId,

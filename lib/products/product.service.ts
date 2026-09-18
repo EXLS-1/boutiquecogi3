@@ -14,9 +14,11 @@
 //   - ProductTypeConfig policy  (product-type/product-type.repository.ts)
 //
 
-import { Prisma, ProductStatus, type PrismaClient } from "@prisma/client";
+import { Prisma, ProductStatus } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isValidUuid } from "@/lib/utils";
+import { Role } from "@prisma/client";
 import type { DynamicProductInput } from "./validationService";
 import { ProductValidationService } from "./validationService";
 import {
@@ -24,13 +26,67 @@ import {
   ProductWorkflowError,
 } from "./product-workflow";
 import { resolveProductPrice } from "@/lib/product-pricing/pricing.service";
-import { adjustVariantStock } from "@/lib/product-inventory/inventory.service";
-import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit";
+import {
+  adjustVariantStock,
+} from "@/lib/product-inventory/inventory.service";
+import {
+  recordProductAudit,
+  PRODUCT_AUDIT_ACTIONS,
+} from "@/lib/product-audit";
 import { checkVariantLimit } from "@/lib/product-type";
-import { normalizeCategoryIds, validateCategoriesExist, syncProductCategories } from "@/server/services/product-category-sync";
+import {
+  normalizeCategoryIds,
+  syncProductCategories,
+  validateCategoriesExist,
+} from "@/server/services/product-category-sync";
+
+import {
+  findProductById,
+  findVariantById,
+  findPriceById,
+} from "./product-lookups";
+
+/** Acteur de mutation (contrôle d'accès déjà vérifié côté Server Action). */
+export interface ProductActor {
+  userId: string;
+  role?: Role | string;
+  reason?: string;
+}
+
+/** Résultat de création (objet stable — pas d'ID nu). */
+export interface CreateProductResult {
+  productId: string;
+  slug: string;
+  variantCount: number;
+  totalStock: number;
+}
+
+/** Payload accepté par la façade create (schéma strict + acteur/audit optionnels). */
+export type CreateProductFacadeInput = DynamicProductInput & {
+  actor?: ProductActor;
+  context?: unknown;
+  auditContext?: unknown;
+};
+
+/** Payload accepté par la façade update (partiel + acteur/audit optionnels). */
+export type UpdateProductFacadeInput = Partial<DynamicProductInput> & {
+  actor?: ProductActor;
+  context?: unknown;
+  auditContext?: unknown;
+};
 
 export class ProductServiceError extends Error {
-  constructor(message: string, public code: string, public statusCode = 400, options?: ErrorOptions) {
+  constructor(
+    message: string,
+    public code: string,
+    public statusCode = 400,
+    options?: ErrorOptions,
+    /**
+     * Charge utile structurée (erreurs de champs, identifiants…) remontée telle
+     * quelle par les Server Actions via `actionError(code, message, details)`.
+     */
+    public details?: Record<string, unknown>,
+  ) {
     super(message, options);
     this.name = "ProductServiceError";
   }
@@ -362,6 +418,30 @@ export class ProductService {
         stock: { select: { quantity: true, reserved: true } },
       },
     });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LECTURES PARTAGÉES (consommées par les Server Actions produit)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Délèguent à `product-lookups.ts` : les includes sont définis une seule fois
+  // et restent identiques à ceux de `product-service-helpers.ts`.
+
+  /** Produit complet (variantes, stocks, prix, images, catégories, tags, catalogues). */
+  static getProductById(productId: string) {
+    return findProductById(productId);
+  }
+
+  /**
+   * Variante + stocks + produit parent : le `productId` est donc disponible
+   * pour la revalidation de chemin côté action.
+   */
+  static getVariantById(variantId: string) {
+    return findVariantById(variantId);
+  }
+
+  /** Prix produit + produit porteur (contrôle d'appartenance avant mutation). */
+  static getPriceById(priceId: string) {
+    return findPriceById(priceId);
   }
 }
 

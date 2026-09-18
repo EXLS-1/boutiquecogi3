@@ -1,4 +1,4 @@
-// lib/inventory.ts
+// lib/security/inventory.ts
 // Ce module gère la logique d'inventaire, notamment la réconciliation entre le snapshot de stock et les transactions d'inventaire (ledger).
 // La fonction `calculateRealStock` est essentielle pour garantir l'exactitude du stock affiché et pour identifier les éventuelles divergences qui pourraient survenir en raison de problèmes de synchronisation ou d'erreurs humaines.
 // En cas de divergence, un avertissement est loggé pour alerter les développeurs ou les administrateurs, et une action corrective peut être envisagée pour resynchroniser le stock.
@@ -826,8 +826,4 @@ export async function releaseStock(
 export {
   INVENTORY_PERMISSIONS,
   hasPermission,
-  InventoryError,
-  InventoryPermissionError,
-  InventoryValidationError,
-  InventorySyncError,
 };

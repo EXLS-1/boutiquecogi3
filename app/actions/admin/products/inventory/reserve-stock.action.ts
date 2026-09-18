@@ -66,8 +66,8 @@ export async function reserveStockAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${variant.productId}`);
     revalidatePath(`/admin/products/${variant.productId}/inventory`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("STOCK_RESERVED", "Stock réservé avec succès", result);
   } catch (error) {

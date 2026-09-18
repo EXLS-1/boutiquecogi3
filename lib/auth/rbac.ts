@@ -1089,6 +1089,60 @@ export async function resolveEffectiveRestrictions(
 // 8. API PUBLIQUE
 // ───────────────────────────────────────────
 
+/**
+ * Alias historiques → codes canoniques du catalogue `PERMISSIONS`.
+ * Les Server Actions produit valident leurs prérequis via un code littéral
+ * qui peut dater d'une nomenclature antérieure (singulier `product:*`,
+ * `settings:system_config`, `payments:*`, `media:organize`, …).
+ * La résolution se fait ici, en un seul endroit, pour éviter la divergence
+ * silencieuse entre le catalogue et les actions.
+ */
+const PERMISSION_ALIASES: Record<string, Permission> = {
+  "product:read": PERMISSIONS["products:read"],
+  "product:create": PERMISSIONS["products:create"],
+  "product:edit:own": PERMISSIONS["products:update"],
+  "product:edit:any": PERMISSIONS["products:update"],
+  "product:delete:own": PERMISSIONS["products:delete"],
+  "product:delete:any": PERMISSIONS["products:delete"],
+  "product:moderate": PERMISSIONS["products:update"],
+  "settings:system_config": PERMISSIONS["system:config"],
+  "payments:configure": PERMISSIONS["settings:billing"],
+  "payments:view_analytics": PERMISSIONS["analytics:read"],
+  "media:organize": PERMISSIONS["media:manage"],
+  "orders:process_refund": PERMISSIONS["orders:refund"],
+  "users:search": PERMISSIONS["users:search:filter"],
+};
+
+/**
+ * Résout un code de permission (canonique ou alias) vers le code canonique.
+ *
+ * @throws RoleEvaluationError si le code est inconnu du catalogue — on échoue
+ * fermé (fail-closed) plutôt que de laisser passer une action non contrôlée.
+ */
+export function resolvePermissionCode(code: string): Permission {
+  const canonical =
+    (PERMISSIONS as Record<string, Permission | undefined>)[code] ??
+    PERMISSION_ALIASES[code];
+
+  if (!canonical) {
+    throw new RoleEvaluationError(
+      `Permission inconnue : '${code}'. Ajoutez-la au catalogue PERMISSIONS ou à PERMISSION_ALIASES.`,
+      "UNKNOWN_PERMISSION",
+    );
+  }
+
+  return canonical;
+}
+
+/** Variante non bloquante : `null` si le code n'appartient pas au catalogue. */
+export function tryResolvePermissionCode(code: string): Permission | null {
+  try {
+    return resolvePermissionCode(code);
+  } catch {
+    return null;
+  }
+}
+
 export async function hasPermission(
   role: Role,
   permission: Permission,

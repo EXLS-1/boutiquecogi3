@@ -53,8 +53,8 @@ export async function rejectProductAction(input: unknown) {
 
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRODUCT_REJECTED", "Produit rejeté et retourné en brouillon", {
       productId: data.productId,

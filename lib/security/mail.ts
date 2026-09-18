@@ -850,10 +850,6 @@ Boutiquecogi3
 // ─────────────────────────────────────────────────────────────────────────────
 
 export {
-  MailError,
-  MailRateLimitError,
-  MailValidationError,
-  MailProviderError,
   checkEmailRateLimit,
   redactEmail,
   redactLink,

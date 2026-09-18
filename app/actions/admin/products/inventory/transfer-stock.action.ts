@@ -68,8 +68,8 @@ export async function transferStockAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${fromVariant.productId}`);
     revalidatePath(`/admin/products/${fromVariant.productId}/inventory`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("STOCK_TRANSFERRED", "Transfert effectué avec succès", result);
   } catch (error) {

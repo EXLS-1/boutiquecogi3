@@ -66,8 +66,8 @@ export async function releaseStockAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${variant.productId}`);
     revalidatePath(`/admin/products/${variant.productId}/inventory`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("STOCK_RELEASED", "Stock libéré avec succès", result);
   } catch (error) {

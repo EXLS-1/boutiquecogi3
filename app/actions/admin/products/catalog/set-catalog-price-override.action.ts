@@ -59,8 +59,8 @@ export async function setCatalogPriceOverrideAction(input: unknown) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${data.productId}`);
     revalidatePath(`/admin/products/${data.productId}/pricing`);
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("CATALOG_PRICE_OVERRIDE_SET", "Prix de surcharge défini avec succès", {
       productId: data.productId,

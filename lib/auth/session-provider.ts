@@ -1,3 +1,5 @@
+// lib/auth/session-provider.ts
+
 import { headers } from "next/headers";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
@@ -76,4 +78,16 @@ export async function getCurrentUserFromProvider(): Promise<
   };
 
   return Object.assign(user, { session });
+}
+
+/**
+ * Garde d'authentification pour les Server Actions.
+ *
+ * Contrat volontairement différent de `rbac.requireAuth` (qui `redirect()`) :
+ * dans une Server Action, `redirect()` interrompt la réponse et empêche de
+ * renvoyer une erreur typée à l'UI. On renvoie donc `null` pour laisser
+ * l'action produire `actionError("UNAUTHORIZED", …)`.
+ */
+export async function requireAuth(): Promise<AuthenticatedUser | null> {
+  return getCurrentUserFromProvider();
 }

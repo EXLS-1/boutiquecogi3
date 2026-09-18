@@ -32,7 +32,7 @@ function getErrorCode(error: unknown): string {
   if (error instanceof AccountAdminServiceError) return error.code;
   if (error instanceof AuthorizationError) return error.code;
   if (error instanceof Error && "code" in error)
-    return (error as unknown).code || "UNKNOWN_ERROR";
+    return (error as unknown as { code: string }).code || "UNKNOWN_ERROR";
   return "INTERNAL_ERROR";
 }
 

@@ -81,7 +81,7 @@ const NotificationSchema = z.object({
 });
 
 const ExtendedDataSchema = z.object({
-  headers: z.record(z.string()).default({}),
+  headers: z.record(z.string(), z.string()).default({}),
   body: z.string().default(""),
 });
 

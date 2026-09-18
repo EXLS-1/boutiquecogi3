@@ -72,6 +72,7 @@ const variantInputSchema = z.object({
 const createDraftSchema = z.object({
   name: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères").max(200),
   basePrice: z.number().nonnegative("Le prix doit être positif ou nul"),
+  productTypeId: z.string().uuid().optional().nullable(),
   description: z.string().max(10000).optional().nullable(),
   categoryId: z.string().uuid().optional().nullable(),
   images: z.array(z.string().min(1)).max(20).optional(),
@@ -156,6 +157,19 @@ function serializeVariant(v: {
   };
 }
 
+/**
+ * Prisma distingue les JSON en lecture (`JsonValue`, potentiellement `null`)
+ * des JSON en écriture (`InputJsonValue`). Les colonnes `Json` du domaine
+ * produit/variante étant NON nullables, on normalise toute valeur absente
+ * vers un objet vide plutôt que d'écrire `null`.
+ */
+function toInputJson(
+  value: Prisma.JsonValue | null | undefined,
+): Prisma.InputJsonValue {
+  if (value === null || value === undefined) return {};
+  return value as Prisma.InputJsonValue;
+}
+
 /** Génère un couple slug/SKU garanti unique en base (avec retries). */
 async function ensureUniqueIdentifiers(
   name: string,
@@ -184,6 +198,39 @@ async function ensureUniqueIdentifiers(
     if (!exists) return { slug: finalSlug, sku };
   }
   return null;
+}
+
+/**
+ * `Product.productTypeId` est une FK OBLIGATOIRE (`String @db.Uuid`, onDelete:
+ * Restrict) : toute création doit résoudre un ProductTypeConfig actif.
+ * Ordre de préférence : type explicitement demandé → type actif par défaut →
+ * premier type actif disponible.
+ */
+async function resolveProductTypeId(
+  preferredId?: string | null,
+): Promise<string | null> {
+  if (preferredId) {
+    const preferred = await prisma.productTypeConfig.findFirst({
+      where: { id: preferredId, isActive: true },
+      select: { id: true },
+    });
+    if (preferred) return preferred.id;
+    return null;
+  }
+
+  const fallback =
+    (await prisma.productTypeConfig.findFirst({
+      where: { isActive: true, isDefault: true },
+      select: { id: true },
+      orderBy: { id: "asc" },
+    })) ??
+    (await prisma.productTypeConfig.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+      orderBy: { id: "asc" },
+    }));
+
+  return fallback?.id ?? null;
 }
 
 /** Convertit une erreur en résultat d'action typé. */
@@ -217,8 +264,9 @@ function toActionError(error: unknown): DraftActionResult<never> {
 }
 
 function revalidateDraftPaths(productId?: string) {
-  revalidatePath("/admin/product/drafts");
-  revalidatePath("/admin/product");
+  // Routes réelles de l'app (le segment est `products`, pas `product`).
+  revalidatePath("/admin/products/drafts");
+  revalidatePath("/admin/products");
   revalidatePath("/products");
   if (productId) revalidatePath(`/products/${productId}`);
 }
@@ -320,6 +368,17 @@ export async function createDraftProductAction(
       return { success: false, error: "Impossible de générer un slug/SKU unique", code: "CONFLICT" };
     }
 
+    // FK obligatoire : sans type de produit actif, la création est impossible.
+    const productTypeId = await resolveProductTypeId(data.productTypeId);
+    if (!productTypeId) {
+      return {
+        success: false,
+        error: "Aucun type de produit actif disponible",
+        code: "VALIDATION_ERROR",
+        fieldErrors: { productTypeId: ["Type de produit introuvable ou inactif"] },
+      };
+    }
+
     const product = await prisma.product.create({
       data: {
         id: generateUUIDv7(),
@@ -329,6 +388,7 @@ export async function createDraftProductAction(
         description: data.description ?? "",
         price: data.basePrice,
         basePrice: data.basePrice,
+        productTypeId,
         categoryId: data.categoryId ?? null,
         userId: auth.ctx.userId,
         createdBy: auth.ctx.userId,
@@ -496,25 +556,28 @@ export async function updateDraftProductAction(
       }
     }
 
-    // Si le prix de base change et que price n'était pas personnalisé, on l'aligne.
+    // Si le prix de base change et que `price` n'était pas personnalisé, on l'aligne.
+    // `price` / `basePrice` sont des `Decimal?` : on ne compare que des valeurs
+    // non nulles, et `.equals()` n'est jamais appelé sur `null`.
     const previous = await prisma.product.findUnique({
       where: { id: productId },
       select: { price: true, basePrice: true },
     });
+    const priceWasAligned =
+      previous?.price != null &&
+      previous.basePrice != null &&
+      previous.price.equals(previous.basePrice);
     const alignPrice =
-      data.basePrice !== undefined &&
-      previous &&
-      previous.price.equals(previous.basePrice)
-        ? data.basePrice
-        : undefined;
+      data.basePrice !== undefined && priceWasAligned ? data.basePrice : undefined;
 
+    // `description` est NON nullable en base (`String @db.Text`) : `null` reçu du
+    // client signifie « vider la description » (→ chaîne vide), jamais écrire null.
+    const { description, ...scalars } = data;
     const updated = await prisma.product.update({
       where: { id: productId },
       data: {
-        ...data,
-        ...(data.description === null || data.description === undefined
-          ? { description: undefined }
-          : {}),
+        ...scalars,
+        ...(description !== undefined ? { description: description ?? "" } : {}),
         ...(alignPrice !== undefined ? { price: alignPrice } : {}),
         updatedBy: auth.ctx.userId,
       },
@@ -636,6 +699,8 @@ export async function duplicateDraftProductAction(
         price: source.price,
         basePrice: source.basePrice,
         currency: source.currency,
+        // FK obligatoire héritée de la source (Product.productTypeId non nullable).
+        productTypeId: source.productTypeId,
         categoryId: source.categoryId,
         userId: auth.ctx.userId,
         createdBy: auth.ctx.userId,
@@ -658,7 +723,9 @@ export async function duplicateDraftProductAction(
           create: source.variants.map((v) => ({
             id: generateUUIDv7(),
             sku: generateSKU(v.sku || source.name),
-            attributes: v.attributes,
+            // `attributes` est un `Json` NON nullable : on normalise vers un
+            // objet JSON d'entrée valide (jamais `null`).
+            attributes: toInputJson(v.attributes),
             priceOffset: v.priceOffset,
           })),
         },

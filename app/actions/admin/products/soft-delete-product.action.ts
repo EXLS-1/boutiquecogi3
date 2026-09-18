@@ -56,8 +56,8 @@ export async function softDeleteProductAction(input: unknown) {
     }, auditContext);
 
     revalidatePath("/admin/products");
-    revalidateTag("admin:products:list");
-    revalidateTag("admin:products:kpis");
+    revalidateTag("admin:products:list", "max");
+    revalidateTag("admin:products:kpis", "max");
 
     return actionSuccess("PRODUCT_DELETED", "Produit supprimé avec succès", {
       productId: data.productId,
