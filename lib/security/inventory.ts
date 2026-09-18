@@ -22,10 +22,6 @@ import { prisma } from "@/lib/prisma";
 import { auditLog, AdminEvent, SecurityEvent } from "@/lib/security/audit";
 import type { RBACLevel } from "@/lib/security/audit";
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ZOD SCHEMAS (Input Validation & Type Safety)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 const VariantIdSchema = z.string().uuid().brand<"VariantId">();
 
 const InventoryAdjustmentSchema = z.object({
@@ -60,10 +56,6 @@ export type InventoryAdjustmentInput = z.infer<typeof InventoryAdjustmentSchema>
 export type ReconcileStockInput = z.infer<typeof ReconcileStockSchema>;
 export type BulkReconcileInput = z.infer<typeof BulkReconcileSchema>;
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// RBAC PERMISSION MATRIX
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 /**
  * Minimum RBAC level required for inventory operations.
  */
@@ -73,6 +65,8 @@ const INVENTORY_PERMISSIONS = {
   RECONCILE_STOCK: ["LEVEL_1", "LEVEL_2", "LEVEL_3"] as RBACLevel[],
   FORCE_SYNC: ["LEVEL_1", "LEVEL_2"] as RBACLevel[],
   BULK_RECONCILE: ["LEVEL_1", "LEVEL_2"] as RBACLevel[],
+        RESERVE_STOCK: ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"] as RBACLevel[],
+  RELEASE_STOCK: ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "GUEST"] as RBACLevel[],
 } as const;
 
 function hasPermission(
@@ -81,11 +75,6 @@ function hasPermission(
 ): boolean {
   return INVENTORY_PERMISSIONS[permission].includes(level);
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// CUSTOM ERROR HIERARCHY (Atomic Error Handling)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export class InventoryError extends Error {
   constructor(
     message: string,
@@ -124,11 +113,6 @@ export class InventorySyncError extends InventoryError {
     this.name = "InventorySyncError";
   }
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// STOCK CALCULATION (Core Business Logic)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export interface StockReconciliationResult {
   variantId: string;
   sku: string;
@@ -252,11 +236,6 @@ export async function calculateRealStock(
     );
   }
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// STOCK ADJUSTMENT (Atomic Transaction)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export interface StockAdjustmentResult {
   transactionId: string;
   variantId: string;
@@ -422,11 +401,6 @@ export async function adjustStock(
     );
   }
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// STOCK RECONCILIATION (With Optional Force Sync)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export interface ReconcileResult extends StockReconciliationResult {
   wasSynced: boolean;
   syncActorId?: string;
@@ -483,28 +457,54 @@ export async function reconcileStock(
     const adjustment = reconciliation.ledgerTotal - reconciliation.snapshot;
 
     await prisma.$transaction(async (tx) => {
-      // Create sync adjustment ledger entry
-      await tx.inventoryTransaction.create({
-        data: {
-          // productVariantId is handled differently in this schema
-          quantity: adjustment,
-          type: "SYNC_ADJUSTMENT",
-          reason: `SYNC-ADJUSTMENT` as any,
-          reference: `SYNC-${Date.now()}`,
-          actorId: actorId ?? null,
-          metadata: {
-            previousSnapshot: reconciliation.snapshot,
-            ledgerTotal: reconciliation.ledgerTotal,
-            actorLevel,
-          },
+      // Fetch variant and its linked Stock row (must exist or be created)
+      const variant = await tx.productVariant.findUnique({
+        where: { id: variantId },
+        select: {
+          id: true,
+          productId: true,
+          sku: true,
+          product: { select: { stock: { select: { id: true, quantity: true } } } },
         },
       });
 
-      // Update snapshot to match ledger
-      await tx.productVariant.update({
-        where: { id: variantId },
-        data: { stock: reconciliation.ledgerTotal },
+      if (!variant) {
+        throw new InventoryError(
+          `Variante ${variantId} introuvable pendant la resynchronisation.`,
+          "VARIANT_NOT_FOUND",
+          variantId,
+          "HIGH"
+        );
+      }
+
+      // Create a valid InventoryTransaction ledger entry (uses TransactionType enum values only)
+      await tx.inventoryTransaction.create({
+        data: {
+          productId: variant.productId,
+          variantId: variantId,
+          quantity: adjustment,
+          reason: adjustment >= 0 ? "RESTOCK" : "SHRINKAGE",
+          referenceId: `SYNC-${Date.now()}`,
+          performedBy: actorId ?? null,
+        },
       });
+
+      // Update the Stock row (1:1 on Product) to match the ledger total.
+      // ProductVariant has no 'stock' field; Stock is the canonical 1:1 aggregate.
+      if (variant.product?.stock) {
+        await tx.stock.update({
+          where: { id: variant.product.stock.id },
+          data: { quantity: reconciliation.ledgerTotal },
+        });
+      } else {
+        await tx.stock.create({
+          data: {
+            productId: variant.productId,
+            quantity: reconciliation.ledgerTotal,
+            reserved: 0,
+          },
+        });
+      }
     });
 
     wasSynced = true;
@@ -534,11 +534,6 @@ export async function reconcileStock(
     syncActorId: wasSynced ? (actorId ?? undefined) : undefined,
   };
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// BULK RECONCILIATION (Admin-Only)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export interface BulkReconcileResult {
   processed: number;
   reconciled: number;
@@ -630,11 +625,6 @@ export async function bulkReconcileStock(
     timestamp: new Date().toISOString(),
   };
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// STOCK RESERVATION (Order Lifecycle)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export interface ReservationResult {
   reservationId: string;
   variantId: string;
@@ -695,10 +685,9 @@ export async function reserveStock(
         );
       }
 
-      const reservedQuantity = (variant as any).reservations?.reduce(
-        (sum, r) => sum + r.quantity,
-        0
-      );
+      // Safe reduction — reservations is always included above; no `as any` cast needed
+      const reservations = variant.reservations ?? [];
+      const reservedQuantity = reservations.reduce((sum, r) => sum + r.quantity, 0);
       const availableStock = variant.stock - reservedQuantity;
 
       if (availableStock < quantity) {
@@ -714,8 +703,8 @@ export async function reserveStock(
       const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
       const reservation = await tx.stockReservation.create({
         data: {
-          // productVariantId is handled differently in this schema
           orderId,
+          variantId: variantId,
           quantity,
           status: "ACTIVE",
           expiresAt,
@@ -749,10 +738,6 @@ export async function reserveStock(
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// STOCK RELEASE (Order Cancellation/Timeout)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 const ReleaseStockSchema = z.object({
   reservationId: z.string().uuid(),
   reason: z.enum(["ORDER_CANCELLED", "PAYMENT_FAILED", "EXPIRED", "MANUAL"]),
@@ -779,7 +764,7 @@ export async function releaseStock(
     const result = await prisma.$transaction(async (tx) => {
       const reservation = await tx.stockReservation.findUnique({
         where: { id: reservationId },
-        select: { id: true, status: true, quantity: true, productVariantId: true },
+        select: { id: true, status: true, quantity: true, variantId: true },
       });
 
       if (!reservation) {
@@ -802,6 +787,39 @@ export async function releaseStock(
         },
       });
 
+      // ── Restore reserved stock back to the Stock row ──
+      if (reservation.variantId) {
+        const variantStock = await tx.variantStock.findUnique({
+          where: { variantId_warehouseId: { variantId: reservation.variantId, warehouseId: null } },
+          select: { id: true, quantity: true, reserved: true },
+        });
+
+        // Also update the canonical 1:1 Stock row (if exists) for consistency with legacy callers
+        const stockRow = await tx.stock.findFirst({
+          where: { productId: variantStock?.variant?.productId ?? undefined },
+          select: { id: true, quantity: true },
+        });
+
+        if (variantStock) {
+          await tx.variantStock.update({
+            where: { id: variantStock.id },
+            data: {
+              quantity: variantStock.quantity + reservation.quantity,
+              reserved: Math.max(0, variantStock.reserved - reservation.quantity),
+            },
+          });
+        }
+
+        if (stockRow) {
+          await tx.stock.update({
+            where: { id: stockRow.id },
+            data: {
+              quantity: stockRow.quantity + reservation.quantity,
+            },
+          });
+        }
+      }
+
       return { released: true, quantity: reservation.quantity };
     });
 
@@ -818,10 +836,6 @@ export async function releaseStock(
     );
   }
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// EXPORTS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export {
   INVENTORY_PERMISSIONS,

@@ -149,16 +149,16 @@ async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
 async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
     const workbook = new Workbook();
-    // Cast buffer to any to workaround exceljs type issues
-    const loadedWorkbook = await (workbook.xlsx as any).load(buffer);
+    // Use proper Xlsx type for the workbook.xlsx property
+    const loadedWorkbook = await (workbook.xlsx as Xlsx).load(buffer);
     const sheet = loadedWorkbook.worksheets[0];
     if (!sheet) return null;
 
     const rows: string[] = [];
-    sheet.eachRow((row: any) => {
+    sheet.eachRow((row: Row) => {
       rows.push(row.values
         .slice(1)
-        .map((cell: any) => (cell ?? "").toString())
+        .map((cell: Cell | undefined) => (cell ?? "").toString())
         .join(" "));
     });
 

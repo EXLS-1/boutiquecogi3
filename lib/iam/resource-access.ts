@@ -15,7 +15,7 @@ export type ResourceAccessCheck = {
   resource: string;
   resourceId?: string;
 
-  // RÃ¨gles â€œpar ressourceâ€ (issus des configs Prisma)
+  // Règles par ressource (issus des configs Prisma)
   requiredPermission?: Permission | null;
   minRoleLevel?: number | null; // convention existante: level 1 (plus permissif) ... 7 (moins)
 
@@ -86,7 +86,7 @@ export async function assertResourceAccess(
   if (ownership?.ownershipUserId) {
     if (ownership.ownershipUserId !== context.user.id) {
       throw new AuthorizationError(
-        `AccÃ¨s refusÃ©: ownership mismatch pour ${resource} (${action}).`,
+        `Accès refusé: ownership mismatch pour ${resource} (${action}).`,
         "OWNERSHIP_MISMATCH",
         403,
       );
