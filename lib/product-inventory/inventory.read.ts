@@ -1,14 +1,14 @@
-// lib/product-inventory/inventory.read.ts
+﻿// lib/product-inventory/inventory.read.ts
 // =============================================================================
-// INVENTAIRE PRODUIT — Lectures (disponibilité, alertes, KPIs)
+// INVENTAIRE PRODUIT â€” Lectures (disponibilitÃ©, alertes, KPIs)
 // =============================================================================
-// Lectures agées — JAMAIS de chargement complet des mouvements dans Prisma
-// pour calculer une stat (ProductView/StockMovement peuvent être volumineux).
+// Lectures agÃ©es â€” JAMAIS de chargement complet des mouvements dans Prisma
+// pour calculer une stat (ProductView/StockMovement peuvent Ãªtre volumineux).
 
 import { prisma } from "@/lib/prisma";
 import type { InventoryAvailability } from "./inventory.types";
 
-/** Disponibilité d'une variante (couche canonique VariantStock). */
+/** DisponibilitÃ© d'une variante (couche canonique VariantStock). */
 export async function getVariantAvailability(
   variantId: string,
   warehouseId?: string | null
@@ -31,7 +31,7 @@ export async function getVariantAvailability(
   };
 }
 
-/** Disponibilité agrégée d'un produit (somme des variantes, projection incluse). */
+/** DisponibilitÃ© agrÃ©gÃ©e d'un produit (somme des variantes, projection incluse). */
 export async function getProductAvailability(
   productId: string
 ): Promise<{
@@ -76,7 +76,7 @@ export async function getProductAvailability(
   };
 }
 
-/** KPIs dashboard produits (requêtes agrégées — pas de findMany massif). */
+/** KPIs dashboard produits (requÃªtes agrÃ©gÃ©es â€” pas de findMany massif). */
 export async function getInventoryKpis(): Promise<{
   totalProducts: number;
   outOfStock: number;
@@ -111,3 +111,4 @@ export async function getInventoryKpis(): Promise<{
     totalAvailableUnits: (units._sum.quantity ?? 0) - (units._sum.reserved ?? 0),
   };
 }
+

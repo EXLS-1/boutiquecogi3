@@ -1071,7 +1071,6 @@ export function logMethod(context?: LogContext) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export { Logger as LoggerClass };
-export type { LogTransport, LoggerConfig, LogEntry, LogContext, LogLevel };
 
 // Export par défaut
 export default logger;

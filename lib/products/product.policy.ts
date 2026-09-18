@@ -1,16 +1,16 @@
-// lib/products/product.policy.ts
+﻿// lib/products/product.policy.ts
 // =============================================================================
-// PRODUCT POLICY — RBAC niveau produit (3 niveaux)
+// PRODUCT POLICY â€” RBAC niveau produit (3 niveaux)
 // =============================================================================
 // Couche 3 du pipeline RBAC :
 //   1. Permission globale (lib/auth/rbac : hasPermissionOnResult)
 //   2. ProductTypeConfig (whoCan* / minRoleLevel* / requiredPermission*)
-//   3. Ownership (createdBy) pour certaines opérations
+//   3. Ownership (createdBy) pour certaines opÃ©rations
 //
-// Décision binaire + raisons d'échec (audit/UX).
+// DÃ©cision binaire + raisons d'Ã©chec (audit/UX).
 //
 
-import { PERMISSIONS, type PermissionCode, type Role } from "@/lib/auth/rbac";
+import { type PermissionCode, type Role } from "@/lib/auth/rbac";
 import { getProductTypeConfig } from "@/lib/product-type/product-type.repository";
 import type { ProductTypeConfig } from "@prisma/client";
 
@@ -35,7 +35,7 @@ function _decide(
   const reasons: string[] = [];
 
   // 1. Permission globale
-  const permMap: Record<typeof operation, PermissionCode> = {
+  const permMap: Record<typeof operation, string> = {
     create: config.requiredPermissionCreate,
     edit: config.requiredPermissionEdit,
     delete: config.requiredPermissionDelete,
@@ -49,7 +49,7 @@ function _decide(
     reasons.push(`Permission requise manquante : ${requiredPermission}`);
   }
 
-  // 2. Niveau hiérarchique
+  // 2. Niveau hiÃ©rarchique
   const minLevelMap: Record<typeof operation, number> = {
     create: config.minRoleLevelCreate,
     edit: config.minRoleLevelEdit,
@@ -61,10 +61,10 @@ function _decide(
   };
   const minLevel = minLevelMap[operation];
   if (actor.roleLevel < minLevel) {
-    reasons.push(`Niveau de rôle insuffisant : ${actor.roleLevel} < ${minLevel}`);
+    reasons.push(`Niveau de rÃ´le insuffisant : ${actor.roleLevel} < ${minLevel}`);
   }
 
-  // 3. Rôle explicite (whoCan*) — liste blanche
+  // 3. RÃ´le explicite (whoCan*) â€” liste blanche
   const whoCanMap: Record<typeof operation, string[]> = {
     create: config.whoCanCreate,
     edit: config.whoCanEdit,
@@ -76,7 +76,7 @@ function _decide(
   };
   const whoCan = whoCanMap[operation];
   if (!whoCan.includes(actor.role)) {
-    reasons.push(`Rôle non autorisé pour ${operation} : ${actor.role}`);
+    reasons.push(`RÃ´le non autorisÃ© pour ${operation} : ${actor.role}`);
   }
 
   return { allowed: reasons.length === 0, reasons, config };
@@ -106,3 +106,5 @@ export async function canArchiveProduct(actor: ProductActor, type?: string | nul
   const config = await getProductTypeConfig(type);
   return _decide(actor, config, "archive");
 }
+
+

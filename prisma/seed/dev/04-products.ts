@@ -63,7 +63,6 @@ export const DevProductsSeeder: Seeder = {
             seoDescription: p.seoDescription,
           },
           create: {
-            id: p.id,
             name: p.name,
             sku: p.sku,
             slug: p.slug,

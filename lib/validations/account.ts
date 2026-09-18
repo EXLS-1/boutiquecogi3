@@ -67,7 +67,7 @@ export const selfDeleteAccountSchema = z.object({
     .string()
     .min(1, "Le mot de passe est requis pour confirmer la suppression"),
   confirmation: z.literal(true, {
-    errorMap: () => ({ message: "Vous devez confirmer la suppression" }),
+    message: "Vous devez confirmer la suppression",
   }),
 });
 

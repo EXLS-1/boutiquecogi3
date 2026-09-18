@@ -102,3 +102,20 @@ export const categoryDefinitionSchema = z.object({
 });
 
 export type CategoryDefinitionValidated = z.infer<typeof categoryDefinitionSchema>;
+// -----------------------------------------------------------------------------
+// BARREL EXPORTS - Make all types easily importable
+// -----------------------------------------------------------------------------
+
+export {
+  CATALOG_TYPES,
+  CatalogType,
+  CatalogDefinition,
+  CatalogCardProps,
+  CatalogGridConfig,
+  categoryDefinitionSchema,
+  CategoryDefinitionValidated,
+  RbacLevel,
+  Role_Level,
+};
+
+

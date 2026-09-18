@@ -20,9 +20,9 @@ export const DEFAULT_PRODUCT_TYPE_CONFIG: Omit<
   type: "PHYSICAL",
   label: "Produit physique",
   description: null,
-  whoCanCreate: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
-  whoCanEdit: ["SUPER_ADMIN", "ADMIN", "MANAGER", "EDITOR"],
-  whoCanDelete: ["SUPER_ADMIN", "ADMIN"],
+  whoCanCreate: ["SUPER_ADMIN", "ADMIN", "MANAGER"] as string[],
+  whoCanEdit: ["SUPER_ADMIN", "ADMIN", "MANAGER", "EDITOR"] as string[],
+  whoCanDelete: ["SUPER_ADMIN", "ADMIN"] as string[],
   requiredPermissionCreate: "products:create",
   requiredPermissionEdit: "products:update",
   requiredPermissionDelete: "products:delete",
@@ -31,6 +31,8 @@ export const DEFAULT_PRODUCT_TYPE_CONFIG: Omit<
   minRoleLevelDelete: 6,
   maxVariants: 100,
   requiresApproval: false,
+  isDefault: true,
+  isActive: true,
 };
 
 export async function getProductTypeConfig(
@@ -58,3 +60,6 @@ export async function listProductTypeConfigs(): Promise<ProductTypeConfig[]> {
     orderBy: { type: "asc" },
   });
 }
+
+
+

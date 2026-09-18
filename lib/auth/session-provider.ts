@@ -59,9 +59,9 @@ export async function getCurrentUserFromProvider(): Promise<
   const u = session.user;
 
   const roleStr =
-    typeof u.role === "string"
+    u.role != null && typeof u.role === "string"
       ? u.role
-      : u.metadata?.role
+      : u.metadata?.role != null
         ? String(u.metadata.role)
         : "GUEST";
 
@@ -93,3 +93,5 @@ export async function getCurrentUserFromProvider(): Promise<
 export async function requireAuth(): Promise<AuthenticatedUser | null> {
   return getCurrentUserFromProvider();
 }
+
+

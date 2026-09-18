@@ -1,6 +1,6 @@
-// lib/admin/roles/role.mapper.ts
+﻿// lib/admin/roles/role.mapper.ts
 // ============================================================
-// Mapping lignes Prisma → DTO sérialisables (Server → Client).
+// Mapping lignes Prisma â†’ DTO sÃ©rialisables (Server â†’ Client).
 // ============================================================
 
 import type { Restriction, ToggleState } from '@/lib/auth/rbac';
@@ -114,7 +114,7 @@ export function mapAssignment(row: AssignmentRow): AssignmentDto {
   };
 }
 
-function mapAuditLog(row: AuditLogRow): AuditLogDto {
+export function mapAuditLog(row: AuditLogRow): AuditLogDto {
   return {
     id: row.id,
     action: row.action,
@@ -124,7 +124,7 @@ function mapAuditLog(row: AuditLogRow): AuditLogDto {
     targetId: row.targetId,
     targetType: row.targetType ?? null,
     details: row.details,
-    roleLevel: row.roleLevel,
+    roleLevel: row.roleLevel ?? 0,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -148,3 +148,6 @@ export function mapApprovalRequest(
 }
 
 export type { Restriction, ToggleState };
+
+
+

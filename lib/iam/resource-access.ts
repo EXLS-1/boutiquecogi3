@@ -1,5 +1,5 @@
 ﻿// lib/iam/resource-access.ts
-
+// Ce fichier sert
 import {
   type AuthContext,
   type Role,

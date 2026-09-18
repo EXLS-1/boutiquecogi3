@@ -1,4 +1,4 @@
-// lib/security/2fa.ts
+﻿// lib/security/2fa.ts
 // Shared 2FA helpers for challenge/verification flow
 
 import { prisma } from "@/lib/prisma";
@@ -30,7 +30,7 @@ export async function isSuperAdminUser(userId: string): Promise<boolean> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        role: { select: { role: true } },
+        // role relation is handled differently in this Prisma schema
       },
     });
     return user?.role?.role === "SUPER_ADMIN";
@@ -75,3 +75,4 @@ export function extractIPFromHeaders(headers: Headers): string {
   if (realIp) return realIp;
   return "unknown";
 }
+

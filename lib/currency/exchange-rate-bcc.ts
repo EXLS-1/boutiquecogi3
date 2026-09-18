@@ -5,7 +5,7 @@
 // =============================================================================
 
 import * as cheerio from "cheerio";
-import { Workbook } from "exceljs";
+import { Workbook, Xlsx, Row, Cell } from "exceljs";
 import { Prisma } from "@prisma/client";
 import {
   BCC_URL,
@@ -15,7 +15,6 @@ import {
 import { validateRate } from "@/lib/currency/exchange-rate-validator";
 import { ExchangeRate } from "@/lib/currency/exchange-rate-types";
 
-// â”€â”€â”€ Utilitaires HTTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Effectue une requÃªte fetch avec timeout via AbortController.
@@ -33,8 +32,6 @@ async function fetchWithTimeout(
     clearTimeout(id);
   }
 }
-
-// â”€â”€â”€ Extraction du taux depuis du texte brut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Extrait le premier nombre financier valide d'un texte.
@@ -85,8 +82,6 @@ export function extractRateFromText(text: string): ExchangeRate | null {
   }
 }
 
-// â”€â”€â”€ Parsing HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 /**
  * Parse le HTML de la BCC pour extraire le taux USD/CDF.
  * Recherche les lignes contenant "USD" + "VENDEUR" ou "INDICATIF".
@@ -126,8 +121,6 @@ function parseHtml(html: string): ExchangeRate | null {
   return foundRate;
 }
 
-// â”€â”€â”€ Parsing PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
     const { PDFParse } = await import("pdf-parse");
@@ -152,7 +145,6 @@ async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
   }
 }
 
-// â”€â”€â”€ Parsing Excel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
@@ -182,8 +174,6 @@ async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   }
 }
 
-// â”€â”€â”€ Fetch et parse gÃ©nÃ©rique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 async function fetchAndParse<T extends ExchangeRate | null>(
   url: string,
   parser: (b: Buffer) => T | Promise<T>,
@@ -198,8 +188,6 @@ async function fetchAndParse<T extends ExchangeRate | null>(
     return null as T;
   }
 }
-
-// â”€â”€â”€ Fonction principale de scraping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * RÃ©cupÃ¨re le taux USD/CDF depuis la BCC.

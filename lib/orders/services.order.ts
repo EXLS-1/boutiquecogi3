@@ -86,8 +86,13 @@ if (!variant) {
       throw new Error(`Variante introuvable: ${item.id}`);
     }
 
+    const basePrice = variant.product.basePrice;
+    if (basePrice === null || basePrice === undefined) {
+      throw new Error(`Produit ${variant.productId} sans prix défini`);
+    }
+
     const unitPrice =
-      variant.product.basePrice.toNumber() + variant.priceOffset;
+      basePrice.toNumber() + variant.priceOffset;
     const subtotal = unitPrice * item.quantity;
 
     lineItems.push({
@@ -203,3 +208,4 @@ export async function confirmOrderPayment(cinetpayTransId: string) {
     },
   });
 }
+
