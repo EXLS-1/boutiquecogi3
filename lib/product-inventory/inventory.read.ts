@@ -11,10 +11,10 @@ import type { InventoryAvailability } from "./inventory.types";
 /** Disponibilité d'une variante (couche canonique VariantStock). */
 export async function getVariantAvailability(
   variantId: string,
-  warehouse?: string | null
+  warehouseId?: string | null
 ): Promise<InventoryAvailability | null> {
   const vs = await prisma.variantStock.findUnique({
-    where: { variantId_warehouseId: { variantId, warehouseId: warehouse ?? null } },
+    where: { variantId_warehouseId: { variantId, warehouseId: warehouseId ?? null } },
   });
 
   if (!vs) return null;

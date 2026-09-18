@@ -1,6 +1,6 @@
-// lib/cache/cacheConsumer.ts
+﻿// lib/cache/cacheConsumer.ts
 
-import { redis } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import type Redis from "ioredis";
 
@@ -24,7 +24,8 @@ export class CacheConsumer {
 
   private async getClient(): Promise<StreamRedis> {
     if (!this.client) {
-      const client = await redis.getClient();
+      const clientInstance = await getRedisClient();
+      const client = clientInstance.getClient();
 
       const maybeClient = client as unknown as Partial<StreamRedis>;
       if (
@@ -49,7 +50,8 @@ export class CacheConsumer {
     this.isRunning = true;
 
     try {
-      await redis.xgroup(
+      const client = await this.getClient();
+      await client.xgroup(
         "CREATE",
         STREAM_KEY,
         CONSUMER_GROUP,
@@ -81,7 +83,8 @@ export class CacheConsumer {
   }
 
   private async processBatch(): Promise<void> {
-    const messages = (await redis.xreadgroup(
+    const client = await this.getClient();
+    const messages = (await client.xreadgroup(
       "GROUP",
       CONSUMER_GROUP,
       CONSUMER_NAME,
@@ -117,7 +120,7 @@ export class CacheConsumer {
     }
 
     if (processedIds.length > 0) {
-      await redis.xack(STREAM_KEY, CONSUMER_GROUP, ...processedIds);
+      await client.xack(STREAM_KEY, CONSUMER_GROUP, ...processedIds);
     }
 
     for (const { id, error } of failedEntries) {
@@ -288,7 +291,7 @@ export class CacheConsumer {
     const deliveryCount = pending?.[0]?.[3] || 0;
 
     if (deliveryCount >= 3) {
-      await redis.xadd(
+      await this.getClient().then(client => client.xadd)(
         "stream:dlq-cache-sync",
         "*",
         "originalId",
@@ -301,7 +304,7 @@ export class CacheConsumer {
         String(deliveryCount),
       );
 
-      await redis.xack(STREAM_KEY, CONSUMER_GROUP, messageId);
+      await this.getClient().then(client => client.xack)(STREAM_KEY, CONSUMER_GROUP, messageId);
     }
   }
 
@@ -321,4 +324,5 @@ export class CacheConsumer {
     await client.expire(key, 86400);
   }
 }
+
 

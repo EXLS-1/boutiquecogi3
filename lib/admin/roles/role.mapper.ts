@@ -114,7 +114,7 @@ export function mapAssignment(row: AssignmentRow): AssignmentDto {
   };
 }
 
-export function mapAuditLog(row: AuditLogRow): AuditLogDto {
+function mapAuditLog(row: AuditLogRow): AuditLogDto {
   return {
     id: row.id,
     action: row.action,
@@ -122,7 +122,7 @@ export function mapAuditLog(row: AuditLogRow): AuditLogDto {
     actorName: row.user?.name ?? null,
     actorEmail: row.user?.email ?? null,
     targetId: row.targetId,
-    targetType: row.targetType,
+    targetType: row.targetType ?? null,
     details: row.details,
     roleLevel: row.roleLevel,
     createdAt: row.createdAt.toISOString(),

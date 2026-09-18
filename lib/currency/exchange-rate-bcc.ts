@@ -1,4 +1,4 @@
-// lib/currency/exchange-rate-bcc.ts
+﻿// lib/currency/exchange-rate-bcc.ts
 // =============================================================================
 // Scraper du taux USD/CDF depuis la BCC (Banque Centrale du Congo).
 // Supporte 3 formats : HTML (prioritaire), PDF, Excel (.xlsx/.xls).
@@ -15,10 +15,10 @@ import {
 import { validateRate } from "@/lib/currency/exchange-rate-validator";
 import { ExchangeRate } from "@/lib/currency/exchange-rate-types";
 
-// ─── Utilitaires HTTP ───────────────────────────────────────────────────────
+// â”€â”€â”€ Utilitaires HTTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Effectue une requête fetch avec timeout via AbortController.
+ * Effectue une requÃªte fetch avec timeout via AbortController.
  */
 async function fetchWithTimeout(
   url: string,
@@ -34,11 +34,11 @@ async function fetchWithTimeout(
   }
 }
 
-// ─── Extraction du taux depuis du texte brut ─────────────────────────────────
+// â”€â”€â”€ Extraction du taux depuis du texte brut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Extrait le premier nombre financier valide d'un texte.
- * Nettoie les dates et années pour éviter les faux positifs.
+ * Nettoie les dates et annÃ©es pour Ã©viter les faux positifs.
  */
 export function extractRateFromText(text: string): ExchangeRate | null {
   if (!text || typeof text !== "string") return null;
@@ -47,7 +47,7 @@ export function extractRateFromText(text: string): ExchangeRate | null {
   let cleanText = text.replace(/\d{2}[/.-]\d{2}[/.-]\d{4}/g, "");
   cleanText = cleanText.replace(/\d{4}[/.-]\d{2}[/.-]\d{2}/g, "");
 
-  // 2. Suppression des années courantes (±1 an)
+  // 2. Suppression des annÃ©es courantes (Â±1 an)
   const currentYear = new Date().getFullYear();
   const yearRegex = new RegExp(
     `\b(${currentYear - 1}|${currentYear}|${currentYear + 1})\b`,
@@ -55,22 +55,22 @@ export function extractRateFromText(text: string): ExchangeRate | null {
   );
   cleanText = cleanText.replace(yearRegex, "");
 
-  // 3. Capture du bloc numérique financier
+  // 3. Capture du bloc numÃ©rique financier
   const match = cleanText.match(/(\d{1,3}(?:[\s\u00A0.,]\d{3})*(?:[.,]\d+)?)/);
   if (!match) return null;
 
   try {
     let rawValue = match[0].replace(/[\s\u00A0]/g, "");
 
-    // Gestion intelligente des séparateurs
+    // Gestion intelligente des sÃ©parateurs
     if (rawValue.includes(".") && rawValue.includes(",")) {
-      // Format européen : 2.850,00 → 2850.00
+      // Format europÃ©en : 2.850,00 â†’ 2850.00
       rawValue = rawValue.replace(/\./g, "").replace(",", ".");
     } else if (rawValue.includes(",")) {
-      // Virgule comme décimale : 2850,50 → 2850.50
+      // Virgule comme dÃ©cimale : 2850,50 â†’ 2850.50
       rawValue = rawValue.replace(",", ".");
     } else if (rawValue.includes(".")) {
-      // Point : déterminer si millier ou décimal
+      // Point : dÃ©terminer si millier ou dÃ©cimal
       const parts = rawValue.split(".");
       const lastPart = parts[parts.length - 1];
       if (lastPart.length !== 1 && lastPart.length !== 2) {
@@ -85,7 +85,7 @@ export function extractRateFromText(text: string): ExchangeRate | null {
   }
 }
 
-// ─── Parsing HTML ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Parsing HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Parse le HTML de la BCC pour extraire le taux USD/CDF.
@@ -126,7 +126,7 @@ function parseHtml(html: string): ExchangeRate | null {
   return foundRate;
 }
 
-// ─── Parsing PDF ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Parsing PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
@@ -152,20 +152,21 @@ async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
   }
 }
 
-// ─── Parsing Excel ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Parsing Excel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
     const workbook = new Workbook();
-    const loadedWorkbook = await workbook.xlsx.load(buffer);
+    // Cast buffer to any to workaround exceljs type issues
+    const loadedWorkbook = await (workbook.xlsx as any).load(buffer);
     const sheet = loadedWorkbook.worksheets[0];
     if (!sheet) return null;
 
     const rows: string[] = [];
-    sheet.eachRow((row) => {
+    sheet.eachRow((row: any) => {
       rows.push(row.values
         .slice(1)
-        .map((cell) => (cell ?? "").toString())
+        .map((cell: any) => (cell ?? "").toString())
         .join(" "));
     });
 
@@ -181,7 +182,7 @@ async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   }
 }
 
-// ─── Fetch et parse générique ─────────────────────────────────────────────────
+// â”€â”€â”€ Fetch et parse gÃ©nÃ©rique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function fetchAndParse<T extends ExchangeRate | null>(
   url: string,
@@ -198,12 +199,12 @@ async function fetchAndParse<T extends ExchangeRate | null>(
   }
 }
 
-// ─── Fonction principale de scraping ──────────────────────────────────────────
+// â”€â”€â”€ Fonction principale de scraping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Récupère le taux USD/CDF depuis la BCC.
- * Stratégie : HTML direct → Documents attachés (PDF/Excel, max 3).
- * @returns Le taux extrait et validé, ou `null` en cas d'échec
+ * RÃ©cupÃ¨re le taux USD/CDF depuis la BCC.
+ * StratÃ©gie : HTML direct â†’ Documents attachÃ©s (PDF/Excel, max 3).
+ * @returns Le taux extrait et validÃ©, ou `null` en cas d'Ã©chec
  */
 export async function fetchRate(): Promise<ExchangeRate | null> {
   try {
@@ -214,13 +215,13 @@ export async function fetchRate(): Promise<ExchangeRate | null> {
     );
 
     if (!response.ok) {
-      console.warn(`[BCC_CLIENT] Réponse HTTP ${response.status}`);
+      console.warn(`[BCC_CLIENT] RÃ©ponse HTTP ${response.status}`);
       return null;
     }
 
     const html = await response.text();
 
-    // Priorité 1 : Scraping HTML Direct
+    // PrioritÃ© 1 : Scraping HTML Direct
     const rateFromHtml = parseHtml(html);
     if (rateFromHtml) {
       console.log(
@@ -229,7 +230,7 @@ export async function fetchRate(): Promise<ExchangeRate | null> {
       return rateFromHtml;
     }
 
-    // Priorité 2 : Scan des documents attachés (max 3 liens)
+    // PrioritÃ© 2 : Scan des documents attachÃ©s (max 3 liens)
     const $ = cheerio.load(html);
     const links = $("a")
       .map((_, el) => $(el).attr("href"))
@@ -267,11 +268,12 @@ export async function fetchRate(): Promise<ExchangeRate | null> {
       }
     }
 
-    console.warn("[BCC_CLIENT] Aucun taux trouvé dans les sources disponibles");
+    console.warn("[BCC_CLIENT] Aucun taux trouvÃ© dans les sources disponibles");
     return null;
   } catch (error) {
     console.error("[BCC_CLIENT_ERROR]", error);
     return null;
   }
 }
+
 

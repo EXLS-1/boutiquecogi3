@@ -1,9 +1,9 @@
-// lib/iam/resource-access.ts
+﻿// lib/iam/resource-access.ts
 
 import {
   type AuthContext,
   type Role,
-  type Permission,
+  
   type Restriction,
   AuthorizationError,
 } from "@/lib/auth/server";
@@ -15,7 +15,7 @@ export type ResourceAccessCheck = {
   resource: string;
   resourceId?: string;
 
-  // Règles “par ressource” (issus des configs Prisma)
+  // RÃ¨gles â€œpar ressourceâ€ (issus des configs Prisma)
   requiredPermission?: Permission | null;
   minRoleLevel?: number | null; // convention existante: level 1 (plus permissif) ... 7 (moins)
 
@@ -33,7 +33,7 @@ export type ResourceAccessCheck = {
 };
 
 function isMinRoleLevelSatisfied(contextLevel: number, minRoleLevel: number) {
-  // Conformément à lib/auth/server.ts: condition rejet si level > minLevel
+  // ConformÃ©ment Ã  lib/auth/server.ts: condition rejet si level > minLevel
   return contextLevel <= minRoleLevel;
 }
 
@@ -86,11 +86,14 @@ export async function assertResourceAccess(
   if (ownership?.ownershipUserId) {
     if (ownership.ownershipUserId !== context.user.id) {
       throw new AuthorizationError(
-        `Accès refusé: ownership mismatch pour ${resource} (${action}).`,
+        `AccÃ¨s refusÃ©: ownership mismatch pour ${resource} (${action}).`,
         "OWNERSHIP_MISMATCH",
         403,
       );
     }
   }
 }
+
+
+
 

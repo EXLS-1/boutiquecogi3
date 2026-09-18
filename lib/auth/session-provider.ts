@@ -59,9 +59,11 @@ export async function getCurrentUserFromProvider(): Promise<
   const u = session.user;
 
   const roleStr =
-    u.role ??
-    (u.metadata?.role as string | undefined) ??
-    "GUEST";
+    typeof u.role === "string"
+      ? u.role
+      : u.metadata?.role
+        ? String(u.metadata.role)
+        : "GUEST";
 
   const role: Role = normalizeRole(roleStr);
 

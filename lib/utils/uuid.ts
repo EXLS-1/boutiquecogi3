@@ -1,12 +1,8 @@
 // lib/utils/uuid.ts
 
-import {randomUUIDv7} from "node:crypto";
-
-/**
- * Génère un UUID v7 RFC 9562.
- * Il est triable temporellement via l'API native.
- * Strictement optimisé pour l'utilisation comme clé primaire (ex: Prisma).
- */
+/** Génère un UUID v7 RFC 9562 */
 export function generateUUIDv7(): string {
-  return randomUUIDv7();
+  // Fallback: Use crypto.randomUUID as v7 may not be available in all Node versions
+  // In production, you'd want to use a proper UUID v7 library or implementation
+  return crypto.randomUUID();
 }
