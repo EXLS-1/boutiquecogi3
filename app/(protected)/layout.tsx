@@ -1,3 +1,5 @@
+// app/(protected)/layout.tsx
+
 import { redirect } from "next/navigation";
 import { getCurrentUserWithRole, getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac";
 import { SwitchProvider } from "@/components/providers/switch-provider";
@@ -25,7 +27,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       initialRestrictions={restrictions}
       requiresAuditApproval={true}
     >
-      <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="flex min-h-screen flex-col bg-cyan-50">
         {children}
       </div>
     </SwitchProvider>

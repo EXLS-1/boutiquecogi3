@@ -44,6 +44,9 @@ export function OrderCard({
           <p className="text-xl font-black text-slate-900">
             {Price(order.totalAmount)}
           </p>
+          <div className="text-xl font-black text-slate-900">
+            <Price amount={order.totalAmount} currency="USD" />
+          </div>
 
           <span
             className={[

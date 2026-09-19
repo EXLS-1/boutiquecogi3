@@ -160,6 +160,10 @@ export function ProductsTable({
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("fr-FR", { style: "currency", currency: "CDF" }).format(price);
+  const formatPrice = (price: number | Prisma.Decimal | null | undefined) => {
+    const numericPrice = typeof price === "number" ? price : price ? Number(price) : 0;
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "CDF" }).format(numericPrice);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {

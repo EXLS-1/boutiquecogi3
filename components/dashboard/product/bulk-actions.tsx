@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { bulkProductsAction } from "@/app/dashboard/product/actions";
+import { bulkProductsAction } from "@/components/dashboard/product/actions";
 
 interface BulkActionsProps {
   permissions: Permission[];

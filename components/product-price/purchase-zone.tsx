@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import { ShoppingBag, CreditCard, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Price } from "@/components/product-price/price";
+import Price from "@/components/product-price/price";
 import useCart from "@/store/use-cart";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -52,6 +53,7 @@ export function PurchaseZone({
 
   const handleAddToCart = () => {
     if (!selectedVariantId) {
+    if (!selectedVariantId && variants.length > 0) {
       toast.error("Veuillez sélectionner une option (taille/couleur)");
       return;
     }
@@ -63,6 +65,36 @@ export function PurchaseZone({
       image: productImage,
       quantity: 1,
     });
+    addItem(
+      {
+        id: productId,
+        name: productName,
+        slug: "",
+        description: null,
+        price: finalPrice,
+        currency: "USD",
+        basePrice: finalPrice,
+        image: productImage,
+        basePriceUSD: finalPrice,
+        basePriceCDF: finalPrice,
+        isAvailable: true,
+        availabilityStatus: "in_stock",
+        categoryName: null,
+        categorySlug: null,
+        status: "PUBLISHED",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        accessPolicy: {
+          visibility: "public",
+          minRbacLevel: 7,
+          requiresAuth: false,
+        },
+        isPromoted: false,
+        isNewArrival: false,
+        discountPercent: 0,
+      },
+      1
+    );
 
     toast.success(`${productName} ajouté au panier`, {
       icon: <CheckCircle2 className="text-emerald-500" />,
@@ -71,6 +103,7 @@ export function PurchaseZone({
 
   const handleBuyNow = async () => {
     if (!selectedVariantId) {
+    if (!selectedVariantId && variants.length > 0) {
       toast.error("Veuillez sélectionner une option");
       return;
     }
@@ -86,6 +119,7 @@ export function PurchaseZone({
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium text-cyan-600 uppercase tracking-wider">Prix actuel</span>
         <Price amount={finalPrice} size="xl" />
+        <Price amount={finalPrice} currency="USD" size="xl" />
       </div>
 
       {/* Sélection de Variants */}
@@ -110,6 +144,29 @@ export function PurchaseZone({
           </button>
         ))}
       </div>
+      {variants.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          {variants.map((variant) => (
+            <button
+              key={variant.id}
+              onClick={() => setSelectedVariantId(variant.id)}
+              disabled={variant.stock <= 0}
+              className={cn(
+                "px-4 py-3 text-sm font-medium rounded-xl border transition-all duration-200",
+                selectedVariantId === variant.id
+                  ? "border-cyan-500 bg-cyan-50 text-cyan-700 ring-2 ring-cyan-500/20"
+                  : "border-slate-200 bg-white hover:border-cyan-300 text-slate-600",
+                variant.stock <= 0 && "opacity-50 cursor-not-allowed bg-slate-100"
+              )}
+            >
+              {variant.name}
+              {variant.stock <= 5 && variant.stock > 0 && (
+                <span className="block text-[10px] text-orange-500">Reste {variant.stock}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 mt-2">
         <Button 

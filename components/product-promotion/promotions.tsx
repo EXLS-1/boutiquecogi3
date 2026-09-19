@@ -14,6 +14,7 @@ import { HOME_PRODUCTS_LIMIT } from "@/lib/product-catalog/catalog-constants";
 
 export async function SectionPromotions() {
   const products: readonly unknown[] = (await getPromotionalProducts(HOME_PRODUCTS_LIMIT)) as readonly unknown[];
+  const products = await getPromotionalProducts(HOME_PRODUCTS_LIMIT);
 
   return (
     <section aria-labelledby="promotions-heading" className="py-16 bg-rose-50/50">

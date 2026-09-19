@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   // 3. Code PIN admin — activé UNE FOIS les vérifications RBAC et 2FA exécutées.
   //    Protège TOUTE la section /admin/* (et plus uniquement la page /admin) :
   //    tant que le PIN n'est pas validé (cookie httpOnly signé, lié à
-  //    l'utilisateur, expirant après 5 min), le gate s'affiche À LA PLACE du
+  //    l'utilisateur, expirant après 1 min), le gate s'affiche À LA PLACE du
   //    contenu — aucune donnée protégée n'est envoyée au client.
   const pinEnabled = await isPinEnabled();
   if (pinEnabled) {

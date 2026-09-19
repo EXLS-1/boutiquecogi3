@@ -37,6 +37,13 @@ export function OrdersContainer({
         const newOrders = await getPaginatedOrders(orders.length, pageSize);
         setOrders((prev) => [...prev, ...newOrders]);
       } catch (error) {
+        const res = await getPaginatedOrders(orders.length, pageSize);
+        if (res.success && res.data) {
+          setOrders((prev) => [...prev, ...res.data]);
+        } else if (!res.success) {
+          toast.error(res.error || "Impossible de charger plus de commandes");
+        }
+      } catch {
         toast.error("Impossible de charger plus de commandes");
       }
     });

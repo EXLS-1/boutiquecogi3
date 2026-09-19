@@ -1,6 +1,7 @@
 // app/dashboard/videos/page.tsx
 // Vidéos avec RBAC
 // Level 4+ (Moderator+) : lecture | Level 3+ (Manager+) : upload
+// app/admin/settings/videos/page.tsx
 
 import { Suspense } from "react";
 import { redirect } from "next/navigation";

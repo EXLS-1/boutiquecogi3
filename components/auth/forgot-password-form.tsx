@@ -37,6 +37,7 @@ export function ForgotPasswordForm({
     const validation = forgotPasswordSchema.safeParse({ email });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
+      setError(validation.error.issues[0]?.message || "Email invalide.");
       return;
     }
 
@@ -44,6 +45,7 @@ export function ForgotPasswordForm({
 
     try {
       const { error: authError } = await authClient.forgetPassword({
+      const { error: authError } = await authClient.requestPasswordReset({
         email: validation.data.email,
         // Construction dynamique et robuste de l'URL de retour
         redirectTo: `${window.location.origin}/auth/update-password`,

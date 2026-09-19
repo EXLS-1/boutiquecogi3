@@ -9,11 +9,13 @@ export function ProductDetailPrice({ product }: { product: Pick<ProductQuickView
 }
 
 export function ProductAvailability({ product }: { product: Pick<ProductQuickViewData, "availabilityStatus" | "availableStock"> }) {
-  const labels = {
+  const labels: Record<string, string> = {
     in_stock: "En stock",
     low_stock: `Stock faible — ${product.availableStock} restant(s)`,
     pre_order: "Précommande disponible",
+    back_order: "Sur commande",
     out_of_stock: "Rupture de stock",
   };
-  return <p className="text-sm font-medium">{labels[product.availabilityStatus]}</p>;
+  const label = labels[product.availabilityStatus] || "Non disponible";
+  return <p className="text-sm font-medium">{label}</p>;
 }

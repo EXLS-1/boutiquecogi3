@@ -55,9 +55,12 @@ export function UpdatePasswordForm({
     const validation = updatePasswordSchema.safeParse({ password, confirmPassword });
     if (!validation.success) {
       const firstError = validation.error.errors[0];
+      const firstError = validation.error.issues[0];
       setError({
         field: firstError.path[0]?.toString(),
         message: firstError.message,
+        field: firstError?.path[0]?.toString(),
+        message: firstError?.message || "Erreur de validation.",
       });
       return;
     }

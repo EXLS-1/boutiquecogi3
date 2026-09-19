@@ -114,14 +114,14 @@ export default function CartPage() {
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="font-lato font-bold w-6 text-center text-slate-950">
+                <span className="font-lato font-bold w-6 text-center text-cyan-500">
                   {item.quantity}
                 </span>
                 <button
                   onClick={() =>
                     cart.updateQuantity(item.id, item.quantity + 1)
                   }
-                  className="p-1 text-slate-500 hover:text-rose-500 transition-colors focus:outline-none"
+                  className="p-1 text-cyan-500 hover:text-rose-500 transition-colors focus:outline-none"
                   aria-label="Augmenter la quantité"
                 >
                   <Plus className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function CartPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => cart.removeItem(item.id)}
-                className="text-slate-500 hover:text-rose-500 hover:bg-rose-500/10"
+                className="text-cyan-500 hover:text-rose-500 hover:bg-rose-500/10"
                 aria-label={`Supprimer ${item.name} du panier`}
               >
                 <Trash2 className="w-5 h-5" />

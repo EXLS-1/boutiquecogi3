@@ -1,4 +1,5 @@
 // app/admin/page.tsx
+
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerRBACSession } from "@/lib/auth/server";
@@ -14,7 +15,7 @@ import { isPinEnabled, hasFreshAdminPinEntry } from "@/lib/pin/admin-pin";
 
 export const metadata = {
   title: "Administration Système Général | Central Security",
-  description: "Portail d'administration réservé au personnel de niveau 1",
+  description: "Portail d'administration réservé au personnel de niveau 1 & 2",
 };
 
 export default async function AdminPage() {
@@ -24,7 +25,7 @@ export default async function AdminPage() {
   if (!session) redirect("/auth/sign-in?callbackUrl=/admin");
 
   // 2. Autorisation RBAC (niveaux 1-2)
-  if (session.level > 1) redirect("/unauthorized");
+  if (session.level > 2) redirect("/unauthorized");
 
   // 3. Code PIN : exige une vérification « fraîche » à CHAQUE entrée sur la
   //    page admin — refresh, retour depuis une autre page, ou après 1 min
@@ -38,7 +39,7 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-cyan-100 text-cyan-400 p-6 md:p-10 space-y-8">
       {/* En-tête */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-cyan-400 pb-6">
         <div>
           <div className="flex items-center gap-2 text-emerald-500 mb-1">
             <Shield className="h-5 w-5" />
