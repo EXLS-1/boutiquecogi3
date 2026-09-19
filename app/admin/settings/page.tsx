@@ -1,5 +1,5 @@
-// app/dashboard/settings/page.tsx
-import { redirect } from 'next/navigation';
+// app/admin/settings/page.tsx
+
 import type { Metadata } from 'next';
 
 // Composants atomiques
@@ -15,12 +15,13 @@ import {
   SYSTEM_CONFIG_KEY,
   paymentConfigKey,
 } from '@/lib/constants/settings';
-import { getRoleLevel, normalizeRole } from '@/lib/auth/rbac';
+import { ROLES } from '@/lib/auth/rbac';
 import { PAYMENT_PROVIDERS, paymentSchema } from '@/lib/payment';
 import { SYSTEM_DEFAULTS, systemConfigSchema, type SystemConfigValues } from '@/lib/system';
 
-// Garde RBAC (règle d'or : JAMAIS auth.api.getSession() hors de lib/auth/server.ts)
-import { resolveAuthContext } from '@/lib/auth/server';
+// Garde RBAC (règle d'or : JAMAIS auth.api.getSession() hors de lib/auth/server.ts).
+// Verrouillage page : roleLevel 1 (Super-Admin) et 2 (Admin) exclusivement.
+import { guardAdmin } from '@/lib/auth/server';
 import { db } from '@/lib/db';
 
 import { Separator } from '@/components/ui/separator';
@@ -52,15 +53,20 @@ export const metadata: Metadata = {
 
 /**
  * Page principale des paramètres.
+ *
+ * Verrouillage d'accès : la page n'est disponible que pour le roleLevel 1
+ * (Super-Admin) et le roleLevel 2 (Admin). Tout autre niveau (3+) est
+ * redirigé vers /unauthorized ; une session expirée/null vers /auth/sign-in.
+ *
  * Minimaliste : se concentre uniquement sur le fetching concurrent et l'orchestration.
  */
 export default async function SettingsPage() {
-  // 1. Vérification des droits d'accès (Sécurité) — niveaux 1-2 : SUPER_ADMIN et ADMIN
-  const authContext = await resolveAuthContext();
-  const actorLevel = authContext ? getRoleLevel(normalizeRole(authContext.user.role)) : 0;
-  if (!authContext || !Number.isInteger(actorLevel) || actorLevel < 1 || actorLevel > 2) {
-    redirect('/auth/sign-in?callbackUrl=/dashboard/settings'); // Redirection si non autorisé
-  }
+  // 1. Verrou RBAC — niveaux 1 (Super-Admin) et 2 (Admin) uniquement.
+  //    guardAdmin() résout la session puis exige un rôle SUPER_ADMIN ou ADMIN
+  //    (c.-à-d. roleLevel 1 ou 2). N'importe quel autre niveau déclenche une
+  //    redirection vers /unauthorized. redirect() lève avant le fetch, donc
+  //    aucune donnée sensible n'est chargée pour un utilisateur non autorisé.
+  await guardAdmin();
 
   // 2. Fetching concurrent de toutes les données (Performance)
   //    Stockage : SystemConfiguration (clé/valeur) + RoleConfig (RBAC).
@@ -69,7 +75,7 @@ export default async function SettingsPage() {
       where: { key: { in: Object.values(SETTINGS_KEYS) } },
     }),
     db.roleConfig.findFirst({
-      where: { role: ROLES.MANAGER },
+            where: { role: ROLES.ADMIN },
       include: { rolePermissions: { select: { permission: { select: { code: true } } } } },
     }),
     db.systemConfiguration.findUnique({
@@ -93,7 +99,7 @@ export default async function SettingsPage() {
   // (source de vérité ; le champ déprécié RoleConfig.permissions n'est plus lu).
   const rbacData = {
     roleId: roleDb?.id ?? '',
-    roleName: roleDb?.role ?? ROLES.MANAGER,
+        roleName: roleDb?.role ?? ROLES.ADMIN,
     currentPermissions: (roleDb?.rolePermissions ?? []).map(
       (rp) => rp.permission.code,
     ),
@@ -147,7 +153,7 @@ export default async function SettingsPage() {
           <RBACSettings {...rbacData} />
         ) : (
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-800">
-            <p className="font-semibold">Rôle &ldquo;{ROLES.MANAGER}&rdquo; introuvable.</p>
+                        <p className="font-semibold">Rôle &ldquo;{ROLES.ADMIN}&rdquo; introuvable.</p>
             <p className="text-sm">Veuillez créer ce rôle dans la base de données pour configurer les permissions.</p>
           </div>
         )}

@@ -15,13 +15,13 @@ export const ROLES_CONSTANTS = {
   FORM_LEVELS: [
     { value: 2, label: '2 — Admin' },
     { value: 3, label: '3 — Manager' },
-    { value: 4, label: '4 — Éditeur' },
-    { value: 5, label: '5 — Superviseur' },
-    { value: 6, label: '6 — Utilisateur' },
+    { value: 4, label: '4 — Éditor' },
+    { value: 5, label: '5 — Supervisor' },
+    { value: 6, label: '6 — User' },
   ] as const,
 
   // Niveau par défaut proposé lors de la création.
-  DEFAULT_LEVEL: 3,
+  DEFAULT_LEVEL: 2,
 
   // Permissions activées par défaut lors de la création d'un rôle.
   DEFAULT_PERMISSION_CODES: ['role:view'] as const,

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { CheckCircle2, Pencil, Plus, Search, ShieldCheck, Trash2, XCircle } from 'lucide-react';
 
-import { ROLES_CONSTANTS } from '@/constants/roles';
+import { ROLES_CONSTANTS } from '@/lib/constants/roles';
 import { useRoleStore } from '@/store/roles/use-role-store';
 import { deleteRoleAction } from '@/lib/roles/role-actions';
 import type { Role } from '@/types/role';

@@ -7,7 +7,7 @@ import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 
-import { ROLES_CONSTANTS } from '@/constants/roles';
+import { ROLES_CONSTANTS } from '@/lib/constants/roles';
 import { roleFormSchema, type RoleFormSchemaType } from '@/lib/roles/role-schema';
 import { createRoleAction, updateRoleAction } from '@/lib/roles/role-actions';
 import { useRoleStore } from '@/store/roles/use-role-store';

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
-import { ROLES_CONSTANTS } from '@/constants/roles';
+import { ROLES_CONSTANTS } from '@/lib/constants/roles';
 import { getRolePermissionsAction, updateRolePermissionsAction } from '@/lib/roles/role-actions';
 import { useRoleStore } from '@/store/roles/use-role-store';
 import type { RolePermissionRef } from '@/types/role';

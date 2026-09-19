@@ -10,7 +10,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { prisma } from '@/lib/prisma';
-import { ROLES_CONSTANTS } from '@/constants/roles';
+import { ROLES_CONSTANTS } from '@/lib/constants/roles';
 import {
   roleFormSchema,
   roleUpdateSchema,
