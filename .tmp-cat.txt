@@ -1,0 +1,13 @@
+﻿catalog-constants.ts
+catalog-fetchers.ts
+catalog-mappers.ts
+catalog-metadata.ts
+catalog-page-types.ts
+catalog-queries.test.ts
+catalog-queries.ts
+catalog-rbac.ts
+catalog-types.ts
+product-detail-query.ts
+product-detail.ts
+product-quick-view.ts
+product.mapper.ts

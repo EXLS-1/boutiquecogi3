@@ -3,23 +3,44 @@
  * =============================================================================
  * CHECKOUT HELPERS — Boutiquecogi3
  * =============================================================================
- * Logique PURE (testable sans DOM ni serveur) utilisée par `checkout-client.tsx` :
+ * Helpers PURS (testables sans DOM ni serveur) propres au TUNNEL DE PAIEMENT :
  *
  *  1. Validation runtime de la prop `user` issue de la session Better-Auth.
- *  2. Normalisation du panier Zustand (`CartItem` = `{ product, quantity }`)
- *     vers le contrat EXACT attendu par `processCinetPayCheckout` :
- *     `{ id, name, price, quantity }[]`.
- *  3. Résolution du prix unitaire selon la devise d'affichage (USD / CDF),
- *     alignée sur `store/use-cart` (`getTotalPrice`).
- *  4. Normalisation des numéros Mobile Money (RDC : +243 / 0 + 8|9 XXXXXXXX).
+ *  2. Identité affichable du client (nom, initiales).
+ *  3. Normalisation des numéros Mobile Money (RDC : +243 / 0 + 8|9 XXXXXXXX).
+ *  4. Redirection de connexion avec préservation de la destination.
  *
- * Contrainte : aucun import RUNTIME (uniquement `import type`), afin que ce
- * module reste utilisable côté client sans embarquer Prisma / zod.
+ * ⚠️ RÈGLE D'UNIFICATION : toute la logique PANIER (normalisation des
+ * `CartItem`, prix par devise, stock, total, anomalies, charge utile serveur)
+ * vit dans la source unique partagée `lib/cart/cart-domain`
+ * (`buildCartSummary`, `resolveCartUnitPrice`, `formatCartAmount`,
+ * `buildCartSyncPayload`…). Les adaptateurs ci-dessous DELEGUENT à ce domaine :
+ * aucun calcul de prix / stock / quantité n'est dupliqué ici — la page panier,
+ * le store, le tunnel de paiement et les écrans de commandes lisent donc
+ * toujours le MÊME total, dans la MÊME devise.
+ *
+ * Contrainte : ce module ne dépend d'aucun runtime lourd (Prisma, zod,
+ * next/headers), il reste donc importable côté client comme côté serveur.
  */
 
-import type { DisplayCurrency } from "@/lib/currency/exchange-rate-types";
+import {
+  CART_ISSUE_LABELS,
+  CART_ROUTES,
+  buildCartSummary,
+  buildSignInRedirect,
+  clampCartQuantity,
+  formatCartAmount,
+  resolveCartCurrency,
+  resolveCartStock,
+  resolveCartUnitPrice,
+  MAX_CART_QUANTITY,
+  type CartCurrency,
+  type CartIssue,
+  type CartLine,
+  type CartLineInput,
+} from "@/lib/cart/cart-domain";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── 1. Utilisateur / session ────────────────────────────────────────────────
 
 /** Utilisateur minimal requis par le tunnel de paiement. */
 export interface CheckoutUser {
@@ -61,6 +82,13 @@ export interface CheckoutCartLineInput {
   quantity?: number | null;
 }
 
+/**
+ * Totaux du tunnel : réexportés depuis le domaine panier pour éviter
+ * toute redéfinition locale (`CartLine` / `CartIssue` restent canoniques).
+ */
+export type CheckoutLine = CartLine;
+export type CheckoutCartInput = CartLineInput;
+
 export type CheckoutIssueReason =
   | "invalid"
   | "unavailable"
@@ -86,17 +114,16 @@ export interface CheckoutSummary {
   currency: DisplayCurrency;
 }
 
-/** Libellés humains des anomalies détectées dans le panier. */
-export const CHECKOUT_ISSUE_LABELS: Record<CheckoutIssueReason, string> = {
-  invalid: "article invalide",
-  unavailable: "article indisponible",
-  out_of_stock: "rupture de stock",
-  quantity: "quantité ajustée au stock disponible",
-  price: "prix indisponible",
-};
+/**
+ * Libellés humains des anomalies détectées dans le panier.
+ * Alias de `CART_ISSUE_LABELS` (domaine) : une seule table de libellés pour la
+ * page panier, le checkout et les messages de synchronisation.
+ */
+export const CHECKOUT_ISSUE_LABELS: Record<CheckoutIssueReason, string> =
+  CART_ISSUE_LABELS;
 
-/** Quantité maximale par ligne (aligné sur `MAX_CART_QUANTITY` du store). */
-export const MAX_CHECKOUT_QUANTITY = 99;
+/** Quantité maximale par ligne (source unique : domaine panier). */
+export const MAX_CHECKOUT_QUANTITY = MAX_CART_QUANTITY;
 
 /**
  * Numéros Mobile Money RDC : `+243 8XXXXXXXX`, `243 8XXXXXXXX` ou `08XXXXXXXX`.
@@ -161,133 +188,72 @@ export function normalizeMobileMoneyPhone(raw: unknown): string | null {
   return match ? `+243${match[1]}` : null;
 }
 
-// ─── 3. Panier → lignes de commande ──────────────────────────────────────────
-
-/** Convertit une valeur inconnue en quantité entière bornée `[1, 99]` (0 si invalide). */
-function resolveQuantity(value: unknown): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-
-  const truncated = Math.trunc(value);
-  if (truncated <= 0) return 0;
-
-  return Math.min(truncated, MAX_CHECKOUT_QUANTITY);
-}
-
-/** Lit le stock disponible ; `null` si non renseigné (aucune contrainte). */
-function resolveStock(product: CheckoutProductInput): number | null {
-  const stock = product.stock;
-  if (typeof stock !== "number" || !Number.isFinite(stock)) return null;
-
-  return Math.max(0, Math.trunc(stock));
-}
+// ─── 3. Panier → lignes de commande (délégation au domaine) ────────────────────
+// Toute la normalisation (quantité, stock, prix, déduplication, total) vit dans
+// `lib/cart/cart-domain` → `buildCartSummary`. Les fonctions ci-dessous restent
+// exportées pour compatibilité mais délèguent SANS dupliquer de calcul.
 
 /**
- * Prix unitaire selon la devise d'affichage, réduction appliquée.
- * Même logique que `store/use-cart` → `getTotalPrice(currency)` :
- *   CDF : `basePriceCDF || price`, USD : `basePriceUSD || price`.
+ * Prix unitaire selon la devise d'affichage, remise appliquée.
+ * Délègue à `resolveCartUnitPrice` (domaine) : MÊME résolution que le store,
+ * la page panier et `buildCartSummary`.
  * @returns `0` si le prix est inexploitable (la ligne sera écartée).
  */
 export function resolveUnitPrice(
   product: CheckoutProductInput,
   currency: DisplayCurrency,
 ): number {
-  const basePrice =
-    currency === "CDF"
-      ? product.basePriceCDF || product.price
-      : product.basePriceUSD || product.price;
-
-  if (
-    typeof basePrice !== "number" ||
-    !Number.isFinite(basePrice) ||
-    basePrice <= 0
-  ) {
-    return 0;
-  }
-
-  const rawDiscount = product.discountPercent;
-  const discountPercent =
-    typeof rawDiscount === "number" && Number.isFinite(rawDiscount)
-      ? Math.min(Math.max(rawDiscount, 0), 100)
-      : 0;
-
-  const discounted = basePrice * (1 - discountPercent / 100);
-
-  return Number.isFinite(discounted) && discounted > 0 ? discounted : 0;
+  return resolveCartUnitPrice(product, resolveCartCurrency(currency));
 }
 
 /**
  * Construit la liste des lignes payables à partir du panier Zustand.
  *
- * Robustesse :
- *  - ignore les entrées corrompues (localStorage) au lieu de propager `NaN` ;
- *  - écarte les articles indisponibles / en rupture de stock ;
- *  - borne les quantités (`1 → 99` et au stock disponible) ;
- *  - garantit un `total` fini, calculé EXACTEMENT comme la Server Action
- *    (`Σ price * quantity`), afin que CinetPay reçoive le bon montant.
+ * Délègue à `buildCartSummary` : ignore les entrées corrompues, écarte les
+ * indisponibles / ruptures, borne les quantités (`1 → MAX_CART_QUANTITY` et au
+ * stock disponible), fusionne les doublons et calcule le total EXACTEMENT
+ * comme la Server Action (`Σ price × quantity`).
  */
 export function buildCheckoutSummary(
   items: readonly CheckoutCartLineInput[] | null | undefined,
   currency: DisplayCurrency,
 ): CheckoutSummary {
-  const lines: CheckoutLineItem[] = [];
-  const issues: CheckoutIssue[] = [];
-  let total = 0;
-  let totalQuantity = 0;
-
-  for (const item of items ?? []) {
-    const product = item?.product;
-
-    if (!product || typeof product.id !== "string" || !product.id.trim()) {
-      issues.push({ id: "", name: "Article inconnu", reason: "invalid" });
-      continue;
-    }
-
-    const id = product.id;
-    const name =
-      typeof product.name === "string" && product.name.trim()
-        ? product.name.trim()
-        : "Article sans nom";
-
-    const quantity = resolveQuantity(item?.quantity);
-    if (quantity === 0) {
-      issues.push({ id, name, reason: "quantity" });
-      continue;
-    }
-
-    if (product.isAvailable === false) {
-      issues.push({ id, name, reason: "unavailable" });
-      continue;
-    }
-
-    const stock = resolveStock(product);
-    if (stock === 0) {
-      issues.push({ id, name, reason: "out_of_stock" });
-      continue;
-    }
-
-    const payableQuantity =
-      stock === null ? quantity : Math.min(quantity, stock);
-    if (payableQuantity !== quantity) {
-      issues.push({ id, name, reason: "quantity" });
-    }
-
-    const unitPrice = resolveUnitPrice(product, currency);
-    if (unitPrice === 0) {
-      issues.push({ id, name, reason: "price" });
-      continue;
-    }
-
-    lines.push({ id, name, price: unitPrice, quantity: payableQuantity });
-
-    total += unitPrice * payableQuantity;
-    totalQuantity += payableQuantity;
-  }
+  const normalizedCurrency = resolveCartCurrency(currency);
+  const summary = buildCartSummary(
+    items as readonly CartLineInput[] | null | undefined,
+    normalizedCurrency,
+  );
 
   return {
-    lines,
-    issues,
-    total: Number.isFinite(total) ? total : 0,
-    totalQuantity,
-    currency,
+    lines: summary.lines.map((line) => ({
+      id: line.id,
+      name: line.name,
+      price: line.price,
+      quantity: line.quantity,
+    })),
+    issues: summary.issues.map((issue) => ({
+      id: issue.id,
+      name: issue.name,
+      reason: issue.reason,
+    })),
+    total: summary.total,
+    totalQuantity: summary.totalQuantity,
+    currency: normalizedCurrency,
   };
+}
+
+// ─── 4. Redirection / navigation (délégation au domaine) ──────────────────────
+
+/** Re-export : une seule construction d'URL de connexion (`callbackUrl`). */
+export { buildSignInRedirect };
+
+/**
+ * Montant formaté du tunnel (`formatCartAmount` du domaine) : MÊME arrondi et
+ * MÊME locale que la page panier, le badge et les écrans de commandes.
+ */
+export function formatCheckoutAmount(
+  amount: number,
+  currency: DisplayCurrency,
+): string {
+  return formatCartAmount(amount, resolveCartCurrency(currency));
 }

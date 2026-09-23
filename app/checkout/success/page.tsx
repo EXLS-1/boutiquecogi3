@@ -1,7 +1,18 @@
 // app/checkout/success/page.tsx
+/**
+ * Retour CinetPay — paiement en cours de validation (Server Component).
+ *
+ * Logique unifiée du panier : le panier local est vidé côté client
+ * (`CheckoutSuccessCartReset`) car la commande est persistée AVANT la
+ * redirection CinetPay (`createOrderFromCart`) — sans cela, le retour
+ * produirait un doublon de commande. Les routes proviennent de la source
+ * unique `lib/cart/cart-domain` (`CART_ROUTES`).
+ */
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CheckoutSuccessCartReset } from "@/components/cart/checkout-cart-state";
+import { CART_ROUTES } from "@/lib/cart/cart-domain";
 
 export default async function CheckoutSuccessPage({
   searchParams,
@@ -13,6 +24,8 @@ export default async function CheckoutSuccessPage({
 
   return (
     <div className="container mx-auto max-w-lg px-4 py-16 text-center">
+      {/* Vide le panier local — la commande est déjà persistée côté serveur. */}
+      <CheckoutSuccessCartReset />
       <h1 className="mb-4 text-2xl font-semibold text-emerald-700">
         Paiement en cours de validation
       </h1>
@@ -27,10 +40,10 @@ export default async function CheckoutSuccessPage({
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Button asChild>
-          <Link href="/products">Continuer mes achats</Link>
+          <Link href={CART_ROUTES.products}>Continuer mes achats</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/account/orders">Mes commandes</Link>
+          <Link href={CART_ROUTES.accountOrders}>Mes commandes</Link>
         </Button>
       </div>
     </div>

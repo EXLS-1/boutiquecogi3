@@ -1,0 +1,8 @@
+﻿c:\boutiquecogi3\node_modules\next\dist\docs\01-app\02-guides\deploying-to-platforms.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\02-guides\forms.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\02-guides\ppr-platform-guide.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\03-api-reference\02-components\form.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\03-api-reference\03-file-conventions\dynamic-routes.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\03-api-reference\03-file-conventions\02-route-segment-config\dynamicParams.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\03-api-reference\04-functions\cookies.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\03-api-reference\07-adapters\10-routing-information.md

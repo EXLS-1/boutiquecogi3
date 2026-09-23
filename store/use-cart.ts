@@ -14,6 +14,14 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 import type { Currency } from "@prisma/client";
+import {
+  CART_STORAGE_KEY,
+  MAX_CART_QUANTITY,
+  clampCartQuantity,
+  resolveCartStock,
+  sumCartItemsQuantity,
+  sumCartItemsTotal,
+} from "@/lib/cart/cart-domain";
 
 interface CartItem {
   product: CatalogProduct;
@@ -54,15 +62,13 @@ interface PersistedCartItem {
 
 interface CartStore extends CartStoreState, CartStoreActions { }
 
-const MAX_CART_QUANTITY = 99;
-const CART_STORAGE_KEY = "boutiquecogi3_cart";
-
 /**
  * Récupère la quantité disponible pour un produit.
+ * Délègue à la logique partagée (`lib/cart/cart-domain`) : une seule règle de
+ * stock pour le store, la page panier, le tunnel de paiement et l'admin.
  */
 function getProductStock(product: CatalogProduct): number {
-  const stocked = product as StockedProduct;
-  return typeof stocked.stock === "number" ? stocked.stock : MAX_CART_QUANTITY;
+  return resolveCartStock(product as StockedProduct) ?? MAX_CART_QUANTITY;
 }
 
 /**
@@ -71,7 +77,7 @@ function getProductStock(product: CatalogProduct): number {
 function createCartItem(product: CartProduct, quantity: number = 1): CartItem {
   return {
     product: { ...product } as CartItem["product"],
-    quantity: Math.min(quantity, MAX_CART_QUANTITY),
+    quantity: clampCartQuantity(quantity),
     addedAt: new Date(),
   };
 }
@@ -96,13 +102,17 @@ export const useCartStore = create<CartStore>()(
             const existingIndex = state.items.findIndex(
               (item) => item.product.id === product.id,
             );
+            // Borne unique : MAX_CART_QUANTITY et stock disponible.
+            const maxQuantity = Math.min(
+              MAX_CART_QUANTITY,
+              getProductStock(product),
+            );
 
             if (existingIndex >= 0) {
-              // Produit existant : mise à jour quantité
-              const newQuantity = Math.min(
+              // Produit existant : mise à jour quantité (bornée)
+              const newQuantity = clampCartQuantity(
                 state.items[existingIndex].quantity + quantity,
-                MAX_CART_QUANTITY,
-                getProductStock(product),
+                maxQuantity,
               );
               state.items[existingIndex] = {
                 ...state.items[existingIndex],
@@ -110,11 +120,10 @@ export const useCartStore = create<CartStore>()(
               };
             } else {
               // Nouveau produit
-              const validQuantity = Math.min(
-                quantity,
-                getProductStock(product),
+              const newItem = createCartItem(
+                product,
+                clampCartQuantity(quantity, maxQuantity),
               );
-              const newItem = createCartItem(product, validQuantity);
               state.items.push(newItem as unknown as (typeof state.items)[number]);
             }
           });
@@ -141,7 +150,7 @@ export const useCartStore = create<CartStore>()(
                 MAX_CART_QUANTITY,
                 getProductStock(item.product),
               );
-              item.quantity = Math.min(quantity, maxQty);
+              item.quantity = clampCartQuantity(quantity, maxQty);
             }
           });
         },
@@ -160,21 +169,15 @@ export const useCartStore = create<CartStore>()(
         closeCart: () => set({ isOpen: false }),
 
         // ─── Sélecteurs ───────────────────────────────────────────────────────
+        // Tous les agrégats déléguent à `lib/cart/cart-domain` : les montants
+        // affichés (badge, page panier, checkout, commandes) proviennent donc
+        // toujours du MÊME calcul.
         getTotalItems: () => {
-          return get().items.reduce((sum, item) => sum + item.quantity, 0);
+          return sumCartItemsQuantity(get().items);
         },
 
         getTotalPrice: (currency) => {
-          return get().items.reduce((sum, item) => {
-            const p = item.product;
-            const price =
-              currency === "CDF"
-                ? (p.basePriceCDF || p.price)
-                : (p.basePriceUSD || p.price);
-            const discountedPrice =
-              price * (1 - p.discountPercent / 100);
-            return sum + discountedPrice * item.quantity;
-          }, 0);
+          return sumCartItemsTotal(get().items, currency);
         },
 
         getItemQuantity: (productId) => {

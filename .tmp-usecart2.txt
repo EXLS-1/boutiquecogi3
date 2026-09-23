@@ -1,0 +1,4 @@
+﻿C:\boutiquecogi3\app\cart\page.tsx
+C:\boutiquecogi3\components\cart\cart-badge.tsx
+C:\boutiquecogi3\components\cart\cart-sync-manager.tsx
+C:\boutiquecogi3\store\use-cart.ts

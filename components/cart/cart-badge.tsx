@@ -1,26 +1,34 @@
 // components/cart/cart-badge.tsx
-// Ce composant affiche un badge avec la quantité totale d'articles dans le panier.
-// Il utilise Zustand pour accéder au panier global et
-// calcule la quantité totale en sommant les quantités de chaque article.
-// Le badge est affiché uniquement si la quantité totale est supérieure à zéro,
-// et il est positionné de manière absolue pour se superposer à l'icône du panier.
+// Badge du panier : compteur et libellés proviennent de la logique partagée
+// (`lib/cart/cart-domain`), jamais d'un calcul local — le nombre affiché est
+// donc toujours identique à celui de la page panier et du tunnel de paiement.
 "use client";
 
-import { useCartStore } from "@/store/use-cart";
 import { useMounted } from "@/hooks/use-mounted";
+import {
+  formatCartBadgeCount,
+  formatCartBadgeLabel,
+} from "@/lib/cart/cart-domain";
+import { useCartItemCount } from "@/store/use-cart";
 
 export function CartBadge() {
-  const items = useCartStore((state) => state.items); // Accès aux articles du panier via Zustand
-  const mounted = useMounted(); // Garde d'hydratation : le store client n'est lisible qu'après montage
+  // Sélecteur dérivé du store : re-render uniquement si le nombre change.
+  const totalQuantity = useCartItemCount();
+  // Garde d'hydratation : le store persistant n'est lisible qu'après montage.
+  const mounted = useMounted();
 
-  // Calcul de la quantité totale via la logique Zustand
-  const totalQuantity = items.reduce((total, item) => total + item.quantity, 0); // Somme des quantités de chaque article pour obtenir la quantité totale
+  if (!mounted || totalQuantity <= 0) return null;
 
-  if (!mounted || totalQuantity === 0) return null; // Ne pas afficher le badge tant que le store client n'est pas hydraté
+  const label = formatCartBadgeLabel(totalQuantity);
 
   return (
-    <div className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-600 text-[11px] font-medium text-white animate-in fade-in zoom-in duration-300">
-      {totalQuantity}
+    <div
+      role="status"
+      aria-label={label}
+      title={label}
+      className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-600 text-[11px] font-medium text-white animate-in fade-in zoom-in duration-300"
+    >
+      {formatCartBadgeCount(totalQuantity)}
     </div>
   );
 }

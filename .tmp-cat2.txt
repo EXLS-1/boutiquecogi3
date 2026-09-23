@@ -1,0 +1,68 @@
+﻿catalog-constants.ts:120: VIEW_PRICE: "product:view-price",
+catalog-mappers.ts:93: const basePriceUSD = raw.basePrice;
+catalog-mappers.ts:94: const basePriceCDF = usdToCdf(basePriceUSD);
+catalog-mappers.ts:117: // Compat UI: ProductCard utilise `price` (amount en cents USD)
+catalog-mappers.ts:119: // Le store Price choisit ensuite la devise active.
+catalog-mappers.ts:120: price: Math.round(basePriceUSD),
+catalog-mappers.ts:123: basePrice: raw.basePrice,
+catalog-mappers.ts:125: basePriceUSD,
+catalog-mappers.ts:126: basePriceCDF,
+catalog-page-types.ts:74: "price-asc",
+catalog-page-types.ts:75: "price-desc",
+catalog-page-types.ts:85: "price-asc": "Prix croissant",
+catalog-page-types.ts:86: "price-desc": "Prix décroissant",
+catalog-queries.ts:277: OR: [{ isFeatured: true }, { salePrice: { not: null } }],
+catalog-queries.ts:411: orClauses.push({ isFeatured: true }, { salePrice: { not: null } });
+catalog-queries.ts:426: ...(validated.minPrice !== undefined && {
+catalog-queries.ts:427: basePrice: { gte: new Prisma.Decimal(validated.minPrice) },
+catalog-queries.ts:429: ...(validated.maxPrice !== undefined && {
+catalog-queries.ts:430: basePrice: { lte: new Prisma.Decimal(validated.maxPrice) },
+catalog-types.ts:111: * NOTE: `components/product-price/price.tsx` attend des montants en cents USD
+catalog-types.ts:116: readonly price: number; // amount en cents USD
+catalog-types.ts:120: readonly basePrice: number;
+catalog-types.ts:122: readonly basePriceUSD: number;
+catalog-types.ts:123: readonly basePriceCDF: number;
+catalog-types.ts:156: readonly basePrice: number;        // Déjà sérialisé (Decimal → number)
+catalog-types.ts:197: "basePrice",
+catalog-types.ts:220: readonly minPrice?: number;
+catalog-types.ts:221: readonly maxPrice?: number;
+catalog-types.ts:280: // Compat UI: montants attendus par components/product-price/price.tsx
+catalog-types.ts:281: price: z.number().nonnegative(),
+catalog-types.ts:284: basePrice: z.number().nonnegative().max(100_000_000),
+catalog-types.ts:286: basePriceUSD: z.number().nonnegative(),
+catalog-types.ts:287: basePriceCDF: z.number().nonnegative(),
+catalog-types.ts:311: minPrice: z.number().nonnegative().optional(),
+catalog-types.ts:312: maxPrice: z.number().nonnegative().optional(),
+catalog-types.ts:353: export function normalizeProducts<T extends { basePrice?: unknown }>(
+catalog-types.ts:355: ): (T & { basePrice: number })[] {
+catalog-types.ts:359: basePrice: serializeDecimal(item.basePrice),
+catalog-types.ts:360: })) as (T & { basePrice: number })[];
+catalog-types.ts:366: export function normalizeProduct<T extends { basePrice?: unknown }>(
+catalog-types.ts:368: ): (T & { basePrice: number }) | null {
+catalog-types.ts:372: basePrice: serializeDecimal(item.basePrice),
+catalog-types.ts:373: } as T & { basePrice: number };
+product-detail-query.ts:35: productPrices: true,
+product-detail.ts:32: readonly priceOffset: number;
+product-detail.ts:72: export interface ProductDetailPrice {
+product-detail.ts:76: readonly compareAtPrice: number | null;
+product-detail.ts:122: readonly price: number;
+product-detail.ts:123: readonly basePrice: number;
+product-detail.ts:129: readonly salePrice: number | null;
+product-detail.ts:151: readonly prices: readonly ProductDetailPrice[];
+product-detail.ts:177: price: unknown;
+product-detail.ts:178: basePrice: unknown;
+product-detail.ts:184: salePrice: number | null;
+product-detail.ts:216: priceOffset: number;
+product-detail.ts:257: productPrices: Array<{
+product-detail.ts:261: compareAtPrice: number | null;
+product-detail.ts:311: priceOffset: v.priceOffset,
+product-detail.ts:362: const prices = raw.productPrices.map((p) => ({
+product-detail.ts:366: compareAtPrice: p.compareAtPrice,
+product-detail.ts:411: price: serializeDecimal(raw.price),
+product-detail.ts:412: basePrice: serializeDecimal(raw.basePrice),
+product-detail.ts:418: salePrice: raw.salePrice,
+product-detail.ts:441: prices,
+product-quick-view.ts:5: "id" | "slug" | "name" | "description" | "basePrice" | "salePrice" |
+product-quick-view.ts:19: basePrice: product.basePrice,
+product-quick-view.ts:20: salePrice: product.salePrice,
+product.mapper.ts:11: price: validated.price,

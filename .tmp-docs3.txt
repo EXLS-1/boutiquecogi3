@@ -1,0 +1,6 @@
+﻿c:\boutiquecogi3\node_modules\next\dist\docs\01-app\01-getting-started\05-server-and-client-components.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\02-guides\deploying-to-platforms.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\02-guides\forms.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\02-guides\server-actions.md
+c:\boutiquecogi3\node_modules\next\dist\docs\01-app\03-api-reference\05-config\01-next-config-js\serverActions.md
+c:\boutiquecogi3\node_modules\next\dist\docs\02-pages\02-guides\forms.md

@@ -1,0 +1,246 @@
+﻿model Stock {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  productId      String   @unique @db.Uuid // 1:1 avec Product
+  quantity       Int      @default(0) // Stock physique réel
+  reserved       Int      @default(0) // Quantité réservée par des commandes en cours
+  alertThreshold Int      @default(10) // Seuil d'alerte (email/dashboard)
+  warehouse      String? // Emplacement / entrepôt
+  lastMovementAt DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  updatedBy      String?  @db.Uuid // Qui a fait le dernier ajustement
+
+  // Relations
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  updater   User?           @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+  movements StockMovement[]
+
+  // ─── Computed / View logic ───
+  // available = quantity - reserved (géré en app ou via DB trigger)
+
+  @@index([productId])
+  @@index([quantity])
+  @@index([warehouse])
+  @@map("stocks")
+}
+
+// ============================================
+// VARIANT STOCK (Stock par variante/SKU)
+// ============================================
+// Couche canonique d'inventaire au niveau SKU.
+//   available = quantity - reserved
+// Le Stock au niveau produit (1:1) est conservé comme
+// agrégat rétrocompatibilité (toute écriture passe par
+// lib/product-inventory/inventory.service.ts qui maintient
+// les DEUX couches de manière transactionnelle).
+
+model VariantStock {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  variantId String         @db.Uuid
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  // CONTRAT N°5 — entrepôt cible (null = entrepôt principal)
+model Cart {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  userId       String?  @unique @db.Uuid
+  sessionToken String?  @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user           User?           @relation(fields: [userId], references: [id])
+  items          CartItem[]
+  abandonedCarts AbandonedCart[]
+
+  @@index([expiresAt])
+  @@map("cart")
+}
+
+model CartItem {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  cartId             String         @db.Uuid
+  cart               Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId          String         @db.Uuid
+  variant            ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity           Int            @default(1)
+  snapshotPriceAtAdd Json?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+  @@map("cart_item")
+}
+
+model AbandonedCart {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  cartId    String   @unique @db.Uuid
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+model CartItem {
+  id                 String         @id @default(uuid(7)) @db.Uuid
+  cartId             String         @db.Uuid
+  cart               Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId          String         @db.Uuid
+  variant            ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity           Int            @default(1)
+  snapshotPriceAtAdd Json?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+  @@map("cart_item")
+}
+
+model AbandonedCart {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  cartId    String   @unique @db.Uuid
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  userId    String?  @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("abandoned_cart")
+}
+
+// ==========================================
+// COMMANDE
+// ==========================================
+
+model Order {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  orderNumber    String          @unique
+  userId         String?         @db.Uuid
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status         OrderStatusEnum @default(PENDING)
+  subtotalAmount Int
+  taxAmount      Int
+model Order {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  orderNumber    String          @unique
+  userId         String?         @db.Uuid
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status         OrderStatusEnum @default(PENDING)
+  subtotalAmount Int
+  taxAmount      Int
+  discountAmount Int
+  grandTotal     Int
+  shippingCost   Int             @default(0)
+  totalAmount    Int // (subtotal + shipping + tax - discount) – redondant mais pratique
+  currency       Currency        @default(USD)
+
+  billingMethodId  String?         @db.Uuid
+  billingMethod    BillingMethod?  @relation(fields: [billingMethodId], references: [id])
+  shippingMethodId String?         @db.Uuid
+  shippingMethod   ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
+
+  trackingNumber  String?
+  cinetpayTransId String? @unique
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  paidAt    DateTime?
+
+  items   OrderItem[]
+  payment Payment?
+
+  shipment             Shipment?
+  orderStatusHistories OrderStatusHistory[]
+  couponUsage          CouponUsage?
+  giftCardRedemptions  GiftCardRedemption[]
+  returns              Return[]
+  refundItems          RefundItem[]
+  orderAddresses       OrderAddress[]
+  stockReservations    StockReservation[]
+  stockMovements       StockMovement[]
+  invoice              Invoice?
+  coupon               Coupon?              @relation(fields: [couponId], references: [id])
+  couponId             String?              @db.Uuid
+model OrderItem {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  orderId        String         @db.Uuid
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String         @db.Uuid
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variantId      String         @db.Uuid
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  productName    String
+  variantSku     String
+  productImage   String?
+  attributes     Json?
+  quantity       Int
+  unitPrice      Int
+  subtotal       Int
+  taxAmount      Int?
+  discountAmount Int?
+  currency       Currency?
+  exchangeRate   Decimal?       @db.Decimal(10, 4)
+  returnItems    ReturnItem[]
+
+  @@index([orderId])
+  @@map("order_item")
+}
+
+model OrderStatusHistory {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  orderId       String      @db.Uuid
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status        OrderStatus @relation(fields: [orderStatusId], references: [id])
+  note          String?     @db.Text
+  createdAt     DateTime    @default(now())
+  orderStatusId String      @db.Uuid
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}
+
+model OrderAddress {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  orderId   String   @db.Uuid
+model Payment {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  orderId       String            @unique @db.Uuid
+  order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Int
+  currency      Currency          @default(USD)
+  status        PaymentStatus     @default(PENDING)
+  method        PaymentMethodType @default(CINETPAY)
+  transactionId String?           @unique
+  paidAt        DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  attempts PaymentAttempt[]
+  refund   Refund?
+
+  @@map("payment")
+}
+
+model PaymentAttempt {
+  id        String             @id @default(uuid(7)) @db.Uuid
+  paymentId String             @db.Uuid
+  payment   Payment            @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount    Int
+  status    PaymentStatus      @default(PENDING)
+  method    PaymentMethodType?
+  createdAt DateTime           @default(now())
+
+  @@index([paymentId, createdAt])
+  @@map("payment_attempt")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethodType {
+  CINETPAY

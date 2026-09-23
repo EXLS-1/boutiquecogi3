@@ -1,0 +1,10 @@
+﻿app/orders/account/orders/page.tsx(51,55): error TS2339: Property 'paymentStatus' does not exist on type '{ user: { id: string; name: string | null; email: string; } | null; items: ({ variant: { product: { id: string; name: string; slug: string; description: string; seoTitle: string | null; seoDescription: string | null; ... 27 more ...; publishedById: string | null; }; } & { ...; }; } & { ...; })[]; } & { ...; }'.
+app/orders/page.tsx(29,30): error TS2339: Property 'id' does not exist on type 'never'.
+app/orders/page.tsx(31,26): error TS2339: Property 'orderNumber' does not exist on type 'never'.
+app/orders/page.tsx(33,50): error TS2339: Property 'user' does not exist on type 'never'.
+app/orders/page.tsx(34,50): error TS2339: Property 'items' does not exist on type 'never'.
+app/orders/page.tsx(36,27): error TS2339: Property 'totalAmount' does not exist on type 'never'.
+app/orders/page.tsx(36,65): error TS2339: Property 'currency' does not exist on type 'never'.
+app/orders/page.tsx(38,50): error TS2339: Property 'paymentStatus' does not exist on type 'never'.
+app/orders/page.tsx(40,33): error TS2339: Property 'createdAt' does not exist on type 'never'.
+app/orders/page.tsx(42,50): error TS2339: Property 'status' does not exist on type 'never'.

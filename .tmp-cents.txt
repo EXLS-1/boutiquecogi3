@@ -1,0 +1,3 @@
+﻿633: basePrice   Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
+713: @@index([status, isActive]) // PHASE 2 — remplace [isArchived, basePrice]
+749: priceOffset Int      @default(0)

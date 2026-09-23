@@ -1,0 +1,4 @@
+﻿C:\boutiquecogi3\app\admin\dashboard\orders\page.tsx
+C:\boutiquecogi3\app\admin\order\page.tsx
+C:\boutiquecogi3\app\orders\page.tsx
+C:\boutiquecogi3\app\orders\account\orders\page.tsx

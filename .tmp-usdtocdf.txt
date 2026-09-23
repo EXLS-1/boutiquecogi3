@@ -1,0 +1,6 @@
+﻿14: import { usdToCdf } from "@/lib/currency/exchange-rate-convert";
+15: import {
+18: } from "./catalog-constants";
+19: import {
+27: } from "./catalog-types";
+94: const basePriceCDF = usdToCdf(basePriceUSD);

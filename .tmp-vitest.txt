@@ -1,0 +1,93 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mC:/boutiquecogi3[39m
+
+ [31m❯[39m lib/cart/cart-domain.test.ts [2m([22m[2m26 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 444[2mms[22m[39m
+     [32m✓[39m renvoie 0 pour toute quantité inexploitable[32m 13[2mms[22m[39m
+     [32m✓[39m tronque les décimales et borne la quantité maximale[32m 2[2mms[22m[39m
+     [32m✓[39m calcule la quantité disponible = quantity - reserved[32m 1[2mms[22m[39m
+     [32m✓[39m distingue stock non renseigné (null) et rupture (0)[32m 1[2mms[22m[39m
+     [32m✓[39m résout le prix par devise (USD / CDF)[32m 1[2mms[22m[39m
+     [32m✓[39m retombe sur `price` quand le prix devise est absent[32m 5[2mms[22m[39m
+     [32m✓[39m applique et borne la remise[32m 2[2mms[22m[39m
+     [32m✓[39m arrondit selon la devise[32m 1[2mms[22m[39m
+[31m     [31m×[31m renvoie 0 (ligne à écarter) quand le prix est inexploitable[39m[32m 32[2mms[22m[39m
+[31m     [31m×[31m normalise des lignes valides et calcule le total exact[39m[32m 17[2mms[22m[39m
+     [32m✓[39m déduplique deux entrées du même produit (localStorage corrompu)[32m 3[2mms[22m[39m
+     [32m✓[39m écarte indisponible, rupture, prix nul, produit absent et quantité invalide[32m 2[2mms[22m[39m
+     [32m✓[39m borne la quantité au stock disponible et le signale[32m 3[2mms[22m[39m
+     [32m✓[39m utilise l'image de repli et un nom par défaut[32m 1[2mms[22m[39m
+     [32m✓[39m tolère une liste nulle et reste en USD par défaut[32m 1[2mms[22m[39m
+     [32m✓[39m reste cohérent sur une devise inconnue[32m 1[2mms[22m[39m
+     [32m✓[39m toCartLines / sumCartLinesTotal / sumCartLinesQuantity concordent[32m 2[2mms[22m[39m
+     [32m✓[39m ignore les lignes écartées dans le total estimé[32m 1[2mms[22m[39m
+     [32m✓[39m est indépendante de l'ordre et du prix, sensible à la quantité[32m 2[2mms[22m[39m
+     [32m✓[39m ignore les entrées corrompues (pas de synchronisation parasite)[32m 1[2mms[22m[39m
+     [32m✓[39m produit le contrat attendu par `syncCartAction`, dédupliqué et trié[32m 1[2mms[22m[39m
+     [32m✓[39m envoie le prix catalogue (remise non appliquée) et écarte l'inexploitable[32m 3[2mms[22m[39m
+     [32m✓[39m respecte le schéma serveur : image et nom jamais vides[32m 1[2mms[22m[39m
+     [33m[2m✓[22m[39m formate les montants selon la devise [33m 334[2mms[22m[39m
+     [32m✓[39m pluralise les libellés d'articles[32m 1[2mms[22m[39m
+     [32m✓[39m normalise la devise et construit la redirection de connexion[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m lib/cart/cart-domain.test.ts[2m > [22mresolveCartUnitPrice[2m > [22mrenvoie 0 (ligne à écarter) quand le prix est inexploitable
+[31m[1mAssertionError[22m: expected 25 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 25[39m
+
+[36m [2m❯[22m lib/cart/cart-domain.test.ts:[2m136:77[22m[39m
+    [90m134|[39m   it("renvoie 0 (ligne à écarter) quand le prix est inexploitable", ()…
+    [90m135|[39m     [34mexpect[39m([34mresolveCartUnitPrice[39m([35mnull[39m[33m,[39m [32m"USD"[39m))[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m136|[39m     expect(resolveCartUnitPrice(makeProduct({ price: Number.NaN }), "U…
+    [90m   |[39m                                                                             [31m^[39m
+    [90m137|[39m       [34m0[39m[33m,[39m
+    [90m138|[39m     )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m lib/cart/cart-domain.test.ts[2m > [22mbuildCartSummary[2m > [22mnormalise des lignes valides et calcule le total exact
+[31m[1mAssertionError[22m: expected [ { id: 'a', name: 'A', …(3) }, …(1) ] to deeply equal [ { id: 'a', name: 'A', …(3) }, …(1) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    {[22m
+[2m      "id": "a",[22m
+[2m      "image": "https://cdn.example.com/robe.webp",[22m
+[2m      "name": "A",[22m
+[32m-     "price": 10,[39m
+[31m+     "price": 25,[39m
+[2m      "quantity": 2,[22m
+[2m    },[22m
+[2m    {[22m
+[2m      "id": "b",[22m
+[2m      "image": "https://cdn.example.com/robe.webp",[22m
+[2m      "name": "B",[22m
+[32m-     "price": 5.5,[39m
+[31m+     "price": 25,[39m
+[2m      "quantity": 3,[22m
+[2m    },[22m
+[2m  ][22m
+
+[36m [2m❯[22m lib/cart/cart-domain.test.ts:[2m154:27[22m[39m
+    [90m152|[39m     )[33m;[39m
+    [90m153|[39m
+    [90m154|[39m     [34mexpect[39m(summary[33m.[39mlines)[33m.[39m[34mtoEqual[39m([
+    [90m   |[39m                           [31m^[39m
+    [90m155|[39m       {
+    [90m156|[39m         id[33m:[39m [32m"a"[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m24 passed[39m[22m[90m (26)[39m
+[2m   Start at [22m 12:36:26
+[2m   Duration [22m 15.18s[2m (transform 731ms, setup 0ms, import 1.12s, tests 444ms, environment 12.44s)[22m
+
