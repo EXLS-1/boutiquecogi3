@@ -12,8 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMounted } from "@/hooks/use-mounted";
 import { processCinetPayCheckout } from "@/lib/actions/checkout.action";
 import { setDisplayCurrency } from "@/lib/actions/currency.actions";
-import type { DisplayCurrency } from "@/lib/currency/exchange-rate-types";
-import { formatCurrency } from "@/lib/utils/currency";
+import {
+  DISPLAY_CURRENCY_COOKIE,
+  buildSignInRedirect,
+  formatCartAmount,
+  resolveCartCurrency,
+  type CartCurrency,
+} from "@/lib/cart/cart-domain";
 import useCart from "@/store/use-cart";
 import {
   CHECKOUT_ISSUE_LABELS,
@@ -71,7 +76,7 @@ function CheckoutSessionExpired() {
         votre commande.
       </p>
       <Button asChild>
-        <Link href="/auth/sign-in?callbackUrl=/checkout">Se reconnecter</Link>
+        <Link href={buildSignInRedirect("/checkout")}>Se reconnecter</Link>
       </Button>
     </div>
   );
@@ -100,7 +105,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const { items } = useCart();
   const mounted = useMounted();
 
-  const [activeCurrency, setActiveCurrency] = useState<DisplayCurrency>("USD");
+  const [activeCurrency, setActiveCurrency] = useState<CartCurrency>("USD");
   const [isCurrencyPending, setIsCurrencyPending] = useState(false);
   const [currencyError, setCurrencyError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
@@ -126,19 +131,21 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
   const displayName = resolveCustomerName(checkoutUser);
   const initials = resolveUserInitials(checkoutUser);
-  const currencyFormat = { currency: activeCurrency };
 
   /** Change la devise d'affichage avec rollback si la Server Action échoue. */
-  const handleCurrencySwitch = async (currency: DisplayCurrency) => {
-    if (currency === activeCurrency || isCurrencyPending) return;
+  const handleCurrencySwitch = async (currency: CartCurrency) => {
+    const target = resolveCartCurrency(currency);
+    if (target === activeCurrency || isCurrencyPending) return;
 
     const previousCurrency = activeCurrency;
-    setActiveCurrency(currency);
+    setActiveCurrency(target);
     setIsCurrencyPending(true);
     setCurrencyError(null);
 
     try {
-      await setDisplayCurrency(currency);
+      // Persistance serveur (cookie) : la page `cancel` relira la même devise.
+      document.cookie = `${DISPLAY_CURRENCY_COOKIE}=${target}; path=/; max-age=31536000`;
+      await setDisplayCurrency(target);
     } catch {
       setActiveCurrency(previousCurrency);
       setCurrencyError(
@@ -258,10 +265,10 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                 </span>
                 <span className="shrink-0 text-xs text-zinc-500">
                   {line.quantity} ×{" "}
-                  {formatCurrency(line.price, currencyFormat)}
+                  {formatCartAmount(line.price, summary.currency)}
                 </span>
                 <span className="shrink-0 text-sm font-medium">
-                  {formatCurrency(line.price * line.quantity, currencyFormat)}
+                  {formatCartAmount(line.price * line.quantity, summary.currency)}
                 </span>
               </li>
             ))}
@@ -273,7 +280,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
               {summary.totalQuantity > 1 ? "s" : ""})
             </span>
             <span className="text-lg font-semibold">
-              {formatCurrency(summary.total, currencyFormat)}
+              {formatCartAmount(summary.total, summary.currency)}
             </span>
           </div>
 

@@ -18,11 +18,10 @@ import {
   CART_ISSUE_LABELS,
   CART_LABELS,
   CART_ROUTES,
-  MAX_CART_QUANTITY,
   buildCartSummary,
   formatCartAmount,
   formatCartItemCount,
-  resolveCartStock,
+  getCartLineMaxQuantity,
 } from "@/lib/cart/cart-domain";
 import useCart from "@/store/use-cart";
 
@@ -44,16 +43,14 @@ export default function CartPage() {
     [items, currency],
   );
 
-  // 2. Borne de quantité par produit (MAX_CART_QUANTITY ET stock disponible).
+  // 2. Borne de quantité par produit (borne globale ET stock disponible).
   const maxQuantityById = useMemo(() => {
     const limits = new Map<string, number>();
 
     for (const item of items) {
-      const stock = resolveCartStock(item.product);
-      limits.set(
-        item.product.id,
-        Math.min(MAX_CART_QUANTITY, stock ?? MAX_CART_QUANTITY),
-      );
+      const stock =
+        typeof item?.product?.stock === "number" ? item.product.stock : null;
+      limits.set(item.product.id, getCartLineMaxQuantity(stock));
     }
 
     return limits;
@@ -180,7 +177,7 @@ export default function CartPage() {
                   onClick={() => updateQuantity(line.id, line.quantity + 1)}
                   disabled={
                     line.quantity >=
-                    (maxQuantityById.get(line.id) ?? MAX_CART_QUANTITY)
+                    (maxQuantityById.get(line.id) ?? getCartLineMaxQuantity(null))
                   }
                   className="p-1 text-cyan-500 hover:text-rose-500 disabled:opacity-50 transition-colors focus:outline-none"
                   aria-label={`Augmenter la quantité de ${line.name}`}

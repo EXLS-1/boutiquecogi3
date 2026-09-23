@@ -15,13 +15,14 @@ import { Button } from "@/components/ui/button";
 import { CheckoutCartPreservedNotice } from "@/components/cart/checkout-cart-state";
 import {
   CART_ROUTES,
+  DISPLAY_CURRENCY_COOKIE,
   resolveCartCurrency,
 } from "@/lib/cart/cart-domain";
 
 export default async function CheckoutCancelPage() {
   const cookieStore = await cookies();
   const currency = resolveCartCurrency(
-    cookieStore.get("displayCurrency")?.value,
+    cookieStore.get(DISPLAY_CURRENCY_COOKIE)?.value,
   );
 
   return (

@@ -28,12 +28,10 @@ import {
   CART_ROUTES,
   buildCartSummary,
   buildSignInRedirect,
-  clampCartQuantity,
   formatCartAmount,
   resolveCartCurrency,
   resolveCartStock,
   resolveCartUnitPrice,
-  MAX_CART_QUANTITY,
   type CartCurrency,
   type CartIssue,
   type CartLine,
@@ -61,40 +59,15 @@ export interface CheckoutLineItem {
 }
 
 /**
- * Produit minimal lu depuis le panier Zustand.
- * Tous les champs métier sont optionnels : le panier peut provenir du
- * localStorage (données potentiellement anciennes ou corrompues).
- */
-export interface CheckoutProductInput {
-  id: string;
-  name?: string | null;
-  price?: number | null;
-  basePriceUSD?: number | null;
-  basePriceCDF?: number | null;
-  discountPercent?: number | null;
-  isAvailable?: boolean | null;
-  stock?: number | null;
-}
-
-/** Ligne de panier minimale (structurellement compatible avec `CartItem`). */
-export interface CheckoutCartLineInput {
-  product?: CheckoutProductInput | null;
-  quantity?: number | null;
-}
-
-/**
  * Totaux du tunnel : réexportés depuis le domaine panier pour éviter
  * toute redéfinition locale (`CartLine` / `CartIssue` restent canoniques).
  */
 export type CheckoutLine = CartLine;
 export type CheckoutCartInput = CartLineInput;
+export type CheckoutProductInput = CartLineInput["product"];
+export type CheckoutCartLineInput = CartLineInput;
 
-export type CheckoutIssueReason =
-  | "invalid"
-  | "unavailable"
-  | "out_of_stock"
-  | "quantity"
-  | "price";
+export type CheckoutIssueReason = CartIssue["reason"];
 
 export interface CheckoutIssue {
   id: string;
@@ -111,7 +84,7 @@ export interface CheckoutSummary {
   total: number;
   /** Nombre total d'articles payables. */
   totalQuantity: number;
-  currency: DisplayCurrency;
+  currency: CartCurrency;
 }
 
 /**
@@ -123,7 +96,7 @@ export const CHECKOUT_ISSUE_LABELS: Record<CheckoutIssueReason, string> =
   CART_ISSUE_LABELS;
 
 /** Quantité maximale par ligne (source unique : domaine panier). */
-export const MAX_CHECKOUT_QUANTITY = MAX_CART_QUANTITY;
+export { MAX_CART_QUANTITY as MAX_CHECKOUT_QUANTITY };
 
 /**
  * Numéros Mobile Money RDC : `+243 8XXXXXXXX`, `243 8XXXXXXXX` ou `08XXXXXXXX`.
@@ -201,7 +174,7 @@ export function normalizeMobileMoneyPhone(raw: unknown): string | null {
  */
 export function resolveUnitPrice(
   product: CheckoutProductInput,
-  currency: DisplayCurrency,
+  currency: CartCurrency,
 ): number {
   return resolveCartUnitPrice(product, resolveCartCurrency(currency));
 }
@@ -216,7 +189,7 @@ export function resolveUnitPrice(
  */
 export function buildCheckoutSummary(
   items: readonly CheckoutCartLineInput[] | null | undefined,
-  currency: DisplayCurrency,
+  currency: CartCurrency,
 ): CheckoutSummary {
   const normalizedCurrency = resolveCartCurrency(currency);
   const summary = buildCartSummary(
@@ -253,7 +226,7 @@ export { buildSignInRedirect };
  */
 export function formatCheckoutAmount(
   amount: number,
-  currency: DisplayCurrency,
+  currency: CartCurrency,
 ): string {
   return formatCartAmount(amount, resolveCartCurrency(currency));
 }

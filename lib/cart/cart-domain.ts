@@ -621,6 +621,214 @@ export function buildCartSyncPayload(
   );
 }
 
+// ─── Garde-fou panier → quantités ────────────────────────────────────────────
+
+/**
+ * Quantité maximale commandable pour une ligne (borne globale ET stock).
+ * Page panier, store et checkout partagent cette règle unique.
+ */
+export function getCartLineMaxQuantity(stock?: number | null): number {
+  if (typeof stock !== "number" || !Number.isFinite(stock) || stock < 0) {
+    return MAX_CART_QUANTITY;
+  }
+  return Math.min(MAX_CART_QUANTITY, Math.floor(stock));
+}
+
+/** Nom du cookie de persistance de la devise d'affichage. */
+export const DISPLAY_CURRENCY_COOKIE = "displayCurrency";
+
+// ─── Commandes — présentation unifiée ────────────────────────────────────────
+// `Order.*Amount` / `OrderItem.unitPrice` sont des `Int` Prisma en **unités
+// mineures** (centimes) ; le panier manipule des unités majeures.
+
+/** Statuts de commande (miroir de l'enum Prisma `OrderStatusEnum`). */
+export type CartOrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUNDED";
+
+/** Statuts de paiement (miroir de l'enum Prisma `PaymentStatus`). */
+export type CartPaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+
+/** Libellés FR d'affichage des statuts de commande (même texte partout). */
+export const ORDER_STATUS_LABELS: Record<CartOrderStatus, string> = {
+  PENDING: "En attente",
+  CONFIRMED: "Confirmée",
+  PROCESSING: "En préparation",
+  SHIPPED: "Expédiée",
+  DELIVERED: "Livrée",
+  CANCELLED: "Annulée",
+  REFUNDED: "Remboursée",
+};
+
+/** Libellés FR d'affichage des statuts de paiement. */
+export const ORDER_PAYMENT_LABELS: Record<CartPaymentStatus, string> = {
+  PENDING: "En attente",
+  COMPLETED: "Payée",
+  FAILED: "Échouée",
+  REFUNDED: "Remboursée",
+};
+
+/** Teinte UI associée à un statut (`Badge` shadcn). */
+export type OrderStatusTone = "default" | "secondary" | "destructive" | "outline";
+
+export const ORDER_STATUS_TONES: Record<CartOrderStatus, OrderStatusTone> = {
+  PENDING: "secondary",
+  CONFIRMED: "default",
+  PROCESSING: "default",
+  SHIPPED: "default",
+  DELIVERED: "default",
+  CANCELLED: "destructive",
+  REFUNDED: "outline",
+};
+
+/** Transitions autorisées du cycle de vie commande (garde-fou admin). */
+export const ORDER_STATUS_TRANSITIONS: Record<CartOrderStatus, CartOrderStatus[]> = {
+  PENDING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["PROCESSING", "CANCELLED"],
+  PROCESSING: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED"],
+  DELIVERED: ["REFUNDED"],
+  CANCELLED: [],
+  REFUNDED: [],
+};
+
+function normalizeOrderStatus(raw: unknown): CartOrderStatus | null {
+  if (typeof raw !== "string") return null;
+  const upper = raw.trim().toUpperCase() as CartOrderStatus;
+  return upper in ORDER_STATUS_LABELS ? upper : null;
+}
+
+function normalizePaymentStatus(raw: unknown): CartPaymentStatus | null {
+  if (typeof raw !== "string") return null;
+  const upper = raw.trim().toUpperCase() as CartPaymentStatus;
+  return upper in ORDER_PAYMENT_LABELS ? upper : null;
+}
+
+/** Libellé FR d'un statut de commande (tolérant aux données inconnues). */
+export function getOrderStatusLabel(status: unknown): string {
+  const normalized = normalizeOrderStatus(status);
+  return normalized ? ORDER_STATUS_LABELS[normalized] : "—";
+}
+
+/** Teinte `Badge` d'un statut de commande (fallback sûr). */
+export function getOrderStatusTone(status: unknown): OrderStatusTone {
+  const normalized = normalizeOrderStatus(status);
+  return normalized ? ORDER_STATUS_TONES[normalized] : "secondary";
+}
+
+/** Libellé FR d'un statut de paiement (tolérant aux données inconnues). */
+export function getOrderPaymentLabel(status: unknown): string {
+  const normalized = normalizePaymentStatus(status);
+  return normalized ? ORDER_PAYMENT_LABELS[normalized] : "—";
+}
+
+/** `true` si le statut est terminal (aucune transition possible). */
+export function isOrderTerminalStatus(status: unknown): boolean {
+  const normalized = normalizeOrderStatus(status);
+  if (!normalized) return false;
+  return ORDER_STATUS_TRANSITIONS[normalized].length === 0;
+}
+
+/** Garde-fou de transition admin : `to` atteignable depuis `from` ? */
+export function canTransitionOrderStatus(from: unknown, to: unknown): boolean {
+  const source = normalizeOrderStatus(from);
+  const target = normalizeOrderStatus(to);
+  if (!source || !target) return false;
+  return ORDER_STATUS_TRANSITIONS[source].includes(target);
+}
+
+/** Convertit des centimes (`Int` Prisma) en unités majeures (jamais `NaN`). */
+export function toMajorAmount(amountMinor: unknown): number {
+  const minor =
+    typeof amountMinor === "number" && Number.isFinite(amountMinor)
+      ? amountMinor
+      : 0;
+  return minor / 100;
+}
+
+/** Formate un montant de commande (centimes) dans sa devise. */
+export function formatOrderAmountMinor(
+  amountMinor: unknown,
+  currency: CartCurrency | string | null | undefined = "USD",
+): string {
+  return formatCartAmount(
+    toMajorAmount(amountMinor),
+    resolveCartCurrency(currency),
+  );
+}
+
+// ─── Stocks — présentation unifiée (admin ↔ panier) ───────────────────────────
+// Le panier lit `resolveCartStock` ; l'admin lit `quantity - reserved`.
+// Même sémantique « disponible / bas / épuisé » des deux côtés.
+
+/** Statut synthétique d'un stock. */
+export type StockLevel = "out" | "low" | "ok";
+
+/** Libellés FR des niveaux de stock. */
+export const STOCK_LEVEL_LABELS: Record<StockLevel, string> = {
+  out: "Rupture",
+  low: "Stock bas",
+  ok: "En stock",
+};
+
+/** Quantité réellement disponible (`quantity - reserved`, jamais négative). */
+export function getStockAvailable(
+  quantity: unknown,
+  reserved: unknown = 0,
+): number {
+  const q =
+    typeof quantity === "number" && Number.isFinite(quantity) ? quantity : 0;
+  const r =
+    typeof reserved === "number" && Number.isFinite(reserved) ? reserved : 0;
+  return Math.max(0, Math.floor(q) - Math.floor(r));
+}
+
+/** Niveau de stock à partir du disponible et du seuil d'alerte. */
+export function getStockLevel(
+  available: unknown,
+  alertThreshold: unknown = 0,
+): StockLevel {
+  const safeAvailable =
+    typeof available === "number" && Number.isFinite(available) ? available : 0;
+  const threshold =
+    typeof alertThreshold === "number" && Number.isFinite(alertThreshold)
+      ? alertThreshold
+      : 0;
+  if (safeAvailable <= 0) return "out";
+  if (safeAvailable <= threshold) return "low";
+  return "ok";
+}
+
+/** `true` si le stock est épuisé. */
+export function isStockOut(available: unknown): boolean {
+  return getStockLevel(available, Number.POSITIVE_INFINITY) === "out";
+}
+
+/** `true` si le stock est bas ou épuisé (seuil d'alerte atteint). */
+export function isStockLow(
+  available: unknown,
+  alertThreshold: unknown,
+): boolean {
+  return getStockLevel(available, alertThreshold) !== "ok";
+}
+
+/** Devise d'une commande (tolérante : fallback `USD`). */
+export function resolveOrderCurrency(raw: unknown): CartCurrency {
+  return resolveCartCurrency(typeof raw === "string" ? raw : undefined);
+}
+
+/** Nombre d'articles d'une commande (tolérant aux `items` absents). */
+export function getOrderItemsCount(order: {
+  items?: readonly unknown[] | null;
+}): number {
+  return Array.isArray(order?.items) ? order.items.length : 0;
+}
+
 // ─── Formatage ───────────────────────────────────────────────────────────────
 
 /** Formate un montant du panier (arrondi devise puis formatage localisé). */

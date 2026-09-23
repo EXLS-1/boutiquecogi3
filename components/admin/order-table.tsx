@@ -23,9 +23,21 @@ import {
     AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import {
+    canTransitionOrderStatus,
+    formatOrderAmountMinor,
+    formatOrderDate,
+    formatOrderDateTime,
+    getOrderItemsCount,
+    getOrderPaymentLabel,
+    getOrderStatusLabel,
+    getOrderStatusTone,
+    isOrderTerminalStatus,
+    matchesOrderQuery,
+    resolveOrderCurrency,
+    type CartOrderStatus,
+} from '@/lib/cart/cart-domain'
 import type { Currency } from '@prisma/client'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -65,15 +77,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 // ─── Types ───
+// Le cycle de vie (transitions, libellés, teintes) vit dans
+// `lib/cart/cart-domain` : l'admin partage la MÊME règle que le suivi client.
 
-type OrderStatus =
-    | 'PENDING'
-    | 'CONFIRMED'
-    | 'PROCESSING'
-    | 'SHIPPED'
-    | 'DELIVERED'
-    | 'CANCELLED'
-    | 'REFUNDED'
+type OrderStatus = CartOrderStatus
 
 interface OrderUser {
     id: string
@@ -139,6 +146,8 @@ interface OrderTableProps {
 }
 
 // ─── Helpers ───
+// Montants, statuts, dates et recherche : logique partagée du domaine panier
+// (`lib/cart/cart-domain`). Les libellés restent identiques au suivi client.
 
 const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     PENDING: ['CONFIRMED', 'CANCELLED'],
@@ -191,19 +200,17 @@ const STATUS_CONFIG: Record<
     },
 }
 
-function formatPrice(amount: number, currency: Currency = 'USD'): string {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency,
-    }).format(amount)
+function formatPrice(amountMinor: number, currency: Currency = 'USD'): string {
+    // Source unique : même conversion centimes → unités majeures et même
+    // arrondi que le panier, le checkout et le suivi client.
+    return formatOrderAmountMinor(
+        amountMinor,
+        resolveOrderCurrency(currency),
+    )
 }
 
 function formatDate(date: Date | string): string {
-    try {
-        return format(new Date(date), 'P HH:mm', { locale: fr })
-    } catch {
-        return '—'
-    }
+    return formatOrderDate(date)
 }
 
 function getPaymentBadge(isPaid: boolean, method: string | null) {
@@ -263,16 +270,9 @@ export function OrderTable({ orders }: OrderTableProps) {
     const filtered = React.useMemo(() => {
         let data = [...orders]
 
-        // Recherche textuelle
+        // Recherche textuelle (domaine panier : même tolérance `null` partout)
         if (search.trim()) {
-            const q = search.toLowerCase()
-            data = data.filter(
-                (o) =>
-                    o.id.toLowerCase().includes(q) ||
-                    o.user.name?.toLowerCase().includes(q) ||
-                    o.user.email.toLowerCase().includes(q) ||
-                    o.items.some((item) => item.product.name.toLowerCase().includes(q))
-            )
+            data = data.filter((o) => matchesOrderQuery(o, search))
         }
 
         // Filtre par statut

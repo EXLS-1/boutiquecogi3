@@ -1,12 +1,40 @@
 // app/admin/orders/page.tsx
+// Liste admin : MÊME formatage monétaire et MÊMES libellés de statuts que le
+// panier, le checkout et le compte client (`lib/cart/cart-domain`).
+// Les `Int` Prisma (`totalAmount` en centimes) sont convertis via
+// `formatOrderAmountMinor` — jamais de `(x / 100).toFixed(2)` local.
 
-"use server";
-
-import { format } from "date-fns";
 import { getAllOrdersAdmin } from "@/lib/actions/actions/admin/order.admin.actions";
+import {
+  formatOrderAmountMinor,
+  formatOrderDate,
+  getOrderItemsCount,
+  getOrderPaymentLabel,
+  getOrderStatusLabel,
+  matchesOrderQuery,
+  resolveOrderCurrency,
+} from "@/lib/cart/cart-domain";
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ q?: string }>;
+}) {
+  const params = await searchParams;
   const orders = await getAllOrdersAdmin();
+  const query = params?.q?.trim() ?? "";
+  const visibleOrders = orders.filter((order) =>
+    matchesOrderQuery(
+      {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        user: order.user
+          ? { email: order.user.email, name: null }
+          : null,
+      },
+      query,
+    ),
+  );
 
   return (
     <div>
@@ -25,26 +53,29 @@ export default async function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
+            {visibleOrders.map((order) => (
               <tr key={order.id} className="border-b last:border-0">
                 <td className="px-4 py-3 font-mono text-xs">
                   {order.orderNumber}
                 </td>
                 <td className="px-4 py-3">{order.user?.email ?? "—"}</td>
-                <td className="px-4 py-3">{order.items.length}</td>
+                <td className="px-4 py-3">{getOrderItemsCount(order)}</td>
                 <td className="px-4 py-3">
-                  {(order.totalAmount / 100).toFixed(2)} {order.currency}
+                  {formatOrderAmountMinor(
+                    order.totalAmount,
+                    resolveOrderCurrency(order.currency),
+                  )}
                 </td>
-                <td className="px-4 py-3">{order.paymentStatus}</td>
+                <td className="px-4 py-3">{getOrderPaymentLabel(order.paymentStatus)}</td>
                 <td className="px-4 py-3">
-                  {format(order.createdAt, "dd/MM/yyyy")}
+                  {formatOrderDate(order.createdAt)}
                 </td>
-                <td className="px-4 py-3">{order.status}</td>
+                <td className="px-4 py-3">{getOrderStatusLabel(order.status)}</td>
               </tr>
             ))}
-            {orders.length === 0 && (
+            {visibleOrders.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
                   Aucune commande.
                 </td>
               </tr>
