@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import React, { Suspense } from "react";
-import { Playfair_Display, Lato, Cormorant_Garamond, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { Toaster } from "sonner";
@@ -20,10 +20,34 @@ import { setRedisLogger } from "@/lib/redis";
 import { logger } from "@/lib/logger";
 import { createRedisLogger } from "@/lib/redis-logger";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
-const lato = Lato({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-lato" });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-cormorant" });
+const inter = localFont({
+  src: "../public/fonts/inter-latin-wght-normal.woff2",
+  weight: "100 900", // police variable (axe wght)
+  variable: "--font-sans",
+  display: "swap",
+});
+const playfair = localFont({
+  src: "../public/fonts/playfair-display-latin-wght-normal.woff2",
+  weight: "400 900", // police variable (axe wght)
+  variable: "--font-playfair",
+  display: "swap",
+});
+const lato = localFont({
+  src: [
+    { path: "../public/fonts/lato-latin-300-normal.woff2", weight: "300" },
+    { path: "../public/fonts/lato-latin-400-normal.woff2", weight: "400" },
+    { path: "../public/fonts/lato-latin-700-normal.woff2", weight: "700" },
+    { path: "../public/fonts/lato-latin-900-normal.woff2", weight: "900" },
+  ],
+  variable: "--font-lato",
+  display: "swap",
+});
+const cormorant = localFont({
+  src: "../public/fonts/cormorant-garamond-latin-wght-normal.woff2",
+  weight: "300 700", // police variable (axe wght)
+  variable: "--font-cormorant",
+  display: "swap",
+});
 
 setRedisLogger(createRedisLogger(logger));
 

@@ -7,46 +7,22 @@
  * - Aucune donnée dynamique : uniquement des constantes.
  */
 
+/**
+ * Configuration statique de la navigation admin.
+ *
+ * - Source unique de vérité pour les groupes et leurs modules.
+ * - Consommée par AdminModuleSidebar, AdminModuleNav et AdminModuleMain.
+ * - Aucune donnée dynamique : uniquement des constantes.
+ */
+
 import {
-  Activity,
-  BarChart3,
-  Bell,
-  Boxes,
-  ClipboardList,
-  CreditCard,
-  Database,
-  FileClock,
-  FileSpreadsheet,
-  FileText,
-  Gauge,
-  HardDrive,
-  History,
-  ImageIcon,
-  KeyRound,
-  LayoutDashboard,
-  LockKeyhole,
-  Mail,
-  Megaphone,
-  Package,
-  PackageCheck,
-  PackagePlus,
-  PackageSearch,
-  Receipt,
-  RotateCcw,
-  Server,
-  Settings,
-  Shield,
-  ShieldCheck,
-  ShoppingBag,
-  SlidersHorizontal,
-  Sparkles,
-  Tags,
-  TrendingUp,
-  Truck,
-  UserCheck,
-  UserCog,
-  Users,
-  Warehouse,
+  Activity, BarChart3, Bell, Boxes, ClipboardList, CreditCard,
+  Database, FileClock, FileSpreadsheet, FileText, Gauge, HardDrive,
+  History, ImageIcon, KeyRound, LayoutDashboard, LockKeyhole, Mail,
+  Megaphone, Package, PackageCheck, PackagePlus, PackageSearch, Receipt,
+  RotateCcw, Server, Settings, Shield, ShieldCheck, ShoppingBag,
+  SlidersHorizontal, Sparkles, Tags, TrendingUp, Truck, UserCheck,
+  UserCog, Users, Warehouse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,41 +30,42 @@ import {
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
+/** Module atomique du portail admin. */
 export type AdminModule = {
-  /** Titre affiché sur la carte */
+  /** Titre affiché dans le tag et le répertoire. */
   title: string;
-  /** Description courte (< 120 caractères recommandés) */
+  /** Description courte (< 120 caractères). */
   description: string;
-  /** Route interne Next.js */
+  /** Route interne Next.js vers la page du module. */
   href: string;
-  /** Libellé du bouton d'action */
+  /** Libellé du CTA dans le répertoire. */
   cta: string;
-  /** Icône Lucide */
+  /** Icône Lucide. */
   icon: LucideIcon;
-  /** Classe Tailwind pour la couleur de l'icône */
+  /** Classe Tailwind pour la couleur de l'icône. */
   tone: string;
 };
 
-export type AdminShortcutGroup = {
-  /** Identifiant unique (sans espaces) */
+/** Groupe de modules — unité de navigation de la sidebar. */
+export type AdminModuleGroup = {
+  /** Identifiant unique, utilisé dans `?group=`. */
   id: string;
-  /** Libellé affiché dans la sidebar */
+  /** Libellé affiché dans la sidebar. */
   label: string;
-  /** Sur-titre (eyebrow) du groupe actif */
+  /** Sur-titre (eyebrow) de la section active. */
   eyebrow: string;
-  /** Titre principal du groupe actif */
+  /** Titre principal de la section active. */
   title: string;
-  /** Description du groupe actif */
+  /** Description de la section active. */
   description: string;
-  /** Liste des modules du groupe */
+  /** Modules rattachés au groupe. */
   modules: AdminModule[];
 };
+// ====================================
+// Données
+// ====================================
 
-/* ------------------------------------------------------------------ */
-/*  Données                                                            */
-/* ------------------------------------------------------------------ */
-
-export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
+export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
   
   /* ─────────────────── 01 · DASHBOARD ─────────────────── */
   {
@@ -899,3 +876,30 @@ export const ADMIN_SHORTCUT_GROUPS: AdminShortcutGroup[] = [
   },
 
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Helpers de résolution                                              */
+/* ------------------------------------------------------------------ */
+
+/** ID du groupe par défaut (premier de la liste). */
+export const DEFAULT_ADMIN_GROUP_ID = ADMIN_MODULE_GROUPS[0].id;
+
+/** Type guard : `value` correspond-il à un `id` de groupe connu ? */
+export function isAdminGroupId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    ADMIN_MODULE_GROUPS.some((group) => group.id === value)
+  );
+}
+
+/**
+ * Résout un groupe à partir d'une valeur brute d'URL.
+ * Retourne le groupe correspondant, sinon le groupe par défaut.
+ * Ne lève jamais : dégradation contrôlée pour l'UI.
+ */
+export function resolveAdminGroup(raw?: string | null): AdminModuleGroup {
+  if (isAdminGroupId(raw)) {
+    return ADMIN_MODULE_GROUPS.find((group) => group.id === raw)!;
+  }
+  return ADMIN_MODULE_GROUPS[0];
+}

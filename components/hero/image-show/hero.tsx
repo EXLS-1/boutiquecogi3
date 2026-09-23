@@ -86,7 +86,7 @@ export function Hero() {
           Boutique COGI
         </h1>
 
-        <p className="mt-6 font-lato text-lg tracking-[0.3em] md:text-2xl">
+        <p className="mt-6 font-lato text-lg text-rose-500 tracking-[0.3em] md:text-2xl">
           L&apos;ÉLÉGANCE REDÉFINIE PAR LE STYLE
         </p>
       </div>

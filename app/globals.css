@@ -1,11 +1,26 @@
 /** app/globals.css */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700&display=swap');
+/* Les polices (Inter, Playfair Display, Lato, Cormorant Garamond) sont
+   self-hostées via next/font/local dans app/layout.tsx — aucun @import
+   Google Fonts externe n'est nécessaire (aucune requête vers fonts.googleapis.com). */
 
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 
 @import "tailwindcss";
+
+/* ==========================================================================
+   MAPPING next/font → TAILWIND (v4)
+   Les variables CSS --font-* sont injectées sur <body> par next/font/local
+   (app/layout.tsx). `@theme inline` fait référence à ces variables runtime
+   pour générer les utilitaires font-sans / font-playfair / font-lato /
+   font-cormorant utilisés dans l'application.
+   ========================================================================== */
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-playfair: var(--font-playfair);
+  --font-lato: var(--font-lato);
+  --font-cormorant: var(--font-cormorant);
+}
 
 /* ==========================================================================
    CONFIG TAILWIND v4 & DESIGN TOKENS

@@ -11,7 +11,7 @@
 
 import { useMemo, useState } from "react";
 
-import { ADMIN_SHORTCUT_GROUPS } from "@/lib/constants/admin-shortcuts";
+import { ADMIN_SHORTCUT_GROUPS } from "@/lib/constants/admin-navigation";
 import { AdminShortcutSidebar } from "@/components/admin/admin-shortcut-sidebar";
 import { AdminShortcutCard } from "@/components/admin/admin-shortcut-card";
 
