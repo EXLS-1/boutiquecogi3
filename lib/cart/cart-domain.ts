@@ -28,6 +28,7 @@
  */
 
 import { formatCurrency, roundToFinancial } from "@/lib/utils/currency";
+import { convertFromUsdCents } from "@/lib/currency/price-format";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -62,12 +63,16 @@ export interface CartProductInput {
 /** Ligne de panier minimale (structurellement compatible avec `CartItem`). */
 export interface CartLineInput {
   product?: CartProductInput | null;
+  variantId?: string | null;
   quantity?: number | null;
 }
 
 /** Ligne de panier normalisée : seule forme consommée par l'UI et le serveur. */
 export interface CartLine {
+  /** Stable line identity: selected variant when available, product otherwise. */
   readonly id: string;
+  readonly productId: string;
+  readonly variantId?: string;
   readonly name: string;
   readonly image: string;
   /** Prix unitaire en unités majeures, remise appliquée, arrondi devise. */
@@ -288,13 +293,13 @@ export function isOutOfStock(levels: StockLevels | null | undefined): boolean {
 export function resolveCartUnitPrice(
   product: CartProductInput | null | undefined,
   currency: CartCurrency,
+  rate: number | null = null,
 ): number {
   if (!product) return 0;
 
-  const basePrice =
-    currency === "CDF"
-      ? product.basePriceCDF || product.price
-      : product.basePriceUSD || product.price;
+  // Catalog prices are stored as major USD units; the shared Price component
+  // accepts USD cents and performs this same USD/CDF conversion.
+  const basePrice = product.basePriceUSD ?? product.basePrice ?? product.price;
 
   if (
     typeof basePrice !== "number" ||
@@ -310,10 +315,9 @@ export function resolveCartUnitPrice(
       ? Math.min(Math.max(rawDiscount, 0), 100)
       : 0;
 
-  const discounted = roundCartAmount(
-    basePrice * (1 - discountPercent / 100),
-    currency,
-  );
+  const amountInUsdCents = Math.round(basePrice * 100 * (1 - discountPercent / 100));
+  const converted = convertFromUsdCents({ amountInUsdCents, rate }, currency).value;
+  const discounted = roundCartAmount(converted, currency);
 
   return discounted > 0 ? discounted : 0;
 }
@@ -374,7 +378,7 @@ function upsertLine(
  *
  * Robustesse :
  *  - ignore les entrées corrompues (localStorage) au lieu de propager `NaN` ;
- *  - déduplique les lignes partageant le même `product.id` ;
+ *  - déduplique les lignes partageant le même produit et la même variante ;
  *  - écarte les articles indisponibles / en rupture de stock ;
  *  - borne les quantités (`1 → 99` et au stock disponible) ;
  *  - garantit un `total` fini, calculé EXACTEMENT comme la Server Action
@@ -383,6 +387,7 @@ function upsertLine(
 export function buildCartSummary(
   items: readonly CartLineInput[] | null | undefined,
   currency: CartCurrency = "USD",
+  rate: number | null = null,
 ): CartSummary {
   const safeCurrency = resolveCartCurrency(currency);
   const linesById = new Map<string, CartLine>();
@@ -399,7 +404,11 @@ export function buildCartSummary(
       continue;
     }
 
-    const id = rawId.trim();
+    const productId = rawId.trim();
+    const variantId = typeof item?.variantId === "string" && item.variantId.trim()
+      ? item.variantId.trim()
+      : undefined;
+    const id = variantId ?? productId;
     const name =
       typeof product?.name === "string" && product.name.trim()
         ? product.name.trim()
@@ -427,7 +436,7 @@ export function buildCartSummary(
       issues.push({ id, name, reason: "quantity" });
     }
 
-    const unitPrice = resolveCartUnitPrice(product, safeCurrency);
+    const unitPrice = resolveCartUnitPrice(product, safeCurrency, rate);
     if (unitPrice === 0) {
       issues.push({ id, name, reason: "price" });
       continue;
@@ -440,7 +449,7 @@ export function buildCartSummary(
 
     upsertLine(
       linesById,
-      { id, name, image, price: unitPrice, quantity: payableQuantity },
+      { id, productId, ...(variantId ? { variantId } : {}), name, image, price: unitPrice, quantity: payableQuantity },
       Math.min(MAX_CART_QUANTITY, stock ?? MAX_CART_QUANTITY),
     );
   }
@@ -468,8 +477,9 @@ export function buildCartSummary(
 export function toCartLines(
   items: readonly CartLineInput[] | null | undefined,
   currency: CartCurrency = "USD",
+  rate: number | null = null,
 ): CartLine[] {
-  return [...buildCartSummary(items, currency).lines];
+  return [...buildCartSummary(items, currency, rate).lines];
 }
 
 /** Total d'un ensemble de lignes normalisées (source unique du montant). */
@@ -556,7 +566,9 @@ export function cartItemsSignature(
 ): string {
   return toSignature(
     (items ?? []).map((item) => ({
-      id: typeof item?.product?.id === "string" ? item.product.id.trim() : "",
+      id: typeof item?.variantId === "string" && item.variantId.trim()
+        ? item.variantId.trim()
+        : typeof item?.product?.id === "string" ? item.product.id.trim() : "",
       quantity: clampCartQuantity(item?.quantity),
     })),
   );
@@ -589,7 +601,9 @@ export function buildCartSyncPayload(
 
     if (typeof rawId !== "string" || !rawId.trim()) continue;
 
-    const id = rawId.trim();
+    const id = typeof item?.variantId === "string" && item.variantId.trim()
+      ? item.variantId.trim()
+      : rawId.trim();
     const quantity = clampCartQuantity(item?.quantity);
     if (quantity === 0) continue;
 
@@ -636,6 +650,9 @@ export function getCartLineMaxQuantity(stock?: number | null): number {
 
 /** Nom du cookie de persistance de la devise d'affichage. */
 export const DISPLAY_CURRENCY_COOKIE = "displayCurrency";
+
+/** Devises proposées à l'utilisateur (aligné sur l'enum Prisma `Currency`). */
+export const CART_CURRENCIES = ["USD", "CDF"] as const satisfies readonly CartCurrency[];
 
 // ─── Commandes — présentation unifiée ────────────────────────────────────────
 // `Order.*Amount` / `OrderItem.unitPrice` sont des `Int` Prisma en **unités
@@ -725,6 +742,33 @@ export function getOrderStatusTone(status: unknown): OrderStatusTone {
 export function getOrderPaymentLabel(status: unknown): string {
   const normalized = normalizePaymentStatus(status);
   return normalized ? ORDER_PAYMENT_LABELS[normalized] : "—";
+}
+
+/**
+ * Statut de paiement d'une commande, tolérant aux différentes formes
+ * renvoyées par les services : `paymentStatus` à plat (admin) ou relation
+ * `payment.status` (`getUserOrders` du compte client), avec repli sur `isPaid`.
+ * Évite les `as { ... }` locaux dans les pages.
+ */
+export function resolveOrderPaymentStatus(
+  order:
+    | {
+        paymentStatus?: unknown;
+        payment?: { status?: unknown } | null;
+        isPaid?: unknown;
+      }
+    | null
+    | undefined,
+): CartPaymentStatus | null {
+  const flat = normalizePaymentStatus(order?.paymentStatus);
+  if (flat) return flat;
+
+  const nested = normalizePaymentStatus(order?.payment?.status);
+  if (nested) return nested;
+
+  if (order?.isPaid === true) return "COMPLETED";
+  if (order?.isPaid === false) return "PENDING";
+  return null;
 }
 
 /** `true` si le statut est terminal (aucune transition possible). */
@@ -840,5 +884,38 @@ export function formatCartAmount(
   return formatCurrency(roundCartAmount(amount, safeCurrency), {
     currency: safeCurrency,
   });
+}
+
+// ─── Retour CinetPay — référence de transaction ─────────────────────────────
+/** Référence CinetPay affichable (`null` si absente ou inexploitable). */
+export function sanitizeCartTransactionRef(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const cleaned = raw.trim().replace(/[\u0000-\u001F\u007F]+/g, "").slice(0, 120);
+  if (cleaned.length === 0) return null;
+  if (!/^[A-Za-z0-9\-_:. ]+$/.test(cleaned)) return null;
+  return cleaned;
+}
+
+// ─── Stocks — recherche unifiée (admin ↔ panier) ─────────────────────────────
+/** `true` si le stock correspond à la requête (insensible à la casse). */
+export function matchesStockQuery(
+  stock: {
+    product?: { name?: unknown; slug?: unknown } | null;
+    warehouse?: unknown;
+  } | null | undefined,
+  query: unknown,
+): boolean {
+  if (typeof query !== "string") return true;
+  const q = query.trim().toLowerCase();
+  if (q.length === 0) return true;
+  if (!stock || typeof stock !== "object") return false;
+  const name = typeof stock.product?.name === "string" ? stock.product.name : "";
+  const slug = typeof stock.product?.slug === "string" ? stock.product.slug : "";
+  const warehouse = typeof stock.warehouse === "string" ? stock.warehouse : "";
+  return (
+    name.toLowerCase().includes(q) ||
+    slug.toLowerCase().includes(q) ||
+    warehouse.toLowerCase().includes(q)
+  );
 }
 

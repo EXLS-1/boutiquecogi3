@@ -11,7 +11,7 @@
 import { headers } from "next/headers";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
-import { ProductService, ProductError } from "@/lib/products/productService";
+import { ProductService, ProductError } from "@/lib/product/productService";
 import { invalidateAllCatalogCaches } from "@/lib/product-catalog/catalog-queries";
 
 type ActionResult<T = unknown> =

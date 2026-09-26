@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductStatusBadge } from "./product-status-badge";
 import { ProductStockBadge } from "./product-stock-badge";
-import type { ProductListResult } from "@/lib/products/types";
+import type { ProductListResult } from "@/lib/product/types";
 
 export function ProductTable({ result }: { result: ProductListResult }) {
   if (!result?.items) return <p className="text-cyan-500">Aucun produit.</p>;

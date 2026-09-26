@@ -126,14 +126,23 @@ function ProductCardComponent({ product, showBadge = true, priority = false }: P
         </div>
 
         {/* CTA */}
-        <Button
-          className="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white"
-          disabled={!product.isAvailable}
-          aria-label={product.isAvailable ? "Ajouter au panier" : "Produit indisponible"}
-        >
-          <ShoppingBag className="h-4 w-4 mr-2" />
-          {product.isAvailable ? "Ajouter" : "Indisponible"}
-        </Button>
+        {product.variantCount > 0 ? (
+          <Button asChild className="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white">
+            <Link href={productHref} aria-label="Choisir une variante">
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              {product.hasAvailableVariant ? "Commander" : "Voir les variantes"}
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            className="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white"
+            disabled={!product.isAvailable}
+            aria-label={product.isAvailable ? "Ajouter au panier" : "Produit indisponible"}
+          >
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            {product.isAvailable ? "Ajouter" : "Indisponible"}
+          </Button>
+        )}
       </div>
     </article>
   );

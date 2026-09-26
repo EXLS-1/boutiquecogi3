@@ -8,6 +8,8 @@ import type { Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 import { ProductDetailPrice, ProductAvailability } from "@/components/product/product-detail-summary";
+import { ProductVariantPurchase } from "@/components/product-variant/product-variant-purchase";
+import { buildProductVariantConfig } from "@/lib/product-catalog/product-variant-config";
 import { ProductNotFound } from "./products-not-found";
 
 import {
@@ -203,6 +205,21 @@ function ProductImageGallery({
 }
 
 function ProductInfo({ product }: { product: ProductDetailData }) {
+  const variantConfig = buildProductVariantConfig({
+    id: product.id,
+    currency: product.currency,
+    basePrice: product.basePrice,
+    variants: product.variants.map((variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      attributes: variant.attributes,
+      priceOffset: variant.priceOffset,
+      isActive: variant.isActive,
+      createdAt: variant.createdAt,
+      variantStocks: variant.stock,
+    })),
+  });
+
   return (
     <div className="flex flex-col gap-4">
       {product.category && (
@@ -217,25 +234,28 @@ function ProductInfo({ product }: { product: ProductDetailData }) {
           <span className="text-sm text-muted-foreground">({product.reviewCount} avis)</span>
         </div>
       )}
-      <ProductDetailPrice product={product} />
+      {!variantConfig && <ProductDetailPrice product={product} />}
       {product.description && (
         <p className="text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>
       )}
-      <ProductAvailability product={product} />
-      {product.variants.length > 0 && <ProductVariants variants={product.variants} />}
+      {!variantConfig && <ProductAvailability product={product} />}
+      {variantConfig ? (
+        <ProductVariantPurchase config={variantConfig} product={product} />
+      ) : (
+        <button
+          type="button"
+          disabled={product.availabilityStatus === "out_of_stock"}
+          className="mt-4 w-full py-3.5 px-6 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors"
+        >
+          {product.availabilityStatus === "in_stock"
+            ? "Ajouter au panier"
+            : product.availabilityStatus === "pre_order"
+              ? "Précommander"
+              : "Indisponible"}
+        </button>
+      )}
       {product.productOptions.length > 0 && <ProductOptions options={product.productOptions} />}
       {product.coupon && <CouponBadge coupon={product.coupon} />}
-      <button
-        type="button"
-        disabled={product.availabilityStatus === "out_of_stock"}
-        className="mt-4 w-full py-3.5 px-6 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 transition-colors"
-      >
-        {product.availabilityStatus === "in_stock"
-          ? "Ajouter au panier"
-          : product.availabilityStatus === "pre_order"
-            ? "Précommander"
-            : "Indisponible"}
-      </button>
     </div>
   );
 }
@@ -305,45 +325,6 @@ function formatPrice(amount: number, currency: Currency) {
   } catch {
     return `${amount.toFixed(2)} ${currency}`;
   }
-}
-
-function ProductVariants({
-  variants,
-}: {
-  variants: ProductDetailData["variants"];
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-slate-700">Variantes :</span>
-      <ul className="flex flex-col gap-1">
-        {variants.map((variant) => (
-          <li
-            key={variant.id}
-            className="flex items-center justify-between text-sm text-slate-600 border-b border-slate-100 py-1"
-          >
-            <span>
-              <span className="font-mono text-xs text-slate-500">
-                {variant.sku}
-              </span>
-              {variant.attributes && Object.keys(variant.attributes).length > 0 && (
-                <span className="ml-2 text-slate-500">
-                  {Object.entries(variant.attributes)
-                    .map(([key, value]) => `${key}: ${String(value)}`)
-                    .join(", ")}
-                </span>
-              )}
-            </span>
-            {variant.priceOffset !== 0 && (
-              <span className="font-medium">
-                {variant.priceOffset > 0 ? "+" : ""}
-                {formatPrice(variant.priceOffset, "USD")}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 function ProductOptions({

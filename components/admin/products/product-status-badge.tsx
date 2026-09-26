@@ -1,7 +1,7 @@
 // components/admin/products/product-status-badge.tsx
 // COMPONENT — Badge de statut produit
 
-import { PRODUCT_STATUS_LABELS, PRODUCT_STATUS_COLORS } from "@/lib/products/constants";
+import { PRODUCT_STATUS_LABELS, PRODUCT_STATUS_COLORS } from "@/lib/product/constants";
 import type { ProductStatus } from "@prisma/client";
 
 interface ProductStatusBadgeProps {

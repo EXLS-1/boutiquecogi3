@@ -5,7 +5,7 @@
 
 import React, { useMemo } from "react";
 import type { Currency } from "@prisma/client";
-import { cn } from "@/lib/utils/utils";
+import { cn } from "@/lib/utils/cn";
 import { useCurrencyStore } from "@/store/use-currency-store";
 import {
   computeConvertedAmountForOriginal,

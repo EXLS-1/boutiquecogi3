@@ -1,8 +1,6 @@
 // lib/currency/price-format.ts
 
-"use client";
-
-import { DisplayCurrency } from "@/store/use-currency-store";
+import type { DisplayCurrency } from "@/store/use-currency-store";
 import { formatCurrency } from "@/lib/utils/currency";
 
 export type BaseCurrencyAmount = {
@@ -20,18 +18,21 @@ export type BaseCurrencyAmount = {
  */
 export function convertFromUsdCents(params: BaseCurrencyAmount, currency: DisplayCurrency) {
   const { amountInUsdCents, rate } = params;
+  const safeAmount = Number.isFinite(amountInUsdCents) && amountInUsdCents > 0
+    ? amountInUsdCents
+    : 0;
 
   if (currency === "USD") {
-    return { value: amountInUsdCents / 100, usedRate: null as number | null };
+    return { value: safeAmount / 100, usedRate: null as number | null };
   }
 
   // currency === "CDF"
-  if (rate == null || Number.isNaN(rate)) {
+  if (rate == null || !Number.isFinite(rate) || rate <= 0) {
     return { value: 0, usedRate: null as number | null };
   }
 
   return {
-    value: (amountInUsdCents / 100) * rate,
+    value: (safeAmount / 100) * rate,
     usedRate: rate,
   };
 }
@@ -55,9 +56,9 @@ export function computeConvertedAmountForOriginal(
 ) {
   const { rate } = params;
 
-  if (currency === "USD") return originalAmountInUsdCents / 100;
+  if (currency === "USD") return Number.isFinite(originalAmountInUsdCents) ? Math.max(0, originalAmountInUsdCents) / 100 : 0;
 
-  if (rate == null || Number.isNaN(rate)) return 0;
+  if (rate == null || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(originalAmountInUsdCents)) return 0;
   return (originalAmountInUsdCents / 100) * rate;
 }
 

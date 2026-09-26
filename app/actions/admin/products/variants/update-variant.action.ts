@@ -9,8 +9,8 @@ import { hasPermission, resolvePermissionCode } from "@/lib/auth/rbac";
 import { requireAuth } from "@/lib/auth/session-provider";
 import { buildAuditContext } from "../_shared/audit-context";
 import { actionError, actionSuccess } from "../_shared/action-result";
-import { ProductService } from "@/lib/products/product.service";
-import { ProductServiceError } from "@/lib/products/product.service";
+import { ProductService } from "@/lib/product/product.service";
+import { ProductServiceError } from "@/lib/product/product.service";
 
 const UpdateVariantSchema = z.object({
   variantId: z.string().uuid("ID de variante invalide"),

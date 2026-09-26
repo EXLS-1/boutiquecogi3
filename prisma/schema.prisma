@@ -629,8 +629,7 @@ model Product {
   sku         String   @unique
   slug        String   @unique
   description String   @db.Text
-  price       Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
-  basePrice   Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
+  productPrice  ProductPrice[]
   currency    Currency @default(USD)
 
   // ─── Type de produit (CONTRAT N°1 — policy métier) ───
@@ -649,7 +648,7 @@ model Product {
   catalogs CatalogProduct[]
 
   user     User     @relation(fields: [userId], references: [id])
-  stock    Stock?
+ 
   images   String[]
   videoUrl String?
 
@@ -667,7 +666,6 @@ model Product {
   taxClassId String?   @db.Uuid
   taxClass   TaxClass? @relation(fields: [taxClassId], references: [id])
 
-  salePrice Int?
   saleStart DateTime?
   saleEnd   DateTime?
   soldCount Int       @default(0)
@@ -688,7 +686,7 @@ model Product {
   variants               ProductVariant[]
   wishlistItems          WishlistItem[]
   productImages          ProductImage[]
-  productOptions         ProductOption[]
+
   productTags            ProductTag[]
   productAttributeValues ProductAttributeValue[]
   productReviews         Review[]
@@ -697,11 +695,16 @@ model Product {
   inventorySnapshots     InventorySnapshot[]
   availabilityProjection Product_Availability_Projection?
 
+  // Couche Stock 1:1 (agrégat de rétrocompatibilité, alimentée uniquement par
+  // inventory.service.ts). `Stock.product` déclare l'autre bout de la relation :
+  // sans ce champ, `prisma validate` échoue en P1012 et `prisma generate`
+  // ne produit aucun client — ce qui laisse tout le repo sur un client périmé.
+  stock Stock?
+
   // Promotion directe (1 coupon -> N produits)
   couponId String? @db.Uuid
   coupon   Coupon? @relation(fields: [couponId], references: [id])
 
-  productPrices    ProductPrice[]
   productViews     ProductView[]
   categoryProducts CategoryProduct[]
 
@@ -774,19 +777,6 @@ model ProductImage {
   @@index([productId, position])
   @@map("product_image")
 }
-
-model ProductOption {
-  id        String  @id @default(uuid(7)) @db.Uuid
-  productId String  @db.Uuid
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  value     String
-
-  @@unique([productId, name, value])
-  @@index([productId])
-  @@map("product_option")
-}
-
 model Tag {
   id   String @id @default(uuid(7)) @db.Uuid
   name String @unique
@@ -869,7 +859,7 @@ model ProductPrice {
   productId      String    @db.Uuid
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   currency       String    @default("USD")
-  amount         Int
+  amount         Decimal
   compareAtPrice Int?
   country        String?
   region         String?
@@ -886,6 +876,7 @@ enum Currency {
   CDF
 }
 
+// dans le ProductTypeConfig, C'est exactement ici que se place la politique métier.
 model ProductTypeConfig {
   id                       String   @id @default(uuid(7)) @db.Uuid
   type                     String   @unique

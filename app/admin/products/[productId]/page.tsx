@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProductService } from "@/lib/products/product.service";
+import { ProductService } from "@/lib/product/product.service";
 import { Package, Tag, LayoutGrid, ShoppingCart, TrendingUp, History, FileText } from "lucide-react";
 import { ProductStatusBadge } from "@/components/admin/products/product-status-badge";
 import { ProductStockBadge } from "@/components/admin/products/product-stock-badge";

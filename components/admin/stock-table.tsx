@@ -18,7 +18,12 @@ import {
     TrendingUp,
     AlertTriangle,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils';
+import {
+    getStockAvailable,
+    isStockLow,
+    matchesStockQuery,
+} from '@/lib/cart/cart-domain';
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -91,22 +96,21 @@ export function StockTable({ stocks }: StockTableProps) {
         reason: string
     } | null>(null)
 
+    // Recherche unifiée : même tolérance aux stocks partiels que le panier
+    // (`matchesStockQuery` — aucune déréférencement direct de
+    // `s.product.name`, qui explosait si `product` était `null`).
     const filtered = React.useMemo(() => {
         if (!search.trim()) return stocks
-        const q = search.toLowerCase()
-        return stocks.filter(
-            (s) =>
-                s.product.name.toLowerCase().includes(q) ||
-                s.product.slug.toLowerCase().includes(q) ||
-                (s.warehouse?.toLowerCase().includes(q) ?? false)
-        )
+        return stocks.filter((s) => matchesStockQuery(s, search))
     }, [stocks, search])
 
+    // Quantité réellement disponible (même calcul que `resolveCartStock` côté
+    // panier : `quantity - reserved`, jamais négative).
     const getAvailable = (stock: StockTableItem) =>
-        Math.max(0, stock.quantity - stock.reserved)
+        getStockAvailable(stock.quantity, stock.reserved)
 
     const isLowStock = (stock: StockTableItem) =>
-        getAvailable(stock) <= stock.alertThreshold
+        isStockLow(getAvailable(stock), stock.alertThreshold)
 
     const handleViewMovements = async (productId: string) => {
         setLoadingId(productId)

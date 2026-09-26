@@ -8,7 +8,7 @@ export const variantsSeed: (Omit<ProductVariant, "stock"> & {
 })[] = [
   // Pour la robe florale
   {
-    id: "vf1-42-jaune",
+    id: "",
     productId: "robe_florale",
     size: "42",
     color: "Jaune-Vert vif",
@@ -17,7 +17,7 @@ export const variantsSeed: (Omit<ProductVariant, "stock"> & {
     images: [
       { url: "/pict01.webp", alt: "Robe jaune", isPrimary: true, order: 0 },
     ],
-    stock: DEFAULT_STOCK, // 10
+    stock: DEFAULT_STOCK,
   },
   {
     id: "vf1-48-jaune",

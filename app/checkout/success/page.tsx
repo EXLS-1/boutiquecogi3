@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CheckoutSuccessCartReset } from "@/components/cart/checkout-cart-state";
-import { CART_ROUTES } from "@/lib/cart/cart-domain";
+import { CART_ROUTES, sanitizeCartTransactionRef } from "@/lib/cart/cart-domain";
 
 export default async function CheckoutSuccessPage({
   searchParams,
@@ -20,7 +20,7 @@ export default async function CheckoutSuccessPage({
   searchParams: Promise<{ transaction_id?: string }>;
 }) {
   const params = await searchParams;
-  const transactionId = params.transaction_id;
+  const transactionId = sanitizeCartTransactionRef(params.transaction_id);
 
   return (
     <div className="container mx-auto max-w-lg px-4 py-16 text-center">

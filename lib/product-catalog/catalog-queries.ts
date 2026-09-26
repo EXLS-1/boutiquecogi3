@@ -82,6 +82,15 @@ function buildBaseInclude() {
         position: true,
       },
     },
+    variants: {
+      where: { isActive: true },
+      select: {
+        isActive: true,
+        variantStocks: {
+          select: { quantity: true, reserved: true },
+        },
+      },
+    },
   } as const satisfies Prisma.ProductInclude;
 }
 

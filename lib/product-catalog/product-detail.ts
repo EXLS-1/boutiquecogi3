@@ -30,6 +30,11 @@ export interface ProductDetailVariant {
   readonly sku: string;
   readonly attributes: Record<string, unknown> | null;
   readonly priceOffset: number;
+  readonly isActive: boolean;
+  readonly stock: readonly {
+    readonly quantity: number;
+    readonly reserved: number;
+  }[];
   readonly createdAt: Date;
 }
 
@@ -214,6 +219,11 @@ export function mapProductDetail(raw: {
     sku: string;
     attributes: unknown;
     priceOffset: number;
+    isActive: boolean;
+    variantStocks: Array<{
+      quantity: number;
+      reserved: number;
+    }>;
     createdAt: Date;
   }>;
   productImages: Array<{
@@ -294,24 +304,37 @@ export function mapProductDetail(raw: {
 
   const totalStock = stock?.quantity ?? 0;
   const availableStock = stock ? stock.quantity - stock.reserved : 0;
-
-  // ─── Disponibilité ─────────────────────────────────────────────────────────
-  const isAvailable = raw.availabilityProjection?.isAvailable ?? false;
-  const availabilityStatus = isAvailable
-    ? availableStock > 0
-      ? AVAILABILITY_STATUS.IN_STOCK
-      : AVAILABILITY_STATUS.PRE_ORDER
-    : AVAILABILITY_STATUS.OUT_OF_STOCK;
-
-  // ─── Variantes ──────────────────────────────────────────────────────────────
   const variants = raw.variants.map((v) => ({
     id: v.id,
     sku: v.sku,
     attributes: v.attributes as Record<string, unknown> | null,
     priceOffset: v.priceOffset,
+    isActive: v.isActive,
+    stock: v.variantStocks.map((variantStock) => ({
+      quantity: variantStock.quantity,
+      reserved: variantStock.reserved,
+    })),
     createdAt: v.createdAt,
   }));
+  const variantAvailableStock = variants.reduce(
+    (total, variant) => total + variant.stock.reduce(
+      (variantTotal, variantStock) => variantTotal + Math.max(0, variantStock.quantity - variantStock.reserved),
+      0,
+    ),
+    0,
+  );
+  const effectiveAvailableStock = variants.length > 0 ? variantAvailableStock : availableStock;
 
+  // ─── Disponibilité ─────────────────────────────────────────────────────────
+  const isAvailable = raw.availabilityProjection?.isAvailable ?? false;
+  const availabilityStatus = isAvailable
+    ? effectiveAvailableStock > 0
+      ? AVAILABILITY_STATUS.IN_STOCK
+      : AVAILABILITY_STATUS.PRE_ORDER
+    : AVAILABILITY_STATUS.OUT_OF_STOCK;
+
+  // ─── Variantes ──────────────────────────────────────────────────────────────
+  // Les variantes sont déjà filtrées par la query; le stock est dérivé par ligne.
   // ─── Images ─────────────────────────────────────────────────────────────────
   const productImages = raw.productImages.map((img) => ({
     id: img.id,
@@ -442,8 +465,13 @@ export function mapProductDetail(raw: {
     coupon,
     taxClass,
     availabilityStatus,
-    totalStock,
-    availableStock,
+    totalStock: variants.length > 0
+      ? variants.reduce((total, variant) => total + variant.stock.reduce(
+        (sum, variantStock) => sum + Math.max(0, variantStock.quantity - variantStock.reserved),
+        0,
+      ), 0)
+      : totalStock,
+    availableStock: effectiveAvailableStock,
     averageRating,
     reviewCount,
   });

@@ -1,0 +1,2 @@
+lib/product/inventory/inventory.service.ts(103,1): error TS1135: Argument expression expected.
+lib/product/inventory/inventory.service.ts(220,3): error TS1109: Expression expected.

@@ -24,7 +24,15 @@ export const getProductData = cache(
         stock: true,
         availabilityProjection: true,
         productImages: { orderBy: { position: "asc" } },
-        variants: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { createdAt: "asc" },
+          include: {
+            variantStocks: {
+              select: { quantity: true, reserved: true },
+            },
+          },
+        },
         productOptions: true,
         productTags: { include: { tag: true } },
         productAttributeValues: { include: { attribute: true } },

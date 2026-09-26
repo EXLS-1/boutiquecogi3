@@ -15,7 +15,7 @@ vi.mock("@/lib/products/product.service", () => ({
   },
 }));
 
-import { updateProduct } from "@/lib/products/product-service-helpers";
+import { updateProduct } from "@/lib/product/product-service-helpers";
 
 const productId = "00000000-0000-4000-8000-000000000001";
 const actor = { userId: "00000000-0000-4000-8000-000000000002" };

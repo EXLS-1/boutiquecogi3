@@ -10,8 +10,8 @@
  */
 "use client";
 
-import { useCallback, useState } from "react";
-import { setDisplayCurrency } from "@/lib/actions/currency.actions";
+import { useCallback, useEffect, useState } from "react";
+import { useCurrencyStore } from "@/store/use-currency-store";
 import {
   resolveCartCurrency,
   type CartCurrency,
@@ -20,6 +20,8 @@ import {
 export interface CartCurrencyState {
   /** Devise active (une seule source de vérité côté client). */
   currency: CartCurrency;
+  /** Taux partagé avec le composant Price (USD vers CDF). */
+  rate: number | null;
   /** Écriture serveur en cours. */
   isPending: boolean;
   /** Message d'erreur persistant (rollback effectué). */
@@ -37,8 +39,20 @@ export function useCartCurrency(
   const [currency, setCurrency] = useState<CartCurrency>(() =>
     resolveCartCurrency(initialCurrency),
   );
+  const sharedCurrency = useCurrencyStore((state) => state.currency);
+  const rate = useCurrencyStore((state) => state.rate);
+  const setSharedCurrency = useCurrencyStore((state) => state.setCurrency);
+  const fetchRate = useCurrencyStore((state) => state.fetchRate);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (sharedCurrency !== currency) {
+      void setSharedCurrency(currency);
+    } else if (currency === "CDF" && rate === null) {
+      void fetchRate();
+    }
+  }, [currency, fetchRate, rate, setSharedCurrency, sharedCurrency]);
 
   const select = useCallback(
     async (nextCurrency: CartCurrency) => {
@@ -52,7 +66,8 @@ export function useCartCurrency(
       setError(null);
 
       try {
-        await setDisplayCurrency(target);
+        await setSharedCurrency(target);
+        if (target === "CDF" && rate === null) await fetchRate();
       } catch {
         // Rollback : l'UI ne doit jamais mentir sur la devise appliquée.
         setCurrency(previous);
@@ -61,8 +76,8 @@ export function useCartCurrency(
         setIsPending(false);
       }
     },
-    [currency, isPending],
+    [currency, fetchRate, isPending, rate, setSharedCurrency],
   );
 
-  return { currency, isPending, error, select };
+  return { currency, rate, isPending, error, select };
 }

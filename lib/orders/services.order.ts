@@ -7,9 +7,13 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
+import { roundCartAmount } from "@/lib/cart/cart-domain";
 
 export interface CheckoutCartItem {
   id: string;
+  /** Identifiant de variante explicite provenant du panier (ancienne ligne: absent). */
+  variantId?: string;
+  productId?: string;
   name: string;
   price: number;
   quantity: number;
@@ -73,7 +77,13 @@ export async function createOrderFromCart(params: {
   }[] = [];
 
   for (const item of items) {
-    const variantId = await resolveVariantId(item.id);
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) {
+      throw new Error(`Quantité invalide pour ${item.id}`);
+    }
+    if (!Number.isFinite(item.price) || item.price <= 0) {
+      throw new Error(`Prix invalide pour ${item.id}`);
+    }
+    const variantId = item.variantId?.trim() || await resolveVariantId(item.id);
     if (!variantId) {
       throw new Error(`Produit introuvable: ${item.id}`);
     }
@@ -82,18 +92,17 @@ export async function createOrderFromCart(params: {
       where: { id: variantId },
       include: { product: true },
     });
-if (!variant) {
+    if (!variant) {
       throw new Error(`Variante introuvable: ${item.id}`);
     }
-
-    const basePrice = variant.product.basePrice;
-    if (basePrice === null || basePrice === undefined) {
-      throw new Error(`Produit ${variant.productId} sans prix défini`);
+    if (item.productId && variant.productId !== item.productId) {
+      throw new Error(`La variante ${variantId} ne correspond pas au produit ${item.productId}`);
     }
 
-    const unitPrice =
-      basePrice.toNumber() + variant.priceOffset;
-    const subtotal = unitPrice * item.quantity;
+    // The checkout line was resolved by cart-domain using the same USD-cent
+    // conversion as Price. Persist and charge that exact unit price.
+    const unitPrice = roundCartAmount(item.price, normalizedCurrency);
+    const subtotal = roundCartAmount(unitPrice * item.quantity, normalizedCurrency);
 
     lineItems.push({
       variantId,
@@ -106,7 +115,10 @@ if (!variant) {
     });
   }
 
-  const totalAmount = lineItems.reduce((sum, line) => sum + line.subtotal, 0);
+  const totalAmount = roundCartAmount(
+    lineItems.reduce((sum, line) => sum + line.subtotal, 0),
+    normalizedCurrency,
+  );
 
   const order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({

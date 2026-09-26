@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { publishScheduledProducts } from "@/lib/products/product-workflow";
+import { publishScheduledProducts } from "@/lib/product/product-workflow";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

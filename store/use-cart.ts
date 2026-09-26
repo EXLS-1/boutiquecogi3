@@ -16,8 +16,8 @@ import { CatalogProduct } from "@/lib/product-catalog/catalog-types";
 import type { Currency } from "@prisma/client";
 import {
   CART_STORAGE_KEY,
-  MAX_CART_QUANTITY,
   clampCartQuantity,
+  getCartLineMaxQuantity,
   resolveCartStock,
   sumCartItemsQuantity,
   sumCartItemsTotal,
@@ -25,6 +25,8 @@ import {
 
 interface CartItem {
   product: CatalogProduct;
+  /** Variante choisie; absent uniquement pour les anciens articles sans variante. */
+  variantId?: string;
   quantity: number;
   addedAt: Date;
 }
@@ -41,9 +43,9 @@ interface CartStoreState {
 }
 
 interface CartStoreActions {
-  addItem: (product: CartProduct, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (product: CartProduct, quantity?: number, variantId?: string) => void;
+  removeItem: (lineId: string) => void;
+  updateQuantity: (lineId: string, quantity: number) => void;
   clearCart: () => void;
   toggleCart: () => void;
   openCart: () => void;
@@ -56,6 +58,7 @@ interface CartStoreActions {
 
 interface PersistedCartItem {
   product: CatalogProduct;
+  variantId?: string;
   quantity: number;
   addedAt: string;
 }
@@ -67,8 +70,14 @@ interface CartStore extends CartStoreState, CartStoreActions { }
  * Délègue à la logique partagée (`lib/cart/cart-domain`) : une seule règle de
  * stock pour le store, la page panier, le tunnel de paiement et l'admin.
  */
-function getProductStock(product: CatalogProduct): number {
-  return resolveCartStock(product as StockedProduct) ?? MAX_CART_QUANTITY;
+/**
+ * Quantité maximale commandable pour un produit (borne globale ET stock réel).
+ * Délègue à la règle partagée (`getCartLineMaxQuantity` de `lib/cart/cart-domain`) :
+ * le store, la page panier, le tunnel de paiement et l'admin appliquent donc
+ * exactement la même limite. Stock inconnu (`null`) → borne globale seule.
+ */
+function getProductMaxQuantity(product: CatalogProduct): number {
+  return getCartLineMaxQuantity(resolveCartStock(product as StockedProduct));
 }
 
 /**
@@ -92,21 +101,18 @@ export const useCartStore = create<CartStore>()(
         isLoading: false,
 
         // ─── Actions ────────────────────────────────────────────────────────
-        addItem: (product, quantity = 1) => {
-          if (!product.isAvailable || getProductStock(product) <= 0) {
+        addItem: (product, quantity = 1, variantId) => {
+          if (!product.isAvailable || getProductMaxQuantity(product) <= 0) {
             console.warn(`[Cart] Produit indisponible: ${product.id}`);
             return;
           }
 
           set((state) => {
             const existingIndex = state.items.findIndex(
-              (item) => item.product.id === product.id,
+              (item) => item.product.id === product.id && item.variantId === variantId,
             );
             // Borne unique : MAX_CART_QUANTITY et stock disponible.
-            const maxQuantity = Math.min(
-              MAX_CART_QUANTITY,
-              getProductStock(product),
-            );
+            const maxQuantity = getProductMaxQuantity(product);
 
             if (existingIndex >= 0) {
               // Produit existant : mise à jour quantité (bornée)
@@ -116,6 +122,7 @@ export const useCartStore = create<CartStore>()(
               );
               state.items[existingIndex] = {
                 ...state.items[existingIndex],
+                variantId,
                 quantity: newQuantity,
               };
             } else {
@@ -124,32 +131,30 @@ export const useCartStore = create<CartStore>()(
                 product,
                 clampCartQuantity(quantity, maxQuantity),
               );
+              newItem.variantId = variantId;
               state.items.push(newItem as unknown as (typeof state.items)[number]);
             }
           });
         },
 
-        removeItem: (productId) => {
+        removeItem: (lineId) => {
           set((state) => {
             state.items = state.items.filter(
-              (item) => item.product.id !== productId,
+              (item) => (item.variantId ?? item.product.id) !== lineId,
             );
           });
         },
 
-        updateQuantity: (productId, quantity) => {
+        updateQuantity: (lineId, quantity) => {
           if (quantity <= 0) {
-            get().removeItem(productId);
+            get().removeItem(lineId);
             return;
           }
 
           set((state) => {
-            const item = state.items.find((i) => i.product.id === productId);
+            const item = state.items.find((i) => (i.variantId ?? i.product.id) === lineId);
             if (item) {
-              const maxQty = Math.min(
-                MAX_CART_QUANTITY,
-                getProductStock(item.product),
-              );
+              const maxQty = getProductMaxQuantity(item.product);
               item.quantity = clampCartQuantity(quantity, maxQty);
             }
           });
@@ -197,6 +202,7 @@ export const useCartStore = create<CartStore>()(
         partialize: (state) => ({
           items: state.items.map((item) => ({
             product: item.product,
+            variantId: item.variantId,
             quantity: item.quantity,
             addedAt: item.addedAt.toISOString(),
           })),
@@ -206,6 +212,7 @@ export const useCartStore = create<CartStore>()(
             const persistedItems = state.items as unknown as PersistedCartItem[];
             state.items = persistedItems.map((item) => ({
               product: item.product,
+              variantId: typeof item.variantId === "string" ? item.variantId : undefined,
               quantity: item.quantity,
               addedAt: new Date(item.addedAt),
             }));

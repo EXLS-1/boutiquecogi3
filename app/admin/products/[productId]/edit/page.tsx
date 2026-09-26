@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { notFound } from "next/navigation";
-import { ProductService } from "@/lib/products/product.service";
+import { ProductService } from "@/lib/product/product.service";
 import { listProductTypeConfigs } from "@/lib/product-type/product-type.repository";
 import { getCategoriesTree } from "@/lib/product-catalog/catalog-queries";
 import { getTagsList } from "@/lib/product-catalog/catalog-queries";

@@ -8,6 +8,11 @@ export default async function AdminStockPage() {
     const stocks = stocksResult.success && Array.isArray(stocksResult.data)
         ? stocksResult.data
         : []
+    // Un échec ne doit JAMAIS ressembler à « aucun stock » : l'admin voit la
+    // cause réelle (droits insuffisants, service indisponible, …).
+    const loadError = stocksResult.success
+        ? null
+        : stocksResult.error || 'Chargement des stocks impossible.'
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -20,6 +25,15 @@ export default async function AdminStockPage() {
                     Suivez et ajustez les niveaux de stock de tous vos produits.
                 </p>
             </div>
+
+            {loadError ? (
+                <p
+                    role="alert"
+                    className="mb-6 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+                >
+                    {loadError}
+                </p>
+            ) : null}
 
             <StockTable stocks={stocks} />
         </div>

@@ -190,16 +190,20 @@ export function resolveUnitPrice(
 export function buildCheckoutSummary(
   items: readonly CheckoutCartLineInput[] | null | undefined,
   currency: CartCurrency,
+  rate: number | null = null,
 ): CheckoutSummary {
   const normalizedCurrency = resolveCartCurrency(currency);
   const summary = buildCartSummary(
     items as readonly CartLineInput[] | null | undefined,
     normalizedCurrency,
+    rate,
   );
 
   return {
     lines: summary.lines.map((line) => ({
       id: line.id,
+      productId: line.productId,
+      ...(line.variantId ? { variantId: line.variantId } : {}),
       name: line.name,
       price: line.price,
       quantity: line.quantity,

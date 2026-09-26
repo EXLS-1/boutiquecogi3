@@ -12,12 +12,14 @@ import { Button } from "@/components/ui/button";
 import {
   CART_ROUTES,
   buildSignInRedirect,
+  formatCartItemCount,
   formatOrderAmountMinor,
   formatOrderDate,
   getOrderItemsCount,
   getOrderPaymentLabel,
   getOrderStatusLabel,
   resolveOrderCurrency,
+  resolveOrderPaymentStatus,
 } from "@/lib/cart/cart-domain";
 
 export default async function AccountOrdersPage() {
@@ -65,16 +67,12 @@ export default async function AccountOrdersPage() {
                 <div className="text-right text-sm">
                   <p>{getOrderStatusLabel(order.status)}</p>
                   <p className="text-zinc-500">
-                    {getOrderPaymentLabel(
-                      (order as { paymentStatus?: unknown }).paymentStatus ??
-                        (order as { payment?: { status?: unknown } | null })
-                          .payment?.status,
-                    )}
+                    {getOrderPaymentLabel(resolveOrderPaymentStatus(order))}
                   </p>
                 </div>
               </div>
               <p className="mt-2 text-sm text-zinc-600">
-                {getOrderItemsCount(order)} article(s)
+                {formatCartItemCount(getOrderItemsCount(order))}
               </p>
             </li>
           ))}

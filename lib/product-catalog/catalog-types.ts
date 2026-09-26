@@ -137,6 +137,8 @@ export interface CatalogProduct {
   readonly isPromoted: boolean;
   readonly isNewArrival: boolean;
   readonly discountPercent: number;
+  readonly variantCount: number;
+  readonly hasAvailableVariant: boolean;
 }
 
 
@@ -180,6 +182,13 @@ export interface RawCatalogProduct {
   readonly productImages?: readonly {
     readonly url: string;
     readonly position: number;
+  }[];
+  readonly variants?: readonly {
+    readonly isActive: boolean;
+    readonly variantStocks: readonly {
+      readonly quantity: number;
+      readonly reserved: number;
+    }[];
   }[];
 }
 
@@ -296,6 +305,8 @@ export const catalogProductSchema = z.object({
   isPromoted: z.boolean(),
   isNewArrival: z.boolean(),
   discountPercent: z.number().int().min(0).max(100),
+  variantCount: z.number().int().min(0),
+  hasAvailableVariant: z.boolean(),
 });
 
 

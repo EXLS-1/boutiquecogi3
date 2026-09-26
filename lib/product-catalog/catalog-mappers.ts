@@ -98,6 +98,10 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
     raw.availabilityProjection,
   );
   const isAvailable = availabilityStatus !== AVAILABILITY_STATUS.OUT_OF_STOCK;
+  const activeVariants = raw.variants ?? [];
+  const hasAvailableVariant = activeVariants.some((variant) =>
+    variant.variantStocks.some((stock) => stock.quantity - stock.reserved > 0),
+  );
 
   // ─── RBAC — ProductAccessPolicy complète ─────────────────────────────────
   const accessPolicy = buildAccessPolicy(raw);
@@ -135,6 +139,8 @@ export function mapCatalogProduct(raw: RawCatalogProduct): CatalogProduct {
     isPromoted,
     isNewArrival,
     discountPercent,
+    variantCount: activeVariants.length,
+    hasAvailableVariant,
   };
 
 

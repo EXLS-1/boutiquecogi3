@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { create } from "zustand";
 import { z } from "zod";
 import { Currency } from "@prisma/client";
@@ -122,9 +122,9 @@ interface VariantStore {
   selectedVariantId: string | null;
   quantity: number;
   setVariant: (id: string | null) => void;
-  setQuantity: (qty: number) => void;
-  increment: () => void;
-  decrement: (min?: number) => void;
+  setQuantity: (qty: number, max?: number) => void;
+  increment: (max?: number) => void;
+  decrement: (min?: number, max?: number) => void;
   reset: () => void;
 }
 
@@ -133,19 +133,53 @@ export const createVariantStore = (defaultVariantId: string | null) =>
     selectedVariantId: defaultVariantId,
     quantity: 1,
     setVariant: (id) => set({ selectedVariantId: id, quantity: 1 }),
-    setQuantity: (qty) => set({ quantity: Math.max(1, qty) }),
-    increment: () => {
+    setQuantity: (qty, max = Number.MAX_SAFE_INTEGER) =>
+      set({ quantity: Math.min(max, Math.max(1, Math.trunc(qty))) }),
+    increment: (max = Number.MAX_SAFE_INTEGER) => {
       const { quantity } = get();
-      set({ quantity: quantity + 1 });
+      set({ quantity: Math.min(max, quantity + 1) });
     },
-    decrement: (min = 1) => {
+    decrement: (min = 1, max = Number.MAX_SAFE_INTEGER) => {
       const { quantity } = get();
-      if (quantity > min) set({ quantity: quantity - 1 });
+      if (quantity > min) {
+        set({ quantity: Math.max(min, Math.min(max, quantity - 1)) });
+      }
     },
     reset: () => set({ selectedVariantId: defaultVariantId, quantity: 1 }),
   }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Stock/order limits are normalized before they reach the quantity controls. */
+export function getVariantQuantityLimit(
+  stockQuantity: number,
+  maxQuantityPerOrder: number,
+): number {
+  if (!Number.isFinite(stockQuantity) || stockQuantity <= 0) return 0;
+
+  const stock = Math.trunc(stockQuantity);
+  const orderLimit = Number.isFinite(maxQuantityPerOrder)
+    ? Math.max(0, Math.trunc(maxQuantityPerOrder))
+    : 0;
+
+  return Math.min(stock, orderLimit);
+}
+
+export function clampVariantQuantity(
+  quantity: number,
+  maxQuantity: number,
+  min = 1,
+): number {
+  const normalizedMin = Number.isFinite(min) ? Math.max(0, Math.trunc(min)) : 1;
+  const normalizedMax = Number.isFinite(maxQuantity)
+    ? Math.max(normalizedMin, Math.trunc(maxQuantity))
+    : normalizedMin;
+
+  if (!Number.isFinite(quantity)) return normalizedMin;
+  return Math.min(normalizedMax, Math.max(normalizedMin, Math.trunc(quantity)));
+}
+
+
 
 function formatPrice(amount: number, currency: Currency): string {
   return new Intl.NumberFormat("fr-FR", {
@@ -254,6 +288,7 @@ interface QuantitySelectorProps {
   onChange: (val: number) => void;
   max: number;
   min?: number;
+  disabled?: boolean;
 }
 
 function QuantitySelector({
@@ -263,6 +298,7 @@ function QuantitySelector({
   onChange,
   max,
   min = 1,
+  disabled = false,
 }: QuantitySelectorProps) {
   return (
     <div className="flex items-center gap-3">
@@ -271,7 +307,7 @@ function QuantitySelector({
         <button
           type="button"
           onClick={onDecrement}
-          disabled={quantity <= min}
+          disabled={disabled || quantity <= min}
           className="px-3 py-2 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label="Diminuer la quantité"
         >
@@ -286,13 +322,14 @@ function QuantitySelector({
             const val = parseInt(e.target.value, 10);
             if (!isNaN(val)) onChange(val);
           }}
-          className="w-14 text-center text-sm font-semibold text-slate-900 border-x border-slate-200 py-2 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+          disabled={disabled}
+          className="w-14 text-center text-sm font-semibold text-slate-900 border-x border-slate-200 py-2 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 disabled:bg-slate-100 disabled:text-slate-400"
           aria-label="Quantité"
         />
         <button
           type="button"
           onClick={onIncrement}
-          disabled={quantity >= max}
+          disabled={disabled || quantity >= max}
           className="px-3 py-2 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           aria-label="Augmenter la quantité"
         >
@@ -369,10 +406,25 @@ export function ProductVariantSelector({
     return validated.basePrice + selectedVariant.priceAdjustment;
   }, [validated.basePrice, selectedVariant]);
 
+  const maxQuantity = useMemo(() => {
+    if (!selectedVariant) return 0;
+    if (selectedVariant.stockQuantity > 0) {
+      return getVariantQuantityLimit(
+        selectedVariant.stockQuantity,
+        validated.maxQuantityPerOrder,
+      );
+    }
+    return validated.allowBackorder ? validated.maxQuantityPerOrder : 0;
+  }, [selectedVariant, validated.allowBackorder, validated.maxQuantityPerOrder]);
+
   const isOutOfStock = useMemo(() => {
     if (!selectedVariant) return true;
-    return selectedVariant.stockQuantity === 0 && !validated.allowBackorder;
-  }, [selectedVariant, validated.allowBackorder]);
+    return maxQuantity === 0 && !validated.allowBackorder;
+  }, [selectedVariant, maxQuantity, validated.allowBackorder]);
+
+  useEffect(() => {
+    setQuantity(store.getState().quantity, Math.max(1, maxQuantity));
+  }, [maxQuantity, selectedVariantId, setQuantity, store]);
 
   const handleVariantSelect = useCallback(
     (id: string) => {
@@ -384,9 +436,9 @@ export function ProductVariantSelector({
   );
 
   const handleAddToCart = useCallback(() => {
-    if (!selectedVariant || isOutOfStock) return;
-    onAddToCart?.(selectedVariant, quantity);
-  }, [selectedVariant, isOutOfStock, quantity, onAddToCart]);
+    if (!selectedVariant || isOutOfStock || maxQuantity === 0) return;
+    onAddToCart?.(selectedVariant, clampVariantQuantity(quantity, maxQuantity));
+  }, [selectedVariant, isOutOfStock, maxQuantity, quantity, onAddToCart]);
 
   // Extraction des options uniques
   const colors = useMemo(
@@ -657,11 +709,12 @@ export function ProductVariantSelector({
       <div className="border-t border-slate-100 pt-6 space-y-4">
         <QuantitySelector
           quantity={quantity}
-          onIncrement={increment}
-          onDecrement={() => decrement(1)}
-          onChange={(val) => setQuantity(Math.min(val, validated.maxQuantityPerOrder))}
-          max={validated.maxQuantityPerOrder}
+          onIncrement={() => increment(Math.max(1, maxQuantity))}
+          onDecrement={() => decrement(1, Math.max(1, maxQuantity))}
+          onChange={(val) => setQuantity(val, Math.max(1, maxQuantity))}
+          max={maxQuantity === 0 ? 1 : maxQuantity}
           min={1}
+          disabled={isOutOfStock}
         />
 
         {isOutOfStock && (
@@ -701,3 +754,17 @@ export function ProductVariantSelector({
 
 export { formatDimension, formatWeight, isLightColor };
 export type { VariantStore };
+/** Résumé accessible pour le catalogue : les variantes sont choisies sur la fiche. */
+export function ProductVariantCatalogSummary({
+  variantProductCount,
+}: {
+  readonly variantProductCount: number;
+}) {
+  if (variantProductCount <= 0) return null;
+
+  return (
+    <p className="mb-4 text-sm text-slate-600" role="status">
+      {variantProductCount} produit{variantProductCount > 1 ? "s" : ""} propose{variantProductCount > 1 ? "nt" : ""} des variantes à choisir.
+    </p>
+  );
+}

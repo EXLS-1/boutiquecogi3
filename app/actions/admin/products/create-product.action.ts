@@ -13,7 +13,7 @@ import { hasPermission, resolvePermissionCode } from "@/lib/auth/rbac";
 import { requireAuth } from "@/lib/auth/session-provider";
 import { buildAuditContext } from "./_shared/audit-context";
 import { actionError, actionSuccess } from "./_shared/action-result";
-import { ProductService } from "@/lib/products/product.service";
+import { ProductService } from "@/lib/product/product.service";
 import { CreateProductSchema } from "./_shared/parse-input";
 
 // ───────────────────────────────────────────
@@ -134,4 +134,4 @@ export async function createProductAction(input: unknown) {
 // IMPORT TYPES
 // ───────────────────────────────────────────
 
-import { ProductServiceError } from "@/lib/products/product.service";
+import { ProductServiceError } from "@/lib/product/product.service";

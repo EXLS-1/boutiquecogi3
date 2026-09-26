@@ -16,6 +16,11 @@ export default async function AdminOrdersPage() {
     const orders = ordersResult.success && Array.isArray(ordersResult.data)
         ? ordersResult.data
         : []
+    // Un échec ne doit JAMAIS ressembler à « aucune commande » : l'admin voit
+    // la cause réelle (droits insuffisants, service indisponible, …).
+    const loadError = ordersResult.success
+        ? null
+        : ordersResult.error || 'Chargement des commandes impossible.'
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-7xl">

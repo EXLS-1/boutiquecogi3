@@ -10,7 +10,7 @@ import {
   getProductKpis,
   getProductList,
   type ProductStockState,
-} from "@/lib/products/product.repository";
+} from "@/lib/product/product.repository";
 import { ProductKpiCards } from "@/components/admin/products/product-kpi-cards";
 import { ProductFilters } from "@/components/admin/products/product-filters";
 import { ProductTable } from "@/components/admin/products/product-table";

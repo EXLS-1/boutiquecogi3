@@ -3,7 +3,7 @@
 
 import { Package, FileText, Clock, AlertTriangle } from "lucide-react";
 import { KpiCard } from "./kpi-card";
-import type { ProductKpis } from "@/lib/products/types";
+import type { ProductKpis } from "@/lib/product/types";
 
 export function ProductKpiCards({ kpis }: { kpis: ProductKpis }) {
   return (

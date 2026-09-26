@@ -8,8 +8,8 @@ import {
   mapProductToListItem,
   mapProductToDetails,
   type ProductMapperRow,
-} from "@/lib/products/product.mapper";
-import type { ProductDetails } from "@/lib/products/types";
+} from "@/lib/product/product.mapper";
+import type { ProductDetails } from "@/lib/product/types";
 const rowId = "00000000-0000-4000-8000-000000000001";
 
 const baseRow = (): ProductMapperRow => ({

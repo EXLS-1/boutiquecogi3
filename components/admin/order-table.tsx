@@ -34,6 +34,7 @@ import {
     getOrderStatusTone,
     isOrderTerminalStatus,
     matchesOrderQuery,
+    ORDER_STATUS_TRANSITIONS,
     resolveOrderCurrency,
     type CartOrderStatus,
 } from '@/lib/cart/cart-domain'
@@ -148,16 +149,6 @@ interface OrderTableProps {
 // ─── Helpers ───
 // Montants, statuts, dates et recherche : logique partagée du domaine panier
 // (`lib/cart/cart-domain`). Les libellés restent identiques au suivi client.
-
-const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-    PENDING: ['CONFIRMED', 'CANCELLED'],
-    CONFIRMED: ['PROCESSING', 'CANCELLED'],
-    PROCESSING: ['SHIPPED', 'CANCELLED'],
-    SHIPPED: ['DELIVERED', 'CANCELLED'],
-    DELIVERED: ['REFUNDED'],
-    CANCELLED: [],
-    REFUNDED: [],
-}
 
 const STATUS_CONFIG: Record<
     OrderStatus,
@@ -309,7 +300,8 @@ export function OrderTable({ orders }: OrderTableProps) {
 
     // Handlers
     const canTransition = (order: OrderTableItem, targetStatus: OrderStatus): boolean => {
-        return STATUS_TRANSITIONS[order.status]?.includes(targetStatus) ?? false
+        // Garde-fou unifié : la transition est refusée AVANT l'appel serveur.
+        return canTransitionOrderStatus(order.status, targetStatus)
     }
 
     const handleOpenStatusDialog = (order: OrderTableItem, newStatus: OrderStatus) => {
@@ -515,7 +507,7 @@ export function OrderTable({ orders }: OrderTableProps) {
                                                 )}
                                             >
                                                 <StatusIcon className="h-3 w-3" />
-                                                {STATUS_CONFIG[order.status].label}
+                                                {getOrderStatusLabel(order.status)}
                                             </Badge>
                                         </TableCell>
 
@@ -550,7 +542,7 @@ export function OrderTable({ orders }: OrderTableProps) {
                                                                     Changer le statut
                                                                 </DropdownMenuLabel>
 
-                                                                {STATUS_TRANSITIONS[order.status]?.map((targetStatus) => {
+                                                                {ORDER_STATUS_TRANSITIONS[order.status]?.map((targetStatus) => {
                                                                     const config = STATUS_CONFIG[targetStatus]
                                                                     const Icon = config.icon
                                                                     return (
@@ -559,7 +551,7 @@ export function OrderTable({ orders }: OrderTableProps) {
                                                                             onClick={() => handleOpenStatusDialog(order, targetStatus)}
                                                                         >
                                                                             <Icon className="mr-2 h-4 w-4" />
-                                                                            {config.label}
+                                                                            {getOrderStatusLabel(targetStatus)}
                                                                         </DropdownMenuItem>
                                                                     )
                                                                 })}

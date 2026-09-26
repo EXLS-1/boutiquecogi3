@@ -11,15 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMounted } from "@/hooks/use-mounted";
 import { processCinetPayCheckout } from "@/lib/actions/checkout.action";
-import { setDisplayCurrency } from "@/lib/actions/currency.actions";
 import {
-  DISPLAY_CURRENCY_COOKIE,
   buildSignInRedirect,
+  CART_ROUTES,
   formatCartAmount,
-  resolveCartCurrency,
-  type CartCurrency,
+  formatCartItemCount,
 } from "@/lib/cart/cart-domain";
 import useCart from "@/store/use-cart";
+import { useCartCurrency } from "@/hooks/use-cart-currency";
+import { CartCurrencyToggle } from "@/components/cart/cart-currency-toggle";
 import {
   CHECKOUT_ISSUE_LABELS,
   buildCheckoutSummary,
@@ -76,7 +76,7 @@ function CheckoutSessionExpired() {
         votre commande.
       </p>
       <Button asChild>
-        <Link href={buildSignInRedirect("/checkout")}>Se reconnecter</Link>
+        <Link href={buildSignInRedirect(CART_ROUTES.checkout)}>Se reconnecter</Link>
       </Button>
     </div>
   );
@@ -105,9 +105,13 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const { items } = useCart();
   const mounted = useMounted();
 
-  const [activeCurrency, setActiveCurrency] = useState<CartCurrency>("USD");
-  const [isCurrencyPending, setIsCurrencyPending] = useState(false);
-  const [currencyError, setCurrencyError] = useState<string | null>(null);
+  // Devise d'affichage partagée avec la page panier (même hook, même cookie).
+  const {
+    currency: activeCurrency,
+    isPending: isCurrencyPending,
+    error: currencyError,
+    select: selectCurrency,
+  } = useCartCurrency("USD");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
@@ -132,28 +136,11 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const displayName = resolveCustomerName(checkoutUser);
   const initials = resolveUserInitials(checkoutUser);
 
-  /** Change la devise d'affichage avec rollback si la Server Action échoue. */
-  const handleCurrencySwitch = async (currency: CartCurrency) => {
-    const target = resolveCartCurrency(currency);
-    if (target === activeCurrency || isCurrencyPending) return;
-
-    const previousCurrency = activeCurrency;
-    setActiveCurrency(target);
-    setIsCurrencyPending(true);
-    setCurrencyError(null);
-
-    try {
-      // Persistance serveur (cookie) : la page `cancel` relira la même devise.
-      document.cookie = `${DISPLAY_CURRENCY_COOKIE}=${target}; path=/; max-age=31536000`;
-      await setDisplayCurrency(target);
-    } catch {
-      setActiveCurrency(previousCurrency);
-      setCurrencyError(
-        "Impossible d'enregistrer la devise choisie. Veuillez réessayer.",
-      );
-    } finally {
-      setIsCurrencyPending(false);
-    }
+  // Devise partagée avec la page panier : signature compatible `onSelect`.
+  const handleCurrencySwitch = (
+    currency: Parameters<typeof selectCurrency>[0],
+  ): void => {
+    void selectCurrency(currency);
   };
 
   const handlePhoneChange = (value: string) => {
@@ -217,30 +204,14 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
         </Badge>
       </div>
 
-      {/* Devise d'affichage : le prix unitaire envoyé suit ce choix. */}
-      <div className="flex justify-end mb-4 gap-2">
-        <Button
-          variant={activeCurrency === "USD" ? "default" : "outline"}
-          onClick={() => handleCurrencySwitch("USD")}
-          disabled={isCurrencyPending}
-          aria-pressed={activeCurrency === "USD"}
-        >
-          USD
-        </Button>
-        <Button
-          variant={activeCurrency === "CDF" ? "default" : "outline"}
-          onClick={() => handleCurrencySwitch("CDF")}
-          disabled={isCurrencyPending}
-          aria-pressed={activeCurrency === "CDF"}
-        >
-          CDF
-        </Button>
-      </div>
-      {currencyError && (
-        <p role="alert" className="mb-4 text-right text-xs text-rose-600">
-          {currencyError}
-        </p>
-      )}
+      {/* Devise d'affichage partagée avec la page panier (même hook, même toggle). */}
+      <CartCurrencyToggle
+        currency={activeCurrency}
+        isPending={isCurrencyPending}
+        error={currencyError}
+        onSelect={handleCurrencySwitch}
+        className="mb-4"
+      />
 
       {!isPayable ? (
         /* Panier vide / lignes inexploitables : le formulaire n'est jamais rendu. */
@@ -251,7 +222,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
             plus disponibles.
           </p>
           <Button asChild>
-            <Link href="/products">Retour à la boutique</Link>
+            <Link href={CART_ROUTES.products}>Retour à la boutique</Link>
           </Button>
         </div>
       ) : (
@@ -276,8 +247,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
           <div className="max-w-md mx-auto mb-4 flex items-center justify-between rounded-lg bg-zinc-50 px-4 py-3">
             <span className="text-sm font-medium text-zinc-600">
-              Total à payer ({summary.totalQuantity} article
-              {summary.totalQuantity > 1 ? "s" : ""})
+              Total à payer ({formatCartItemCount(summary.totalQuantity)})
             </span>
             <span className="text-lg font-semibold">
               {formatCartAmount(summary.total, summary.currency)}

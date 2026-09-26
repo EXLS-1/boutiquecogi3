@@ -1,7 +1,7 @@
 // app/api/admin/stock/movements/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { ProductService } from "@/lib/products/productService";
+import { ProductService } from "@/lib/product/productService";
 import { z } from "zod";
 
 const stockMovementSchema = z.object({

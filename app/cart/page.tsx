@@ -22,6 +22,7 @@ import {
   formatCartAmount,
   formatCartItemCount,
   getCartLineMaxQuantity,
+  resolveCartStock,
 } from "@/lib/cart/cart-domain";
 import useCart from "@/store/use-cart";
 
@@ -33,14 +34,14 @@ export default function CartPage() {
   const clearCart = useCart((state) => state.clearCart);
 
   // Devise d'affichage partagée avec le tunnel de paiement.
-  const { currency, isPending, error, select } = useCartCurrency();
+  const { currency, rate, isPending, error, select } = useCartCurrency();
   // Garde d'hydratation : le panier persistant n'existe pas côté serveur.
   const mounted = useMounted();
 
   // 1. Normalisation unique : lignes payables, anomalies, total, devise.
   const summary = useMemo(
-    () => buildCartSummary(items, currency),
-    [items, currency],
+    () => buildCartSummary(items, currency, rate),
+    [items, currency, rate],
   );
 
   // 2. Borne de quantité par produit (borne globale ET stock disponible).
@@ -48,9 +49,12 @@ export default function CartPage() {
     const limits = new Map<string, number>();
 
     for (const item of items) {
-      const stock =
-        typeof item?.product?.stock === "number" ? item.product.stock : null;
-      limits.set(item.product.id, getCartLineMaxQuantity(stock));
+      const stock = resolveCartStock(item?.product);
+      const fallbackId = typeof item?.variantId === "string" && item.variantId
+        ? item.variantId
+        : typeof item?.product?.id === "string" ? item.product.id : null;
+      if (fallbackId === null) continue;
+      limits.set(fallbackId, getCartLineMaxQuantity(stock));
     }
 
     return limits;

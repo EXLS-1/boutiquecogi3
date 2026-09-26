@@ -7,7 +7,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAuth, hasPermission, PermissionCode } from "@/lib/auth/rbac";
 import { actionError, actionSuccess } from "../_shared/action-result";
-import { ProductServiceError } from "@/lib/products/product.service";
+import { ProductServiceError } from "@/lib/product/product.service";
 
 const ApproveSchema = z.object({
   productId: z.string().uuid("ID de produit invalide"),

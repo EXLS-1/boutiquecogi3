@@ -6,6 +6,7 @@
 
 import { getAllOrdersAdmin } from "@/lib/actions/actions/admin/order.admin.actions";
 import {
+  formatCartItemCount,
   formatOrderAmountMinor,
   formatOrderDate,
   getOrderItemsCount,
@@ -13,6 +14,7 @@ import {
   getOrderStatusLabel,
   matchesOrderQuery,
   resolveOrderCurrency,
+  resolveOrderPaymentStatus,
 } from "@/lib/cart/cart-domain";
 
 export default async function AdminOrdersPage({
@@ -59,14 +61,18 @@ export default async function AdminOrdersPage({
                   {order.orderNumber}
                 </td>
                 <td className="px-4 py-3">{order.user?.email ?? "—"}</td>
-                <td className="px-4 py-3">{getOrderItemsCount(order)}</td>
+                <td className="px-4 py-3">
+                  {formatCartItemCount(getOrderItemsCount(order))}
+                </td>
                 <td className="px-4 py-3">
                   {formatOrderAmountMinor(
                     order.totalAmount,
                     resolveOrderCurrency(order.currency),
                   )}
                 </td>
-                <td className="px-4 py-3">{getOrderPaymentLabel(order.paymentStatus)}</td>
+                <td className="px-4 py-3">
+                  {getOrderPaymentLabel(resolveOrderPaymentStatus(order))}
+                </td>
                 <td className="px-4 py-3">
                   {formatOrderDate(order.createdAt)}
                 </td>

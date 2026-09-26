@@ -1,9 +1,9 @@
-// components/product-promotion/promotions.tsx
+﻿// components/product-promotion/promotions.tsx
 /**
  * =============================================================================
  * SECTION PROMOTIONS - Boutiquecogi3
  * =============================================================================
- * Section dédiée aux promotions avec requête dédiée.
+ * Section dédié aux promotions avec requête dédiée.
  */
 
 import { Suspense } from "react";
@@ -13,7 +13,6 @@ import { ProductListSkeleton } from "../product/product-list-skeleton";
 import { HOME_PRODUCTS_LIMIT } from "@/lib/product-catalog/catalog-constants";
 
 export async function SectionPromotions() {
-  const products: readonly unknown[] = (await getPromotionalProducts(HOME_PRODUCTS_LIMIT)) as readonly unknown[];
   const products = await getPromotionalProducts(HOME_PRODUCTS_LIMIT);
 
   return (

@@ -1,4 +1,4 @@
-// components/price/currency-switcher.tsx
+// components/product-price/currency-selectorr.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCurrencyStore } from "@/store/use-currency-store";
 import type { Currency } from "@prisma/client";
-import { cn } from "@/lib/utils/utils";
+import { cn } from "@/lib/utils/cn";
 
 import { formatPriceFromUsdCents } from "@/lib/currency/price-format";
+
+export const DEFAULT_CURRENCY:Currency = Currency.USD
 
 export default function CurrencySwitcher() {
   const currency = useCurrencyStore((s) => s.currency);

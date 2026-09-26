@@ -4,10 +4,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { CartCurrency } from "@/lib/cart/cart-domain";
-
-/** Devises proposées à l'utilisateur (aligné sur l'enum Prisma `Currency`). */
-const CART_CURRENCIES = ["USD", "CDF"] as const satisfies readonly CartCurrency[];
+import { CART_CURRENCIES, type CartCurrency } from "@/lib/cart/cart-domain";
 
 interface CartCurrencyToggleProps {
   /** Devise active (issue de `useCartCurrency`). */

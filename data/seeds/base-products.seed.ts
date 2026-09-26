@@ -1,6 +1,6 @@
 import { BaseProduct } from "../types/product.types";
 
-// Je nettoie radicalement les 24 doublons pour n'avoir que des produits uniques (scalable)
+
 export const baseProductsSeed: BaseProduct[] = [
   {
     id: "robe_florale",

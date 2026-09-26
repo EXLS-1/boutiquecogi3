@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { Suspense } from "react";
-import { getVariantList } from "@/lib/products/product.repository";
+import { getVariantList } from "@/lib/product/product.repository";
 import { ProductAnalytics } from "./product-analytics";
 import { ProductOverviewCard } from "./product-overview-card";
 import { VariantTable } from "./variant-table";
@@ -70,7 +70,7 @@ export async function TabContent({
 }
 
 async function OverviewTab({ product, productId }: { product: any; productId: string }) {
-  const { getProductAnalytics } = await import("@/lib/products/product.repository");
+  const { getProductAnalytics } = await import("@/lib/product/product.repository");
   const analytics = await getProductAnalytics(productId);
   return (
     <div className="space-y-6">

@@ -629,8 +629,7 @@ model Product {
   sku         String   @unique
   slug        String   @unique
   description String   @db.Text
-  price       Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
-  basePrice   Decimal? @db.Decimal(10, 2) // @deprecated → ProductPrice.amount (PHASE 2 : nullable)
+  productPrice  ProductPrice[]
   currency    Currency @default(USD)
 
   // ─── Type de produit (CONTRAT N°1 — policy métier) ───
@@ -649,7 +648,7 @@ model Product {
   catalogs CatalogProduct[]
 
   user     User     @relation(fields: [userId], references: [id])
-  stock    Stock?
+ 
   images   String[]
   videoUrl String?
 
@@ -667,7 +666,6 @@ model Product {
   taxClassId String?   @db.Uuid
   taxClass   TaxClass? @relation(fields: [taxClassId], references: [id])
 
-  salePrice Int?
   saleStart DateTime?
   saleEnd   DateTime?
   soldCount Int       @default(0)
@@ -688,7 +686,7 @@ model Product {
   variants               ProductVariant[]
   wishlistItems          WishlistItem[]
   productImages          ProductImage[]
-  productOptions         ProductOption[]
+
   productTags            ProductTag[]
   productAttributeValues ProductAttributeValue[]
   productReviews         Review[]
@@ -701,7 +699,6 @@ model Product {
   couponId String? @db.Uuid
   coupon   Coupon? @relation(fields: [couponId], references: [id])
 
-  productPrices    ProductPrice[]
   productViews     ProductView[]
   categoryProducts CategoryProduct[]
 
@@ -711,6 +708,13 @@ model Product {
   @@index([status, scheduledAt])
   @@index([productTypeId])
   @@index([status, isActive]) // PHASE 2 — remplace [isArchived, basePrice]
+  // ─── Index requêtes courantes (WHERE / ORDER BY) ───
+  // FK non indexée automatiquement par Prisma/PostgreSQL → WHERE categoryId = ?
+  @@index([categoryId])
+  // Tri storefront : orderBy { createdAt: "desc" }
+  @@index([createdAt(sort: Desc)])
+  // Listes admin : isdeleted = false + filtres isArchived / status
+  @@index([isArchived, isdeleted, status])
   @@map("product")
 }
 
@@ -762,22 +766,11 @@ model ProductImage {
   alt       String?
   position  Int     @default(0)
 
-  @@index([productId])
+  // Composite : couvre le JOIN/sous-requête sur productId ET le tri par position
+  // (le préfixe productId du composite rend l'ancien @@index([productId]) redondant)
+  @@index([productId, position])
   @@map("product_image")
 }
-
-model ProductOption {
-  id        String  @id @default(uuid(7)) @db.Uuid
-  productId String  @db.Uuid
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  value     String
-
-  @@unique([productId, name, value])
-  @@index([productId])
-  @@map("product_option")
-}
-
 model Tag {
   id   String @id @default(uuid(7)) @db.Uuid
   name String @unique
@@ -860,7 +853,7 @@ model ProductPrice {
   productId      String    @db.Uuid
   product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   currency       String    @default("USD")
-  amount         Int
+  amount         Decimal
   compareAtPrice Int?
   country        String?
   region         String?
@@ -877,6 +870,7 @@ enum Currency {
   CDF
 }
 
+// dans le ProductTypeConfig, C'est exactement ici que se place la politique métier.
 model ProductTypeConfig {
   id                       String   @id @default(uuid(7)) @db.Uuid
   type                     String   @unique

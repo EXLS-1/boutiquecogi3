@@ -24,7 +24,7 @@ export function buildFallbackCatalog(): Map<string, CatalogItem> {
     // mais ici on s'assure que chaque variant a bien un stock défini.
     const enrichedVariants = variants.map((v) => ({
       ...v,
-      stock: v.stock ?? 10, // fallback local si oublié
+      stock: v.stock ?? 1, // fallback local si oublié
     }));
 
     catalogMap.set(base.id, {

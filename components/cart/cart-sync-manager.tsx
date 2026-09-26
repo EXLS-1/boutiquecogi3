@@ -49,15 +49,16 @@ export function CartSyncManager() {
     }
 
     const signature = cartItemsSignature(items);
-    if (signature.length === 0) return; // Panier vide : rien à synchroniser
 
     const lastSynced = lastSyncedRef.current;
     if (lastSynced.userId === userId && lastSynced.signature === signature) {
       return; // Déjà synchronisé : aucune requête
     }
 
+    // Panier vide (signature "") : on envoie un payload vide pour vider le
+    // panier serveur au lieu de le laisser orphelin (sinon `clearCart` local
+    // ne serait jamais propagé et le serveur garderait les anciennes lignes).
     const payload = buildCartSyncPayload(items);
-    if (payload.length === 0) return;
 
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
