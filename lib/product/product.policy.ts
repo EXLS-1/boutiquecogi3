@@ -1,4 +1,4 @@
-﻿// lib/products/product.policy.ts
+// lib/products/product.policy.ts
 // =============================================================================
 // PRODUCT POLICY â€” RBAC niveau produit (3 niveaux)
 // =============================================================================

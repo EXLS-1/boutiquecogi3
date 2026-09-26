@@ -1,3 +1,0 @@
-lib/product/inventory/inventory.types.ts(97,43): error TS2694: Namespace '"c:/boutiquecogi3/node_modules/@prisma/client/default"' has no exported member 'TransactionClient'.
-lib/product/inventory/reservation.service.ts(131,1): error TS1184: Modifiers cannot appear here.
-lib/product/inventory/reservation.service.ts(208,1): error TS1184: Modifiers cannot appear here.

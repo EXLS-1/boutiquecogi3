@@ -287,7 +287,6 @@ const [scheduledId, setScheduledId] = useState<string | null>(null);
                     </Button>
                   )}
 
-                  {(product.status === "PUBLISHED" || product.status === "ACTIVE") && (
                   {product.status === "PUBLISHED" && (
                     <Button
                       size="sm"

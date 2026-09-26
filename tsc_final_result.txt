@@ -1,0 +1,7 @@
+FAILED:
+lib/product/inventory/inventory.repository.ts(221,1): error TS1131: Property or signature expected.
+lib/product/inventory/inventory.repository.ts(221,14): error TS1359: Identifier expected. 'function' is a reserved word that cannot be used here.
+lib/product/inventory/inventory.repository.ts(309,3): error TS1128: Declaration or statement expected.
+lib/product/inventory/inventory.repository.ts(309,4): error TS1128: Declaration or statement expected.
+lib/product/inventory/inventory.repository.ts(310,1): error TS1128: Declaration or statement expected.
+

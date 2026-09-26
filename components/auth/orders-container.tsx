@@ -1,8 +1,4 @@
 // components/auth/orders-container.tsx
-// This component is responsible for displaying the user's orders with pagination support.
-// It receives the initial orders and total count from the server and
-// allows the user to load more orders on demand.
-// It also handles loading states and error messages gracefully.
 "use client";
 
 import { useState, useTransition } from "react";
@@ -34,9 +30,6 @@ export function OrdersContainer({
   const handleLoadMore = () => {
     startTransition(async () => {
       try {
-        const newOrders = await getPaginatedOrders(orders.length, pageSize);
-        setOrders((prev) => [...prev, ...newOrders]);
-      } catch (error) {
         const res = await getPaginatedOrders(orders.length, pageSize);
         if (res.success && res.data) {
           setOrders((prev) => [...prev, ...res.data]);

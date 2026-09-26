@@ -214,6 +214,97 @@ export async function upsertSnapshot(
     variantId: string;
     available: number;
     reserved: number;
+
+/** ─── Lectures de disponibilité (couche repository) ─────────────────────── */
+
+/** Ligne de stock d'une variante pour un entrepôt donné. */
+export async function readVariantStock(
+  variantId: string,
+  warehouseId: string | null,
+) {
+  return prisma.variantStock.findFirst({
+    where: { variantId, warehouseId },
+    select: { quantity: true, reserved: true, alertThreshold: true },
+  });
+}
+
+/** Agrégat + détail des stocks d'un produit. */
+export async function readProductStocks(productId: string) {
+  const [aggregate, rows] = await Promise.all([
+    prisma.variantStock.aggregate({
+      where: { variant: { productId } },
+      _sum: { quantity: true, reserved: true },
+    }),
+    prisma.variantStock.findMany({
+      where: { variant: { productId } },
+      select: { quantity: true, reserved: true, alertThreshold: true },
+    }),
+  ]);
+  return { aggregate, rows };
+}
+
+/** Projection de disponibilité d'un produit. */
+export async function readAvailabilityProjection(productId: string) {
+  return prisma.product_Availability_Projection.findUnique({
+    where: { productId },
+    select: { isAvailable: true },
+  });
+}
+
+/** Compteur de produits en rupture (via projection). */
+export async function countOutOfStockProducts() {
+  return prisma.product_Availability_Projection.count({
+    where: { isAvailable: false },
+  });
+}
+
+/** Groupement par (quantity, reserved, seuil) pour les KPI. */
+export async function groupStocksForKpis() {
+  return prisma.variantStock.groupBy({
+    by: ["quantity", "reserved", "alertThreshold"],
+    _count: { variantId: true },
+  });
+}
+
+/** Totaux du stock, toutes variantes confondues. */
+export async function sumAllStocks() {
+  return prisma.variantStock.aggregate({
+    _sum: { quantity: true, reserved: true },
+  });
+}
+
+/** Variantes sous leur seuil d'alerte (réapprovisionnement). */
+export async function readStocksBelowThreshold(limit: number) {
+  return prisma.variantStock.findMany({
+    where: { quantity: { lte: prisma.variantStock.fields.alertThreshold } },
+    take: limit,
+    orderBy: { quantity: "asc" },
+    select: {
+      variantId: true,
+      quantity: true,
+      reserved: true,
+      alertThreshold: true,
+      variant: {
+        select: {
+          sku: true,
+          productId: true,
+          product: { select: { name: true } },
+        },
+      },
+    },
+  });
+}
+
+/** Réservations expirées (nettoyage / cron). */
+export async function readExpiredReservations(limit: number) {
+  return prisma.stockReservation.findMany({
+    where: { expiresAt: { lt: new Date() } },
+    orderBy: { expiresAt: "asc" },
+    take: limit,
+    select: { id: true, orderId: true, variantId: true, quantity: true },
+  });
+}
+
     warehouseId: string | null;
   },
 ) {
