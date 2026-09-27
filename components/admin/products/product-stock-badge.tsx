@@ -1,5 +1,5 @@
 // components/admin/products/product-stock-badge.tsx
-import { STOCK_THRESHOLDS } from "@/lib/product/product.constants";
+import { STOCK_THRESHOLDS } from "@/lib/product/product-constant";
 
 export function ProductStockBadge({ available }: { available: number }) {
   const { LOW_STOCK, CRITICAL } = STOCK_THRESHOLDS;

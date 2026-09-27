@@ -3,7 +3,7 @@
 'use server'
 
 import { UserAdminService } from '@/server/services/user-admin-service'
-import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role'
+import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role.schema'
 import { revalidatePath } from 'next/cache'
 import { AuthorizationError } from '@/server/core/secure-prisma'
 

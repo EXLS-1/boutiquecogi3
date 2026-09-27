@@ -13,7 +13,7 @@ import {
   deleteAccountSchema,
   getAccountSchema,
   type ListAccountsInput,
-} from "@/lib/validations/account";
+} from "@/lib/validations/account.schema";
 import { revalidatePath } from "next/cache";
 import { AuthorizationError } from "@/server/core/secure-prisma";
 

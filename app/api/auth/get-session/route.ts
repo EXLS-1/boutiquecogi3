@@ -28,7 +28,7 @@ import {
   type Restriction,
   type ToggleState,
 } from "@/lib/auth/rbac";
-import { getRedisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis/redis";
 
 // ─── Configuration route ───────────────────
 

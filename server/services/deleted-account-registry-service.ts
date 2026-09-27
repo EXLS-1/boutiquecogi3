@@ -21,7 +21,7 @@ import {
   restoreDeletedAccountSchema,
   type ListDeletedAccountsInput,
   type RestoreDeletedAccountInput,
-} from "@/lib/validations/account";
+} from "@/lib/validations/account.schema";
 
 // ─── Erreur métier ─────────────────────────
 

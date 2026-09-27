@@ -1,7 +1,7 @@
 // server/services/role-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
-import { createRoleSchema, type CreateRoleInput, type UpdateRoleInput } from '@/lib/validations/role'
+import { createRoleSchema, type CreateRoleInput, type UpdateRoleInput } from '@/lib/validations/role.schema'
 import { PERMISSIONS, ROLE_HIERARCHY } from '@/lib/auth/rbac'
 import { assertRoleMutationAllowed } from '@/lib/roles/role.policy'
 

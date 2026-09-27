@@ -1,5 +1,5 @@
 // lib/mappers/product.mapper.ts
-import { ProductSchema } from "@/lib/validators/product.schema";
+import { ProductSchema } from "@/lib/validations/product.schema";
 
 export function mapProduct(product: unknown) {
   const validated = ProductSchema.parse(product);

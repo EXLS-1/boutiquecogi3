@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { RoleService } from '@/server/services/role-service'
 import { AuthorizationError } from '@/server/core/secure-prisma'
-import type { UpdateRoleInput } from '@/lib/validations/role'
+import type { UpdateRoleInput } from '@/lib/validations/role.schema'
 
 // PATCH /api/admin/roles/:id — Modifier un rôle
 export async function PATCH(

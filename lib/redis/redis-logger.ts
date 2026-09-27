@@ -1,5 +1,5 @@
-import type { LoggerClass } from "@/lib/logger";
-import type { RedisLogger } from "@/lib/redis";
+import type { LoggerClass } from "@/lib/redis/logger";
+import type { RedisLogger } from "@/lib/redis/redis";
 
 /**
  * Adapte le contrat Redis (message, métadonnées) au logger applicatif.

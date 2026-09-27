@@ -16,7 +16,7 @@ import {
   type ListAccountsInput,
   type DeleteAccountInput,
   type GetAccountInput,
-} from '@/lib/validations/account'
+} from '@/lib/validations/account.schema'
 
 export class AccountAdminServiceError extends Error {
   constructor(message: string, public code: string) {

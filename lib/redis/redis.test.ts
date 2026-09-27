@@ -33,7 +33,7 @@ import {
   setRedisLogger,
   type RedisLogger,
 } from "./redis";
-import { createMockRedisClient } from "./redis.mock";
+import { createMockRedisClient } from "@/lib/redis/redis.mock";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FIXTURES & UTILITAIRES

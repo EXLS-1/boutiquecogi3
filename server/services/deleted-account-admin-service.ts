@@ -16,7 +16,7 @@ import {
   restoreDeletedAccountSchema,
   type ListDeletedAccountsInput,
   type RestoreDeletedAccountInput,
-} from "@/lib/validations/account";
+} from "@/lib/validations/account.schema";
 import { Prisma } from "@prisma/client";
 
 // ─── Erreur métier ─────────────────────────

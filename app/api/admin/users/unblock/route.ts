@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { UserAdminService } from '@/server/services/user-admin-service'
-import { unblockUserSchema } from '@/lib/validations/role'
+import { unblockUserSchema } from '@/lib/validations/role.schema'
 import { AuthorizationError } from '@/server/core/secure-prisma'
 
 // POST /api/admin/users/unblock — Débloquer un utilisateur

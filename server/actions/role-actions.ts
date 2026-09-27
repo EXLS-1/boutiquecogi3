@@ -3,7 +3,7 @@
 'use server'
 
 import { RoleService, RoleServiceError } from '@/server/services/role-service'
-import { createRoleSchema, updateRoleSchema } from '@/lib/validations/role'
+import { createRoleSchema, updateRoleSchema } from '@/lib/validations/role.schema'
 import { revalidatePath } from 'next/cache'
 import { AuthorizationError } from '@/server/core/secure-prisma'
 

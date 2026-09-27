@@ -9,7 +9,7 @@ import {
   AccountSelfService,
   AccountSelfServiceError,
 } from "@/server/services/account-self-service";
-import { selfDeleteAccountSchema } from "@/lib/validations/account";
+import { selfDeleteAccountSchema } from "@/lib/validations/account.schema";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AuthorizationError } from "@/server/core/secure-prisma";

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils/cn";
 
 import { formatPriceFromUsdCents } from "@/lib/currency/price-format";
 
-export const DEFAULT_CURRENCY:Currency = Currency.USD
+export const DEFAULT_CURRENCY: Currency = "USD";
 
 export default function CurrencySwitcher() {
   const currency = useCurrencyStore((s) => s.currency);

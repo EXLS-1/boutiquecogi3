@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Redis } from "ioredis";
-import { RedisClient, RedisStreamManager } from "./redis";
+import { RedisClient, RedisStreamManager } from "@/lib/redis/redis";
 
 describe("Redis command compatibility", () => {
   let client: RedisClient;

@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
-import { isValidUuid } from "@/lib/utils";
+import { isValidUuid } from "@/lib/utils/uuid";
 import { mapProductDetail, type ProductDetailData } from "./product-detail";
 
 /** Source commune à la fiche produit et à l'aperçu public (UUID ou slug). */

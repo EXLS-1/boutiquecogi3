@@ -17,7 +17,7 @@ import { withSecurePrisma } from "@/server/core/secure-prisma";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { auth } from "@/lib/auth";
-import type { SelfDeleteAccountInput } from "@/lib/validations/account";
+import type { SelfDeleteAccountInput } from "@/lib/validations/account.schema";
 import { Prisma } from "@prisma/client";
 
 // â”€â”€â”€ Erreur mÃ©tier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

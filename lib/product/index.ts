@@ -53,7 +53,7 @@ export {
   STOCK_THRESHOLDS,
   PRODUCT_CACHE,
   SERVER_ACTION_RESULT,
-} from "./product.constants";
+} from "./product-constant";
 export type {
   VariantInputDto,
   CreateProductDto,

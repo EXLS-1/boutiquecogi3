@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { createRedisLogger } from "./redis-logger";
+import { createRedisLogger } from "@/lib/redis/redis-logger";
 
 function createSink() {
   return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };

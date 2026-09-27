@@ -20,7 +20,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { deleteMyAccountAction } from "@/server/actions/account-self-actions";
-import { selfDeleteAccountSchema } from "@/lib/validations/account";
+import { selfDeleteAccountSchema } from "@/lib/validations/account.schema";
 
 // ─── UI Shadcn ──────────────────────────────
 import { Button } from "@/components/ui/button";

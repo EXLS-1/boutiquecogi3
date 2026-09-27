@@ -1,4 +1,5 @@
 // lib/system.ts
+
 import { z } from 'zod';
 
 export const LOG_LEVELS = { ERROR: 'ERROR', WARN: 'WARN', INFO: 'INFO', DEBUG: 'DEBUG' } as const;

@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { RoleService } from '@/server/services/role-service'
-import { createRoleSchema } from '@/lib/validations/role'
+import { createRoleSchema } from '@/lib/validations/role.schema'
 import { AuthorizationError } from '@/server/core/secure-prisma'
 
 // GET /api/admin/roles — Lister tous les rôles

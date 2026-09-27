@@ -1,4 +1,5 @@
-// lib/validations/account.ts
+// lib/validations/account.schema.ts
+
 // ============================================
 // Zod schemas pour la gestion admin des comptes (Account model)
 // ============================================

@@ -3,74 +3,93 @@
 // PRODUCT TYPE — Policy d'autorisation par type de produit
 // =============================================================================
 // Résout la triple vérification RBAC × ProductTypeConfig :
-//   1. Permission globale (lib/auth/rbac : hasPermission)
-//   2. Niveau hiérarchique (minRoleLevel* de la config)
-//   3. Rôle explicite (whoCan* de la config)
+//   1. État actif du type de produit (config.isActive)
+//   2. Permission globale (actor.permissions)
+//   3. Niveau hiérarchique (minRoleLevel)
+//   4. Rôle explicite (whoCan)
 //
-// Le résultat est une décision binaire + les raisons d'échec (audit/UX).
+// Le résultat est une décision binaire + motifs explicites d'échec (audit/UX).
 
-import { PERMISSIONS, type Role, type PermissionCode } from "@/lib/auth/rbac";
+import type { PermissionCode } from "@/lib/auth/rbac";
 import { getProductTypeConfig } from "./product-type.repository";
-import type { ProductTypeConfig } from "@prisma/client";
+import type {
+  ProductTypeActor,
+  ProductTypeDecision,
+  ProductTypeOperation,
+  VariantLimitCheckResult,
+} from "@/lib/product/product-types";
 
-export interface ProductTypeActor {
-  userId: string;
-  role: Role;
-  roleLevel: number;
-  permissions: Set<PermissionCode>;
+// Re-export des types pour préserver la rétrocompatibilité des imports
+export type { ProductTypeActor, ProductTypeDecision, VariantLimitCheckResult };
+
+/**
+ * Mappage des propriétés de configuration selon l'opération demandée.
+ */
+function getOperationRules(
+  config: import("@prisma/client").ProductTypeConfig,
+  operation: ProductTypeOperation
+) {
+  const map = {
+    create: {
+      whoCan: config.whoCanCreate,
+      requiredPermission: config.requiredPermissionCreate,
+      minRoleLevel: config.minRoleLevelCreate,
+    },
+    edit: {
+      whoCan: config.whoCanEdit,
+      requiredPermission: config.requiredPermissionEdit,
+      minRoleLevel: config.minRoleLevelEdit,
+    },
+    delete: {
+      whoCan: config.whoCanDelete,
+      requiredPermission: config.requiredPermissionDelete,
+      minRoleLevel: config.minRoleLevelDelete,
+    },
+  } as const;
+
+  return map[operation];
 }
 
-export interface ProductTypeDecision {
-  allowed: boolean;
-  reasons: string[];
-  config: ProductTypeConfig;
-}
-
+/**
+ * Moteur de décision binaire pour les politiques associées aux types de produits.
+ */
 function decide(
   actor: ProductTypeActor,
-  config: ProductTypeConfig,
-  operation: "create" | "edit" | "delete"
+  config: import("@prisma/client").ProductTypeConfig,
+  operation: ProductTypeOperation
 ): ProductTypeDecision {
   const reasons: string[] = [];
 
-  const whoCan: string[] =
-    operation === "create"
-      ? config.whoCanCreate
-      : operation === "edit"
-        ? config.whoCanEdit
-        : config.whoCanDelete;
-
-  const requiredPermission: PermissionCode =
-    (operation === "create"
-      ? config.requiredPermissionCreate
-      : operation === "edit"
-        ? config.requiredPermissionEdit
-        : config.requiredPermissionDelete) as PermissionCode;
-
-  const minRoleLevel =
-    operation === "create"
-      ? config.minRoleLevelCreate
-      : operation === "edit"
-        ? config.minRoleLevelEdit
-        : config.minRoleLevelDelete;
-
-  // 1. Permission globale
-  const hasPermission = actor.permissions.has(requiredPermission);
-  if (!hasPermission) {
-    reasons.push(`Permission requise manquante : ${requiredPermission}`);
+  // 0. Vérification de l'activation du type de produit
+  if (!config.isActive) {
+    reasons.push(`Le type de produit "${config.type}" est désactivé.`);
   }
 
-  // 2. Niveau hiérarchique (minRoleLevel : plus élevé = plus de droits)
-  if (actor.roleLevel < minRoleLevel) {
+  const rules = getOperationRules(config, operation);
+  const requiredPermission = rules.requiredPermission as PermissionCode;
+
+  // 1. Permission globale RBAC
+  const hasPermission =
+    actor.permissions && actor.permissions.has(requiredPermission);
+  if (!hasPermission) {
     reasons.push(
-      `Niveau de rôle insuffisant : ${actor.roleLevel} < ${minRoleLevel}`
+      `Permission requise manquante : ${requiredPermission ?? "NON_DEFINIE"}`
     );
   }
 
-  // 3. Rôle explicite (whoCan* : liste blanche de rôles)
-  const roleAllowed = whoCan.includes(actor.role);
+  // 2. Niveau hiérarchique (minRoleLevel : plus élevé = plus de privilèges)
+  if (actor.roleLevel < rules.minRoleLevel) {
+    reasons.push(
+      `Niveau de rôle insuffisant pour l'opération ${operation} : ${actor.roleLevel} < ${rules.minRoleLevel}`
+    );
+  }
+
+  // 3. Rôle explicite (whoCan* : liste blanche des rôles autorisés)
+  const roleAllowed = Array.isArray(rules.whoCan) && rules.whoCan.includes(actor.role);
   if (!roleAllowed) {
-    reasons.push(`Rôle non autorisé pour cette opération : ${actor.role}`);
+    reasons.push(
+      `Rôle "${actor.role}" non autorisé pour l'opération ${operation} sur le type "${config.type}"`
+    );
   }
 
   return {
@@ -79,6 +98,10 @@ function decide(
     config,
   };
 }
+
+// ───────────────────────────────────────────
+// CLIENT POLICY METHODS
+// ───────────────────────────────────────────
 
 export async function canCreateProductType(
   actor: ProductTypeActor,
@@ -104,16 +127,22 @@ export async function canDeleteProductType(
   return decide(actor, config, "delete");
 }
 
-/** Vérifie la limite de variantes du type (VariantStock × maxVariants). */
+/**
+ * Vérifie si le nombre de variantes dépasse le plafond défini pour ce type de produit.
+ */
 export function checkVariantLimit(
   decision: ProductTypeDecision,
   variantCount: number
-): { ok: boolean; reason: string | null } {
-  if (variantCount > decision.config.maxVariants) {
+): VariantLimitCheckResult {
+  const count = Math.max(0, variantCount);
+  const max = decision.config.maxVariants;
+
+  if (count > max) {
     return {
       ok: false,
-      reason: `Limite de variantes dépassée : ${variantCount} > ${decision.config.maxVariants}`,
+      reason: `Limite de variantes dépassée pour le type "${decision.config.type}" : ${count} > ${max}`,
     };
   }
+
   return { ok: true, reason: null };
 }

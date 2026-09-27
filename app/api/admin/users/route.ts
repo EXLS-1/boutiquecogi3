@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { UserAdminService } from '@/server/services/user-admin-service'
-import { assignRoleSchema } from '@/lib/validations/role'
+import { assignRoleSchema } from '@/lib/validations/role.schema'
 import { AuthorizationError } from '@/server/core/secure-prisma'
 
 // GET /api/admin/users — Lister tous les utilisateurs

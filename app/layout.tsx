@@ -16,9 +16,9 @@ import { UIWrapper } from "@/components/toggle/ui-wrapper";
 import { CartSyncManager } from "@/components/cart/cart-sync-manager";
 import { ProductQuickView } from "@/components/product/product-quick-view";
 import { WishlistSyncManager } from "@/components/wishlist/wishlist-sync-manager";
-import { setRedisLogger } from "@/lib/redis";
+import { setRedisLogger } from "@/lib/redis/redis";
 import { logger } from "@/lib/logger";
-import { createRedisLogger } from "@/lib/redis-logger";
+import { createRedisLogger } from "@/lib/redis/redis-logger";
 
 const inter = localFont({
   src: "../public/fonts/inter-latin-wght-normal.woff2",

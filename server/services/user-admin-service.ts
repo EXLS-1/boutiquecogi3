@@ -1,9 +1,9 @@
 // server/services/user-admin-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
-import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role'
+import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role.schema'
 import { PERMISSIONS, ROLES, ROLE_HIERARCHY, getRoleLevel } from '@/lib/auth/rbac'
-import type { BlockUserInput, UnblockUserInput, AssignRoleInput } from '@/lib/validations/role'
+import type { BlockUserInput, UnblockUserInput, AssignRoleInput } from '@/lib/validations/role.schema'
 
 export class UserAdminError extends Error {
   constructor(message: string, public code: string) {

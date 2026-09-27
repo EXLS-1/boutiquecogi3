@@ -1,3 +1,5 @@
+// lib/rate-limit.ts
+
 interface Entry { count: number; resetAt: number; }
 const store = new Map<string, Entry>();
 
