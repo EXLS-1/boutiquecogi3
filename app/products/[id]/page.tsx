@@ -254,7 +254,6 @@ function ProductInfo({ product }: { product: ProductDetailData }) {
               : "Indisponible"}
         </button>
       )}
-      {product.productOptions.length > 0 && <ProductOptions options={product.productOptions} />}
       {product.coupon && <CouponBadge coupon={product.coupon} />}
     </div>
   );
@@ -325,28 +324,6 @@ function formatPrice(amount: number, currency: Currency) {
   } catch {
     return `${amount.toFixed(2)} ${currency}`;
   }
-}
-
-function ProductOptions({
-  options,
-}: {
-  options: ProductDetailData["productOptions"];
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-slate-700">Options :</span>
-      <ul className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <li
-            key={option.id}
-            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
-          >
-            <span className="font-medium">{option.name}</span> : {option.value}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 function CouponBadge({ coupon }: { coupon: NonNullable<ProductDetailData["coupon"]> }) {

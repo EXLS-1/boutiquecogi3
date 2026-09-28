@@ -45,12 +45,6 @@ export interface ProductDetailImage {
   readonly position: number;
 }
 
-export interface ProductDetailOption {
-  readonly id: string;
-  readonly name: string;
-  readonly value: string;
-}
-
 export interface ProductDetailTag {
   readonly id: string;
   readonly name: string;
@@ -149,7 +143,6 @@ export interface ProductDetailData {
   readonly availabilityProjection: ProductDetailAvailability | null;
   readonly variants: readonly ProductDetailVariant[];
   readonly productImages: readonly ProductDetailImage[];
-  readonly productOptions: readonly ProductDetailOption[];
   readonly tags: readonly ProductDetailTag[];
   readonly attributes: readonly ProductDetailAttribute[];
   readonly reviews: readonly ProductDetailReview[];
@@ -231,11 +224,6 @@ export function mapProductDetail(raw: {
     url: string;
     alt: string | null;
     position: number;
-  }>;
-  productOptions: Array<{
-    id: string;
-    name: string;
-    value: string;
   }>;
   productTags: Array<{
     tag: {
@@ -343,13 +331,6 @@ export function mapProductDetail(raw: {
     position: img.position,
   }));
 
-  // ─── Options ────────────────────────────────────────────────────────────────
-  const productOptions = raw.productOptions.map((opt) => ({
-    id: opt.id,
-    name: opt.name,
-    value: opt.value,
-  }));
-
   // ─── Tags ───────────────────────────────────────────────────────────────────
   const tags = raw.productTags.map((pt) => ({
     id: pt.tag.id,
@@ -382,7 +363,7 @@ export function mapProductDetail(raw: {
       : 0;
 
   // ─── Prix régionaux ─────────────────────────────────────────────────────────
-  const prices = raw.productPrices.map((p) => ({
+  const prices = raw.productPrice.map((p) => ({
     id: p.id,
     currency: p.currency,
     amount: p.amount,
@@ -457,7 +438,6 @@ export function mapProductDetail(raw: {
       : null,
     variants,
     productImages,
-    productOptions,
     tags,
     attributes,
     reviews,
