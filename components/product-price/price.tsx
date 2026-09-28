@@ -1,4 +1,5 @@
 // components/price/price.tsx
+
 // ce composant gère l'affichage du prix en fonction de la devise active (USD ou CDF) et du taux de change.
 
 "use client";

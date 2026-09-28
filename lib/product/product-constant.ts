@@ -26,12 +26,13 @@ export const PRODUCT_LIMITS = {
   SKU_MAX: 64,
   PRICE_MAX: 1_000_000_000,
   VARIANT_MAX: 100,
-  IMAGE_MAX: 20,
+  IMAGE_MAX: 10,
   MAX_IMAGES_PER_PRODUCT: 10,
   MAX_IMAGES_PER_VARIANT: 5,
   CATEGORY_MAX: 10,
   TAG_MAX: 50,
 } as const;
+
 
 export const STATUS_TRANSITIONS: Record<ProductStatus, readonly ProductStatus[]> = {
   [ProductStatus.DRAFT]: [ProductStatus.PENDING, ProductStatus.SCHEDULED, ProductStatus.PUBLISHED, ProductStatus.ARCHIVED],

@@ -13,6 +13,13 @@ export class ProductError extends Error {
   }
 }
 
+export class ProductServiceError extends ProductError {
+  constructor(message: string, code: string, statusCode = 400, details?: unknown) {
+    super(message, code, statusCode, details);
+    this.name = "ProductServiceError";
+  }
+}
+
 export class ProductNotFoundError extends ProductError {
   constructor(productId: string) {
     super(`Produit introuvable : ${productId}`, "PRODUCT_NOT_FOUND", 404);

@@ -2,44 +2,66 @@ import { Prisma, ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { mapProductToListItem } from "./product-mapper";
 import type { ProductQuery, ProductListResult, ProductKpis } from "./product-types";
+import { STOCK_THRESHOLDS } from "./product-constant";
 
 function buildProductWhere(query: ProductQuery): Prisma.ProductWhereInput {
-  const where: Prisma.ProductWhereInput = {};
+  const and: Prisma.ProductWhereInput[] = [];
 
-  where.isdeleted = query.deleted === true;
-  if (query.archived !== undefined) where.isArchived = query.archived;
+  and.push({ isdeleted: query.deleted === true });
+  if (query.archived !== undefined) and.push({ isArchived: query.archived });
+  if (query.status?.length) and.push({ status: { in: query.status } });
+  if (query.productType) and.push({ productType: { is: { type: query.productType } } });
+  if (query.categoryId) and.push({ OR: [
+    { categoryId: query.categoryId },
+    { categoryProducts: { some: { categoryId: query.categoryId } } },
+  ] });
 
   if (query.search) {
-    where.OR = [
-      { name: { contains: query.search, mode: "insensitive" } },
-      { sku: { contains: query.search, mode: "insensitive" } },
-      { slug: { contains: query.search, mode: "insensitive" } },
-    ];
+    and.push({
+      OR: [
+        { name: { contains: query.search, mode: "insensitive" } },
+        { sku: { contains: query.search, mode: "insensitive" } },
+        { slug: { contains: query.search, mode: "insensitive" } },
+      ],
+    });
   }
 
-  if (query.status?.length) where.status = { in: query.status };
-  if (query.productType) where.productType = { is: { type: query.productType } };
-  if (query.categoryId) {
-    where.OR = [
-      { categoryId: query.categoryId },
-      { categoryProducts: { some: { categoryId: query.categoryId } } },
-    ];
+  if (query.currency) and.push({ currency: query.currency });
+  if (query.featured !== undefined) and.push({ isFeatured: query.featured });
+  if (query.catalogId) and.push({ catalogs: { some: { catalogId: query.catalogId } } });
+  if (query.createdBy) and.push({ createdBy: query.createdBy });
+  if (query.createdFrom || query.createdTo) {
+    and.push({ createdAt: { gte: query.createdFrom, lte: query.createdTo } });
   }
-  if (query.currency) where.currency = query.currency;
-  if (query.featured !== undefined) where.isFeatured = query.featured;
 
-  if (query.priceMinCents !== undefined || query.priceMaxCents !== undefined) {
-    where.productPrices = {
-      some: {
-        amount: {
-          gte: query.priceMinCents !== undefined ? query.priceMinCents / 100 : undefined,
-          lte: query.priceMaxCents !== undefined ? query.priceMaxCents / 100 : undefined,
+   if (query.priceMinCents !== undefined || query.priceMaxCents !== undefined) {
+    and.push({
+      productPrice: {
+        some: {
+          amount: {
+            gte: query.priceMinCents !== undefined ? query.priceMinCents / 100 : undefined,
+            lte: query.priceMaxCents !== undefined ? query.priceMaxCents / 100 : undefined,
+          },
         },
       },
-    };
+    });
   }
 
-  return where;
+  if (query.stockState) {
+    switch (query.stockState) {
+      case "OUT_OF_STOCK":
+        and.push({ availabilityProjection: { isAvailable: false } });
+        break;
+      case "IN_STOCK":
+        and.push({ availabilityProjection: { isAvailable: true } });
+        break;
+      case "LOW_STOCK":
+        and.push({ stock: { quantity: { lte: STOCK_THRESHOLDS.LOW_STOCK, gt: 0 } } });
+        break;
+    }
+  }
+
+return and.length ? { AND: and } : {};
 }
 
 export async function getProductList(query: ProductQuery): Promise<ProductListResult> {
@@ -50,10 +72,12 @@ export async function getProductList(query: ProductQuery): Promise<ProductListRe
     where,
     take: limit + 1,
     cursor: query.cursor ? { id: query.cursor } : undefined,
-    orderBy: [{ createdAt: query.orderDir ?? "desc" }, { id: "asc" }],
+    skip: query.cursor ? 1 : 0,
+    orderBy: [{ [query.orderBy ?? "createdAt"]: query.orderDir ?? "desc" }, { id: "asc" }],
     include: {
       productType: { select: { type: true } },
-      category: { select: { name: true } },
+      productPrice: { take: 1, orderBy: { startsAt: "desc" } },
+      category: { select: { id: true, name: true } },
       stock: { select: { quantity: true, reserved: true } },
       availabilityProjection: { select: { isAvailable: true } },
       _count: {
@@ -64,7 +88,7 @@ export async function getProductList(query: ProductQuery): Promise<ProductListRe
 
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
-  const items = page.map((row) => mapProductToListItem(row as any));
+  const items = page.map((row) => mapProductToListItem(row));
   const total = await prisma.product.count({ where });
 
   return {
@@ -77,15 +101,18 @@ export async function getProductList(query: ProductQuery): Promise<ProductListRe
 }
 
 export async function getProductKpis(): Promise<ProductKpis> {
-  const [total, published, drafts, pending, scheduled, archived, deleted, outOfStock] = await Promise.all([
-    prisma.product.count({ where: { isdeleted: false } }),
-    prisma.product.count({ where: { isdeleted: false, status: ProductStatus.PUBLISHED } }),
-    prisma.product.count({ where: { isdeleted: false, status: ProductStatus.DRAFT } }),
-    prisma.product.count({ where: { isdeleted: false, status: ProductStatus.PENDING } }),
-    prisma.product.count({ where: { isdeleted: false, status: ProductStatus.SCHEDULED } }),
-    prisma.product.count({ where: { isdeleted: false, isArchived: true } }),
+ const baseWhere = { isdeleted: false };
+ const [total, published, drafts, pending, scheduled, archived, deleted, outOfStock, lowStock] =
+  await Promise.all([
+    prisma.product.count({ where: baseWhere }),
+    prisma.product.count({ where: { ...baseWhere, status: ProductStatus.PUBLISHED } }),
+    prisma.product.count({ where: { ...baseWhere, status: ProductStatus.DRAFT } }),
+    prisma.product.count({ where: { ...baseWhere, status: ProductStatus.PENDING } }),
+    prisma.product.count({ where: { ...baseWhere, status: ProductStatus.SCHEDULED } }),
+    prisma.product.count({ where: { ...baseWhere, isArchived: true } }),
     prisma.product.count({ where: { isdeleted: true } }),
-    prisma.product_Availability_Projection.count({ where: { isAvailable: false } }),
+    prisma.product.count({ where: { ...baseWhere, availabilityProjection: { isAvailable: false } } }),
+    prisma.product.count({ where: { ...baseWhere, stock: { quantity: { lte: STOCK_THRESHOLDS.LOW_STOCK, gt: 0 } } } }),
   ]);
 
   return {
@@ -97,6 +124,6 @@ export async function getProductKpis(): Promise<ProductKpis> {
     archived,
     deleted,
     outOfStock,
-    lowStock: 0,
+    lowStock,
   };
 }

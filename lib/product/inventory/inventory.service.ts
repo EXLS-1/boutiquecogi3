@@ -200,7 +200,7 @@ export async function adjustStockInTx(
   await upsertSnapshot(tx, {
     productId: variant.productId,
     variantId,
-    available: target,
+    available,
     reserved: variantStock.reserved,
     warehouseId: warehouse,
   });

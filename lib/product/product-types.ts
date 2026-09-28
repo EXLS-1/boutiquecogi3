@@ -62,7 +62,7 @@ export interface ProductQuery {
   priceMaxCents?: number;
   cursor?: string;
   limit?: number;
-  orderBy?: "createdAt" | "basePrice" | "name" | "updatedAt";
+  orderBy?: "createdAt" | "name" | "updatedAt";
   orderDir?: "asc" | "desc";
 }
 

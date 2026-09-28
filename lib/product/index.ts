@@ -1,25 +1,18 @@
 // lib/product/index.ts
 
-// =============================================================================
+// =====================================================================
 // Point d'entrée unique pour le Domaine Produit
-// =============================================================================
+// =====================================================================
 
-export { ProductService } from "@/lib/product/product-service";
-export { ProductError, ProductNotFoundError, ProductVariantNotFoundError, InsufficientStockError } from "@/lib/product/product-errors";
-export { transitionProductStatus } from "@/lib/product/product-workflow";
-export { getProductKpis, getProductList } from "@/lib/product/product-repository";
-export { mapProductToListItem } from "@/lib/product/product-mapper";
-export { canCreateProduct, canEditProduct, canDeleteProduct } from "@/lib/product/product-policy";
-export { PRODUCT_LIMITS, PRODUCT_STATUS, STATUS_TRANSITIONS, STOCK_THRESHOLDS } from "@/lib/product/product-constant";
-export { emitProductEvent, registerProductEventListener } from "@/lib/product/product-events";
-
-export type {
-  CreateProductDto,
-  VariantInputDto,
-  PriceInput,
-  ProductQuery,
-  ProductListItem,
-  ProductListResult,
-  ProductKpis,
-  ProductActor,
-} from "@/lib/product/product-types";
+export * from "@/lib/product/product-errors";
+export * from "@/lib/product/product-constant";
+export * from "@/lib/product/product-events";
+export * from "@/lib/product/product-types";
+export * from "@/lib/product/product-lookups";
+export * from "@/lib/product/product-mapper";
+export * from "@/lib/product/product-policy";
+export * from "@/lib/product/product-repository";
+export * from "@/lib/product/product-workflow";
+export * from "@/lib/product/product-service";
+export * from "@/lib/product/product-service-helpers";
+export * from "@/lib/product/product-service-publish";

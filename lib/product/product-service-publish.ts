@@ -5,41 +5,40 @@
 import { ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit/product-audit.index";
-import { ProductServiceError } from "@/lib/product/product-service";
+import { ProductError, ProductServiceError } from "@/lib/product/product-errors";
+import { canEditProduct } from "@/lib/product/product-policy";
+import { transitionProductStatus } from "@/lib/product/product-workflow";
+import { emitProductEvent } from "@/lib/product/product-events";
+import type { ProductActor } from "@/lib/product/product-types";
 
 // REJET
 export async function rejectForReview(
   productId: string,
-  actor: { userId: string },
+  actor: ProductActor,
   reason: string
 ): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    const product = await tx.product.findUnique({
-      where: { id: productId }, select: { id: true, status: true }
-    });
-    if (!product || product.status !== ProductStatus.PENDING) {
-      throw new ProductServiceError("Produit en attente requis", "INVALID_STATUS");
-    }
+  const decision = await canEditProduct(actor);
+  if (!decision.allowed) {
+    throw new ProductError(decision.reasons.join("; "), "FORBIDDEN", 403);
+  }
 
-    await tx.product.update({
-      where: { id: productId }, data: { status: ProductStatus.DRAFT }
-    });
+  await transitionProductStatus(productId, ProductStatus.DRAFT, {
+    actedBy: actor.userId,
+    reason,
+  });
 
-    await tx.productStatusHistory.create({
-      data: {
-        productId, oldStatus: ProductStatus.PENDING,
-        newStatus: ProductStatus.DRAFT, reason,
-        changedById: actor.userId
-      }
-    });
+  await recordProductAudit({
+    action: PRODUCT_AUDIT_ACTIONS.REJECTED,
+    userId: actor.userId,
+    productId,
+    newValue: { status: ProductStatus.DRAFT },
+    details: `Rejeté: ${reason}`,
+  });
 
-    await recordProductAudit({
-      action: PRODUCT_AUDIT_ACTIONS.REJECTED,
-      userId: actor.userId, productId,
-      newValue: { status: ProductStatus.DRAFT },
-      details: `Rejeté: ${reason}`
-    }, tx);
-  }, { isolationLevel: "Serializable" as const, maxWait: 5000, timeout: 15000 });
+  await emitProductEvent("PRODUCT_STATUS_CHANGED", productId, {
+    status: ProductStatus.DRAFT,
+    reason,
+  });
 }
 
 // ARRÊT COMMERCIAL

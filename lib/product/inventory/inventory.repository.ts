@@ -211,11 +211,38 @@ export async function upsertSnapshot(
   db: Db,
   data: {
     productId: string;
-    variantId: string;
+    variantId: string | null;
     available: number;
     reserved: number;
-
-/** ─── Lectures de disponibilité (couche repository) ─────────────────────── */
+    warehouseId: string | null;
+  },
+) {
+  // Find-then-write assumé : `@@unique([productId, variantId])` est composite.
+  // et l'écriture doit rester tolérante à une ligne créée hors de ce module.
+  const existing = await db.inventorySnapshot.findFirst({
+    where: { productId: data.productId, variantId: data.variantId },
+    select: { id: true },
+  });
+  if (existing) {
+    return db.inventorySnapshot.update({
+      where: { id: existing.id },
+      data: {
+        available: data.available,
+        reserved: data.reserved,
+        warehouseId: data.warehouseId,
+      },
+    });
+  }
+  return db.inventorySnapshot.create({
+    data: {
+      productId: data.productId,
+      variantId: data.variantId,
+      available: data.available,
+      reserved: data.reserved,
+      warehouseId: data.warehouseId,
+    },
+  });
+}
 
 /** Ligne de stock d'une variante pour un entrepôt donné. */
 export async function readVariantStock(
@@ -302,35 +329,5 @@ export async function readExpiredReservations(limit: number) {
     orderBy: { expiresAt: "asc" },
     take: limit,
     select: { id: true, orderId: true, variantId: true, quantity: true },
-  });
-}
-
-    warehouseId: string | null;
-  },
-) {
-  // Find-then-write assumé : `@@unique([productId, variantId])` est composite
-  // et l'écriture doit rester tolérante à une ligne créée hors de ce module.
-  const existing = await db.inventorySnapshot.findFirst({
-    where: { productId: data.productId, variantId: data.variantId },
-    select: { id: true },
-  });
-  if (existing) {
-    return db.inventorySnapshot.update({
-      where: { id: existing.id },
-      data: {
-        available: data.available,
-        reserved: data.reserved,
-        warehouseId: data.warehouseId,
-      },
-    });
-  }
-  return db.inventorySnapshot.create({
-    data: {
-      productId: data.productId,
-      variantId: data.variantId,
-      available: data.available,
-      reserved: data.reserved,
-      warehouseId: data.warehouseId,
-    },
   });
 }

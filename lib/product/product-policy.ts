@@ -1,6 +1,7 @@
 // lib/product/product-policy.ts
 
 import type { ProductActor } from "@/lib/product/product-types";
+import type { PermissionCode } from "@/lib/auth/rbac";
 import { getProductTypeConfig } from "@/lib/product-type/product-type.repository";
 import type { ProductTypeConfig } from "@prisma/client";
 
@@ -25,7 +26,7 @@ async function decide(
       ? config.requiredPermissionEdit
       : config.requiredPermissionDelete;
 
-  if (!actor.permissions.has(requiredPermission as any)) {
+  if (!actor.permissions.has(requiredPermission as PermissionCode)) {
     reasons.push(`Permission manquante : ${requiredPermission}`);
   }
 

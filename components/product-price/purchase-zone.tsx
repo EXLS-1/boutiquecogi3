@@ -1,3 +1,5 @@
+// components/product-price/purchase-zone.tsx
+
 "use client";
 
 import React, { useState } from "react";

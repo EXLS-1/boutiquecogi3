@@ -1,24 +1,46 @@
 import { prisma } from "@/lib/prisma";
-import { ProductStatus, StockMovementType, TransactionType } from "@prisma/client";
+import { ProductStatus, StockMovementType } from "@prisma/client";
 import { ProductError, ProductNotFoundError, ProductVariantNotFoundError, InsufficientStockError } from "@/lib/product/product-errors";
 import { transitionProductStatus } from "@/lib/product/product-workflow";
 import { emitProductEvent } from "@/lib/product/product-events";
 import type { CreateProductDto } from "@/lib/product/product-types";
+import { PRODUCT_LIMITS } from "@/lib/product/product-constant";
 
 export class ProductService {
   static async create(input: CreateProductDto, userId: string) {
-    return prisma.$transaction(async (tx) => {
-      const slug = input.slug ?? input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const name = input.name.trim();
+    if (name.length < PRODUCT_LIMITS.NAME_MIN || name.length > PRODUCT_LIMITS.NAME_MAX) throw new ProductError("Invalid product name length", "VALIDATION_ERROR", 400);
+    if ((input.variants?.length ?? 0) > PRODUCT_LIMITS.VARIANT_MAX) throw new ProductError("Too many variants", "VALIDATION_ERROR", 400);
+    if ((input.images?.length ?? 0) > PRODUCT_LIMITS.MAX_IMAGES_PER_PRODUCT) throw new ProductError("Too many product images", "VALIDATION_ERROR", 400);
+    if ((input.variants ?? []).some((variant) => !Number.isSafeInteger(variant.initialStock) || variant.initialStock < 0)) throw new ProductError("Initial stock must be a non-negative integer", "VALIDATION_ERROR", 400);
+    if (name.length < PRODUCT_LIMITS.NAME_MIN || name.length > PRODUCT_LIMITS.NAME_MAX) throw new ProductError("Invalid product name length", "VALIDATION_ERROR", 400);
+    const slug = (input.slug ?? name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")).trim();
+    if (!slug || slug.length > PRODUCT_LIMITS.SKU_MAX) throw new ProductError("Slug is missing or too long", "VALIDATION_ERROR", 400);
+    if (!Number.isFinite(input.basePrice) || input.basePrice < 0 || input.basePrice > PRODUCT_LIMITS.PRICE_MAX) throw new ProductError("Price is outside the allowed range", "VALIDATION_ERROR", 400);
+    const productType = input.productTypeId
+      ? await prisma.productTypeConfig.findUnique({ where: { id: input.productTypeId } })
+      : await prisma.productTypeConfig.findFirst({ where: { isDefault: true, isActive: true } });
+    if (!productType || !productType.isActive) {
+      throw new ProductError("Le type de produit est absent ou inactif", "INVALID_PRODUCT_TYPE", 400);
+    }
+    const sku = input.sku?.trim() || `SKU-${crypto.randomUUID()}`;
       
+    const result = await prisma.$transaction(async (tx) => {
+      const duplicate = await tx.product.findFirst({ where: { OR: [{ slug }, { sku }] }, select: { slug: true, sku: true } });
+      if (duplicate?.slug === slug) throw new Error(`Le slug Ãƒâ€šÃ‚Â« ${slug} Ãƒâ€šÃ‚Â» est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  utilisÃƒÆ’Ã‚Â©`);
+      if (duplicate?.sku === sku) throw new Error(`Le SKU Ãƒâ€šÃ‚Â« ${sku} Ãƒâ€šÃ‚Â» est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  utilisÃƒÆ’Ã‚Â©`);
       const product = await tx.product.create({
         data: {
-          name: input.name,
+          name,
           slug,
-          sku: input.sku ?? `SKU-${Date.now()}`,
+          sku,
           description: input.description ?? "",
-          basePrice: input.basePrice,
           currency: input.currency ?? "USD",
           categoryId: input.categoryId ?? null,
+          productTypeId: productType.id,
+          isFeatured: input.isFeatured ?? false,
+          seoTitle: input.seoTitle ?? null,
+          seoDescription: input.seoDescription ?? null,
           userId,
           createdBy: userId,
           status: ProductStatus.DRAFT,
@@ -34,8 +56,8 @@ export class ProductService {
           const variant = await tx.productVariant.create({
             data: {
               productId: product.id,
-              sku: v.sku ?? `${product.sku}-${Math.random().toString(36).substring(2, 7)}`,
-              attributes: v.attributes as any,
+              sku: v.sku?.trim() || `SKU-${crypto.randomUUID()}`,
+              attributes: v.attributes,
               priceOffset: v.priceOffset ?? 0,
             },
           });
@@ -57,19 +79,47 @@ export class ProductService {
         });
       }
 
+      await tx.productPrice.create({ data: {
+        productId: product.id,
+        currency: input.currency ?? "USD",
+        amount: input.basePrice,
+        compareAtPrice: input.compareAtPrice ?? null,
+      } });
+      if (input.prices?.length) {
+        await tx.productPrice.createMany({ data: input.prices.map((price) => ({
+          productId: product.id,
+          currency: price.currency,
+          amount: price.amount,
+          compareAtPrice: price.compareAtPrice ?? null,
+          country: price.country ?? null,
+          region: price.region ?? null,
+          startsAt: price.startsAt ?? null,
+          endsAt: price.endsAt ?? null,
+        })) });
+      }
+      if (input.images?.length) {
+        await tx.productImage.createMany({ data: input.images.map((url, position) => ({ productId: product.id, url, position })) });
+      }
+      if (input.categoryIds?.length) {
+        await tx.categoryProduct.createMany({ data: input.categoryIds.map((categoryId, displayOrder) => ({ productId: product.id, categoryId, displayOrder })) });
+      }
+      if (input.tagIds?.length) {
+        await tx.productTag.createMany({ data: input.tagIds.map((tagId) => ({ productId: product.id, tagId })) });
+      }
       await tx.product_Availability_Projection.create({
         data: { productId: product.id, isAvailable: totalStock > 0 },
       });
 
-      await emitProductEvent("PRODUCT_CREATED", product.id, { createdBy: userId });
-
       return { productId: product.id, slug: product.slug, totalStock };
     });
+    await emitProductEvent("PRODUCT_CREATED", result.productId, { createdBy: userId });
+    return result;
   }
 
   static async adjustVariantStock(variantId: string, delta: number, reason: string, userId: string) {
     return prisma.$transaction(async (tx) => {
-      const variantStock = await tx.variantStock.findUnique({
+      if (!Number.isInteger(delta) || delta === 0) throw new ProductError("La variation de stock doit ÃƒÆ’Ã‚Âªtre un entier non nul", "VALIDATION_ERROR", 400);
+      const variantStock = await tx.variantStock.findFirst({
         where: { variantId },
         include: { variant: true },
       });
@@ -84,7 +134,7 @@ export class ProductService {
       }
 
       await tx.variantStock.update({
-        where: { variantId },
+        where: { id: variantStock.id },
         data: { quantity: newQuantity, updatedBy: userId },
       });
 
@@ -126,13 +176,21 @@ export class ProductService {
 
   static async softDelete(productId: string, userId: string) {
     await prisma.$transaction(async (tx) => {
-      const product = await tx.product.findUnique({ where: { id: productId } });
+      const product = await tx.product.findUnique({ where: { id: productId }, select: { status: true, isdeleted: true } });
       if (!product) throw new ProductNotFoundError(productId);
+      if (product.isdeleted) throw new ProductError("Produit dÃƒÂ©jÃƒÂ  supprimÃƒÂ©", "ALREADY_DELETED", 409);
 
       await tx.product.update({
         where: { id: productId },
-        data: { isdeleted: true, deletedAt: new Date(), status: ProductStatus.ARCHIVED },
+        data: { isdeleted: true, deletedAt: new Date(), status: ProductStatus.ARCHIVED, isArchived: true, isActive: false },
       });
+      await tx.productStatusHistory.create({ data: {
+        productId,
+        oldStatus: product.status,
+        newStatus: ProductStatus.ARCHIVED,
+        reason: "Suppression douce",
+        changedById: userId,
+      } });
     });
     await emitProductEvent("PRODUCT_DELETED", productId, { deletedBy: userId });
   }

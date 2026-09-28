@@ -1,12 +1,12 @@
 // lib/product/product-mapper.ts
 
-import type { Prisma, Product, ProductVariant, VariantStock, ProductPrice, ProductImage, Category, Tag } from "@prisma/client";
+import type { Product, ProductVariant, VariantStock, ProductPrice, ProductImage, Category, Tag } from "@prisma/client";
 import { toCents } from "@/lib/product-pricing/pricing.service";
-import type { ProductListItem, ProductDetails } from "@/lib/product/product-types";
+import type { ProductListItem } from "@/lib/product/product-types";
 
 type ProductRow = Product & {
   productType?: { type: string } | null;
-  productPrices?: ProductPrice[];
+  productPrice?: ProductPrice[];
   variants?: (ProductVariant & { variantStocks?: VariantStock[] })[];
   productImages?: ProductImage[];
   category?: Pick<Category, "id" | "name"> | null;
@@ -17,8 +17,9 @@ type ProductRow = Product & {
 };
 
 export function mapProductToListItem(row: ProductRow): ProductListItem {
-  const basePriceCents = row.basePrice ? toCents(row.basePrice) : 0;
-  const comparePriceCents = row.price ? toCents(row.price) : null;
+  const basePrice = row.productPrice?.[0];
+  const basePriceCents = basePrice ? toCents(Number(basePrice.amount)) : 0;
+  const comparePriceCents = basePrice?.compareAtPrice ?? null;
   const quantity = row.stock?.quantity ?? 0;
   const reserved = row.stock?.reserved ?? 0;
 
