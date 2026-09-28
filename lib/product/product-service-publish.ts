@@ -1,10 +1,11 @@
-// lib/products/product-service-publish.ts
+// lib/product/product-service-publish.ts
+
 // Gestion de la publication et des statuts
 
 import { ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit/product-audit.index";
-import { ProductServiceError } from "./product.service";
+import { ProductServiceError } from "@/lib/product/product-service";
 
 // REJET
 export async function rejectForReview(

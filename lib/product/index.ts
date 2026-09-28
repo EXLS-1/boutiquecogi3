@@ -1,71 +1,25 @@
-// lib/products/index.ts
-// =============================================================================
-// Barrel exports — Domaine Produit
-// =============================================================================
-// Point d'entrée unique pour le domaine produit.
-// Le code consommateur importe depuis @/lib/products (jamais directement
-// depuis les fichiers internes sauf cas particulier).
-//
+// lib/product/index.ts
 
-export { ProductService, ProductServiceError } from "./product.service";
-export {
-  ProductError,
-  PRODUCT_ERROR_CODES,
-  type ProductErrorCode,
-} from "./productService";
-export {
-  transitionProductStatus,
-  isTransitionAllowed,
-  canPublishProduct as canPublishProductByRules,
-  publishScheduledProducts,
-  ALLOWED_TRANSITIONS,
-  ProductWorkflowError,
-  type TransitionOptions,
-} from "./product-workflow";
-export {
-  getProductKpis,
-  getProductList,
-  getProductAnalytics,
-  type ProductQuery,
-} from "./product.repository";
-export {
-  ProductValidationService,
-  dynamicProductSchema,
-} from "./validationService";
-export {
-  mapProductToListItem,
-  mapProductToDetails,
-} from "./product.mapper";
-export {
-  canCreateProduct,
-  canEditProduct,
-  canDeleteProduct,
-  canPublishProduct,
-  canArchiveProduct,
-  type ProductActor,
-  type ProductDecision,
-} from "./product.policy";
-export {
-  PRODUCT_LIMITS,
-  PRODUCT_STATUS_LABELS,
-  PRODUCT_STATUS_COLORS,
-  PUBLISHABLE_STATUSES,
-  STOCK_THRESHOLDS,
-  PRODUCT_CACHE,
-  SERVER_ACTION_RESULT,
-} from "./product-constant";
+// =============================================================================
+// Point d'entrée unique pour le Domaine Produit
+// =============================================================================
+
+export { ProductService } from "@/lib/product/product-service";
+export { ProductError, ProductNotFoundError, ProductVariantNotFoundError, InsufficientStockError } from "@/lib/product/product-errors";
+export { transitionProductStatus } from "@/lib/product/product-workflow";
+export { getProductKpis, getProductList } from "@/lib/product/product-repository";
+export { mapProductToListItem } from "@/lib/product/product-mapper";
+export { canCreateProduct, canEditProduct, canDeleteProduct } from "@/lib/product/product-policy";
+export { PRODUCT_LIMITS, PRODUCT_STATUS, STATUS_TRANSITIONS, STOCK_THRESHOLDS } from "@/lib/product/product-constant";
+export { emitProductEvent, registerProductEventListener } from "@/lib/product/product-events";
+
 export type {
-  VariantInputDto,
   CreateProductDto,
-  CreatedProductResult,
-  StockMovementInput,
-  ProductFormInput,
-  ProductUpdateInput,
-  ProductFilter,
-  ProductPagination,
+  VariantInputDto,
+  PriceInput,
+  ProductQuery,
   ProductListItem,
   ProductListResult,
   ProductKpis,
-  ProductMutationResult,
-  PriceInput,
-} from "./types";
+  ProductActor,
+} from "@/lib/product/product-types";

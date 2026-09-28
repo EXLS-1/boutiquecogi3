@@ -1,10 +1,11 @@
-// lib/products/product-service-helpers.ts
+// lib/product/product-service-helpers.ts
+
 // Helpers essentiels pour les Server Actions
 
 import { ProductStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProductAudit, PRODUCT_AUDIT_ACTIONS } from "@/lib/product-audit/product-audit.index";
-import { ProductServiceError } from "./product.service";
+import { ProductServiceError } from "./product-service";
 import {
   findProductById,
   findVariantById,

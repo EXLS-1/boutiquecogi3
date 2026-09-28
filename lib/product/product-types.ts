@@ -1,132 +1,121 @@
 // lib/product/product-types.ts
-// =============================================================================
-// CONTRATS DE TYPES DU DOMAINE PRODUIT & PRODUCT TYPE CONFIG
-// =============================================================================
-// Note d'architecture : Ce fichier contient EXCLUSIVEMENT des définitions de
-// types et d'interfaces stricts (aucun code exécutable, aucun appel Prisma).
-// Il peut être importé en toute sécurité dans des composants Client ou Serveur.
 
-import type {
-  Product,
-  ProductVariant,
-  ProductStatus,
-  VariantStatus,
-  ProductTypeConfig,
-} from "@prisma/client";
-import type { Role, PermissionCode } from "@/lib/auth/rbac";
+import type { ProductStatus, Currency, Role } from "@prisma/client";
+import type { PermissionCode } from "@/lib/auth/rbac";
 
-// ───────────────────────────────────────────
-// 1. DTOs & ENTITÉS PRISMA ÉTENDUES
-// ───────────────────────────────────────────
+export type DynamicAttributeValue = string | number | boolean;
+export type DynamicAttributes = Record<string, DynamicAttributeValue>;
 
-/** Produit incluant ses variantes rattachées. */
-export type ProductWithVariants = Product & {
-  variants: ProductVariant[];
-};
+export interface VariantInputDto {
+  sku?: string;
+  attributes: DynamicAttributes;
+  priceOffset?: number;
+  initialStock: number;
+}
 
-/** Relation de catégorie simplifiée. */
-export type ProductCategoryRelation = {
-  id: string;
+export interface PriceInput {
+  currency: Currency;
+  amount: number;
+  compareAtPrice?: number | null;
+  country?: string | null;
+  region?: string | null;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+}
+
+export interface CreateProductDto {
   name: string;
-  slug?: string;
-};
-
-/** Produit avec sa catégorie optionnelle. */
-export type ProductWithCategory = Product & {
-  category?: ProductCategoryRelation | null;
-};
-
-/** Agrégat produit complet (Catégorie + Variantes). */
-export type ProductAggregate = Product & {
-  category?: ProductCategoryRelation | null;
-  variants: ProductVariant[];
-};
-
-/**
- * DTO d'affichage UI léger (Évite les collisions avec l'entité Prisma Product).
- */
-export interface ProductSummaryDTO {
-  id: string;
-  name: string;
-  description: string;
-  priceUSD: number;
-  stock: number;
-  image: string;
-  mediaUrls: string[];
-  category: string;
-}
-
-// ───────────────────────────────────────────
-// 2. FILTRES, PAGINATION ET RÉPONSES
-// ───────────────────────────────────────────
-
-export interface ProductFilters {
-  status?: ProductStatus;
-  categoryId?: string;
-  search?: string;
-  page?: number;
-  pageSize?: number;
-}
-
-export interface ProductListResponse {
-  items: ProductWithCategory[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
-export interface VariantFilters {
-  productId: string;
-  status?: VariantStatus;
-  search?: string;
-}
-
-// ───────────────────────────────────────────
-// 3. MUTATIONS & DONNÉES DE FORMULAIRES
-// ───────────────────────────────────────────
-
-export type ProductFormData = {
-  name: string;
-  slug: string;
   description?: string | null;
-  basePrice: number;
+  sku?: string;
+  slug?: string;
   categoryId?: string | null;
-  images: string[];
-  status: ProductStatus;
-  productType?: string;
-};
+  categoryIds?: string[];
+  productTypeId?: string;
+  basePrice: number;
+  currency?: Currency;
+  compareAtPrice?: number | null;
+  attributes?: DynamicAttributes;
+  variants?: VariantInputDto[];
+  images?: string[];
+  prices?: PriceInput[];
+  tagIds?: string[];
+  isFeatured?: boolean;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+}
 
-export type VariantFormData = {
+export interface ProductQuery {
+  search?: string;
+  status?: ProductStatus[];
+  productType?: string;
+  categoryId?: string;
+  catalogId?: string;
+  currency?: Currency;
+  stockState?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  featured?: boolean;
+  archived?: boolean;
+  deleted?: boolean;
+  createdBy?: string;
+  createdFrom?: Date;
+  createdTo?: Date;
+  priceMinCents?: number;
+  priceMaxCents?: number;
+  cursor?: string;
+  limit?: number;
+  orderBy?: "createdAt" | "basePrice" | "name" | "updatedAt";
+  orderDir?: "asc" | "desc";
+}
+
+export interface ProductListItem {
+  id: string;
   name: string;
   sku: string;
-  price: number;
-  stock: number;
-  attributes: Record<string, string | number | boolean>;
-  images: string[];
-  status: VariantStatus;
-};
+  slug: string;
+  productType: string | null;
+  basePriceCents: number;
+  comparePriceCents: number | null;
+  currency: Currency;
+  status: ProductStatus;
+  isFeatured: boolean;
+  isArchived: boolean;
+  isActive: boolean;
+  imageCount: number;
+  variantCount: number;
+  quantity: number;
+  reserved: number;
+  available: number;
+  isAvailableProjection: boolean;
+  categoryId: string | null;
+  categoryName: string | null;
+  catalogCount: number;
+  tagCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// ───────────────────────────────────────────
-// 4. AUTORISATION & POLICIES (PRODUCT TYPE CONFIG)
-// ───────────────────────────────────────────
+export interface ProductListResult {
+  items: ProductListItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  limit: number;
+  total: number;
+}
 
-export type ProductTypeOperation = "create" | "edit" | "delete";
+export interface ProductKpis {
+  total: number;
+  published: number;
+  drafts: number;
+  pending: number;
+  scheduled: number;
+  archived: number;
+  deleted: number;
+  outOfStock: number;
+  lowStock: number;
+}
 
-export interface ProductTypeActor {
+export interface ProductActor {
   userId: string;
   role: Role;
   roleLevel: number;
   permissions: Set<PermissionCode>;
-}
-
-export interface ProductTypeDecision {
-  allowed: boolean;
-  reasons: string[];
-  config: ProductTypeConfig;
-}
-
-export interface VariantLimitCheckResult {
-  ok: boolean;
-  reason: string | null;
 }
