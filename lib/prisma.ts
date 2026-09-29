@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, type PoolConfig } from "pg";
 
+import { resolvePostgresConnectionString } from "./prisma-connection";
+
 type PrismaGlobal = {
   prisma?: PrismaClient;
   pool?: Pool;
@@ -11,16 +13,14 @@ type PrismaGlobal = {
 
 const globalForPrisma = globalThis as unknown as PrismaGlobal;
 
-// Use DIRECT_URL for the adapter (bypasses PgBouncer which is incompatible
-// with Prisma's driver adapter). Fall back to DATABASE_URL if not set.
-const connectionString =
-  process.env.DIRECT_URL ?? process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL ou DIRECT_URL doit être défini.",
-  );
-}
+// Résolution + validation fail-fast de la chaîne de connexion.
+// DIRECT_URL est privilégiée (le pooler « session » est compatible avec l'adaptateur
+// Prisma, contrairement à PgBouncer en mode transaction) ; repli sur DATABASE_URL.
+//
+// Sans cette validation, un gabarit non remplacé (ex. `aws-0-<REGION>`) ne ferait
+// échouer la connexion qu'à la première requête, sur un « Invalid URL »
+// (ERR_INVALID_URL) opaque remonté par Prisma — cf. lib/prisma-connection.ts.
+const { connectionString } = resolvePostgresConnectionString();
 
 const poolOptions: PoolConfig = {
   connectionString,

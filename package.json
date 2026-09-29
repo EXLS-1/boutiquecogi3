@@ -19,6 +19,7 @@
     "db:seed:scenario": "tsx prisma/seed.ts --scenario=",
     "db:seed:verbose": "tsx prisma/seed.ts --verbose",
     "db:push": "prisma db push",
+    "db:check": "tsx scripts/check-db-config.ts",
     "doctor": "npx react-doctor@latest"
   },
   "prisma": {

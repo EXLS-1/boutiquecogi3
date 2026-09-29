@@ -221,6 +221,20 @@ npx prisma migrate dev --name init
 npx prisma generate
 ```
 
+Vérifiez ensuite la connexion PostgreSQL (sans démarrer Next.js) :
+
+```bash
+npm run db:check
+```
+
+> Le script valide `DIRECT_URL` / `DATABASE_URL` (présence, gabarits non remplacés,
+> forme de l'URL) puis exécute un `SELECT 1` avec le client Prisma de l'application.
+>
+> Un gabarit laissé tel quel dans `.env.local` — ex. `aws-0-<REGION>` ou
+> `<MOT_DE_PASSE_POSTGRES>` — rend la chaîne inanalysable : `pg` lève alors
+> `ERR_INVALID_URL` et Prisma ne remonte qu'un « Invalid URL » sans indiquer la
+> variable fautive. `npm run db:check` nomme la variable et le gabarit en cause.
+
 ### 5. Lancer le serveur de développement
 
 ```bash
@@ -229,6 +243,64 @@ npm run dev
 ```
 
 Le projet sera accessible en développement à l'adresse `http://localhost:3000` et en production à l'adresse `https://boutiquecogi.com`.
+
+### 6. Résolution de l'erreur PowerShell `npm.ps1 cannot be loaded` (Windows)
+
+Message observé sous Windows lors du lancement de `npm run dev` :
+
+```text
+npm : File C:\Program Files\nodejs\npm.ps1 cannot be loaded because running scripts is
+disabled on this system. For more information, see about_Execution_Policies at
+https:/go.microsoft.com/fwlink/?LinkID=135170.
+    + CategoryInfo          : SecurityError: (:) [], PSSecurityException
+    + FullyQualifiedErrorId : UnauthorizedAccess
+```
+
+Ce n'est **pas** un problème de Node.js, de npm ni du projet : sous Windows, PowerShell
+applique par défaut la stratégie `Restricted`, qui interdit le chargement des scripts.
+Or le lanceur `npm` installé par Node.js est un script PowerShell
+(`C:\Program Files\nodejs\npm.ps1`), d'où le blocage.
+
+Trois solutions, de la plus durable à la plus ponctuelle :
+
+**Option 1 (recommandée) — autoriser les scripts locaux pour l'utilisateur courant :**
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+`RemoteSigned` autorise les scripts locaux et exige une signature uniquement pour les
+scripts téléchargés : c'est le réglage conseillé par Microsoft. Aucun droit administrateur
+n'est requis grâce à `-Scope CurrentUser`. Vérification :
+
+```powershell
+Get-ExecutionPolicy -List
+```
+
+**Option 2 — utiliser `npm.cmd` (aucune modification du système) :**
+
+```powershell
+npm.cmd run dev
+```
+
+**Option 3 — exécuter la commande dans `cmd.exe` :**
+
+```powershell
+cmd /c "npm run dev"
+```
+
+> Variante VS Code : définissez `Command Prompt` comme terminal par défaut
+> (`Ctrl+Shift+P` → *Terminal: Select Default Profile* → *Command Prompt*), puis relancez `npm run dev`.
+
+> Le script `dev` du projet utilise la syntaxe `cmd.exe` (`set NODE_OPTIONS=... & next dev`).
+> npm exécutant les scripts via `cmd.exe` par défaut sous Windows, les trois options ci-dessus fonctionnent.
+
+Si le terminal reste bloqué après l'erreur (plus aucune commande ne répond), ouvrez un
+nouveau terminal (`Terminal` → `New Terminal`) et libérez le port 3000 :
+
+```powershell
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+```
 
 ## Structure du Projet
 
