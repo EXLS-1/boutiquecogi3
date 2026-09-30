@@ -38,6 +38,21 @@ export const SuperAdminSeeder: Seeder = {
       return;
     }
 
+    // En dev/test, un mot de passe de substitution trop court ne doit pas
+    // faire échouer tout le seed : on saute proprement (prod exige ≥ 12 car).
+    if (password.length < 12) {
+      if (ctx.env === "production") {
+        throw new Error(
+          "❌ [SECURITY FATAL] Le mot de passe du SuperAdmin doit contenir au moins 12 caractères en production."
+        );
+      }
+      ctx.logger.warn(
+        `Mot de passe SUPER_ADMIN de substitution (${password.length} car < 12) — création du compte ignorée en ${ctx.env}. Définissez un mot de passe ≥ 12 caractères pour créer le compte.`
+      );
+      ctx.logger.end(this.name);
+      return;
+    }
+
     await seedUsers(ctx.prisma, { email, password, name, role: "SUPER_ADMIN" });
 
     ctx.logger.info(`✓ SUPER_ADMIN réimplémenté : ${email} (L1)`);

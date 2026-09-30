@@ -2,12 +2,21 @@
 // ============================================
 // DÉVELOPPEMENT — CATALOGUE ÉTENDU DE PRODUITS
 // ============================================
-// Génère des produits avec variantes et images via les factories
-// déterministes. Idempotent via upsert sur slug.
+// Génère des produits avec variantes via les factories déterministes.
+// Idempotent via upsert sur slug.
+//
+// Aligné sur le schéma Prisma réel (25/09/2026) :
+//   Product (requis) : name/slug/sku/description, productTypeId,
+//             userId + createdBy (User.products), price Decimal,
+//             currency, images Json (String[]), seoTitle/seoDescription
+//             plats, stockQuantity, stockStatus, trackInventory.
+//             Catégories via CategoryProduct (@@unique productId).
+//   ProductVariant (requis) : productId + sku unique global, price
+//             Decimal, stock, stockStatus, attributes Json, images Json.
 
 import { Seeder } from "../types";
+
 import { buildProductsBatch } from "../factories/product.factory";
-import { generateUUIDv7 } from "../utils/uuid";
 
 export const DevProductsSeeder: Seeder = {
   name: "dev:products",
@@ -36,6 +45,16 @@ export const DevProductsSeeder: Seeder = {
       return;
     }
 
+    // Type de produit par défaut (créé en bootstrap:tax-carriers)
+    const defaultProductType = await ctx.prisma.productTypeConfig.findFirst({
+      where: { type: "PHYSICAL" },
+      select: { id: true },
+    });
+    if (!defaultProductType) {
+      ctx.logger.warn("Aucun ProductTypeConfig PHYSICAL — exécuter le bootstrap d'abord.");
+      return;
+    }
+
     let productIndex = 0;
     let totalVariants = 0;
 
@@ -45,54 +64,82 @@ export const DevProductsSeeder: Seeder = {
       productIndex += products.length;
 
       for (const p of products) {
+        const priceValue = Number.parseFloat(p.priceUSD || "0");
+        const seedImages: string[] =
+          Array.isArray(p.images) && p.images.length > 0
+            ? p.images
+            : ["https://storage.boutiquecogi3.cd/products/placeholder-1.webp"];
         await ctx.prisma.product.upsert({
           where: { slug: p.slug },
           update: {
             name: p.name,
-            sku: p.sku,
             description: p.description,
-            price: p.price,
-            basePrice: p.basePrice,
-            currency: "USD",
-            categoryId: p.categoryId,
+            productTypeId: defaultProductType.id,
+            status: p.status,
             isActive: true,
             isFeatured: p.isFeatured,
-            status: p.status,
-            images: p.images,
+            price: priceValue,
+            currency: "USD",
+            images: seedImages,
+            stockQuantity: 100,
+            stockStatus: "IN_STOCK",
             seoTitle: p.seoTitle,
             seoDescription: p.seoDescription,
           },
           create: {
+            id: p.id,
             name: p.name,
-            sku: p.sku,
             slug: p.slug,
+            sku: p.sku,
             description: p.description,
-            price: p.price,
-            basePrice: p.basePrice,
-            currency: "USD",
-            categoryId: p.categoryId,
-            userId: creator.id,
+            productTypeId: defaultProductType.id,
+            status: p.status,
             isActive: true,
             isFeatured: p.isFeatured,
             isArchived: false,
-            status: p.status,
-            images: p.images,
+            userId: creator.id,
+            createdBy: creator.id,
+            price: priceValue,
+            currency: "USD",
+            images: seedImages,
+            stockQuantity: 100,
+            stockStatus: "IN_STOCK",
+            trackInventory: true,
             seoTitle: p.seoTitle,
             seoDescription: p.seoDescription,
+            // Liaisons catégorie via la table de jonction (unique productId)
+            categoryLinks: { create: { categoryId: cat.id } },
           },
         });
 
-        // Variantes
+        // Variantes — SKU unique global, rattachées via productId.
+        const saved = await ctx.prisma.product.findUnique({
+          where: { slug: p.slug },
+          select: { id: true },
+        });
+        if (!saved) continue;
+
         for (const v of p.variants) {
+          const variantPrice = Number.parseFloat(v.priceUSD || "0") || priceValue;
           await ctx.prisma.productVariant.upsert({
             where: { sku: v.sku },
-            update: { attributes: v.attributes, priceOffset: v.priceOffset },
+            update: {
+              productId: saved.id,
+              attributes: v.attributes,
+              price: variantPrice,
+              stock: 100,
+              stockStatus: "IN_STOCK",
+              images: [],
+            },
             create: {
               id: v.id,
-              productId: p.id,
+              productId: saved.id,
               sku: v.sku,
               attributes: v.attributes,
-              priceOffset: v.priceOffset,
+              price: variantPrice,
+              stock: 100,
+              stockStatus: "IN_STOCK",
+              images: [],
             },
           });
           totalVariants++;

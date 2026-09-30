@@ -25,9 +25,23 @@ Thumbs.db
 # Prisma
 /prisma/migrations
 
+# PostgreSQL local portable (binaires + donnees, voir start-local-pg.cmd)
+.local-pg/
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
 # Divers
 .vercel
+
+# Fichiers de travail temporaires (jamais committés)
+*.cmd.log
+.cmp-*.txt
+cmp-*.log
+/tmp-pg/
+/pg-bin*.zip
+s1.log
+c4-seed.log
+c9.log
+e1.log

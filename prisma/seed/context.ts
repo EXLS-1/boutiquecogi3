@@ -20,13 +20,11 @@ export interface BuildContextOptions {
  * Le NODE_ENV sert de source de vérité pour l'environnement.
  */
 export function buildSeedContext(options: BuildContextOptions): SeedContext {
-  const env: SeedEnvironment =
-    options.env ??
-    (process.env.NODE_ENV as SeedEnvironment) ??
-    "development";
+  const rawEnv = options.env ?? process.env.NODE_ENV ?? "development";
+  const env = rawEnv.trim().toLowerCase() as SeedEnvironment;
 
   if (!["development", "test", "production"].includes(env)) {
-    throw new Error(`Environnement de seed invalide: ${env}`);
+    throw new Error(`Environnement de seed invalide: ${rawEnv}`);
   }
 
   const logger = new SeedLogger(options.isVerbose ?? false);
