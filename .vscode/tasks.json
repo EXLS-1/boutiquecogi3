@@ -2,6 +2,60 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "database: Start local PostgreSQL",
+			"type": "process",
+			"command": "docker",
+			"args": [
+				"compose",
+				"up",
+				"--detach",
+				"--wait",
+				"postgres"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "database: Push Prisma schema",
+			"type": "process",
+			"command": "npm",
+			"args": [
+				"run",
+				"db:push"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "database: Generate Prisma Client",
+			"type": "process",
+			"command": "npm",
+			"args": [
+				"run",
+				"db:generate"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "database: Verify Prisma connection",
+			"type": "process",
+			"command": "npm",
+			"args": [
+				"run",
+				"db:check"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "database: Initialize local Prisma database",
+			"dependsOn": [
+				"database: Start local PostgreSQL",
+				"database: Push Prisma schema",
+				"database: Generate Prisma Client",
+				"database: Verify Prisma connection"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
 			"label": "sqlproj: Build boutiq",
 			"type": "process",
 			"command": "dotnet",

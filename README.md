@@ -194,41 +194,39 @@ AUTH_SECRET="YOUR_AUTH_SECRET_VERY_LONG_AND_RANDOM"
 AUTH_URL="http://localhost:3000" # Ou l'URL de déploiement
 ```
 
-> Pour une installation PostgreSQL locale sur Windows, vous pouvez utiliser `winget` ou `choco`.
->
-> - `winget install --id PostgreSQL.PostgreSQL.18 -e --accept-package-agreements --accept-source-agreements`
-> - Si `winget` n’est pas disponible ou si vous préférez Chocolatey, ouvrez PowerShell en administrateur puis exécutez : `choco install postgresql18 --yes`
->
-> Après installation, vérifiez :
->
-> - `psql --version`
-> - `Get-Service -Name postgresql*`
->
-> Si vous souhaitez utiliser WSL, installez d’abord WSL (`wsl --install`), puis dans la distribution Ubuntu :
->
-> ```bash
-> sudo apt update
-> sudo apt install postgresql postgresql-contrib
-> sudo service postgresql start
-> ```
+Pour utiliser le PostgreSQL local fourni avec le dépôt, démarrez Docker Desktop puis configurez
+`.env.local` (prioritaire sur `.env`) avec les valeurs de la base Compose :
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
+DATABASE_SSL="false"
+```
 
 ### 4. Initialisation de la base de données
 
-Appliquez les migrations Prisma et générez le client Prisma :
+Depuis le terminal :
 
 ```bash
-npx prisma migrate dev --name init
-npx prisma generate
-```
-
-Vérifiez ensuite la connexion PostgreSQL (sans démarrer Next.js) :
-
-```bash
+docker compose up --detach --wait postgres
+npm run db:push
+npm run db:generate
 npm run db:check
 ```
 
+La tâche VS Code **database: Initialize local Prisma database** exécute ces étapes dans l’ordre.
+`db:push` synchronise le schéma Prisma avec la base locale; `db:check` valide ensuite la connexion
+réelle avec le client Prisma utilisé par l’application.
+
+Pour arrêter PostgreSQL sans supprimer ses données :
+
+```bash
+docker compose stop postgres
+```
+
 > Le script valide `DIRECT_URL` / `DATABASE_URL` (présence, gabarits non remplacés,
-> forme de l'URL) puis exécute un `SELECT 1` avec le client Prisma de l'application.
+> forme de l'URL) puis exécute un `SELECT 1` avec le client Prisma de l'application. Les données
+> locales sont conservées dans le volume Docker `boutiquecogi3_postgres_data`.
 >
 > Un gabarit laissé tel quel dans `.env.local` — ex. `aws-0-<REGION>` ou
 > `<MOT_DE_PASSE_POSTGRES>` — rend la chaîne inanalysable : `pg` lève alors
