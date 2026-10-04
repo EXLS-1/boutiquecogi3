@@ -1,4 +1,5 @@
 // app/admin/account/page.tsx
+
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { getActiveAccountsData, getDeletedAccountsData } from '@/lib/super_admin/accounts';
@@ -8,25 +9,40 @@ import { ActiveAccountsTable } from '@/components/admin/accounts/active-accounts
 import { DeletedAccountsTable } from '@/components/admin/accounts/deleted-accounts-table';
 import { Shield, History } from 'lucide-react';
 
-interface SearchParams {
-  tab?: 'active' | 'deleted';
-  page?: string;
-  pageSize?: string;
-  search?: string;
-  provider?: string;
-  type?: string;
+type ActiveAccountsData = Awaited<ReturnType<typeof getActiveAccountsData>>;
+type DeletedAccountsData = Awaited<ReturnType<typeof getDeletedAccountsData>>;
+type SearchParamValue = string | string[] | undefined;
+
+type SearchParams = Record<string, SearchParamValue>;
+
+type AccountContentProps =
+  | {
+      tab: 'active';
+      dataPromise: Promise<ActiveAccountsData>;
+      params: SearchParams;
+    }
+  | {
+      tab: 'deleted';
+      dataPromise: Promise<DeletedAccountsData>;
+    };
+
+function getSearchParam(params: SearchParams, key: string): string | undefined {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 export default async function AdminAccountPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
-  const tab = params.tab === 'deleted' ? 'deleted' : 'active';
-  const page = Number(params.page) || 1;
-  const pageSize = Number(params.pageSize) || 25;
-
-  // Chargement conditionnel et optimisé selon l'onglet actif
-  const dataPromise = tab === 'active' 
-    ? getActiveAccountsData({ page, pageSize, search: params.search, provider: params.provider, type: params.type })
-    : getDeletedAccountsData({ page, pageSize });
+  const tab = getSearchParam(params, 'tab') === 'deleted' ? 'deleted' : 'active';
+  const page = parsePositiveInteger(getSearchParam(params, 'page'), 1);
+  const pageSize = parsePositiveInteger(getSearchParam(params, 'pageSize'), 25);
 
   return (
     <div className="space-y-6 p-6 max-w-[1600px] mx-auto">
@@ -52,7 +68,7 @@ export default async function AdminAccountPage({ searchParams }: { searchParams:
         </Link>
         <Link
           href="/admin"
-          className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+          className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-cyan-600 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
           >
           Portail Super_Admin
         </Link>
@@ -65,22 +81,33 @@ export default async function AdminAccountPage({ searchParams }: { searchParams:
 
       {/* Contenu dynamique avec Suspense */}
       <Suspense fallback={<div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">Chargement des données...</div>}>
-        <AccountContent tab={tab} dataPromise={dataPromise} params={params} />
+        {tab === 'active' ? (
+          <AccountContent
+            tab="active"
+            dataPromise={getActiveAccountsData({
+              page,
+              pageSize,
+              search: getSearchParam(params, 'search'),
+              provider: getSearchParam(params, 'provider'),
+              type: getSearchParam(params, 'type'),
+            })}
+            params={params}
+          />
+        ) : (
+          <AccountContent
+            tab="deleted"
+            dataPromise={getDeletedAccountsData({ page, pageSize })}
+          />
+        )}
       </Suspense>
     </div>
   );
 }
 
 // Composant interne pour gérer le rendu conditionnel proprement
-async function AccountContent({ tab, dataPromise, params }: { 
-  tab: 'active' | 'deleted'; 
-  dataPromise: Promise<any>; 
-  params: SearchParams 
-}) {
-  const data = await dataPromise.catch(() => null);
-  if (!data) return <div className="text-red-600">Erreur de chargement des données.</div>;
-
-  if (tab === 'active') {
+async function AccountContent(props: AccountContentProps) {
+  if (props.tab === 'active') {
+    const data = await props.dataPromise;
     return (
       <>
         <AccountStats stats={data.stats} />
@@ -88,12 +115,17 @@ async function AccountContent({ tab, dataPromise, params }: {
           accounts={data.accounts} 
           pagination={{ total: data.total, page: data.page, pageSize: data.pageSize, totalPages: data.totalPages }}
           providers={['credentials', 'google', 'github']} // À remplacer par getDistinctProvidersAction() si nécessaire
-          filters={{ search: params.search, provider: params.provider, type: params.type }}
+          filters={{
+            search: getSearchParam(props.params, 'search'),
+            provider: getSearchParam(props.params, 'provider'),
+            type: getSearchParam(props.params, 'type'),
+          }}
         />
       </>
     );
   }
 
+  const data = await props.dataPromise;
   return (
     <DeletedAccountsTable 
       entries={data.entries} 

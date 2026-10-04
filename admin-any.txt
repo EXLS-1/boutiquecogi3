@@ -1,0 +1,488 @@
+﻿
+app/actions/admin/products/catalog/assign-catalog.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/catalog/assign-catalog.action.ts(42,42): error TS2339: 
+Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(53,26): error TS2339: 
+Property 'assignCatalog' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(70,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(70,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(70,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/catalog/remove-catalog.action.ts(42,42): error TS2339: 
+Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(53,26): error TS2339: 
+Property 'removeCatalog' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(70,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(70,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(70,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(13,10): error 
+TS2724: '"@/lib/product/product-service"' has no exported member named 
+'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(43,42): error 
+TS2339: Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(54,26): error 
+TS2339: Property 'setCatalogPriceOverride' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(72,26): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(72,38): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(72,53): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/create-product.action.ts(89,41): error TS2554: Expected 2 
+arguments, but got 1.
+app/actions/admin/products/create-product.action.ts(121,28): error TS2339: Property 
+'variantCount' does not exist on type '{ productId: string; slug: string; totalStock: 
+number; }'.
+app/actions/admin/products/create-product.action.ts(126,26): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/create-product.action.ts(126,38): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/create-product.action.ts(126,53): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/create-product.action.ts(137,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/inventory/adjust-stock.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/inventory/adjust-stock.action.ts(44,42): error TS2339: 
+Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(55,41): error TS2339: 
+Property 'adjustStock' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(73,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(73,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(73,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/release-stock.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/inventory/release-stock.action.ts(45,42): error TS2339: 
+Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/release-stock.action.ts(56,41): error TS2339: 
+Property 'releaseStock' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/release-stock.action.ts(75,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/release-stock.action.ts(75,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/release-stock.action.ts(75,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/reserve-stock.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/inventory/reserve-stock.action.ts(45,42): error TS2339: 
+Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/reserve-stock.action.ts(56,41): error TS2339: 
+Property 'reserveStock' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/reserve-stock.action.ts(75,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/reserve-stock.action.ts(75,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/reserve-stock.action.ts(75,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/transfer-stock.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/inventory/transfer-stock.action.ts(46,46): error TS2339: 
+Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/transfer-stock.action.ts(57,41): error TS2339: 
+Property 'transferStock' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/transfer-stock.action.ts(77,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/transfer-stock.action.ts(77,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/inventory/transfer-stock.action.ts(77,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/media/attach-media.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/media/attach-media.action.ts(43,42): error TS2339: Property 
+'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/media/attach-media.action.ts(54,41): error TS2339: Property 
+'attachMedia' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/media/attach-media.action.ts(68,26): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/media/attach-media.action.ts(68,38): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/media/attach-media.action.ts(68,53): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/media/detach-media.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/media/detach-media.action.ts(42,42): error TS2339: Property 
+'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/media/detach-media.action.ts(53,41): error TS2339: Property 
+'detachMedia' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/media/detach-media.action.ts(67,26): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/media/detach-media.action.ts(67,38): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/media/detach-media.action.ts(67,53): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/media/reorder-media.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/media/reorder-media.action.ts(42,42): error TS2339: Property 
+'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/media/reorder-media.action.ts(53,41): error TS2339: Property 
+'reorderMedia' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/media/reorder-media.action.ts(67,26): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/media/reorder-media.action.ts(67,38): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/media/reorder-media.action.ts(67,53): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/create-price.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/pricing/create-price.action.ts(54,26): error TS2339: Property 
+'createPrice' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/pricing/create-price.action.ts(71,26): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/create-price.action.ts(71,38): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/create-price.action.ts(71,53): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/delete-price.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/pricing/delete-price.action.ts(41,40): error TS2339: Property 
+'getPriceById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/pricing/delete-price.action.ts(52,26): error TS2339: Property 
+'deletePrice' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/pricing/delete-price.action.ts(68,26): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/delete-price.action.ts(68,38): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/delete-price.action.ts(68,53): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/update-price.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/pricing/update-price.action.ts(47,40): error TS2339: Property 
+'getPriceById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/pricing/update-price.action.ts(58,26): error TS2339: Property 
+'updatePrice' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/pricing/update-price.action.ts(74,26): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/update-price.action.ts(74,38): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/pricing/update-price.action.ts(74,53): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/publication/approve-product.action.ts(10,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/publication/approve-product.action.ts(60,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/approve-product.action.ts(60,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/archive-product.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/publication/archive-product.action.ts(48,26): error TS2339: 
+Property 'archive' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/publication/archive-product.action.ts(65,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/archive-product.action.ts(65,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/archive-product.action.ts(65,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/discontinue-product.action.ts(13,10): error 
+TS2724: '"@/lib/product/product-service"' has no exported member named 
+'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/publication/discontinue-product.action.ts(48,26): error 
+TS2339: Property 'discontinue' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/publication/discontinue-product.action.ts(65,26): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/publication/discontinue-product.action.ts(65,38): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/publication/discontinue-product.action.ts(65,53): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/publication/publish-product.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/publication/publish-product.action.ts(48,50): error TS2345: 
+Argument of type '{ userId: string; role: Role; reason: string | undefined; }' is not 
+assignable to parameter of type 'string'.
+app/actions/admin/products/publication/publish-product.action.ts(65,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/publish-product.action.ts(65,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/publish-product.action.ts(65,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/reject-product.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/publication/reject-product.action.ts(48,26): error TS2339: 
+Property 'rejectForReview' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/publication/reject-product.action.ts(65,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/reject-product.action.ts(65,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/reject-product.action.ts(65,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/schedule-product.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/publication/schedule-product.action.ts(49,26): error TS2339: 
+Property 'schedule' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/publication/schedule-product.action.ts(67,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/schedule-product.action.ts(67,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/schedule-product.action.ts(67,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/submit-product.action.ts(16,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/publication/submit-product.action.ts(52,26): error TS2339: 
+Property 'submitForReview' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/publication/submit-product.action.ts(69,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/submit-product.action.ts(69,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/publication/submit-product.action.ts(69,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/restore-product.action.ts(16,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/restore-product.action.ts(51,26): error TS2339: Property 
+'restore' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/restore-product.action.ts(66,26): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/restore-product.action.ts(66,38): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/restore-product.action.ts(66,53): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/soft-delete-product.action.ts(16,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/soft-delete-product.action.ts(52,26): error TS2339: Property 
+'delete' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/soft-delete-product.action.ts(67,26): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/soft-delete-product.action.ts(67,38): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/soft-delete-product.action.ts(67,53): error TS18046: 'error' 
+is of type 'unknown'.
+app/actions/admin/products/tags/attach-tags.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/tags/attach-tags.action.ts(42,42): error TS2339: Property 
+'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/tags/attach-tags.action.ts(53,41): error TS2339: Property 
+'attachTags' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/tags/attach-tags.action.ts(67,26): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/tags/attach-tags.action.ts(67,38): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/tags/attach-tags.action.ts(67,53): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/tags/detach-tags.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/tags/detach-tags.action.ts(42,42): error TS2339: Property 
+'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/tags/detach-tags.action.ts(53,41): error TS2339: Property 
+'detachTags' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/tags/detach-tags.action.ts(67,26): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/tags/detach-tags.action.ts(67,38): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/tags/detach-tags.action.ts(67,53): error TS18046: 'error' is 
+of type 'unknown'.
+app/actions/admin/products/update-product.action.ts(17,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/update-product.action.ts(20,8): error TS2305: Module 
+'"./_shared/parse-input"' has no exported member 'ActionResult'.
+app/actions/admin/products/update-product.action.ts(82,26): error TS2339: Property 
+'update' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/update-product.action.ts(110,5): error TS2552: Cannot find 
+name 'revalidateTag'. Did you mean 'revalidatePath'?
+app/actions/admin/products/update-product.action.ts(111,5): error TS2552: Cannot find 
+name 'revalidateTag'. Did you mean 'revalidatePath'?
+app/actions/admin/products/update-product.action.ts(118,26): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/update-product.action.ts(118,38): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/update-product.action.ts(118,53): error TS18046: 'error' is of 
+type 'unknown'.
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(13,10): error 
+TS2724: '"@/lib/product/product-service"' has no exported member named 
+'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(18,69): error 
+TS2339: Property 'min' does not exist on type 'ZodRecord<ZodString, ZodArray<ZodString>>'.
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(45,42): error 
+TS2339: Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(56,41): error 
+TS2339: Property 'bulkGenerateVariants' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(69,26): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(69,38): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/variants/bulk-generate-variants.action.ts(69,53): error 
+TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/variants/create-variant.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/variants/create-variant.action.ts(51,41): error TS2339: 
+Property 'createVariant' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/create-variant.action.ts(64,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/create-variant.action.ts(64,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/create-variant.action.ts(64,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/delete-variant.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/variants/delete-variant.action.ts(42,42): error TS2339: 
+Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/delete-variant.action.ts(53,26): error TS2339: 
+Property 'deleteVariant' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/delete-variant.action.ts(70,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/delete-variant.action.ts(70,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/delete-variant.action.ts(70,53): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/update-variant.action.ts(13,10): error TS2724: 
+'"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did 
+you mean 'ProductService'?
+app/actions/admin/products/variants/update-variant.action.ts(45,42): error TS2339: 
+Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/update-variant.action.ts(56,26): error TS2339: 
+Property 'updateVariant' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/variants/update-variant.action.ts(72,26): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/update-variant.action.ts(72,38): error TS18046: 
+'error' is of type 'unknown'.
+app/actions/admin/products/variants/update-variant.action.ts(72,53): error TS18046: 
+'error' is of type 'unknown'.
+app/admin/dashboard/analytics/page.tsx(63,25): error TS2322: Type '{ data: 
+(PickEnumerable<OrderGroupByOutputType, "createdAt"[]> & { _count: { id: number; }; _sum: 
+{ totalAmount: number | null; }; })[]; }' is not assignable to type 'IntrinsicAttributes'.
+app/admin/dashboard/analytics/page.tsx(66,28): error TS2322: Type '{ data: 
+(PickEnumerable<UserGroupByOutputType, "createdAt"[]> & { _count: { id: number; }; })[]; 
+}' is not assignable to type 'IntrinsicAttributes'.
+app/admin/dashboard/analytics/page.tsx(71,29): error TS2322: Type '{ products: { name: 
+string; id: string; soldCount: number; revenue: never; }[]; }' is not assignable to type 
+'IntrinsicAttributes'.
+app/admin/dashboard/audit/page.tsx(30,63): error TS2345: Argument of type 
+'"settings:system_config"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/audit/page.tsx(71,21): error TS2322: Type '{ stats: 
+(PickEnumerable<AuditLogGroupByOutputType, "status"[]> & { _count: { id: number; }; })[]; 
+events: (PickEnumerable<AuditLogGroupByOutputType, "action"[]> & { ...; })[]; }' is not 
+assignable to type 'IntrinsicAttributes'.
+app/admin/dashboard/audit/page.tsx(75,23): error TS2322: Type '{ events: string[]; 
+canExport: boolean; }' is not assignable to type 'IntrinsicAttributes'.
+app/admin/dashboard/audit/page.tsx(79,24): error TS2322: Type '{ logs: ({ user: { name: 
+string | null; id: string; email: string; } | null; } & { error: string | null; id: 
+string; status: string | null; createdAt: Date; updatedAt: Date; userId: string | null; 
+... 24 more ...; sessionId: string | null; })[]; total: number; page: number; limit: 
+number; canConfigure: boolean; }' is not assignable to type 'IntrinsicAttributes'.
+app/admin/dashboard/checkout/page.tsx(22,57): error TS2345: Argument of type 
+'"payments:configure"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/checkout/page.tsx(23,53): error TS2345: Argument of type 
+'"payments:view_analytics"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/media/page.tsx(30,48): error TS2345: Argument of type 
+'"media:organize"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/orders/page.tsx(74,26): error TS2322: Type 
+'(PickEnumerable<OrderGroupByOutputType, "status"[]> & { _count: { id: number; }; _sum: { 
+totalAmount: number | null; }; })[]' is not assignable to type '{ _count?: { id: number; 
+} | undefined; _sum?: { totalAmount: number; } | undefined; }[]'.
+app/admin/dashboard/orders/page.tsx(88,61): error TS2345: Argument of type 
+'"orders:process_refund"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/products/page.tsx(44,54): error TS2345: Argument of type 
+'"products:manage_variants"' is not assignable to parameter of type 'Permission'.
+app/admin/dashboard/products/page.tsx(45,53): error TS2345: Argument of type 
+'"products:manage_reviews"' is not assignable to parameter of type 'Permission'.
+app/admin/dashboard/products/promotions/page.tsx(27,46): error TS2345: Argument of type 
+'"promotions:create"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/products/promotions/page.tsx(28,46): error TS2345: Argument of type 
+'"promotions:update"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/products/promotions/page.tsx(29,46): error TS2345: Argument of type 
+'"promotions:delete"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/products/promotions/page.tsx(30,53): error TS2345: Argument of type 
+'"promotions:manage_coupons"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/products/promotions/page.tsx(58,25): error TS2322: Type 
+'GetCouponAggregateType<{ _count: { id: true; }; _sum: { discountValue: true; }; }>' is 
+not assignable to type '{ _count?: { id: number; } | undefined; _sum?: { discountValue: 
+number; } | undefined; }'.
+app/admin/dashboard/treasury/page.tsx(28,46): error TS2345: Argument of type 
+'"payments:refund"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/treasury/page.tsx(29,49): error TS2345: Argument of type 
+'"payments:configure"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/treasury/page.tsx(30,53): error TS2345: Argument of type 
+'"payments:view_analytics"' is not assignable to parameter of type 'PermissionCode'.
+app/admin/dashboard/treasury/page.tsx(54,66): error TS2322: Type '{ id: number; }' is not 
+assignable to type 'ReactNode'.
+app/admin/dashboard/treasury/page.tsx(60,27): error TS2322: Type 
+'GetPaymentAggregateType<{ _sum: { amount: true; }; _count: { id: true; }; where: { 
+createdAt: { gte: Date; }; }; }>' is not assignable to type '{ _sum?: { amount: number; } 
+| undefined; _count?: number | undefined; }'.
+app/admin/products/[productId]/edit/page.tsx(20,20): error TS2339: Property 'getDetails' 
+does not exist on type 'typeof ProductService'.
+app/admin/products/[productId]/page.tsx(36,40): error TS2339: Property 'getDetails' does 
+not exist on type 'typeof ProductService'.
+app/admin/products/page.tsx(13,8): error TS2307: Cannot find module 
+'@/lib/product/product.repository' or its corresponding type declarations.
+app/admin/settings/sidebar/page.tsx(335,23): error TS18048: 'item.minLevel' is possibly 
+'undefined'.
+app/admin/settings/videos/page.tsx(10,27): error TS2307: Cannot find module 
+'@/components/dashboard/videos/video-grid' or its corresponding type declarations.
+app/admin/settings/videos/page.tsx(11,31): error TS2307: Cannot find module 
+'@/components/dashboard/videos/video-uploader' or its corresponding type declarations.
+app/admin/users/[userId]/page.tsx(3,29): error TS2307: Cannot find module '@/lib/utils' 
+or its corresponding type declarations.
+app/api/admin/2fa/verify-setup/route.ts(47,9): error TS2322: Type '{ userSecurityId: 
+string; codeHash: string; }[]' is not assignable to type 
+'TwoFactorBackupCodeCreateManyInput | TwoFactorBackupCodeCreateManyInput[]'.
+app/api/admin/products/route.ts(4,32): error TS2307: Cannot find module 
+'@/lib/product/productService' or its corresponding type declarations.
+app/api/admin/stock/movements/route.ts(4,32): error TS2307: Cannot find module 
+'@/lib/product/productService' or its corresponding type declarations.
+app/api/admin/stock/movements/route.ts(18,27): error TS2349: This expression is not 
+callable.
+app/api/admin/stock/movements/route.ts(37,54): error TS2339: Property 'errors' does not 
+exist on type 'ZodError<unknown>'.
+components/admin/order-table.tsx(29,5): error TS2305: Module '"@/lib/cart/cart-domain"' 
+has no exported member 'formatOrderDate'.
+components/admin/order-table.tsx(30,5): error TS2305: Module '"@/lib/cart/cart-domain"' 
+has no exported member 'formatOrderDateTime'.
+components/admin/order-table.tsx(36,5): error TS2305: Module '"@/lib/cart/cart-domain"' 
+has no exported member 'matchesOrderQuery'.
+components/admin/products/product-detail-tabs.tsx(7,32): error TS2307: Cannot find module 
+'@/lib/product/product.repository' or its corresponding type declarations.
+components/admin/products/product-detail-tabs.tsx(73,48): error TS2307: Cannot find 
+module '@/lib/product/product.repository' or its corresponding type declarations.
+components/admin/products/product-kpi-cards.tsx(6,34): error TS2307: Cannot find module 
+'@/lib/product/types' or its corresponding type declarations.
+components/admin/products/product-status-badge.tsx(4,62): error TS2307: Cannot find 
+module '@/lib/product/constants' or its corresponding type declarations.
+components/admin/products/product-table.tsx(7,40): error TS2307: Cannot find module 
+'@/lib/product/types' or its corresponding type declarations.
+components/admin/products/product-table.tsx(27,30): error TS7006: Parameter 'item' 
+implicitly has an 'any' type.
+lib/admin/roles/role.mapper.ts(121,5): error TS2322: Type 'string | null' is not 
+assignable to type 'string'.
+store/admin/products/product-list.store.ts(49,7): error TS2740: Type '{ page: number; 
+limit: number; total: number; totalPages: number; search: string; status: never[]; 
+productTypeId: null; categoryId: null; sortBy: "createdAt"; sortOrder: "desc"; 
+selectedIds: Set<string>; isLoading: false; error: null; }' is missing the following 
+properties from type 'Omit<ProductListState, never>': reset, setError, setLoading, 
+setPage, and 10 more.
+
+

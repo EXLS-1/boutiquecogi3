@@ -1,0 +1,41 @@
+﻿__tests__/product-mapper.test.ts(9,3): error TS2305: Module '"@/lib/product/product-mapper"' has no exported member 'mapProductToDetails'.
+__tests__/product-mapper.test.ts(10,8): error TS2305: Module '"@/lib/product/product-mapper"' has no exported member 'ProductMapperRow'.
+__tests__/product-mapper.test.ts(12,37): error TS2307: Cannot find module '@/lib/product/types' or its corresponding type declarations.
+__tests__/product-mapper.test.ts(140,36): error TS7006: Parameter 'category' implicitly has an 'any' type.
+__tests__/product-mapper.test.ts(154,32): error TS7006: Parameter 'priceEntry' implicitly has an 'any' type.
+__tests__/product-mapper.test.ts(155,32): error TS7006: Parameter 'priceEntry' implicitly has an 'any' type.
+app/actions/admin/products/catalog/assign-catalog.action.ts(13,10): error TS2724: '"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/catalog/assign-catalog.action.ts(42,42): error TS2339: Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(53,26): error TS2339: Property 'assignCatalog' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(70,26): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(70,38): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/assign-catalog.action.ts(70,53): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(13,10): error TS2724: '"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/catalog/remove-catalog.action.ts(42,42): error TS2339: Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(53,26): error TS2339: Property 'removeCatalog' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(70,26): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(70,38): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/remove-catalog.action.ts(70,53): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(13,10): error TS2724: '"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(43,42): error TS2339: Property 'getProductById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(54,26): error TS2339: Property 'setCatalogPriceOverride' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(72,26): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(72,38): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/catalog/set-catalog-price-override.action.ts(72,53): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/create-product.action.ts(89,41): error TS2554: Expected 2 arguments, but got 1.
+app/actions/admin/products/create-product.action.ts(121,28): error TS2339: Property 'variantCount' does not exist on type '{ productId: string; slug: string; totalStock: number; }'.
+app/actions/admin/products/create-product.action.ts(126,26): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/create-product.action.ts(126,38): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/create-product.action.ts(126,53): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/create-product.action.ts(137,10): error TS2724: '"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/inventory/adjust-stock.action.ts(13,10): error TS2724: '"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/inventory/adjust-stock.action.ts(44,42): error TS2339: Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(55,41): error TS2339: Property 'adjustStock' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(73,26): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(73,38): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/inventory/adjust-stock.action.ts(73,53): error TS18046: 'error' is of type 'unknown'.
+app/actions/admin/products/inventory/release-stock.action.ts(13,10): error TS2724: '"@/lib/product/product-service"' has no exported member named 'ProductServiceError'. Did you mean 'ProductService'?
+app/actions/admin/products/inventory/release-stock.action.ts(45,42): error TS2339: Property 'getVariantById' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/release-stock.action.ts(56,41): error TS2339: Property 'releaseStock' does not exist on type 'typeof ProductService'.
+app/actions/admin/products/inventory/release-stock.action.ts(75,26): error TS18046: 'error' is of type 'unknown'.
+587

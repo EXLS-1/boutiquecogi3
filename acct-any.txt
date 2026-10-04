@@ -1,0 +1,17 @@
+﻿
+app/orders/account/orders/page.tsx(17,3): error TS2305: Module '"@/lib/cart/cart-domain"' 
+has no exported member 'formatOrderDate'.
+app/orders/account/orders/page.tsx(70,69): error TS2345: Argument of type '{ user: { 
+name: string | null; id: string; email: string; } | null; items: ({ variant: { product: { 
+name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; ... 25 
+more ...; publishedById: string | null; }; } & { ...; }; } & { ...; })[]; } & { ...; }' 
+is not assignable to parameter of type '{ paymentStatus?: unknown; payment?: { status?: 
+unknown; } | null | undefined; isPaid?: unknown; } | null | undefined'.
+server/actions/account-self-actions.ts(55,52): error TS2367: This comparison appears to 
+be unintentional because the types 'FormDataEntryValue' and 'boolean' have no overlap.
+server/services/account-self-service.ts(334,14): error TS2339: Property 'isDeleted' does 
+not exist on type '{ orders: { id: string; status: OrderStatusEnum; createdAt: Date; 
+updatedAt: Date; userId: string | null; orderNumber: string; subtotalAmount: number; 
+taxAmount: number; ... 10 more ...; couponId: string | null; }[]; } & { ...; }'.
+
+

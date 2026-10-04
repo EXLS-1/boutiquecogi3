@@ -26,7 +26,7 @@ import { auth } from "@/lib/auth"; // ✅ Singleton
 import { getSessionTokenFromCookieHeader } from "@/lib/auth/session-cookie";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
-import { getRedisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis/redis";
 import {
   getEffectivePermissionsCached,
   getEffectiveRestrictionsCached,

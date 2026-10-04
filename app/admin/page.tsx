@@ -44,18 +44,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const activeGroup = resolveAdminGroup(group);
 
   return (
-    <div className="min-h-screen bg-cyan-100 p-6 text-cyan-900 md:p-10">
+    <div className="min-h-screen bg-cyan-100 p-1 text-cyan-600 md:p-3">
       {/* En-tête */}
       <header className="flex flex-col gap-4 border-b border-cyan-200 pb-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="mb-1 flex items-center gap-2 text-emerald-600">
+          <div className="mb-1 flex items-center gap-2 text-emerald-500">
             <Shield className="h-5 w-5" aria-hidden="true" />
             <span className="font-mono text-xs font-semibold uppercase tracking-widest">
               Zone privilégiée
             </span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Portail Admin</h1>
-          <p className="mt-1 text-sm text-cyan-700">
+          <p className="mt-1 text-sm text-cyan-500">
             Connecté en tant que{" "}
             <span className="font-medium text-rose-500">
               {session.userId}
