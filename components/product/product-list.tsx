@@ -1,4 +1,4 @@
-// components/catalog/product-list.tsx
+// components/product/product-list.tsx
 /**
  * =============================================================================
  * PRODUCT LIST - Molécule - Boutiquecogi3
@@ -13,7 +13,12 @@
 
 import { memo, type ComponentProps } from "react";
 import { ProductCard } from "@/components/product/product-card";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  normalizeSkeletonCount,
+  ProductListSkeleton,
+} from "@/components/product/product-list-skeleton";
+
+export { ProductListSkeleton } from "@/components/product/product-list-skeleton";
 
 type Product = ComponentProps<typeof ProductCard>["product"];
 
@@ -31,7 +36,7 @@ function ProductListComponent({
   isLoading = false,
 }: ProductListProps) {
   if (isLoading) {
-    return <ProductListSkeleton count={pageSize} />;
+    return <ProductListSkeleton count={normalizeSkeletonCount(pageSize)} />;
   }
 
   if (products.length === 0) {
@@ -49,36 +54,17 @@ function ProductListComponent({
   }
 
   return (
-    <div role="list" aria-label={`${totalCount} produits`}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {products.map((product, index) => (
-          <div key={product.id} role="listitem">
-            <ProductCard
-              product={product}
-              priority={index < 4}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Skeleton ───────────────────────────────────────────────────────────────
-
-export function ProductListSkeleton({ count = 8 }: { readonly count?: number }) {
-  return (
-    <div 
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" 
-      aria-label="Chargement des produits"
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+      role="list"
+      aria-label={`${totalCount} ${totalCount === 1 ? "produit" : "produits"}`}
     >
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <Skeleton className="w-full aspect-square rounded-xl mb-4" />
-          <Skeleton className="h-4 rounded w-1/3 mb-2" />
-          <Skeleton className="h-5 rounded w-3/4 mb-3" />
-          <Skeleton className="h-4 rounded w-1/4 mb-4" />
-          <Skeleton className="h-10 rounded-lg w-full" />
+      {products.map((product, index) => (
+        <div key={product.id} role="listitem">
+          <ProductCard
+            product={product}
+            priority={index < 4}
+          />
         </div>
       ))}
     </div>

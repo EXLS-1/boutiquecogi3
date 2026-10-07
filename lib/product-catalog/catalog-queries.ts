@@ -61,7 +61,30 @@ function buildBaseWhere(): Prisma.ProductWhereInput {
  * Problème audit #6: stockQuantity EST INCLUS dans availabilityProjection.
  * Sans ce champ, le mapper interprète tous les produits avec stockQuantity=0.
  */
+function buildCurrentBasePriceWhere(
+  now: Date,
+  range?: { readonly minPrice?: number; readonly maxPrice?: number },
+): Prisma.ProductPriceWhereInput {
+  return {
+    currency: "USD",
+    country: null,
+    region: null,
+    AND: [
+      { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+      { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+      ...(range?.minPrice !== undefined
+        ? [{ amount: { gte: new Prisma.Decimal(range.minPrice) } }]
+        : []),
+      ...(range?.maxPrice !== undefined
+        ? [{ amount: { lte: new Prisma.Decimal(range.maxPrice) } }]
+        : []),
+    ],
+  };
+}
+
 function buildBaseInclude() {
+  const now = new Date();
+
   return {
     category: {
       select: {
@@ -81,6 +104,12 @@ function buildBaseInclude() {
         url: true,
         position: true,
       },
+    },
+    productPrice: {
+      where: buildCurrentBasePriceWhere(now),
+      orderBy: [{ startsAt: { sort: "desc", nulls: "last" } }, { id: "asc" }],
+      take: 1,
+      select: { amount: true },
     },
     variants: {
       where: { isActive: true },
@@ -281,9 +310,20 @@ export const getProductsByCategory = cache(
 export const getPromotionalProducts = cache(
   withCatalogCache(
     async (limit: number = CATALOG_PAGE_SIZE) => {
+      const now = new Date();
       const baseWhere = {
         ...buildBaseWhere(),
-        OR: [{ isFeatured: true }, { salePrice: { not: null } }],
+        OR: [
+          { isFeatured: true },
+          {
+            productPrice: {
+              some: {
+                ...buildCurrentBasePriceWhere(now),
+                compareAtPrice: { not: null },
+              },
+            },
+          },
+        ],
       };
 
       // Step 1: Get IDs only (lightweight, no includes)
@@ -417,7 +457,17 @@ export async function searchCatalogProducts(
       const orClauses: Prisma.ProductWhereInput[] = [];
 
       if (validated.catalogOption === "promotions") {
-        orClauses.push({ isFeatured: true }, { salePrice: { not: null } });
+        orClauses.push(
+          { isFeatured: true },
+          {
+            productPrice: {
+              some: {
+                ...buildCurrentBasePriceWhere(now),
+                compareAtPrice: { not: null },
+              },
+            },
+          },
+        );
       }
       if (validated.catalogOption === "nouveautes") {
         orClauses.push({ createdAt: { gte: ninetyDaysAgo } });
@@ -432,11 +482,12 @@ export async function searchCatalogProducts(
       return orClauses.length > 0 ? { OR: orClauses } : {};
     })(),
 
-    ...(validated.minPrice !== undefined && {
-      basePrice: { gte: new Prisma.Decimal(validated.minPrice) },
-    }),
-    ...(validated.maxPrice !== undefined && {
-      basePrice: { lte: new Prisma.Decimal(validated.maxPrice) },
+    ...((validated.minPrice !== undefined || validated.maxPrice !== undefined) && {
+      productPrice: {
+        some: {
+          ...buildCurrentBasePriceWhere(now, validated),
+        },
+      },
     }),
   }; 
 

@@ -1,4 +1,3 @@
-// components/catalog/product-list-skeleton.tsx
 /**
  * =============================================================================
  * PRODUCT LIST SKELETON
@@ -7,17 +6,23 @@
  * Utilisé comme fallback Suspense pour les listes de produits.
  */
 
-"use client";
-
-import { memo } from "react";
-
 interface ProductListSkeletonProps {
-  readonly count: number;
+  readonly count?: number;
 }
 
-const SkeletonCard = memo(function SkeletonCard() {
+const MAX_SKELETON_COUNT = 48;
+
+export function normalizeSkeletonCount(count: number): number {
+  if (!Number.isFinite(count)) return 0;
+  return Math.min(Math.max(Math.floor(count), 0), MAX_SKELETON_COUNT);
+}
+
+function SkeletonCard() {
   return (
-    <div className="border border-slate-200 rounded-xl p-4 shadow-sm animate-pulse">
+    <div
+      role="listitem"
+      className="border border-slate-200 rounded-xl p-4 shadow-sm animate-pulse"
+    >
       {/* Image skeleton avec aspect ratio réaliste */}
       <div className="relative w-full aspect-[4/5] rounded-lg mb-4 bg-slate-200 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-shimmer" />
@@ -41,8 +46,8 @@ const SkeletonCard = memo(function SkeletonCard() {
 
       {/* Rating skeleton */}
       <div className="flex items-center gap-1 mb-3">
-        {Array.from({ length: 5 }).map((_, j) => (
-          <div key={j} className="h-4 w-4 rounded-full bg-slate-200" />
+        {Array.from({ length: 5 }, (_, index) => (
+          <div key={index} className="h-4 w-4 rounded-full bg-slate-200" />
         ))}
         <div className="h-4 rounded bg-slate-200 w-8 ml-1" />
       </div>
@@ -51,23 +56,32 @@ const SkeletonCard = memo(function SkeletonCard() {
       <div className="h-10 rounded-lg bg-slate-200 w-full" />
     </div>
   );
-});
+}
 
 /**
  * Skeleton grid avec nombre configurable de cartes.
  * @param count — Nombre de cartes skeleton à afficher
  */
-export function ProductListSkeleton({ count }: ProductListSkeletonProps) {
+export function ProductListSkeleton({ count = 8 }: ProductListSkeletonProps) {
+  const safeCount = normalizeSkeletonCount(count);
+
   return (
     <div
-      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-      aria-label="Chargement des produits"
       role="status"
+      aria-live="polite"
+      aria-label="Chargement des produits"
     >
-      {Array.from({ length: count }).map((_, i) => (
-        <SkeletonCard key={i} />
-      ))}
       <span className="sr-only">Chargement des produits en cours...</span>
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        role="list"
+        aria-label="Produits en cours de chargement"
+        aria-hidden="true"
+      >
+        {Array.from({ length: safeCount }, (_, index) => (
+          <SkeletonCard key={index} />
+        ))}
+      </div>
     </div>
   );
 }

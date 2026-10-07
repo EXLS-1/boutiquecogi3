@@ -203,7 +203,7 @@ export const SORTABLE_FIELDS = [
   "createdAt",
   "updatedAt", 
   "name",
-  "basePrice",
+  // Price is stored in ProductPrice (a to-many relation), not Product.
   // "popularity" — DÉSACTIVÉ: champ non existant dans Prisma
   // Ajouter ici quand le champ est créé côté DB
 ] as const;
@@ -361,25 +361,29 @@ export function serializeDecimal(value: unknown): number {
  * Normalise un tableau de produits Prisma en convertissant les Decimals.
  * À appeler IMMÉDIATEMENT après chaque requête Prisma.
  */
-export function normalizeProducts<T extends { basePrice?: unknown }>(
+type ProductWithPrices = {
+  readonly productPrice?: readonly { readonly amount: unknown }[];
+};
+
+export function normalizeProducts<T extends ProductWithPrices>(
   items: T[] | null | undefined,
 ): (T & { basePrice: number })[] {
   if (!items) return [];
   return items.map((item) => ({
     ...item,
-    basePrice: serializeDecimal(item.basePrice),
+    basePrice: serializeDecimal(item.productPrice?.[0]?.amount),
   })) as (T & { basePrice: number })[];
 }
 
 /**
  * Normalise un produit unique Prisma.
  */
-export function normalizeProduct<T extends { basePrice?: unknown }>(
+export function normalizeProduct<T extends ProductWithPrices>(
   item: T | null | undefined,
 ): (T & { basePrice: number }) | null {
   if (!item) return null;
   return {
     ...item,
-    basePrice: serializeDecimal(item.basePrice),
+    basePrice: serializeDecimal(item.productPrice?.[0]?.amount),
   } as T & { basePrice: number };
 }

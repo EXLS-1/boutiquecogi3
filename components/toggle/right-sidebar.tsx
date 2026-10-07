@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useUIStore } from "@/store/use-ui-store";
 import { useRBAC } from "@/hooks/rbac/use-rbac";
-import { User, Heart, ShoppingBag, Shield, LogIn } from "lucide-react";
+import { User, Heart, ShoppingCart, ShoppingBag, Shield, LogIn } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
@@ -68,9 +68,31 @@ export const RightSidebar = () => {
             onClick={closeSidebar}
             className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 transition-colors group"
           >
-            <User className="w-5 h-5 text-cyan-500 group-hover:text-cyan-700 transition-colors" />
+            <User className="w-5 h-5 text-cyan-500 group-hover:text-rose-500 transition-colors" />
             <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-cyan-500 transition-colors">
               Mon Profil
+            </span>
+          </Link>
+
+          <Link
+            href="/cart"
+            onClick={closeSidebar}
+            className="flex items-center gap-4 p-2 rounded-lg hover:bg-cyan-100 transition-colors group"
+          >
+            <ShoppingCart className="w-5 h-5 text-cyan-400 group-hover:text-rose-500 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-cyan-500 transition-colors">
+              Mon Panier
+            </span>
+          </Link>
+
+          <Link
+            href="/orders"
+            onClick={closeSidebar}
+            className="flex items-center gap-4 p-2 rounded-lg hover:bg-cyan-100 transition-colors group"
+          >
+            <ShoppingBag className="w-5 h-5 text-cyan-400 group-hover:text-rose-500 transition-colors" />
+            <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-cyan-500 transition-colors">
+              Mes Commandes
             </span>
           </Link>
 
@@ -80,19 +102,8 @@ export const RightSidebar = () => {
             className="flex items-center gap-4 p-2 rounded-lg hover:bg-cyan-100 transition-colors group"
           >
             <Heart className="w-5 h-5 text-cyan-600 group-hover:text-rose-500 transition-colors" />
-            <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-rose-500 transition-colors">
-              Mes Favoris
-            </span>
-          </Link>
-
-          <Link
-            href="/cart"
-            onClick={closeSidebar}
-            className="flex items-center gap-4 p-2 rounded-lg hover:bg-cyan-100 transition-colors group"
-          >
-            <ShoppingBag className="w-5 h-5 text-cyan-400 group-hover:text-cyan-500 transition-colors" />
             <span className="font-lato font-bold uppercase tracking-wider text-xs text-cyan-400 group-hover:text-cyan-500 transition-colors">
-              Mon Panier
+              Mes Favoris
             </span>
           </Link>
 
