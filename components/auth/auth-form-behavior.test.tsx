@@ -119,7 +119,34 @@ describe('SignInForm behavior', () => {
 });
 
 describe('SignUpForm behavior', () => {
+  it('shows the email confirmation screen when verification is required', async () => {
+    signUpEmail.mockResolvedValue({
+      data: {
+        token: null,
+        user: { email: 'user@example.com' },
+      },
+      error: null,
+    });
+
+    render(<SignUpForm />);
+
+    fireEvent.change(screen.getByLabelText('Nom complet'), { target: { value: 'Jean Dupont' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'Motdepasse123!' } });
+    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), { target: { value: 'Motdepasse123!' } });
+
+    const submitButton = screen.getByRole('button', { name: "S'inscrire" });
+    await waitFor(() => expect(submitButton).not.toBeDisabled());
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith('/auth/signed-up?email=user%40example.com');
+    });
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it('keeps the submit button disabled until all required fields are valid, then shows loading state and clears fields', async () => {
+    signUpEmail.mockResolvedValue({});
     render(<SignUpForm />);
 
     const submitButton = screen.getByRole('button', { name: 'S\'inscrire' });

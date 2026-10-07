@@ -81,6 +81,9 @@ model UserSecurity {
 
   adminPinHash String? // Hash SHA-256 du PIN admin (6 chiffres)
 
+  passwordChangedAt   DateTime?
+  forcePasswordChange Boolean   @default(false)
+
   blockedAt    DateTime?
   blockedUntil DateTime?
   blockReason  String?
@@ -144,23 +147,60 @@ model Account {
   accountId  String @map("providerAccountId")
   version    Int    @default(1)
 
-  password              String?   @db.Text
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  refreshToken          String?   @map("refresh_token") @db.Text
+  password              String?           @db.Text
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  refreshToken          String?           @map("refresh_token") @db.Text
   refreshTokenExpiresAt DateTime?
-  accessToken           String?   @map("access_token") @db.Text
+  accessToken           String?           @map("access_token") @db.Text
   accessTokenExpiresAt  DateTime?
-  expiresAt             DateTime? @map("expires_at")
-  tokenType             String?   @map("token_type")
+  expiresAt             DateTime?         @map("expires_at")
+  tokenType             String?           @map("token_type")
   scope                 String?
-  idToken               String?   @map("id_token") @db.Text
-  sessionState          String?   @map("session_state")
-  user                  User      @relation(fields: [userId], references: [id])
+  idToken               String?           @map("id_token") @db.Text
+  sessionState          String?           @map("session_state")
+  user                  User              @relation(fields: [userId], references: [id])
+  passwordHistories     PasswordHistory[]
 
   @@unique([providerId, accountId])
   @@index([userId])
   @@map("account")
+}
+
+// ==========================================
+// HISTORIQUE DES MOTS DE PASSE
+// ==========================================
+// Empêche la réutilisation d'anciens mots de passe
+model PasswordHistory {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  accountId    String    @db.Uuid
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  passwordHash String    @db.Text // Hash de l'ancien mot de passe
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime? // Optionnel : suppression automatique après X mois
+
+  @@index([accountId, createdAt])
+  @@map("password_history")
+}
+
+// ==========================================
+// POLITIQUE DE MOT DE PASSE
+// ==========================================
+// Configuration centralisée des règles de complexité
+model PasswordPolicy {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  minLength        Int      @default(12)
+  requireUppercase Boolean  @default(true)
+  requireLowercase Boolean  @default(true)
+  requireNumbers   Boolean  @default(true)
+  requireSpecial   Boolean  @default(true)
+  maxAge           Int? // Jours avant expiration (null = jamais)
+  historyCount     Int      @default(5) // Nombre d'anciens mots de passe à vérifier
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("password_policy")
 }
 
 model Session {
@@ -624,13 +664,13 @@ model CatalogProduct {
 }
 
 model Product {
-  id          String   @id @default(uuid(7)) @db.Uuid
-  name        String
-  sku         String   @unique
-  slug        String   @unique
-  description String   @db.Text
-  productPrice  ProductPrice[]
-  currency    Currency @default(USD)
+  id           String         @id @default(uuid(7)) @db.Uuid
+  name         String
+  sku          String         @unique
+  slug         String         @unique
+  description  String         @db.Text
+  productPrice ProductPrice[]
+  currency     Currency       @default(USD)
 
   // ─── Type de produit (CONTRAT N°1 — policy métier) ───
   // FK vers ProductTypeConfig : le type décide du RBAC (whoCan*), des
@@ -647,8 +687,8 @@ model Product {
 
   catalogs CatalogProduct[]
 
-  user     User     @relation(fields: [userId], references: [id])
- 
+  user User @relation(fields: [userId], references: [id])
+
   images   String[]
   videoUrl String?
 
@@ -683,9 +723,9 @@ model Product {
 
   statusHistory ProductStatusHistory[]
 
-  variants               ProductVariant[]
-  wishlistItems          WishlistItem[]
-  productImages          ProductImage[]
+  variants      ProductVariant[]
+  wishlistItems WishlistItem[]
+  productImages ProductImage[]
 
   productTags            ProductTag[]
   productAttributeValues ProductAttributeValue[]
@@ -777,6 +817,7 @@ model ProductImage {
   @@index([productId, position])
   @@map("product_image")
 }
+
 model Tag {
   id   String @id @default(uuid(7)) @db.Uuid
   name String @unique

@@ -69,16 +69,26 @@ export function SignUpForm() {
 
   const onSubmit = async (data: SignUpFormValues) => {
     try {
-      const { error } = await authClient.signUp.email({
+      const { data: signUpResult, error } = await authClient.signUp.email({
         email: data.email,
         password: data.password,
         name: data.name,
+        callbackURL: `${window.location.origin}/auth/sign-in`,
       });
 
       if (error) {
         // En cas d'erreur, purge immédiate des mots de passe
         reset({ name: data.name, email: data.email, password: "", confirmPassword: "" });
         toast.error(error.message || "Une erreur est survenue lors de l'inscription.", { duration: 5000 });
+        return;
+      }
+
+      if (signUpResult?.token === null) {
+        toast.success("Un email de confirmation vous a été envoyé.", { duration: 5000 });
+        reset({ name: "", email: "", password: "", confirmPassword: "" });
+        router.push(
+          `/auth/signed-up?email=${encodeURIComponent(signUpResult.user.email)}`
+        );
         return;
       }
 

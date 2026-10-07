@@ -19,8 +19,18 @@ import { customSession } from "better-auth/plugins";
 import { createAuthMiddleware } from "better-auth/api";
 import { hasPublicSignupPrivilegeFields } from "@/lib/auth/public-signup-schema";
 import { getAuthCookiePrefix } from "@/lib/auth/session-cookie";
+import {
+  assertEmailVerificationSmtpConfigured,
+  sendAuthVerificationEmail,
+} from "@/lib/auth/email-verification";
 
 const COOKIE_PREFIX = getAuthCookiePrefix();
+const requireEmailVerification =
+  process.env.EMAIL_VERIFICATION_REQUIRED === "true";
+
+if (requireEmailVerification) {
+  assertEmailVerificationSmtpConfigured();
+}
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -71,10 +81,20 @@ export const auth = betterAuth({
     autoSignIn: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
-    requireEmailVerification: false,
+    requireEmailVerification,
     password: {
       hash: hashPasswordWithBetterAuth,
       verify: verifyBetterAuthPassword,
+    },
+  },
+  emailVerification: {
+    sendOnSignUp: requireEmailVerification,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendAuthVerificationEmail({
+        to: user.email,
+        name: user.name,
+        url,
+      });
     },
   },
   user: {

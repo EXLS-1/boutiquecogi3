@@ -695,6 +695,12 @@ model Product {
   inventorySnapshots     InventorySnapshot[]
   availabilityProjection Product_Availability_Projection?
 
+  // Couche Stock 1:1 (agrégat de rétrocompatibilité, alimentée uniquement par
+  // inventory.service.ts). `Stock.product` déclare l'autre bout de la relation :
+  // sans ce champ, `prisma validate` échoue en P1012 et `prisma generate`
+  // ne produit aucun client — ce qui laisse tout le repo sur un client périmé.
+  stock Stock?
+
   // Promotion directe (1 coupon -> N produits)
   couponId String? @db.Uuid
   coupon   Coupon? @relation(fields: [couponId], references: [id])

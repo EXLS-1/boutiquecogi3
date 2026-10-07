@@ -15,5 +15,6 @@
         }   
     },
     "WillLuke.nextjs.addTypesOnSave": true,
-    "WillLuke.nextjs.hasPrompted": true
+    "WillLuke.nextjs.hasPrompted": true,
+    "explorer.compactFolders": false
 }
