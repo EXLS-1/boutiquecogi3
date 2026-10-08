@@ -169,12 +169,26 @@ export class ProductService {
     });
   }
 
-  static async publish(productId: string, userId: string) {
-    await transitionProductStatus(productId, ProductStatus.PUBLISHED, { actedBy: userId });
-    await emitProductEvent("PRODUCT_STATUS_CHANGED", productId, { status: ProductStatus.PUBLISHED });
+  static async setStatus(
+    productId: string,
+    status: ProductStatus,
+    userId: string,
+    reason?: string,
+    scheduledAt?: Date,
+  ) {
+    await transitionProductStatus(productId, status, {
+      actedBy: userId,
+      reason,
+      scheduledAt,
+    });
+    await emitProductEvent("PRODUCT_STATUS_CHANGED", productId, { status });
   }
 
-  static async softDelete(productId: string, userId: string) {
+  static async publish(productId: string, userId: string, reason?: string) {
+    await this.setStatus(productId, ProductStatus.PUBLISHED, userId, reason);
+  }
+
+  static async softDelete(productId: string, userId: string, reason = "Suppression douce") {
     await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({ where: { id: productId }, select: { status: true, isdeleted: true } });
       if (!product) throw new ProductNotFoundError(productId);
@@ -188,7 +202,7 @@ export class ProductService {
         productId,
         oldStatus: product.status,
         newStatus: ProductStatus.ARCHIVED,
-        reason: "Suppression douce",
+        reason,
         changedById: userId,
       } });
     });

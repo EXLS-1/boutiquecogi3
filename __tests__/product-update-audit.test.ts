@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const db = vi.hoisted(() => ({
   product: { findUnique: vi.fn(), update: vi.fn() },
+  productPrice: { findFirst: vi.fn(), create: vi.fn() },
   auditLog: { create: vi.fn() },
 }));
 
@@ -22,7 +23,8 @@ const actor = { userId: "00000000-0000-4000-8000-000000000002" };
 
 beforeEach(() => {
   vi.resetAllMocks();
-  db.product.findUnique.mockResolvedValue({ isdeleted: false });
+  db.product.findUnique.mockResolvedValue({ isdeleted: false, currency: "USD" });
+  db.productPrice.findFirst.mockResolvedValue(null);
 });
 
 describe("updateProduct audit payload", () => {
@@ -41,10 +43,13 @@ describe("updateProduct audit payload", () => {
   });
 
   it("preserves scalar fields including zero and false in the audit", async () => {
-    const input = { name: "Produit", sku: "SKU-TEST", basePrice: 0, salePrice: 0, isActive: false, isFeatured: false };
+    const input = { name: "Produit", sku: "SKU-TEST", basePrice: 0, isActive: false, isFeatured: false };
     await updateProduct(productId, input, actor);
 
-    expect(db.product.update).toHaveBeenCalledWith({ where: { id: productId }, data: input });
+    expect(db.product.update).toHaveBeenCalledWith({
+      where: { id: productId },
+      data: { name: input.name, sku: input.sku, isActive: false, isFeatured: false },
+    });
     expect(db.auditLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({ newValue: input }) });
   });
 });

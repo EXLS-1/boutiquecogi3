@@ -1,5 +1,5 @@
 // app/api/accounts/route.ts
-// API route publique pour lister tous les comptes d'authentification
+// API route pour lister tous les comptes d'authentification
 // ============================================
 
 import { prisma } from "@/lib/prisma";

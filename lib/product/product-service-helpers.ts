@@ -21,8 +21,14 @@ interface UpdateProductInput {
   description?: string | null;
   sku?: string;
   basePrice?: number;
+  salePrice?: number;
+  saleStart?: Date;
+  saleEnd?: Date;
   isActive?: boolean;
   isFeatured?: boolean;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  videoUrl?: string | null;
   categoryIds?: string[];
   tagIds?: string[];
 }
@@ -61,22 +67,75 @@ export async function updateProduct(
       ...(input.sku !== undefined && { sku: input.sku }),
       ...(input.isActive !== undefined && { isActive: input.isActive }),
       ...(input.isFeatured !== undefined && { isFeatured: input.isFeatured }),
+      ...(input.seoTitle !== undefined && { seoTitle: input.seoTitle }),
+      ...(input.seoDescription !== undefined && { seoDescription: input.seoDescription }),
+      ...(input.videoUrl !== undefined && { videoUrl: input.videoUrl }),
     } satisfies Prisma.ProductUncheckedUpdateInput;
 
     await tx.product.update({ where: { id: productId }, data: updateData });
 
-    if (input.basePrice !== undefined) {
-      if (!Number.isFinite(input.basePrice) || input.basePrice < 0) {
-        throw new ProductServiceError("Le prix doit être un nombre positif ou nul", "VALIDATION_ERROR", 400);
-      }
+    if (input.basePrice !== undefined || input.salePrice !== undefined ||
+        input.saleStart !== undefined || input.saleEnd !== undefined) {
       const currentPrice = await tx.productPrice.findFirst({
         where: { productId, currency: existing.currency },
-        select: { id: true },
+        orderBy: { startsAt: "desc" },
+        select: { id: true, amount: true, compareAtPrice: true, startsAt: true, endsAt: true },
       });
+      const currentBasePrice = currentPrice?.compareAtPrice != null
+        ? currentPrice.compareAtPrice / 100
+        : currentPrice
+          ? Number(currentPrice.amount)
+          : undefined;
+      const basePrice = input.basePrice ?? currentBasePrice;
+      const amount = input.salePrice ?? input.basePrice;
+
+      if (input.basePrice !== undefined &&
+          (!Number.isFinite(input.basePrice) || input.basePrice < 0)) {
+        throw new ProductServiceError("Le prix doit être un nombre positif ou nul", "VALIDATION_ERROR", 400);
+      }
+      if (input.salePrice !== undefined &&
+          (!Number.isFinite(input.salePrice) || input.salePrice <= 0 ||
+            (basePrice !== undefined && input.salePrice >= basePrice))) {
+        throw new ProductServiceError("Le prix promotionnel doit être positif et inférieur au prix de base", "VALIDATION_ERROR", 400);
+      }
+      if (input.salePrice !== undefined && basePrice === undefined) {
+        throw new ProductServiceError("Un prix de base est requis pour appliquer une promotion", "VALIDATION_ERROR", 400);
+      }
+
+      const startsAt = input.saleStart ?? currentPrice?.startsAt ?? null;
+      const endsAt = input.saleEnd ?? currentPrice?.endsAt ?? null;
+      if (startsAt && endsAt && endsAt <= startsAt) {
+        throw new ProductServiceError("La période promotionnelle est invalide", "VALIDATION_ERROR", 400);
+      }
+
+      const priceData = {
+        ...(amount !== undefined && { amount }),
+        ...(input.salePrice !== undefined && {
+          compareAtPrice: basePrice === undefined ? null : Math.round(basePrice * 100),
+        }),
+        ...(input.saleStart !== undefined && { startsAt: input.saleStart }),
+        ...(input.saleEnd !== undefined && { endsAt: input.saleEnd }),
+      };
       if (currentPrice) {
-        await tx.productPrice.update({ where: { id: currentPrice.id }, data: { amount: input.basePrice } });
-      } else {
-        await tx.productPrice.create({ data: { productId, currency: existing.currency, amount: input.basePrice } });
+        await tx.productPrice.update({
+          where: { id: currentPrice.id },
+          data: priceData,
+        });
+      } else if (amount !== undefined) {
+        await tx.productPrice.create({
+          data: {
+            productId,
+            currency: existing.currency,
+            amount,
+            compareAtPrice: input.salePrice !== undefined
+              ? Math.round((basePrice ?? 0) * 100)
+              : null,
+            startsAt: input.saleStart ?? null,
+            endsAt: input.saleEnd ?? null,
+          },
+        });
+      } else if (input.saleStart !== undefined || input.saleEnd !== undefined) {
+        throw new ProductServiceError("Un prix est requis pour modifier la période promotionnelle", "VALIDATION_ERROR", 400);
       }
     }
 
@@ -100,10 +159,17 @@ export async function updateProduct(
       }
     }
 
+    const auditValue = {
+      ...updateData,
+      ...(input.basePrice !== undefined && { basePrice: input.basePrice }),
+      ...(input.salePrice !== undefined && { salePrice: input.salePrice }),
+      ...(input.saleStart !== undefined && { saleStart: input.saleStart }),
+      ...(input.saleEnd !== undefined && { saleEnd: input.saleEnd }),
+    };
     await recordProductAudit({
       action: PRODUCT_AUDIT_ACTIONS.UPDATED,
       userId: actor.userId, productId,
-      newValue: updateData,
+      newValue: auditValue,
       details: "Produit mis à jour",
     }, tx);
   }, { isolationLevel: "Serializable" as const, maxWait: 5000, timeout: 15000 });

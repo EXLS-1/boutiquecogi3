@@ -1,8 +1,8 @@
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env" });
 
-const { Pool } = require("pg");
+import { Pool } from "pg";
 
 const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
 console.log("DB URL host:", connectionString ? connectionString.split("@")[1] : "NONE");

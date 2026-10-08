@@ -219,3 +219,52 @@ export async function adjustStockInTx(
   };
 }
 
+export interface TransferStockInput {
+  fromVariantId: string;
+  fromWarehouseId?: string | null;
+  toVariantId: string;
+  toWarehouseId?: string | null;
+  quantity: number;
+  reason: string;
+  userId: string;
+}
+
+export async function transferStock(input: TransferStockInput) {
+  const fromWarehouseId = input.fromWarehouseId ?? null;
+  const toWarehouseId = input.toWarehouseId ?? null;
+  if (!Number.isSafeInteger(input.quantity) || input.quantity <= 0) {
+    throw new InventoryError(
+      "La quantité à transférer doit être un entier positif",
+      INVENTORY_ERRORS.INVALID_QUANTITY,
+    );
+  }
+  if (
+    input.fromVariantId === input.toVariantId &&
+    fromWarehouseId === toWarehouseId
+  ) {
+    throw new InventoryError(
+      "La source et la destination du transfert doivent être différentes",
+      INVENTORY_ERRORS.INVALID_DELTA,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const source = await adjustStockInTx(tx, {
+      variantId: input.fromVariantId,
+      warehouse: fromWarehouseId,
+      delta: -input.quantity,
+      reason: "ADJUSTMENT",
+      notes: `Transfert sortant : ${input.reason}`,
+      userId: input.userId,
+    });
+    const destination = await adjustStockInTx(tx, {
+      variantId: input.toVariantId,
+      warehouse: toWarehouseId,
+      delta: input.quantity,
+      reason: "ADJUSTMENT",
+      notes: `Transfert entrant : ${input.reason}`,
+      userId: input.userId,
+    });
+    return { source, destination };
+  }, TRANSACTION_OPTIONS);
+}
