@@ -19,7 +19,6 @@ import { Currency } from "@prisma/client";
  */
 
 import "server-only";
-// @ts-expect-error Missing type declarations for 'resend' package
 import { Resend } from "resend";
 import { z } from "zod";
 import { auditLog, UserEvent, AdminEvent, SecurityEvent } from "@/lib/security/audit";

@@ -70,6 +70,14 @@
 				"isDefault": true
 			},
 			"detail": "Builds the boutiq SQL project"
+		},
+		{
+			"label": "tsc-resource-access",
+			"type": "shell",
+			"command": "cd /d c:\\boutiquecogi3 && npx tsc --noEmit --pretty false --strict --module ESNext --moduleResolution bundler --target ES2017 --lib dom,esnext lib/security/resource-access.ts",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }
