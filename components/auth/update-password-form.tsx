@@ -1,7 +1,7 @@
 // components/auth/update-password-form.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentPropsWithoutRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { cn } from "@/lib/utils/utils";
@@ -31,7 +31,7 @@ const updatePasswordSchema = z.object({
   path: ["confirmPassword"], // Cible l'erreur sur le champ de confirmation
 });
 
-interface UpdatePasswordFormProps extends React.ComponentPropsWithoutRef<"div"> {
+interface UpdatePasswordFormProps extends ComponentPropsWithoutRef<"div"> {
   token: string;
 }
 
@@ -47,20 +47,17 @@ export function UpdatePasswordForm({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
     // 1. Validation de la logique métier (Frontend)
     const validation = updatePasswordSchema.safeParse({ password, confirmPassword });
     if (!validation.success) {
-      const firstError = validation.error.errors[0];
-      const firstError = validation.error.issues[0];
+      const firstIssue = validation.error.issues[0];
       setError({
-        field: firstError.path[0]?.toString(),
-        message: firstError.message,
-        field: firstError?.path[0]?.toString(),
-        message: firstError?.message || "Erreur de validation.",
+        field: firstIssue?.path[0]?.toString(),
+        message: firstIssue?.message || "Erreur de validation.",
       });
       return;
     }
@@ -68,13 +65,29 @@ export function UpdatePasswordForm({
     setIsLoading(true);
 
     try {
-      // 2. Exécution avec Better-Auth (le token est automatiquement géré s'il est dans l'URL, 
-      // mais on peut forcer son envoi selon la configuration exacte de ton authClient)
-      const { error: authError } = await authClient.resetPassword({
+      // 2. Exécution avec Better-Auth (le token est automatiquement géré s'il est dans l'URL,
+      // mais on le passe explicitement quand il est fourni en prop pour les flux e-mail).
+      const resetPassword = (
+        authClient as unknown as Record<string, unknown>
+      )["resetPassword"];
+
+      if (typeof resetPassword !== "function") {
+        throw new Error("Service de réinitialisation indisponible.");
+      }
+
+      const trimmedToken = token?.trim() ?? "";
+      const { error: authError } = (await (
+        resetPassword as (args: {
+          newPassword: string;
+          token?: string;
+        }) => Promise<{
+          data?: unknown;
+          error?: { message?: string } | null;
+        }>
+      )({
         newPassword: validation.data.password,
-        // Passe le token explicitement si Better-Auth le requiert dans ta configuration
-        // token: token, 
-      });
+        ...(trimmedToken.length > 0 ? { token: trimmedToken } : {}),
+      })) ?? { error: null };
 
       if (authError) {
         throw new Error(authError.message || "La réinitialisation a échoué.");
@@ -84,8 +97,12 @@ export function UpdatePasswordForm({
       router.push("/protected"); // Ou '/login' selon ton flux UX
       router.refresh();
 
-    } catch (err: any) {
-      setError({ message: err.message || "Le lien est invalide ou a expiré." });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Le lien est invalide ou a expiré.";
+      setError({ message });
     } finally {
       setIsLoading(false);
     }

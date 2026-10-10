@@ -625,22 +625,24 @@ export class Logger {
 
     // Fusionner le correlation ID dans le contexte
     if (this.correlationId || context) {
-      entry.context = {
+      const merged: LogContext = {
         ...context,
         requestId: context?.requestId || this.correlationId || undefined,
       };
-      // Nettoyer les undefined
-      if (!entry.context.requestId) delete entry.context.requestId;
-      if (Object.keys(entry.context).length === 0) {
-        delete entry.context;
+      // Nettoyer les undefined (LogContext a des props optionnelles — pas de `delete` typé)
+      if (!merged.requestId) merged.requestId = undefined;
+      entry.context = merged;
+      if (Object.keys(merged).length === 0) {
+        entry.context = undefined;
       }
     }
 
     // Ajouter les infos d'erreur
     if (error !== undefined) {
       entry.error = extractErrorInfo(error);
-      if (!this.config.includeStackTrace) {
-        delete entry.error.stack;
+      if (!this.config.includeStackTrace && entry.error) {
+        // `stack` est optionnel — l'assigner à undefined plutôt que `delete`
+        entry.error = { ...entry.error, stack: undefined };
       }
     }
 

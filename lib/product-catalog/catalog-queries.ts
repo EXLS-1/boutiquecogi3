@@ -711,7 +711,31 @@ export async function getCatalogCategories(): Promise<
 const MAX_CATALOG_PAGE_SIZE = 100;
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SECTION 5: ADMIN QUERIES — Categories tree & Tags list
+// SECTION 6: CACHE INVALIDATION — actions d'écriture produit
+// ═════════════════════════════════════════════════════════════════════════════
+
+export { CACHE_TAGS };
+
+/**
+ * Invalide tous les tags catalogue après une écriture produit.
+ * Robuste : `revalidateTag` lève si le tag n'existe pas encore — on
+ * journalise et on continue pour ne jamais faire échouer l'action appelante.
+ */
+export async function invalidateAllCatalogCaches(): Promise<void> {
+  const tags = Object.values(CACHE_TAGS);
+  await Promise.all(
+    tags.map(async (tag) => {
+      try {
+        revalidateTag(tag);
+      } catch (error) {
+        console.warn(`[catalog-cache] revalidateTag("${tag}") a échoué`, error);
+      }
+    })
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SECTION 7: ADMIN QUERIES — Categories tree & Tags list
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**

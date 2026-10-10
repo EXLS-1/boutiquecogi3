@@ -1,7 +1,7 @@
-// components/auth/forgot-password.tsx
 "use client";
 
-import { useState } from "react";
+// components/auth/forgot-password-form.tsx
+import { useState, type ComponentPropsWithoutRef, type FormEvent } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { cn } from "@/lib/utils/utils";
@@ -21,16 +21,36 @@ const forgotPasswordSchema = z.object({
   email: z.string().email("Veuillez entrer une adresse email valide."),
 });
 
+type ForgotPasswordResult = {
+  data?: unknown;
+  error?: { message?: string; status?: number; statusText?: string } | null;
+};
+
+function getResetRedirectUrl(): string {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  // Fallback relatif si aucune base absolue (SSR / preview).
+  if (!baseUrl) return "/auth/update-password";
+  return `${baseUrl.replace(/\/$/, "")}/auth/update-password`;
+}
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err.length > 0) return err;
+  return fallback;
+}
+
 export function ForgotPasswordForm({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -43,22 +63,38 @@ export function ForgotPasswordForm({
     setIsLoading(true);
 
     try {
-      const { error: authError } = await authClient.forgetPassword({
+      const forgetPassword =
+        (authClient as unknown as Record<string, unknown>)["forgetPassword"] ??
+        (authClient as unknown as Record<string, unknown>)["forgotPassword"];
+
+      if (typeof forgetPassword !== "function") {
+        throw new Error("Service de réinitialisation indisponible.");
+      }
+
+      const result = (await (
+        forgetPassword as (args: {
+          email: string;
+          redirectTo: string;
+        }) => Promise<ForgotPasswordResult>
+      )({
         email: validation.data.email,
         // Construction dynamique et robuste de l'URL de retour
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
+        redirectTo: getResetRedirectUrl(),
+      })) satisfies ForgotPasswordResult;
 
-      if (authError) {
+      if (result?.error) {
         // Ne jamais donner d'indication si l'email existe ou non en production (Sécurité anti-énumération)
-        console.error("[AUTH_FORGET_PWD_ERROR]", authError);
-        throw new Error(authError.message);
+        console.error("[AUTH_FORGET_PWD_ERROR]", result.error);
+        throw new Error(
+          result.error.message ?? "La demande de réinitialisation a échoué.",
+        );
       }
 
       setSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Message générique pour éviter le fuzzing
-      setError("Une erreur est survenue lors de la demande. Veuillez réessayer plus tard.");
+      console.error("[AUTH_FORGET_PWD_FAILURE]", err);
+      setError(getErrorMessage(err, "Une erreur est survenue lors de la demande. Veuillez réessayer plus tard."));
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +112,7 @@ export function ForgotPasswordForm({
           </CardHeader>
           <CardContent>
             <p className="text-sm text-slate-600">
-              Si un compte est associé à <strong>{email}</strong>, vous recevrez les instructions pour réinitialiser votre mot de passe d'ici quelques minutes. Pensez à vérifier vos spams.
+              Si un compte est associé à <strong>{email}</strong>, vous recevrez les instructions pour réinitialiser votre mot de passe d&apos;ici quelques minutes. Pensez à vérifier vos spams.
             </p>
           </CardContent>
         </Card>
@@ -85,7 +121,7 @@ export function ForgotPasswordForm({
           <CardHeader>
             <CardTitle className="text-2xl">Mot de passe oublié</CardTitle>
             <CardDescription>
-              Entrez l'adresse email associée à votre compte.
+              Entrez l&apos;adresse email associée à votre compte.
             </CardDescription>
           </CardHeader>
           <CardContent>

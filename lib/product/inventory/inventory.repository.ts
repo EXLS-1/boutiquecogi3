@@ -85,7 +85,8 @@ export async function applyQuantityDelta(
     data: {
       quantity: { increment: appliedDelta },
       lastMovementAt: new Date(),
-      updatedBy: userId,
+      // Prisma : `updatedBy: string | null` → jamais `undefined`.
+      ...(userId ? { updatedBy: userId } : { updatedBy: null }),
     },
   });
 }
@@ -101,7 +102,7 @@ export async function adjustReserved(
     data: {
       reserved: { increment: delta },
       lastMovementAt: new Date(),
-      updatedBy: userId,
+      ...(userId ? { updatedBy: userId } : { updatedBy: null }),
     },
   });
 }
@@ -122,19 +123,21 @@ export async function upsertProductStock(
 ) {
   const quantity = Math.max(0, totals.quantity);
   const reserved = Math.max(0, totals.reserved);
+  // Prisma : `updatedBy: string | null` → `null` explicite si anonyme.
+  const updatedBy = userId ?? null;
   return db.stock.upsert({
     where: { productId },
     create: {
       productId,
       quantity,
       reserved,
-      updatedBy: userId ?? undefined,
+      updatedBy,
     },
     update: {
       quantity,
       reserved,
       lastMovementAt: new Date(),
-      updatedBy: userId ?? undefined,
+      updatedBy,
     },
     select: { id: true },
   });
@@ -158,9 +161,10 @@ export async function createMovement(
       type: data.type,
       quantity: data.quantity,
       delta: data.quantity,
-      reason: data.reason,
-      orderId: data.orderId,
-      userId: data.userId,
+      // StockMovement.reason/orderId/userId sont `String?` → `null` si absent.
+      reason: data.reason ?? null,
+      orderId: data.orderId ?? null,
+      userId: data.userId ?? null,
     },
     select: { id: true },
   });
@@ -185,9 +189,9 @@ export async function createLedgerEntry(
       variantId: data.variantId,
       quantity: data.quantity,
       reason: data.reason,
-      referenceId: data.referenceId,
-      warehouseId: data.warehouseId,
-      performedBy: data.performedBy,
+      referenceId: data.referenceId ?? null,
+      warehouseId: data.warehouseId ?? null,
+      performedBy: data.performedBy ?? null,
     },
     select: { id: true },
   });
@@ -229,7 +233,8 @@ export async function upsertSnapshot(
       data: {
         available: data.available,
         reserved: data.reserved,
-        warehouseId: data.warehouseId,
+        // InventorySnapshot.warehouseId est `String?` → `null` si entrepôt principal.
+        warehouseId: data.warehouseId ?? null,
       },
     });
   }
@@ -239,8 +244,15 @@ export async function upsertSnapshot(
       variantId: data.variantId,
       available: data.available,
       reserved: data.reserved,
-      warehouseId: data.warehouseId,
+      warehouseId: data.warehouseId ?? null,
     },
+  });
+}
+
+/** Compteur de produits ACTIFS (non supprimés, non archivés). */
+export async function countActiveProducts(): Promise<number> {
+  return prisma.product.count({
+    where: { isdeleted: false, isArchived: false },
   });
 }
 

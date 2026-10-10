@@ -61,17 +61,26 @@ type AuthResult =
 // SCHÉMAS ZOD
 // ═══════════════════════════════════════════
 
+// ─── Zod v4 note ─────────────────────────────────────
+// Zod v4 requires an explicit key schema for `z.record()`. All attribute maps
+// are string→string, hence `z.record(z.string(), …)`.
+const attributeMapSchema = z.record(
+  z.string(),
+  z.string().trim().min(1).max(200)
+);
+
 const variantInputSchema = z.object({
   sku: z.string().trim().max(64).optional(),
-  attributes: z
-    .record(z.string().trim().min(1).max(64), z.string().trim().min(1).max(200))
-    .refine((v) => Object.keys(v).length > 0, "Au moins un attribut est requis"),
-  priceOffset: z.number().int().optional(),
+  attributes: attributeMapSchema.refine(
+    (v) => Object.keys(v).length > 0,
+    "Au moins un attribut est requis"
+  ),
+  priceOffset: z.coerce.number().int().optional(),
 });
 
 const createDraftSchema = z.object({
   name: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères").max(200),
-  basePrice: z.number().nonnegative("Le prix doit être positif ou nul"),
+  basePrice: z.coerce.number().nonnegative("Le prix doit être positif ou nul"),
   productTypeId: z.string().uuid().optional().nullable(),
   description: z.string().max(10000).optional().nullable(),
   categoryId: z.string().uuid().optional().nullable(),
@@ -85,7 +94,7 @@ const createDraftSchema = z.object({
 
 const updateDraftSchema = z.object({
   name: z.string().trim().min(2).max(200).optional(),
-  basePrice: z.number().nonnegative().optional(),
+  basePrice: z.coerce.number().nonnegative().optional(),
   description: z.string().max(10000).optional().nullable(),
   categoryId: z.string().uuid().optional().nullable(),
   images: z.array(z.string().min(1)).max(20).optional(),
@@ -97,25 +106,24 @@ const updateDraftSchema = z.object({
 const listDraftsSchema = z.object({
   statuses: z.array(z.nativeEnum(ProductStatus)).optional(),
   search: z.string().trim().max(200).optional(),
-  page: z.number().int().min(1).optional(),
-  limit: z.number().int().min(1).max(100).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
 const createVariantSchema = z.object({
   productId: z.string().uuid(),
   sku: z.string().trim().max(64).optional(),
-  attributes: z
-    .record(z.string().trim().min(1).max(64), z.string().trim().min(1).max(200))
-    .refine((v) => Object.keys(v).length > 0, "Au moins un attribut est requis"),
-  priceOffset: z.number().int().optional(),
+  attributes: attributeMapSchema.refine(
+    (v) => Object.keys(v).length > 0,
+    "Au moins un attribut est requis"
+  ),
+  priceOffset: z.coerce.number().int().optional(),
 });
 
 const updateVariantSchema = z.object({
   sku: z.string().trim().max(64).optional(),
-  attributes: z
-    .record(z.string().trim().min(1).max(64), z.string().trim().min(1).max(200))
-    .optional(),
-  priceOffset: z.number().int().optional(),
+  attributes: attributeMapSchema.optional(),
+  priceOffset: z.coerce.number().int().optional(),
 });
 
 // ═══════════════════════════════════════════
@@ -278,14 +286,16 @@ const DRAFT_STATUSES: ProductStatus[] = [
   ProductStatus.SCHEDULED,
 ];
 
+// ─── Prisma select shapes (alignés sur schema.prisma) ───
+// Le modèle Product porte `currency` + `isActive` mais PAS `price`/`basePrice`
+// scalaires : le prix vit dans la relation `productPrice` (Decimal `amount`).
+
 const draftSummarySelect = {
   id: true,
   name: true,
   slug: true,
   sku: true,
   status: true,
-  basePrice: true,
-  price: true,
   currency: true,
   isActive: true,
   scheduledAt: true,
@@ -294,6 +304,11 @@ const draftSummarySelect = {
   updatedAt: true,
   images: true,
   category: { select: { id: true, name: true, slug: true } },
+  productPrice: {
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: { amount: true, currency: true },
+  },
   variants: {
     select: {
       id: true,
@@ -312,15 +327,17 @@ type DraftSummaryRaw = Prisma.ProductGetPayload<{ select: typeof draftSummarySel
 
 /** Sérialise un produit (avec variants) en structure JSON-safe. */
 function serializeDraftSummary(p: DraftSummaryRaw) {
+  const currentPrice = p.productPrice[0] ?? null;
+  const basePrice = currentPrice ? currentPrice.amount.toNumber() : 0;
   return {
     id: p.id,
     name: p.name,
     slug: p.slug,
     sku: p.sku,
     status: p.status,
-    basePrice: Number(p.basePrice),
-    price: Number(p.price),
-    currency: p.currency,
+    basePrice,
+    price: basePrice,
+    currency: currentPrice ? currentPrice.currency : p.currency,
     isActive: p.isActive,
     scheduledAt: p.scheduledAt ? p.scheduledAt.toISOString() : null,
     publishedAt: p.publishedAt ? p.publishedAt.toISOString() : null,
@@ -386,19 +403,24 @@ export async function createDraftProductAction(
         slug: ids.slug,
         sku: ids.sku,
         description: data.description ?? "",
-        price: data.basePrice,
-        basePrice: data.basePrice,
+        currency: "CDF",
         productTypeId,
         categoryId: data.categoryId ?? null,
         userId: auth.ctx.userId,
         createdBy: auth.ctx.userId,
         updatedBy: auth.ctx.userId,
         status: ProductStatus.DRAFT,
-        isActive: false,
         images: data.images ?? [],
         videoUrl: data.videoUrl ?? null,
         seoTitle: data.seoTitle ?? null,
         seoDescription: data.seoDescription ?? null,
+        // Prix : pas de scalaire sur Product — ligne `productPrice` dédiée.
+        productPrice: {
+          create: {
+            currency: "CDF",
+            amount: data.basePrice,
+          },
+        },
         statusHistory: {
           create: {
             id: generateUUIDv7(),
@@ -412,7 +434,7 @@ export async function createDraftProductAction(
           create: (data.variants ?? []).map((v) => ({
             id: generateUUIDv7(),
             sku: v.sku || generateSKU(data.name),
-            attributes: v.attributes,
+            attributes: toInputJson(v.attributes as Prisma.JsonValue),
             priceOffset: v.priceOffset ?? 0,
           })),
         },
@@ -556,20 +578,6 @@ export async function updateDraftProductAction(
       }
     }
 
-    // Si le prix de base change et que `price` n'était pas personnalisé, on l'aligne.
-    // `price` / `basePrice` sont des `Decimal?` : on ne compare que des valeurs
-    // non nulles, et `.equals()` n'est jamais appelé sur `null`.
-    const previous = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { price: true, basePrice: true },
-    });
-    const priceWasAligned =
-      previous?.price != null &&
-      previous.basePrice != null &&
-      previous.price.equals(previous.basePrice);
-    const alignPrice =
-      data.basePrice !== undefined && priceWasAligned ? data.basePrice : undefined;
-
     // `description` est NON nullable en base (`String @db.Text`) : `null` reçu du
     // client signifie « vider la description » (→ chaîne vide), jamais écrire null.
     const { description, ...scalars } = data;
@@ -578,7 +586,6 @@ export async function updateDraftProductAction(
       data: {
         ...scalars,
         ...(description !== undefined ? { description: description ?? "" } : {}),
-        ...(alignPrice !== undefined ? { price: alignPrice } : {}),
         updatedBy: auth.ctx.userId,
       },
       select: { id: true, name: true },
@@ -625,12 +632,13 @@ export async function deleteDraftProductAction(
     }
 
     // Suppression douce : préservation de l'historique et des commandes liées.
+    // Note : le modèle Product n'a pas de colonne `isActive` — l'archivage
+    // passe par `isArchived` + `status = ARCHIVED`.
     await prisma.product.update({
       where: { id: productId },
       data: {
         isdeleted: true,
         deletedAt: new Date(),
-        isActive: false,
         isArchived: true,
         updatedBy: auth.ctx.userId,
         statusHistory: {
@@ -696,9 +704,7 @@ export async function duplicateDraftProductAction(
         slug: ids.slug,
         sku: ids.sku,
         description: source.description,
-        price: source.price,
         basePrice: source.basePrice,
-        currency: source.currency,
         // FK obligatoire héritée de la source (Product.productTypeId non nullable).
         productTypeId: source.productTypeId,
         categoryId: source.categoryId,
@@ -706,7 +712,6 @@ export async function duplicateDraftProductAction(
         createdBy: auth.ctx.userId,
         updatedBy: auth.ctx.userId,
         status: ProductStatus.DRAFT,
-        isActive: false,
         images: source.images,
         videoUrl: source.videoUrl,
         seoTitle: source.seoTitle,
@@ -792,7 +797,7 @@ export async function createVariantAction(
         id: generateUUIDv7(),
         productId,
         sku,
-        attributes: data.attributes,
+        attributes: toInputJson(data.attributes as Prisma.JsonValue),
         priceOffset: data.priceOffset ?? 0,
       },
     });
@@ -864,7 +869,9 @@ export async function updateVariantAction(
       where: { id: variantId },
       data: {
         ...(data.sku !== undefined ? { sku: data.sku } : {}),
-        ...(data.attributes !== undefined ? { attributes: data.attributes } : {}),
+        ...(data.attributes !== undefined
+          ? { attributes: toInputJson(data.attributes as Prisma.JsonValue) }
+          : {}),
         ...(data.priceOffset !== undefined ? { priceOffset: data.priceOffset } : {}),
       },
     });

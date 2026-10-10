@@ -7,7 +7,7 @@ const ProductSchema = z.object({
   name: z.string().min(1),
   description: z.string().nullable().optional(),
   price: z.unknown(),
-  images: z.array(z.string().min(1)).optional(),
+  images: z.array(z.string().min(1)).default([]),
   category: z.string().nullable().optional(),
 });
 
@@ -20,7 +20,7 @@ export function mapProduct(product: unknown) {
     description: validated.description ?? "",
     price: serializeDecimal(validated.price),
     image: validated.images[0] ?? "/placeholder.webp",
-    category: validated.category,
+    category: validated.category ?? null,
   };
 }
 

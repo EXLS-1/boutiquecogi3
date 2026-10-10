@@ -36,7 +36,7 @@ export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 // Toute notion de prix (produit, variante, filtre) passe par ces schémas.
 
 export const priceSchema = z
-  .number({ invalid_type_error: "Le prix doit être un nombre" })
+  .number({ error: "Le prix doit être un nombre" })
   .positive("Le prix doit être positif")
   .max(999_999_999, "Le prix ne peut pas dépasser 999 999 999");
 

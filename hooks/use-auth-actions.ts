@@ -4,14 +4,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
-import { useRBACStore } from "@/store/rbac-store";
+import { useRBACStore } from "@/store/use-rbac-store";
 import { mapAuthError } from "@/lib/auth/errors";
 import toast from "react-hot-toast";
 
 export function useAuthActions() {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
-  const invalidateCache = useRBACStore((s) => s.invalidateCache);
+  const invalidateCache = useRBACStore((state) => state.invalidateCache);
 
   const safe = async (fn: () => Promise<void>) => {
     if (isPending) return;
@@ -44,7 +44,7 @@ export function useAuthActions() {
       }
     });
 
-  const signup = (data: { email: string; password: string }) =>
+  const signup = (data: { name: string; email: string; password: string }) =>
     safe(async () => {
       await authClient.signUp.email(data);
       toast.success("Compte créé");

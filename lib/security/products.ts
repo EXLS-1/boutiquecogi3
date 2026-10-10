@@ -26,7 +26,19 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { productData } from "@/data/product-data";
 import type { RBACLevel } from "@/lib/security/audit";
-import type { Product } from "@/types/products";
+
+/** Produit storefront (léger) — découplé du schéma Prisma. */
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  priceUSD: number;
+  priceCDF: number;
+  stock: number;
+  image: string;
+  mediaUrls: string[];
+  category: string;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ENVIRONMENT CONFIGURATION
@@ -229,12 +241,31 @@ function mapJsonProduct(p: Record<string, unknown>): Product {
   };
 }
 
+type DbVariantStock = { quantity: number; reserved: number };
+
 type DbProduct = Prisma.ProductGetPayload<{
   include: {
     category: { select: { slug: true } };
-    variants: { select: { sku: true; stock: true } };
+    variants: {
+      select: {
+        sku: true;
+        variantStocks: { select: { quantity: true; reserved: true } };
+      };
+    };
   };
 }>;
+
+/** Stock agrégé d'un produit = somme de ses lignes VariantStock. */
+function sumVariantStocks(
+  variants: ReadonlyArray<{ variantStocks?: ReadonlyArray<DbVariantStock> }>
+): number {
+  return variants.reduce(
+    (total, v) =>
+      total +
+      (v.variantStocks ?? []).reduce((sum, s) => sum + s.quantity, 0),
+    0
+  );
+}
 
 function mapDbProduct(p: DbProduct): Product {
   const priceUSD = Math.round(Number(p.basePrice ?? 0)) / 100;
@@ -246,7 +277,7 @@ function mapDbProduct(p: DbProduct): Product {
     description: p.description ?? "Aucune description disponible",
     priceUSD,
     priceCDF: Math.round(priceUSD * EXCHANGE_RATE_CDF),
-    stock: p.variants[0]?.stock ?? 0,
+    stock: sumVariantStocks(p.variants),
     image,
     mediaUrls: p.images.length ? p.images : [image],
     category: p.category?.slug ?? "femme",
@@ -330,7 +361,15 @@ export const getAllProducts = cache(
           where,
           include: {
             category: { select: { slug: true } },
-            variants: { select: { sku: true, stock: true }, take: 1 },
+            variants: {
+              select: {
+                sku: true,
+                variantStocks: {
+                  select: { quantity: true, reserved: true },
+                },
+              },
+              take: 1,
+            },
           },
           orderBy: { createdAt: "desc" },
           take: limit,
@@ -390,7 +429,15 @@ export async function getProductById(
         product: {
           include: {
             category: { select: { slug: true } },
-            variants: { select: { sku: true, stock: true }, take: 1 },
+            variants: {
+              select: {
+                sku: true,
+                variantStocks: {
+                  select: { quantity: true, reserved: true },
+                },
+              },
+              take: 1,
+            },
           },
         },
       },
@@ -404,7 +451,13 @@ export async function getProductById(
       where: { OR: [{ id }, { slug: id }], isArchived: false },
       include: {
         category: { select: { slug: true } },
-        variants: { select: { sku: true, stock: true }, take: 1 },
+        variants: {
+          select: {
+            sku: true,
+            variantStocks: { select: { quantity: true, reserved: true } },
+          },
+          take: 1,
+        },
       },
     });
 
@@ -443,7 +496,12 @@ export async function getProductsByIds(
       },
       include: {
         category: { select: { slug: true } },
-        variants: { select: { sku: true, stock: true } },
+        variants: {
+          select: {
+            sku: true,
+            variantStocks: { select: { quantity: true, reserved: true } },
+          },
+        },
       },
     });
 

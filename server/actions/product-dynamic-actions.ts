@@ -2,17 +2,25 @@
 // =============================================================================
 // SERVER ACTIONS — Création dynamique de produits / mouvements de stock
 // =============================================================================
-// Orchestre la couche lib/products/productService.ts (transactionnelle) avec
-// la protection d'authentification Better-Auth. Utilisable depuis les
-// composants serveur/forms sans passer par un endpoint REST.
+// Orchestre la couche transactionnelle Produit + `ProductService.createDynamicProduct`
+// (implémentée dans `lib/products/product-service.ts`, voir shim
+// `lib/product/productService.ts`) avec la protection d'authentification
+// Better-Auth. Utilisable depuis les composants serveur/forms sans passer
+// par un endpoint REST.
 
 "use server";
 
 import { headers } from "next/headers";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
-import { ProductService, ProductError } from "@/lib/product/productService";
-import { invalidateAllCatalogCaches } from "@/lib/product-catalog/catalog-queries";
+import {
+  ProductService,
+  ProductError,
+} from "@/lib/product/productService";
+import {
+  invalidateAllCatalogCaches,
+  CACHE_TAGS,
+} from "@/lib/product-catalog/catalog-queries";
 
 type ActionResult<T = unknown> =
   | { success: true; data: T; message?: string }
@@ -35,7 +43,7 @@ export async function createDynamicProductAction(payload: unknown): Promise<Acti
 
     // Invalidation des caches catalogue + routes produit
     await invalidateAllCatalogCaches();
-    revalidateTag("catalog-products", "default");
+    revalidateTag(CACHE_TAGS.CATALOG_PRODUCTS);
 
     return {
       success: true,

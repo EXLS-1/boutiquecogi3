@@ -2,9 +2,10 @@
 // 9. useAuditRBAC - Événement audit
 // ============================================================
 // hooks/rbac/use-audit-rbac.ts
-("use client");
+"use client";
 
 import { useMemo } from "react";
+import { PERMISSIONS } from "@/lib/auth/rbac-shared";
 import { useRBAC } from "./use-rbac";
 
 export type AuditEvent =
@@ -161,8 +162,8 @@ export function useAuditRBAC(
     if (!level) return false;
     const meetsLevel = level <= config.minRoleLevel;
     const hasAuditPermission =
-      hasPermission("analytics:read") ||
-      hasPermission("settings:system_config");
+      hasPermission(PERMISSIONS["analytics:read"]) ||
+      hasPermission(PERMISSIONS["system:config"]);
     const actionAllowed = config.allowedActions.includes(action);
     return meetsLevel && hasAuditPermission && actionAllowed;
   }, [level, config, action, hasPermission]);

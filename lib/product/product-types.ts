@@ -119,3 +119,28 @@ export interface ProductActor {
   roleLevel: number;
   permissions: Set<PermissionCode>;
 }
+
+/** Opérations couvertes par la policy des types de produit. */
+export type ProductTypeOperation = "create" | "edit" | "delete";
+
+/** Acteur évalué par la policy des types de produit. */
+export interface ProductTypeActor {
+  userId?: string;
+  role: Role | string;
+  roleLevel: number;
+  permissions?: Set<PermissionCode> | ReadonlySet<PermissionCode>;
+}
+
+/** Décision binaire + motifs explicites + config ayant servi à décider. */
+export interface ProductTypeDecision {
+  allowed: boolean;
+  reasons: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any;
+}
+
+/** Résultat du contrôle de plafond de variantes. */
+export interface VariantLimitCheckResult {
+  ok: boolean;
+  reason: string | null;
+}

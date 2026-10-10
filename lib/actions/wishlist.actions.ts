@@ -58,14 +58,41 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
       },
     },
   });
-  return (wishlist?.items ?? []).map(({ product }) => ({
-    id: product.id,
-    name: product.name,
-    price: product.price?.toNumber() ?? 0,
-    image: product.images[0] ?? "/placeholder.webp",
-    slug: product.slug,
-    category: product.category?.name,
-  }));
+
+  // ─── Robust Decimal/number/string → number conversion ───
+  // Prisma Decimal exposes `.toNumber()`, but seed data or mocks may surface
+  // plain numbers/strings/null. This guard keeps TS strict-happy and runtime safe.
+  const toPriceNumber = (value: unknown): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (typeof value === "object" && value !== null && "toNumber" in value) {
+      try {
+        const n = (value as { toNumber: () => unknown }).toNumber();
+        return typeof n === "number" && Number.isFinite(n) ? n : 0;
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  };
+
+  return (wishlist?.items ?? []).map(({ product }) => {
+    // `images` may be null/undefined at runtime even if typed as string[].
+    const images = Array.isArray(product.images) ? product.images : [];
+    const firstImage = images.length > 0 && typeof images[0] === "string" ? images[0] : "/placeholder.webp";
+    return {
+      id: product.id,
+      name: product.name,
+      price: toPriceNumber(product.price),
+      image: firstImage,
+      slug: product.slug,
+      category: product.category?.name,
+    };
+  });
 }
 
 export async function getWishlistAction() {

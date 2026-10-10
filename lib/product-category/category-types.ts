@@ -9,13 +9,12 @@
  */
 
 import { z } from "zod";
-import type { RoleLevelValue } from "@/lib/auth/rbac";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 1: NIVEAUX DE PRIVILÈGE RBAC (alignés lib/auth/rbac.ts)
 // ═════════════════════════════════════════════════════════════════════════════
 
-export type Role_Level = RoleLevelValue;
+export type Role_Level = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type RbacLevel = Role_Level;
 
 export function isRoleLevel(value: number): value is Role_Level {

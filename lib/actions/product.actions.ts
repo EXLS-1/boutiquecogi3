@@ -9,6 +9,8 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import {
   getCurrentUserRole,
   hasPermission,
@@ -17,7 +19,6 @@ import {
   isRestrictionEnabled,
   PERMISSIONS,
   RESTRICTIONS,
-  ROLES,
   type Role,
 } from "@/lib/auth/rbac";
 
@@ -255,7 +256,7 @@ async function verifyBulkLimit(role: Role, count: number): Promise<void> {
 }
 
 function buildWhereFromFilters(
-  filters?: Record<string, unknown>,
+  filters: Record<string, unknown> = {},
 ): Record<string, unknown> {
   const where: Record<string, unknown> = {};
 
@@ -418,119 +419,6 @@ export async function bulkUpdateProducts(
     };
   }
 }
-
-
-
-
-export async function bulkChangeStatus(
-  ids: string[],
-  status: "PUBLISHED" | "DRAFT" | "ARCHIVED",
-): Promise<ActionResponse<{ count: number; status: string }>> {
-  try {
-    const role = await getCurrentUserRole();
-
-    const requiredPerm =
-      status === "ARCHIVED"
-        ? PERMISSIONS.PRODUCTS_BULK_EDIT
-        : PERMISSIONS.PRODUCTS_UPDATE;
-    if (!(await hasPermission(role, requiredPerm))) {
-      return {
-        success: false,
-        error: `Permission ${requiredPerm} requise`,
-        code: "FORBIDDEN",
-      };
-    }
-
-    if (!ids.length || ids.length > 500) {
-      return {
-        success: false,
-        error: "Sélection invalide (1-500)",
-        code: "VALIDATION_ERROR",
-      };
-    }
-
-    await verifyBulkLimit(role, ids.length);
-
-    const result = await prisma.product.updateMany({
-      where: { id: { in: ids } },
-      data: { status, isActive: status === "PUBLISHED", updatedAt: new Date() },
-    });
-
-    revalidatePath("/products");
-
-    return { success: true, data: { count: result.count, status } };
-  } catch (error) {
-
-// ── 4. BULK DELETE CROSS-PAGES (selectAllMode) ──
-
-export async function bulkDeleteAllPages(
-  filters: Record<string, unknown> | undefined,
-  softDelete: boolean,
-): Promise<ActionResponse<{ count: number; softDeleted: boolean }>> {
-  try {
-
-// ── 4. BULK DELETE CROSS-PAGES (selectAllMode) ──
-
-  filters: Record<string, unknown> | undefined,
-  softDelete: boolean,
-): Promise<ActionResponse<{ count: number; softDeleted: boolean }>> {
-  try {
-    const { userId, role } = await requireAdminOrSuperAdmin();
-
-    if (!(await hasPermission(role, PERMISSIONS.PRODUCTS_DELETE))) {
-      return { success: false, error: "Permission requise", code: "FORBIDDEN" };
-    }
-
-    const where = buildWhereFromFilters(filters);
-    const allProducts = await prisma.product.findMany({
-      where: { ...where, isArchived: false },
-      select: { id: true },
-    });
-
-    const ids = allProducts.map((p) => p.id);
-    if (ids.length === 0) {
-      return {
-        success: false,
-        error: "Aucun produit ne correspond aux critères",
-        code: "NO_MATCH",
-      };
-    }
-
-    await verifyBulkLimit(role, ids.length);
-
-    const result = await prisma.$transaction(async (tx) => {
-      if (softDelete) {
-        const updated = await tx.product.updateMany({
-          where: { id: { in: ids } },
-          data: {
-            deletedAt: new Date(),
-            isActive: false,
-            status: "ARCHIVED",
-            updatedBy: userId,
-          },
-        });
-        return { count: updated.count, softDeleted: true as const };
-      }
-      const deleted = await tx.product.deleteMany({
-        where: { id: { in: ids } },
-      });
-      return { count: deleted.count, softDeleted: false as const };
-    });
-
-    revalidatePath("/products");
-    revalidatePath("/admin/products");
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("[bulkDeleteAllPages]", error);
-    return {
-      success: false,
-      error: "Échec de la suppression globale",
-      code: "BULK_DELETE_ALL_ERROR",
-    };
-  }
-}
-
 // ── 3. BULK STATUS CHANGE ──
 
 export async function bulkChangeStatus(

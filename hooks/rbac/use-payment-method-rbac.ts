@@ -6,6 +6,7 @@
 
 import { useMemo } from "react";
 import type { Currency } from "@prisma/client";
+import { PERMISSIONS } from "@/lib/auth/rbac-shared";
 import { useRBAC } from "./use-rbac";
 
 export type PaymentMethod =
@@ -122,7 +123,8 @@ export function usePaymentMethodRBAC(
     if (!level) return false;
     const meetsLevel = level <= config.minRoleLevel;
     const hasPaymentPermission =
-      hasPermission("payments:read") || hasPermission("payments:configure");
+      hasPermission(PERMISSIONS["finance:read:any"]) ||
+      hasPermission(PERMISSIONS["finance:config"]);
     const actionAllowed = config.allowedActions.includes(action);
     return (
       meetsLevel && hasPaymentPermission && actionAllowed && config.isEnabled

@@ -4,12 +4,22 @@
 // Invalidate le cache RBAC au login et logout
 
 import { create } from "zustand";
-import type { Permission } from "@/lib/auth/rbac-shared";
+import type { Permission, Role } from "@/lib/auth/rbac-shared";
 
-// Local RBAC session shape (module does not export RBACSession)
+interface RBACUserData {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+  role: Role;
+}
+
 interface RBACSession {
   isAuthenticated: boolean;
   effectivePermissions: Set<Permission> | null;
+  user: RBACUserData;
+  role: Role;
+  level: number;
 }
 
 interface RBACState {
@@ -19,6 +29,7 @@ interface RBACState {
   // Actions
   setSession: (session: RBACSession | null) => void;
   setLoading: (loading: boolean) => void;
+  invalidateCache: () => void;
 
   // Méthodes de vérification (utilisées par useRBAC)
   hasPermission: (permission: Permission) => boolean;
@@ -32,6 +43,7 @@ export const useRBACStore = create<RBACState>((set, get) => ({
 
   setSession: (session) => set({ session, isLoading: false }),
   setLoading: (isLoading) => set({ isLoading }),
+  invalidateCache: () => set({ session: null }),
 
   hasPermission: (permission: Permission) => {
     const { session } = get();

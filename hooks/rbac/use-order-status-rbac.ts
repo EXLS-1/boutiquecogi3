@@ -6,6 +6,7 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
+import { PERMISSIONS } from "@/lib/auth/rbac-shared";
 import { useRBAC } from "./use-rbac";
 
 export type OrderStatus =
@@ -124,7 +125,7 @@ export function useOrderStatusRBAC(
   const canRefund = useMemo(() => {
     return (
       allowed &&
-      hasPermission("orders:process_refund") &&
+      hasPermission(PERMISSIONS["orders:refund"]) &&
       (status === "delivered" || status === "disputed")
     );
   }, [allowed, hasPermission, status]);

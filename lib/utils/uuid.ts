@@ -1,8 +1,6 @@
 // lib/utils/uuid.ts
 
-import {cn} from "@/lib/utils/cn";
-import {checkSupabaseEnvVars, hasEnvVars, createUrl} from "@/lib/utils/utlis";
-
+import crypto from "node:crypto";
 
 /** Génère un UUID v7 RFC 9562 */
 export function generateUUIDv7(): string {

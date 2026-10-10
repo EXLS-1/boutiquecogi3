@@ -131,23 +131,22 @@ export async function adjustVariantStockInTx(
   if (!variant) throw new Error(`INVENTORY_VARIANT_NOT_FOUND: ${variantId}`);
 
   // ── 1. Upsert de la ligne VariantStock ──
-  let variantStock = await tx.variantStock.findUnique({
-    where: {
-      variantId_warehouseId: {
-        variantId,
-        warehouseId: warehouse ?? undefined,
-      },
-    },
+  // PostgreSQL considère NULL comme distinct dans un UNIQUE : `findUnique`
+  // sur `variantId_warehouseId` ne matche jamais `warehouseId: null`.
+  // On passe par `findFirst`, typé pour `string | null` dans les deux cas.
+  let variantStock = await tx.variantStock.findFirst({
+    where: { variantId, warehouseId: warehouse ?? null },
   });
 
   if (!variantStock) {
     variantStock = await tx.variantStock.create({
       data: {
         variantId,
-        warehouseId: warehouse ?? undefined,
+        // Prisma : champ optionnel nullable → `undefined` (jamais `null`).
+        ...(warehouse ? { warehouseId: warehouse } : {}),
         quantity: 0,
         reserved: 0,
-        updatedBy: userId ?? undefined,
+        ...(userId ? { updatedBy: userId } : {}),
       },
     });
   }
@@ -164,6 +163,8 @@ export async function adjustVariantStockInTx(
   const appliedDelta = target - current;
 
   // ── 2. Écriture conditionnelle (verrou ligne + garde >= 0) ──
+  // Prisma : `updatedBy: string | null` n'accepte pas `undefined` en updateMany
+  // → on ne l'envoie que si un auteur est connu.
   const updated = await tx.variantStock.updateMany({
     where: {
       id: variantStock.id,
@@ -172,7 +173,7 @@ export async function adjustVariantStockInTx(
     data: {
       quantity: { increment: appliedDelta },
       lastMovementAt: new Date(),
-      updatedBy: userId,
+      ...(userId ? { updatedBy: userId } : {}),
     },
   });
 
@@ -199,7 +200,7 @@ export async function adjustVariantStockInTx(
         quantity: Math.max(0, totalQuantity),
         reserved: Math.max(0, totalReserved),
         lastMovementAt: new Date(),
-        updatedBy: userId ?? undefined,
+        ...(userId ? { updatedBy: userId } : {}),
       },
     });
   } else {
@@ -208,7 +209,7 @@ export async function adjustVariantStockInTx(
         productId: variant.productId,
         quantity: Math.max(0, totalQuantity),
         reserved: Math.max(0, totalReserved),
-        updatedBy: userId ?? undefined,
+        ...(userId ? { updatedBy: userId } : {}),
       },
     });
   }
@@ -222,21 +223,22 @@ export async function adjustVariantStockInTx(
       quantity: appliedDelta,
       delta: appliedDelta,
       reason: input.notes ?? reason,
-      referenceId: input.referenceId ?? undefined,
-      userId: userId ?? undefined,
+      ...(input.referenceId ? { referenceId: input.referenceId } : {}),
+      ...(userId ? { userId } : {}),
     },
   });
 
   // ── 4. InventoryTransaction (ledger) ──
+  // Prisma : les champs optionnels n'acceptent que `string` → omission si absent.
   const transaction = await tx.inventoryTransaction.create({
     data: {
       productId: variant.productId,
       variantId,
       quantity: appliedDelta,
       reason: txType,
-      referenceId: input.referenceId ?? undefined,
-      warehouseId: warehouse ?? undefined,
-      performedBy: userId ?? undefined,
+      ...(input.referenceId ? { referenceId: input.referenceId } : {}),
+      ...(warehouse ? { warehouseId: warehouse } : {}),
+      ...(userId ? { performedBy: userId } : {}),
     },
   });
 
@@ -250,12 +252,12 @@ export async function adjustVariantStockInTx(
       variantId,
       available: target,
       reserved: variantStock.reserved,
-      warehouseId: warehouse ?? undefined,
+      ...(warehouse ? { warehouseId: warehouse } : {}),
     },
     update: {
       available: target,
       reserved: variantStock.reserved,
-      warehouseId: warehouse ?? undefined,
+      ...(warehouse ? { warehouseId: warehouse } : {}),
     },
   });
 

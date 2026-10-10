@@ -118,15 +118,25 @@ export function mapAuditLog(row: AuditLogRow): AuditLogDto {
   return {
     id: row.id,
     action: row.action,
-    userId: row.userId,
+    userId: row.userId ?? "",
     actorName: row.user?.name ?? null,
     actorEmail: row.user?.email ?? null,
-    targetId: row.targetId,
+    targetId: row.targetId ?? null,
     targetType: row.targetType ?? null,
-    details: row.details,
+    details: toDetailsString(row.details),
     roleLevel: row.roleLevel ?? 0,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+function toDetailsString(details: unknown): string | null {
+  if (details === null || details === undefined) return null;
+  if (typeof details === "string") return details;
+  try {
+    return JSON.stringify(details);
+  } catch {
+    return String(details);
+  }
 }
 
 export function mapApprovalRequest(

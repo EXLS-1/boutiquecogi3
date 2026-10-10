@@ -11,6 +11,7 @@
 
 import { prisma } from "@/lib/prisma";
 import {
+  countActiveProducts,
   countOutOfStockProducts,
   groupStocksForKpis,
   readAvailabilityProjection,

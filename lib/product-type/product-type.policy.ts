@@ -70,7 +70,7 @@ function decide(
 
   // 1. Permission globale RBAC
   const hasPermission =
-    actor.permissions && actor.permissions.has(requiredPermission);
+    !!actor.permissions && actor.permissions.has(requiredPermission);
   if (!hasPermission) {
     reasons.push(
       `Permission requise manquante : ${requiredPermission ?? "NON_DEFINIE"}`
@@ -78,14 +78,22 @@ function decide(
   }
 
   // 2. Niveau hiérarchique (minRoleLevel : plus élevé = plus de privilèges)
-  if (actor.roleLevel < rules.minRoleLevel) {
+  const minRoleLevel = Number(rules.minRoleLevel ?? 0);
+  if (actor.roleLevel < minRoleLevel) {
     reasons.push(
-      `Niveau de rôle insuffisant pour l'opération ${operation} : ${actor.roleLevel} < ${rules.minRoleLevel}`
+      `Niveau de rôle insuffisant pour l'opération ${operation} : ${actor.roleLevel} < ${minRoleLevel}`
     );
   }
 
   // 3. Rôle explicite (whoCan* : liste blanche des rôles autorisés)
-  const roleAllowed = Array.isArray(rules.whoCan) && rules.whoCan.includes(actor.role);
+  const whoCan: unknown = rules.whoCan;
+  const roleAllowed =
+    (Array.isArray(whoCan) && (whoCan as readonly unknown[]).includes(actor.role)) ||
+    (typeof whoCan === "string" &&
+      whoCan
+        .split(",")
+        .map((r) => r.trim())
+        .includes(String(actor.role)));
   if (!roleAllowed) {
     reasons.push(
       `Rôle "${actor.role}" non autorisé pour l'opération ${operation} sur le type "${config.type}"`

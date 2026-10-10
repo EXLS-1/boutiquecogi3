@@ -5,7 +5,8 @@
 // =============================================================================
 
 import * as cheerio from "cheerio";
-import { Workbook, Xlsx, Row, Cell } from "exceljs";
+import { Workbook } from "exceljs";
+import type { Row } from "exceljs";
 import { Prisma } from "@prisma/client";
 import {
   BCC_URL,
@@ -149,17 +150,17 @@ async function parsePdf(buffer: Buffer): Promise<ExchangeRate | null> {
 async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
     const workbook = new Workbook();
-    // Use proper Xlsx type for the workbook.xlsx property
-    const loadedWorkbook = await (workbook.xlsx as Xlsx).load(buffer);
+    // `workbook.xlsx.load` is typed loosely across exceljs versions; await it directly.
+    const loadedWorkbook = await workbook.xlsx.load(buffer);
     const sheet = loadedWorkbook.worksheets[0];
     if (!sheet) return null;
 
     const rows: string[] = [];
     sheet.eachRow((row: Row) => {
-      rows.push(row.values
-        .slice(1)
-        .map((cell: Cell | undefined) => (cell ?? "").toString())
-        .join(" "));
+      // `row.values` is `CellValue | CellValue[]`-ish and 1-indexed; guard everything.
+      const values: unknown = row.values;
+      const cells: unknown[] = Array.isArray(values) ? (values as unknown[]).slice(1) : [];
+      rows.push(cells.map((cell) => cellToString(cell)).join(" "));
     });
 
     for (const line of rows) {
@@ -171,6 +172,30 @@ async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
     return null;
   } catch {
     return null;
+  }
+}
+
+function cellToString(cell: unknown): string {
+  if (cell === null || cell === undefined) return "";
+  if (typeof cell === "string" || typeof cell === "number" || typeof cell === "boolean") {
+    return String(cell);
+  }
+  if (typeof cell === "object") {
+    const obj = cell as Record<string, unknown>;
+    // exceljs rich-text / hyperlink / formula shapes
+    if (typeof obj.result === "string" || typeof obj.result === "number") return String(obj.result);
+    if (typeof obj.text === "string") return obj.text;
+    if (Array.isArray(obj.richText)) {
+      return obj.richText
+        .map((part) => (typeof (part as Record<string, unknown>).text === "string" ? String((part as Record<string, unknown>).text) : ""))
+        .join("");
+    }
+    if (obj.value !== undefined) return cellToString(obj.value);
+  }
+  try {
+    return String(cell);
+  } catch {
+    return "";
   }
 }
 

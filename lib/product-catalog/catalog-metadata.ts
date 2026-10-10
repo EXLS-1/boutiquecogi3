@@ -47,6 +47,11 @@ interface ParentImages {
   };
 }
 
+function inheritedOpenGraphImages(parentImages: ParentImages) {
+  const images = parentImages.openGraph?.images;
+  return Array.isArray(images) ? images : images ? [images] : [];
+}
+
 /**
  * Construit les métadonnées pour la page index du catalogue.
  */
@@ -87,7 +92,7 @@ export async function buildCatalogIndexMetadata(
           height: OG_IMAGE_DIMENSIONS.height,
           alt: "Catalogue Boutique COGI",
         },
-        ...(parentImages.openGraph?.images ?? []),
+        ...inheritedOpenGraphImages(parentImages),
       ],
     },
     twitter: {
@@ -147,7 +152,7 @@ export function buildCategoryMetadata(
           height: OG_IMAGE_DIMENSIONS.height,
           alt: `Collection ${categoryName} - Boutique COGI`,
         },
-        ...(parentImages.openGraph?.images ?? []),
+        ...inheritedOpenGraphImages(parentImages),
       ],
     },
     twitter: {

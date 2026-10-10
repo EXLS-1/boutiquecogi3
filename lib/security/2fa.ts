@@ -29,11 +29,9 @@ export async function isSuperAdminUser(userId: string): Promise<boolean> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        // role relation is handled differently in this Prisma schema
-      },
+      select: { role: true },
     });
-    return user?.role?.role === "SUPER_ADMIN";
+    return user?.role === "SUPER_ADMIN";
   } catch {
     return false;
   }

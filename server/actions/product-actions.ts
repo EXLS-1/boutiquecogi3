@@ -3,12 +3,77 @@
 'use server'
 
 import { ProductService } from '@/server/services/product-service';
-import { createProductSchema } from '@/lib/validations/product';
+import { createProductSchema } from '@/lib/validations/product.schema';
 import { revalidatePath } from 'next/cache';
 import { AuthorizationError } from '@/server/core/secure-prisma';
 import { generateUUIDv7 } from '@/lib/utils/uuid';
 import { generateSlug } from '@/lib/utils/slug';
 import { generateSKU } from '@/lib/utils/sku'
+
+/** Coerce a FormData entry to trimmed string (File entries are rejected). */
+function formText(value: FormDataEntryValue | undefined): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/** Coerce a FormData entry to a finite number, or undefined when absent/invalid. */
+function formNumber(value: FormDataEntryValue | undefined): number | undefined {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/** Parse `images` FormData: JSON array of objects, CSV of URLs, or repeated keys. */
+function parseImages(formData: FormData): { url: string }[] | undefined {
+    const values = formData.getAll('images');
+    if (values.length === 0) return undefined;
+    const collected: { url: string }[] = [];
+    for (const value of values) {
+        if (typeof value !== 'string') continue;
+        const trimmed = value.trim();
+        if (!trimmed) continue;
+        if (trimmed.startsWith('[')) {
+            try {
+                const parsed: unknown = JSON.parse(trimmed);
+                if (Array.isArray(parsed)) {
+                    for (const item of parsed) {
+                        if (typeof item === 'string' && item.trim()) {
+                            collected.push({ url: item.trim() });
+                        } else if (
+                            typeof item === 'object' && item !== null &&
+                            typeof (item as { url?: unknown }).url === 'string' &&
+                            ((item as { url: string }).url.trim())
+                        ) {
+                            collected.push({ url: (item as { url: string }).url.trim() });
+                        }
+                    }
+                }
+            } catch {
+                collected.push({ url: trimmed });
+            }
+        } else {
+            for (const part of trimmed.split(',')) {
+                const url = part.trim();
+                if (url) collected.push({ url });
+            }
+        }
+    }
+    return collected.length > 0 ? collected : undefined;
+}
+
+/** Normalize Zod flatten() fieldErrors (values may be undefined in Zod v4). */
+function toFieldErrors(
+    fieldErrors: Record<string, string[] | undefined>,
+): Record<string, string[]> {
+    const normalized: Record<string, string[]> = {};
+    for (const [key, messages] of Object.entries(fieldErrors)) {
+        if (messages && messages.length > 0) normalized[key] = messages;
+    }
+    return normalized;
+}
 
 /**
  * Parse `categoryIds` depuis FormData. Formats tolérés :
@@ -48,17 +113,22 @@ type ActionResult<T = unknown> =
 
 export async function createProductAction(formData: FormData): Promise<ActionResult> {
     try {
-        const raw = Object.fromEntries(formData)
-
-        // Validation Zod (schéma client — peut encore contenir price/stock)
+        // Validation Zod — le schéma canonique attend un objet `price` imbriqué.
+        const basePrice = formNumber(formData.get('price')) ?? formNumber(formData.get('basePrice'));
         const parsed = createProductSchema.safeParse({
-            name: raw.name,
-            price: Number(raw.price),
-            description: raw.description || undefined,
-            categoryId: raw.categoryId || undefined,
-            categoryIds: parseCategoryIds(formData),
-            images: raw.images ? JSON.parse(raw.images as string) : [],
-            stock: raw.stock ? Number(raw.stock) : 0,
+            name: formText(formData.get('name')),
+            description: formText(formData.get('description')),
+            shortDescription: formText(formData.get('shortDescription')),
+            price: {
+                basePrice,
+                currency: formText(formData.get('currency')) ?? 'CDF',
+            },
+            productTypeId: formText(formData.get('productTypeId')),
+            categoryIds: parseCategoryIds(formData) ?? [],
+            status: formText(formData.get('status')),
+            tags: formData.getAll('tags').filter((t): t is string => typeof t === 'string'),
+            images: parseImages(formData) ?? [],
+            stock: formNumber(formData.get('stock')) ?? 0,
         })
 
         if (!parsed.success) {
@@ -66,7 +136,7 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
                 success: false,
                 error: 'Données invalides',
                 code: 'VALIDATION_ERROR',
-                fieldErrors: parsed.error.flatten().fieldErrors,
+                fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors),
             }
         }
 
@@ -74,15 +144,16 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
         const productData = {
             id: generateUUIDv7(),
             name: parsed.data.name,
-            slug: generateSlug(parsed.data.name),
+            slug: parsed.data.slug ?? generateSlug(parsed.data.name),
             sku: generateSKU(parsed.data.name),
             description: parsed.data.description,
-            basePrice: parsed.data.price,        // ← Prisma attend basePrice
-            status: 'PUBLISHED' as const,           // enum ProductStatus (ACTIVE ≡ PUBLISHED — contrat phase 2)
-            categoryId: parsed.data.categoryIds?.[0] ?? parsed.data.categoryId ?? null,
+            shortDescription: parsed.data.shortDescription,
+            basePrice: parsed.data.price.basePrice, // ← Prisma attend basePrice
+            status: 'PUBLISHED' as const,           // enum ProductStatus (contrat phase 2)
+            categoryId: parsed.data.categoryIds?.[0] ?? null,
             categoryIds: parsed.data.categoryIds ?? null,
-            images: parsed.data.images,
-            // stock ignoré : n'existe pas dans schema.prisma
+            images: parsed.data.images?.map((img) => img.url) ?? [],
+            stock: parsed.data.stock,
         }
 
         const product = await ProductService.create(productData)
@@ -112,17 +183,27 @@ export async function updateProductAction(
     formData: FormData
 ): Promise<ActionResult> {
     try {
-        const raw = Object.fromEntries(formData)
-        const data: Record<string, unknown> = {}
+        const data: {
+            name?: string;
+            basePrice?: number;
+            description?: string | null;
+            categoryId?: string | null;
+            categoryIds?: string[] | null;
+            images?: string[];
+        } = {}
 
-        if (raw.name) data.name = raw.name
-        if (raw.price) data.basePrice = Number(raw.price) // ← mapping price → basePrice
-        if (raw.description) data.description = raw.description
-        if (raw.categoryId) data.categoryId = raw.categoryId
-        if (raw.categoryIds) data.categoryIds = parseCategoryIds(formData)
-        if (raw.images) data.images = JSON.parse(raw.images as string)
-        
-            // stock ignoré : n'existe pas dans schema.prisma
+        const name = formText(formData.get('name'));
+        if (name !== undefined) data.name = name;
+        const basePrice = formNumber(formData.get('price')) ?? formNumber(formData.get('basePrice'));
+        if (basePrice !== undefined) data.basePrice = basePrice; // ← mapping price → basePrice
+        const description = formText(formData.get('description'));
+        if (description !== undefined) data.description = description;
+        const categoryId = formText(formData.get('categoryId'));
+        if (categoryId !== undefined) data.categoryId = categoryId;
+        const categoryIds = parseCategoryIds(formData);
+        if (categoryIds !== undefined) data.categoryIds = categoryIds;
+        const images = parseImages(formData);
+        if (images !== undefined) data.images = images.map((img) => img.url);
 
         const product = await ProductService.update(productId, data)
         revalidatePath('/products')

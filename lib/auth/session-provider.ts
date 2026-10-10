@@ -54,32 +54,55 @@ export async function getCurrentUserFromProvider(): Promise<
   | null
 > {
   const session = await getSessionFromProvider();
-  if (!session?.user || !isBetterAuthUser(session.user)) return null;
+  if (!session) return null;
+  const rawUser: unknown = session.user;
+  if (!rawUser || !isBetterAuthUser(rawUser)) return null;
 
-  const u = session.user;
+  const u: BetterAuthUserLike = rawUser;
+
+  const metaRole: unknown =
+    u.metadata !== null &&
+    u.metadata !== undefined &&
+    typeof u.metadata === "object"
+      ? (u.metadata as Record<string, unknown>).role
+      : undefined;
 
   const roleStr =
-    u.role != null && typeof u.role === "string"
+    typeof u.role === "string" && u.role.length > 0
       ? u.role
-      : u.metadata?.role != null
-        ? String(u.metadata.role)
+      : typeof metaRole === "string" && metaRole.length > 0
+        ? metaRole
         : "GUEST";
 
   const role: Role = normalizeRole(roleStr);
 
+  // email may be null/undefined on some providers — fall back to empty string
+  // to satisfy AuthenticatedUser.email: string.
+  const email = typeof u.email === "string" ? u.email : "";
+
   const user: AuthenticatedUser = {
     id: u.id,
-    email: u.email ?? "",
+    email,
     name: u.name ?? null,
     role,
     level: getRoleLevel(role),
     image: u.image ?? null,
-    emailVerified: Boolean(u.emailVerified),
+    emailVerified: coerceEmailVerified(u.emailVerified),
     createdAt: toDate(u.createdAt),
     updatedAt: toDate(u.updatedAt),
   };
 
   return Object.assign(user, { session });
+}
+
+function coerceEmailVerified(value: BetterAuthUserLike["emailVerified"]): boolean {
+  if (typeof value === "boolean") return value;
+  if (value instanceof Date) return !Number.isNaN(value.getTime());
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "true" || v === "1" || v === "yes";
+  }
+  return false;
 }
 
 /**

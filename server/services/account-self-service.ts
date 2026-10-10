@@ -219,7 +219,6 @@ export const AccountSelfService = {
               userId: ctx.userId,
               userEmail: user.email,
               userName: user.name,
-              deletedUser: ctx.userId,
               deletedBy: ctx.userId,
               deletedByRole: ctx.roleName,
               userSnapshot,
@@ -233,16 +232,15 @@ export const AccountSelfService = {
             },
           });
 
-          // 5b. Anonymiser le user (soft-delete)
+          // 5b. Anonymiser le user (soft-delete via `status = DELETED` —
+          // le modele User n'a ni `isDeleted`, ni `deletedAt`, ni `deletedBy`).
           await tx.user.update({
             where: { id: ctx.userId },
             data: {
               email: anonymizedEmail,
               name: anonymizedName,
               image: null,
-              isDeleted: true,
-              deletedAt: new Date(),
-              deletedBy: ctx.userId,
+              status: "DELETED",
             },
           });
 
@@ -251,15 +249,16 @@ export const AccountSelfService = {
             where: { userId: ctx.userId },
           });
 
-          // 5d. Nettoyer les tokens d'authentification
+          // 5d. Nettoyer les tokens d'authentification (noms camelCase Prisma ;
+          // les colonnes snake_case sont mappees via @map dans le schema).
           for (const account of user.accounts) {
             await tx.account.update({
               where: { id: account.id },
               data: {
                 password: null,
-                refresh_token: null,
-                access_token: null,
-                id_token: null,
+                refreshToken: null,
+                accessToken: null,
+                idToken: null,
               },
             });
           }
@@ -319,7 +318,7 @@ export const AccountSelfService = {
         orders: {
           where: {
             status: {
-              in: ["PENDING", "PROCESSING", "SHIPPED"],
+              in: ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED"],
             },
           },
           take: 1,
@@ -331,7 +330,9 @@ export const AccountSelfService = {
       return { canDelete: false, reasons: ["Utilisateur non trouvÃ©"] };
     }
 
-    if (user.isDeleted) {
+    // Le modele User n'a pas de colonne `isDeleted` : un compte supprime est
+    // marque `status = DELETED` (voir deleteMyAccount).
+    if (user.status === "DELETED") {
       reasons.push("Ce compte est dÃ©jÃ  supprimÃ©");
       return { canDelete: false, reasons };
     }

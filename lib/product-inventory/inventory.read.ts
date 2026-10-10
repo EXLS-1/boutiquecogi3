@@ -13,8 +13,8 @@ export async function getVariantAvailability(
   variantId: string,
   warehouseId?: string | null
 ): Promise<InventoryAvailability | null> {
-  const vs = await prisma.variantStock.findUnique({
-    where: { variantId_warehouseId: { variantId, warehouseId: warehouseId ?? null } },
+  const vs = await prisma.variantStock.findFirst({
+    where: { variantId, warehouseId: warehouseId ?? null },
   });
 
   if (!vs) return null;

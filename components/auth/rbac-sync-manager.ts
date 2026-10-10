@@ -91,16 +91,20 @@ export function RBACSyncManager() {
         }
 
         const rbacSession = {
-          user: session.user,
+          user: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            image: session.user.image,
+            role: normalizedRole,
+          },
           role: normalizedRole,
           level,
           effectivePermissions,
-          isAuthenticated: true as const,
+          isAuthenticated: true,
         };
 
-        // Cast intermédiaire via unknown pour respecter le contrat du store
-        type StoreSession = Parameters<typeof setSession>[0];
-        setSession(rbacSession as unknown as StoreSession);
+        setSession(rbacSession);
       } else {
         // Nettoyage du store si déconnecté
         setSession(null);
@@ -110,4 +114,3 @@ export function RBACSyncManager() {
 
   return null;
 }
-

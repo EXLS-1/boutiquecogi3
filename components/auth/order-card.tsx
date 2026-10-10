@@ -3,15 +3,28 @@
 import { formatDateFR } from "@/lib/utils/date";
 import Price from "@/components/product-price/price";
 import { formatOrderShortId } from "@/lib/orders/format-order-id";
+import type { Currency } from "@prisma/client";
 
 import type { OrderCardData } from "@/types/order";
 
 interface OrderCardProps {
   order: OrderCardData;
+  currency?: Currency;
+}
+
+/**
+ * Convertit un montant `OrderCardData.totalAmount` (euros/dollars en unités
+ * majeures venant de Prisma/Decimal sérialisé) en centimes pour `Price`.
+ * Fallback robuste : NaN / négatif / infini → 0 centime.
+ */
+function toCents(amount: unknown): number {
+  const value = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.round(value * 100);
 }
 
 export function OrderCard({
-  order,
+  order, currency = "USD",
 }: OrderCardProps) {
   const shippingAddress = [
     order.address,
@@ -20,6 +33,9 @@ export function OrderCard({
   ]
     .filter(Boolean)
     .join(", ");
+
+  const itemsCount = Array.isArray(order.orderItems) ? order.orderItems.length : 0;
+  const totalCents = toCents(order.totalAmount);
 
   return (
     <article className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-turquoise-400">
@@ -36,16 +52,13 @@ export function OrderCard({
           </div>
 
           <p className="mt-2 text-sm font-medium text-slate-700">
-            {order.orderItems.length} article(s) commandé(s)
+            {itemsCount} article(s) commandé(s)
           </p>
         </div>
 
         <div className="flex flex-col justify-between gap-2 sm:items-end">
-          <p className="text-xl font-black text-slate-900">
-            {Price(order.totalAmount)}
-          </p>
           <div className="text-xl font-black text-slate-900">
-            <Price amount={order.totalAmount} currency="USD" />
+            <Price amount={totalCents} currency={currency} />
           </div>
 
           <span

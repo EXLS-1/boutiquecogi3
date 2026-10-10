@@ -4,14 +4,14 @@
 import { useCallback, useMemo } from "react";
 import { useRBACStore } from "@/store/use-rbac-store";
 import {
-  Permission,
-  Role,
+  type Permission,
+  type Role,
   getRoleLevel,
   normalizeRole,
   getRoleConfig,
   isAdminOrSuperAdmin,
   isStaffOrAbove,
-  type RoleConfig,
+  type RoleLevelConfigEntry,
 } from "@/lib/auth/rbac-shared";
 
 type RoleLevel = ReturnType<typeof getRoleLevel>;
@@ -47,7 +47,7 @@ interface UseRBACReturn {
   user: UserSessionData | null;
 
   // Métadonnées d'affichage UI & Rôles
-  roleConfig: RoleConfig;
+  roleConfig: RoleLevelConfigEntry;
   isAdmin: boolean;
   isStaff: boolean;
 
@@ -79,19 +79,12 @@ export function useRBAC(): UseRBACReturn {
   const store = useRBACStore();
   const { session, isLoading } = store;
 
-  // Extraction sécurisée de l'utilisateur et du rôle
-  const user = useMemo(() => {
-    return ((session as unknown as { user?: UserSessionData })?.user ?? null);
-  }, [session]);
-
-  const rawRole = (session as unknown as { role?: Role; user?: { role?: Role } } | null)?.role ??
-    user?.role ?? null;
-
-  const level =
-    (session as unknown as { level?: RoleLevel; user?: { level?: RoleLevel } } | null)?.level ??
-    (session as unknown as { user?: { level?: RoleLevel } } | null)?.user?.level ?? null;
+  const user = session?.user ?? null;
+  const rawRole = session?.role ?? user?.role ?? null;
 
   const normalizedRole = useMemo(() => normalizeRole(rawRole), [rawRole]);
+  const role = rawRole ? normalizedRole : null;
+  const level = session?.level ?? (role ? getRoleLevel(role) : null);
   const roleConfig = useMemo(() => getRoleConfig(normalizedRole), [normalizedRole]);
   const isAdmin = useMemo(() => isAdminOrSuperAdmin(normalizedRole), [normalizedRole]);
   const isStaff = useMemo(() => isStaffOrAbove(normalizedRole), [normalizedRole]);
@@ -208,7 +201,7 @@ export function useRBAC(): UseRBACReturn {
   }, [session]);
 
   return useMemo(() => ({
-    role: rawRole,
+    role,
     level,
     permissions,
     isLoading,
@@ -234,7 +227,7 @@ export function useRBAC(): UseRBACReturn {
     canAssignRole,
     canAccess,
   }), [
-    rawRole, level, permissions, isLoading, session?.isAuthenticated, user,
+    role, level, permissions, isLoading, session?.isAuthenticated, user,
     roleConfig, isAdmin, isStaff,
     hasPermission, hasAnyPermission, hasAllPermissions,
     isAboveLevel, isAtLeastLevel, isAtMostLevel, isExactlyLevel, isBelowLevel,

@@ -7,7 +7,30 @@
 
 import { create } from "zustand";
 
-export interface ProductListState {
+export interface ProductListFilters {
+  // Pagination
+  page: number;m
+  limit: number;
+  total: number;
+  totalPages: number;
+
+  // Filtres
+  search: string;
+  status: string[];
+  productTypeId: string | null;
+  categoryId: string | null;
+  sortBy: "createdAt" | "name" | "status" | "sku" | "publishedAt";
+  sortOrder: "asc" | "desc";
+
+  // Sélection
+  selectedIds: Set<string>;
+
+  // Chargement
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface ProductListState extends ProductListFilters {
   // Pagination
   page: number;
   limit: number;
@@ -46,7 +69,7 @@ export interface ProductListState {
   reset: () => void;
 }
 
-const initialState: Omit<ProductListState, keyof ProductListState & "actions"> = {
+const initialState: ProductListFilters = {
   page: 1,
   limit: 25,
   total: 0,
@@ -91,5 +114,7 @@ export const useProductListStore = create<ProductListState>((set) => ({
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),
 
-  reset: () => set(initialState),
+  // `selectedIds` est un `Set` mutable : on le re-crée à chaque reset pour ne
+  // jamais partager la référence de `initialState` entre les resets.
+  reset: () => set({ ...initialState, selectedIds: new Set() }),
 }));

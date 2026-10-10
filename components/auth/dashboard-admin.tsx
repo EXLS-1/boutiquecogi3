@@ -5,17 +5,31 @@
 // Renders the link to the admin dashboard if the current user is an Admin or Super Admin.
 
 import Link from "next/link";
-import { getServerSession } from "@/lib/auth/server";
-import { hasPermission } from "@/lib/auth/rbac/constants";
-import { resolveAuthContext, isAdminOrSuperAdmin } from "@/lib/auth/server";
+import {
+  resolveAuthContext,
+  isAdminOrSuperAdmin,
+  normalizeRole,
+} from "@/lib/auth/server";
+import { PERMISSIONS } from "@/lib/auth/rbac-shared";
 
 export default async function AdminDashboard() {
-  const session = await getServerSession();
   const context = await resolveAuthContext();
-  
-  // Utilisation de la fonction pure
-  const canSeeDashboard = hasPermission(session?.user?.role, "admin:dashboard");
-  const canSeeDashboard = context ? isAdminOrSuperAdmin(context.user.role) : false;
+
+  // Unauthenticated → nothing to render (guarded route handles redirects elsewhere).
+  if (!context) {
+    return null;
+  }
+
+  // Normalise le rôle (robuste aux valeurs null/unknown venues de la session).
+  const role = normalizeRole(context.user?.role);
+
+  // Logique robuste : accès si ADMIN/SUPER_ADMIN OU permission dashboard explicite.
+  // `context.permissions` est un Set<PermissionCode> déjà résolu côté serveur.
+  const hasDashboardPermission = context.permissions.has(
+    PERMISSIONS["analytics:dashboard:view"],
+  );
+  const canSeeDashboard =
+    isAdminOrSuperAdmin(role) || hasDashboardPermission;
 
   if (!canSeeDashboard) {
     return null;
@@ -23,7 +37,6 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      {canSeeDashboard && <Link href="/admin">Dashboard Admin</Link>}
       <Link href="/admin">Dashboard Admin</Link>
     </div>
   );

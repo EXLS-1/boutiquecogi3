@@ -73,7 +73,8 @@ function hasPermission(
   level: RBACLevel,
   permission: keyof typeof INVENTORY_PERMISSIONS
 ): boolean {
-  return INVENTORY_PERMISSIONS[permission].includes(level);
+  const allowed: ReadonlyArray<RBACLevel> = INVENTORY_PERMISSIONS[permission];
+  return allowed.includes(level);
 }
 export class InventoryError extends Error {
   constructor(
@@ -154,7 +155,7 @@ export async function calculateRealStock(
     const [variant, aggregate] = await Promise.all([
       prisma.productVariant.findUnique({
         where: { id: variantId },
-        select: { id: true, sku: true, productId: true, product: { select: { id: true, stock: { select: { id: true, quantity: true, reserved: true } } } } },
+        select: { id: true, sku: true, productId: true, variantStocks: { select: { quantity: true } } },
       }),
       prisma.inventoryTransaction.aggregate({
         where: { variantId: variantId },
@@ -172,7 +173,7 @@ export async function calculateRealStock(
     }
 
     const ledgerTotal = aggregate._sum?.quantity ?? 0;
-    const snapshot = variant.product?.stock?.quantity ?? 0;
+    const snapshot = variant.variantStocks.reduce((s, r) => s + r.quantity, 0);
     const discrepancy = ledgerTotal - snapshot;
     const isReconciled = discrepancy === 0;
 
@@ -664,16 +665,14 @@ export async function reserveStock(
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Check current stock with reservation awareness
+      // ProductVariant n'a ni colonne `stock` ni relation `reservations` :
+      // le physique vient de VariantStock, le réservé de StockReservation.
       const variant = await tx.productVariant.findUnique({
         where: { id: variantId },
         select: {
           id: true,
-          stock: true,
           sku: true,
-          reservations: {
-            where: { status: "ACTIVE", expiresAt: { gt: new Date() } },
-            select: { quantity: true },
-          },
+          variantStocks: { select: { quantity: true } },
         },
       });
 
@@ -685,10 +684,23 @@ export async function reserveStock(
         );
       }
 
-      // Safe reduction — reservations is always included above; no `as any` cast needed
-      const reservations = variant.reservations ?? [];
-      const reservedQuantity = reservations.reduce((sum, r) => sum + r.quantity, 0);
-      const availableStock = variant.stock - reservedQuantity;
+      // Physique = somme VariantStock ; réservé = réservations actives non expirées.
+      const variantStocks: ReadonlyArray<{ quantity: number }> =
+        variant.variantStocks ?? [];
+      const physicalStock = variantStocks.reduce(
+        (sum: number, s: { quantity: number }) => sum + s.quantity,
+        0
+      );
+      const activeReservations = await tx.stockReservation.aggregate({
+        where: {
+          variantId,
+          status: "ACTIVE",
+          expiresAt: { gt: new Date() },
+        },
+        _sum: { quantity: true },
+      });
+      const reservedQuantity = activeReservations._sum.quantity ?? 0;
+      const availableStock = physicalStock - reservedQuantity;
 
       if (availableStock < quantity) {
         throw new InventoryError(
@@ -789,16 +801,26 @@ export async function releaseStock(
 
       // ── Restore reserved stock back to the Stock row ──
       if (reservation.variantId) {
-        const variantStock = await tx.variantStock.findUnique({
-          where: { variantId_warehouseId: { variantId: reservation.variantId, warehouseId: null } },
-          select: { id: true, quantity: true, reserved: true },
+        const variantStock = await tx.variantStock.findFirst({
+          where: {
+            variantId: reservation.variantId,
+            warehouseId: null,
+          },
+          select: { id: true, quantity: true, reserved: true, variantId: true },
         });
 
-        // Also update the canonical 1:1 Stock row (if exists) for consistency with legacy callers
-        const stockRow = await tx.stock.findFirst({
-          where: { productId: variantStock?.variant?.productId ?? undefined },
-          select: { id: true, quantity: true },
+        // Stock est 1:1 avec Product : on résout le productId via la variante.
+        const variantRow = await tx.productVariant.findUnique({
+          where: { id: reservation.variantId },
+          select: { productId: true },
         });
+        // Also update the canonical 1:1 Stock row (if exists) for consistency with legacy callers
+        const stockRow = variantRow
+          ? await tx.stock.findFirst({
+              where: { productId: variantRow.productId },
+              select: { id: true, quantity: true },
+            })
+          : null;
 
         if (variantStock) {
           await tx.variantStock.update({

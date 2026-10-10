@@ -33,9 +33,36 @@ function getErrorCode(error: unknown): string {
   return "INTERNAL_ERROR";
 }
 
+function parseConfirmationValue(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === "true" ||
+    normalized === "1" ||
+    normalized === "on" ||
+    normalized === "yes"
+  );
+}
+
+function formEntryToString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Erreur serveur inattendue";
+}
+
+// ─── fieldErrors guard (Zod flatten() may yield undefined values) ───
+
+function toFieldErrors(
+  fieldErrors: Record<string, string[] | undefined>
+): Record<string, string[]> {
+  const normalized: Record<string, string[]> = {};
+  for (const [key, messages] of Object.entries(fieldErrors)) {
+    if (messages && messages.length > 0) normalized[key] = messages;
+  }
+  return normalized;
 }
 
 // ─── Actions ────────────────────────────────
@@ -50,9 +77,9 @@ export async function deleteMyAccountAction(
   try {
     const raw = Object.fromEntries(formData);
     const parsed = selfDeleteAccountSchema.safeParse({
-      reason: raw.reason,
-      password: raw.password,
-      confirmation: raw.confirmation === "true" || raw.confirmation === true,
+      reason: formEntryToString(raw.reason),
+      password: formEntryToString(raw.password),
+      confirmation: parseConfirmationValue(raw.confirmation),
     });
 
     if (!parsed.success) {
