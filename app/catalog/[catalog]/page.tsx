@@ -34,6 +34,11 @@ import {
   type SortOption,
   type CategoryPageProps,
 } from "@/lib/product-catalog/catalog-page-types";
+import {
+  CATALOG_OPTIONS,
+  type CatalogOption,
+  type SortableField,
+} from "@/lib/product-catalog/catalog-types";
 import { CATALOG_PAGE_SIZE } from "@/lib/product-catalog/catalog-constants";
 
 export const revalidate = 300; // ISR 5 minutes
@@ -41,6 +46,18 @@ export const revalidate = 300; // ISR 5 minutes
 // ─── Validation ─────────────────────────────────────────────────────────────
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isSortOption(value: string): value is SortOption {
+  return VALID_SORT_OPTIONS.some((option) => option === value);
+}
+
+function isCatalogOption(value: string): value is CatalogOption {
+  return CATALOG_OPTIONS.some((option) => option === value);
+}
 
 // ─── Métadonnées Dynamiques ─────────────────────────────────────────────────
 
@@ -79,23 +96,45 @@ export default async function CatalogCategoryPage({
 
   // Résolution des searchParams
   const resolvedSearchParams = searchParams ? await searchParams : {};
-  const page = Math.max(
-    1,
-    parseInt(resolvedSearchParams.page ?? "1", 10) || 1
+  const pageValue = Number.parseInt(
+    firstSearchParam(resolvedSearchParams.page) ?? "1",
+    10,
   );
-  const rawSort = resolvedSearchParams.sort ?? "newest";
-  const sortBy: SortOption = VALID_SORT_OPTIONS.includes(rawSort as SortOption)
-    ? (rawSort as SortOption)
-    : "newest";
+  const page = Number.isSafeInteger(pageValue) && pageValue > 0 ? pageValue : 1;
+  const rawSort = firstSearchParam(resolvedSearchParams.sort) ?? "newest";
+  const sortOption: SortOption = isSortOption(rawSort) ? rawSort : "newest";
+  // Mapping robuste option UI → champ triable Prisma (jamais de cast aveugle).
+  const SORT_FIELD_MAP: Record<SortOption, SortableField> = {
+    newest: "createdAt",
+    "price-asc": "basePrice",
+    "price-desc": "basePrice",
+    promoted: "createdAt",
+    "name-asc": "name",
+    "name-desc": "name",
+  };
+  const SORT_ORDER_MAP: Record<SortOption, "asc" | "desc"> = {
+    newest: "desc",
+    "price-asc": "asc",
+    "price-desc": "desc",
+    promoted: "desc",
+    "name-asc": "asc",
+    "name-desc": "desc",
+  };
+  const sortBy: SortableField = SORT_FIELD_MAP[sortOption];
+  const sortOrder: "asc" | "desc" = SORT_ORDER_MAP[sortOption];
 
-  // Récupération des données
-  const rawCatalogOption = resolvedSearchParams.catalogOption ?? undefined;
+  // Récupération des données — `catalogOption` validée contre le contrat Prisma.
+  const rawCatalogOption = firstSearchParam(resolvedSearchParams.catalogOption);
+  const catalogOption = rawCatalogOption && isCatalogOption(rawCatalogOption)
+    ? rawCatalogOption
+    : undefined;
 
   const data = await fetchCategoryPageData(
     catalog,
     page,
     sortBy,
-    rawCatalogOption
+    sortOrder,
+    catalogOption
   );
 
 
@@ -131,7 +170,7 @@ export default async function CatalogCategoryPage({
       <CategoryControlsSection
         productsCount={products.length}
         totalCount={totalCount}
-        currentSort={sortBy}
+        currentSort={sortOption}
         categorySlug={catalog}
       />
 
@@ -160,7 +199,7 @@ export default async function CatalogCategoryPage({
                 currentPage={page}
                 totalPages={totalPages}
                 categorySlug={catalog}
-                sortBy={sortBy}
+                sortBy={sortOption}
               />
             )}
           </>

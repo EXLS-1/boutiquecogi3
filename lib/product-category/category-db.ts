@@ -11,10 +11,15 @@ import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
 import {
-  CategoryDefinition,
-  RBAC_LEVELS,
-  CATEGORY_TYPES,
+  CATALOG_TYPES,
+  isRoleLevel,
+  type CategoryDefinition,
+  type Role_Level,
 } from "./category-types";
+
+function resolveRbacLevel(value: number | null): Role_Level {
+  return value !== null && isRoleLevel(value) ? value : 7;
+}
 
 /**
  * Récupère les catégories actives depuis la base de données.
@@ -46,11 +51,10 @@ export const getCategoriesFromDB = cache(
       imageSrc: cat.image ?? "/placeholder.webp",
       imageAlt: cat.name,
       href: `/products?category=${cat.slug}`,
-      type: CATEGORY_TYPES.STATIC,
+      type: CATALOG_TYPES.STATIC,
       sortOrder: cat.displayOrder,
       isActive: cat.isNavigable,
-      minRbacLevel: (cat.minRoleLevel ??
-        RBAC_LEVELS.GUEST) as (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS],
+      minRbacLevel: resolveRbacLevel(cat.minRoleLevel),
       requiresAuth: false,
     }));
   },
@@ -90,11 +94,10 @@ export const getSpecialCategories = cache(
       imageSrc: cat.image ?? "/placeholder.webp",
       imageAlt: cat.name,
       href: `/products?category=${cat.slug}`,
-      type: CATEGORY_TYPES.STATIC,
+      type: CATALOG_TYPES.STATIC,
       sortOrder: cat.displayOrder,
       isActive: cat.isNavigable,
-      minRbacLevel: (cat.minRoleLevel ??
-        RBAC_LEVELS.GUEST) as (typeof RBAC_LEVELS)[keyof typeof RBAC_LEVELS],
+      minRbacLevel: resolveRbacLevel(cat.minRoleLevel),
       requiresAuth: false,
     }));
   },

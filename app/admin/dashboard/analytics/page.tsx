@@ -29,24 +29,43 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
   const params = await searchParams;
   const period = params.period || "30d";
 
-  const [revenueData, userGrowth, topProducts] = await Promise.all([
-    prisma.order.groupBy({
-      by: ["createdAt"],
-      where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-      _sum: { totalAmount: true },
-      _count: { id: true },
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [paidOrders, userGrowth, topProducts] = await Promise.all([
+    prisma.order.findMany({
+      where: { createdAt: { gte: since }, status: { not: "CANCELLED" } },
+      select: { createdAt: true, totalAmount: true },
     }),
     prisma.user.groupBy({
       by: ["createdAt"],
-      where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      where: { createdAt: { gte: since } },
       _count: { id: true },
     }),
     prisma.product.findMany({
       take: 20,
       orderBy: { soldCount: "desc" },
-      select: { id: true, name: true, soldCount: true, revenue: true },
+      select: { id: true, name: true, soldCount: true, totalRevenue: true },
     }),
   ]);
+
+  // Agrégation jour par jour côté serveur : les montants sont déjà des
+  // entiers en centimes (Int), donc sérialisables vers le client.
+  const byDay = new Map<string, { createdAt: Date; total: number; orders: number }>();
+  for (const order of paidOrders) {
+    const day = order.createdAt.toISOString().slice(0, 10);
+    const entry = byDay.get(day) ?? { createdAt: new Date(`${day}T00:00:00.000Z`), total: 0, orders: 0 };
+    entry.total += order.totalAmount;
+    entry.orders += 1;
+    byDay.set(day, entry);
+  }
+  const revenueData = [...byDay.values()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const growthData = userGrowth.map((row) => ({ createdAt: row.createdAt, users: row._count.id }));
+  const performanceProducts = topProducts.map((product) => ({
+    id: product.id,
+    name: product.name,
+    soldCount: product.soldCount,
+    revenue: product.totalRevenue.toNumber(),
+  }));
 
   return (
     <div className="space-y-6">
@@ -63,12 +82,12 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
           <RevenueChart data={revenueData} />
         </Suspense>
         <Suspense fallback={<Skeleton className="h-80" />}>
-          <UserGrowthChart data={userGrowth} />
+          <UserGrowthChart data={growthData} />
         </Suspense>
       </div>
 
       <Suspense fallback={<Skeleton className="h-96" />}>
-        <ProductPerformance products={topProducts} />
+        <ProductPerformance products={performanceProducts} />
       </Suspense>
     </div>
   );

@@ -13,13 +13,17 @@ export async function POST(req: NextRequest) {
   try {
     const h = await headers();
     const session = await auth.api.getSession({ headers: h });
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const sessionUserId = session?.user?.id;
+    const userSessionToken = session?.session?.token;
+    if (!sessionUserId || !userSessionToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: sessionUserId },
       include: { roleAssignment: { include: { roleConfig: true } } },
     });
-    if (!user?.roleAssignment || user.roleAssignment.roleConfig.level > 3) {
+    if (!user || !user.roleAssignment || user.roleAssignment.roleConfig.level > 3) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -40,21 +44,42 @@ export async function POST(req: NextRequest) {
 
     const { plain, hashed } = generateBackupCodes();
 
+    // Les codes de secours exigent un TwoFactor parent (FK obligatoire) :
+    // on le crée/réactive à partir du secret déjà chiffré en UserSecurity.
+    const twoFactor = await prisma.twoFactor.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        secret: security.twoFactorSecret,
+        enabled: true,
+      },
+      update: { enabled: true },
+      select: { id: true },
+    });
+
     await prisma.$transaction([
       prisma.userSecurity.update({ where: { userId: user.id }, data: { twoFactorEnabled: true } }),
       prisma.twoFactorBackupCode.deleteMany({ where: { userSecurityId: security.id } }),
       prisma.twoFactorBackupCode.createMany({
-        data: hashed.map((h) => ({ userSecurityId: security.id, codeHash: h })),
+        data: hashed.map((codeHash) => ({
+          twoFactorId: twoFactor.id,
+          userSecurityId: security.id,
+          codeHash,
+        })),
       }),
-      prisma.session.deleteMany({ where: { userId: user.id, token: { not: session.session.token } } }),
+      prisma.session.deleteMany({ where: { userId: user.id, token: { not: userSessionToken } } }),
     ]);
 
     // Cookie 2FA vérifié pour la session courante
-    await sign2FAVerified(user.id, session.session.token);
+    await sign2FAVerified(user.id, userSessionToken);
 
-    await prisma.auditLog?.create({
-      data: { userId: user.id, action: '2FA_ENABLED', ipAddress: ip },
-    }).catch(() => {});
+    try {
+      await prisma.auditLog.create({
+        data: { userId: user.id, action: '2FA_ENABLED', ipAddress: ip },
+      });
+    } catch {
+      // Audit non bloquant
+    }
 
     return NextResponse.json({
       success: true,

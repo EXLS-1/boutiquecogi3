@@ -8,8 +8,37 @@
  */
 
 import type { ProductStatus, AvailabilityStatus } from "./catalog-types";
-import type { Currency } from "@prisma/client";
+import { Currency, Prisma } from "@prisma/client";
 import { AVAILABILITY_STATUS, serializeDecimal } from "./catalog-types";
+
+export const PRODUCT_DETAIL_INCLUDE = {
+  category: true,
+  stock: true,
+  availabilityProjection: true,
+  productImages: { orderBy: { position: "asc" } },
+  variants: {
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    include: {
+      variantStocks: {
+        select: { quantity: true, reserved: true },
+      },
+    },
+  },
+  productTags: { include: { tag: true } },
+  productAttributeValues: { include: { attribute: true } },
+  productReviews: {
+    include: { user: { select: { name: true, image: true } } },
+    orderBy: { createdAt: "desc" },
+  },
+  productPrice: true,
+  coupon: true,
+  taxClass: { include: { taxRates: true } },
+} satisfies Prisma.ProductInclude;
+
+type ProductDetailPrismaRecord = Prisma.ProductGetPayload<{
+  include: typeof PRODUCT_DETAIL_INCLUDE;
+}>;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // TYPES BRUTS (alignés sur les includes Prisma)
@@ -166,117 +195,7 @@ export interface ProductDetailData {
  * Map un produit brut Prisma (avec toutes les relations incluses)
  * vers le type ProductDetailData complet.
  */
-export function mapProductDetail(raw: {
-  id: string;
-  name: string;
-  sku: string;
-  slug: string;
-  description: string | null;
-  price: unknown;
-  basePrice: unknown;
-  currency: Currency;
-  status: ProductStatus;
-  videoUrl: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
-  salePrice: number | null;
-  saleStart: Date | null;
-  saleEnd: Date | null;
-  soldCount: number;
-  isFeatured: boolean;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  images: string[];
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-  } | null;
-  stock: {
-    id: string;
-    quantity: number;
-    reserved: number;
-    alertThreshold: number;
-    warehouse: string | null;
-    lastMovementAt: Date;
-    updatedAt: Date;
-  } | null;
-  availabilityProjection: {
-    isAvailable: boolean;
-    updatedAt: Date;
-  } | null;
-  variants: Array<{
-    id: string;
-    sku: string;
-    attributes: unknown;
-    priceOffset: number;
-    isActive: boolean;
-    variantStocks: Array<{
-      quantity: number;
-      reserved: number;
-    }>;
-    createdAt: Date;
-  }>;
-  productImages: Array<{
-    id: string;
-    url: string;
-    alt: string | null;
-    position: number;
-  }>;
-  productTags: Array<{
-    tag: {
-      id: string;
-      name: string;
-      slug: string;
-    };
-  }>;
-  productAttributeValues: Array<{
-    id: string;
-    value: string;
-    attribute: {
-      id: string;
-      name: string;
-      type: string;
-    };
-  }>;
-  productReviews: Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    isVerifiedPurchase: boolean;
-    createdAt: Date;
-    user: {
-      name: string | null;
-      image: string | null;
-    };
-  }>;
-  productPrices: Array<{
-    id: string;
-    currency: Currency;
-    amount: number;
-    compareAtPrice: number | null;
-    country: string | null;
-    region: string | null;
-    startsAt: Date | null;
-    endsAt: Date | null;
-  }>;
-  coupon: {
-    id: string;
-    code: string;
-    discountType: string;
-    discountValue: number;
-    minOrderValue: number | null;
-    expiresAt: Date;
-    isActive: boolean;
-  } | null;
-  taxClass: {
-    id: string;
-    name: string;
-    rate: number;
-  } | null;
-}): ProductDetailData {
+export function mapProductDetail(raw: ProductDetailPrismaRecord): ProductDetailData {
   // ─── Stock ─────────────────────────────────────────────────────────────────
   const stock = raw.stock
     ? {
@@ -312,6 +231,9 @@ export function mapProductDetail(raw: {
     0,
   );
   const effectiveAvailableStock = variants.length > 0 ? variantAvailableStock : availableStock;
+  const defaultPrice =
+    raw.productPrice.find((price) => price.currency === raw.currency) ??
+    raw.productPrice[0];
 
   // ─── Disponibilité ─────────────────────────────────────────────────────────
   const isAvailable = raw.availabilityProjection?.isAvailable ?? false;
@@ -365,8 +287,10 @@ export function mapProductDetail(raw: {
   // ─── Prix régionaux ─────────────────────────────────────────────────────────
   const prices = raw.productPrice.map((p) => ({
     id: p.id,
-    currency: p.currency,
-    amount: p.amount,
+    currency: Object.values(Currency).includes(p.currency as Currency)
+      ? p.currency as Currency
+      : raw.currency,
+    amount: serializeDecimal(p.amount),
     compareAtPrice: p.compareAtPrice,
     country: p.country,
     region: p.region,
@@ -392,7 +316,11 @@ export function mapProductDetail(raw: {
     ? {
         id: raw.taxClass.id,
         name: raw.taxClass.name,
-        rate: raw.taxClass.rate,
+        rate: serializeDecimal(
+          raw.taxClass.taxRates.find(
+            (taxRate) => taxRate.country === "RDC" && taxRate.region === null,
+          )?.rate ?? raw.taxClass.taxRates[0]?.rate,
+        ),
       }
     : null;
 
@@ -412,16 +340,16 @@ export function mapProductDetail(raw: {
     sku: raw.sku,
     slug: raw.slug,
     description: raw.description,
-    price: serializeDecimal(raw.price),
-    basePrice: serializeDecimal(raw.basePrice),
+    price: serializeDecimal(defaultPrice?.amount),
+    basePrice: serializeDecimal(defaultPrice?.amount),
     currency: raw.currency,
     status: raw.status,
     videoUrl: raw.videoUrl,
     seoTitle: raw.seoTitle,
     seoDescription: raw.seoDescription,
-    salePrice: raw.salePrice,
-    saleStart: raw.saleStart,
-    saleEnd: raw.saleEnd,
+    salePrice: null,
+    saleStart: null,
+    saleEnd: null,
     soldCount: raw.soldCount,
     isFeatured: raw.isFeatured,
     isActive: raw.isActive,

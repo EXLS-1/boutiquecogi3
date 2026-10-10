@@ -42,7 +42,9 @@ interface CategoryMetaInput {
 }
 
 interface ParentImages {
-  readonly openGraph?: { images?: Metadata["openGraph"]["images"] };
+  readonly openGraph?: {
+    images?: NonNullable<Metadata["openGraph"]>["images"];
+  };
 }
 
 /**

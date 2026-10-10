@@ -5,8 +5,57 @@ import { transitionProductStatus } from "@/lib/product/product-workflow";
 import { emitProductEvent } from "@/lib/product/product-events";
 import type { CreateProductDto } from "@/lib/product/product-types";
 import { PRODUCT_LIMITS } from "@/lib/product/product-constant";
+import { mapProductToDetails } from "@/lib/product/product-mapper";
+import type { ProductDetails } from "@/lib/product/types";
+import { isValidUuid } from "@/lib/utils";
 
 export class ProductService {
+  /**
+   * Détail complet d'un produit pour le portail admin (édition + vue détail).
+   * Retourne `null` si l'id n'est pas un UUID valide ou si le produit
+   * n'existe pas — les pages appelantes branchent alors sur `notFound()`.
+   * Le prix de base est dérivé de la grille `productPrice` (le schéma ne
+   * porte plus de colonne `basePrice` scalaire).
+   */
+  static async getDetails(productId: string): Promise<ProductDetails | null> {
+    if (!isValidUuid(productId)) return null;
+
+    const row = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        productType: { select: { id: true, type: true, label: true, maxVariants: true, requiresApproval: true } },
+        productPrice: true,
+        variants: {
+          include: { variantStocks: true },
+          orderBy: { sku: "asc" },
+        },
+        productImages: { orderBy: { position: "asc" } },
+        productTags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+        categoryProducts: {
+          include: { category: { select: { id: true, name: true, slug: true } } },
+          orderBy: { displayOrder: "asc" },
+        },
+        catalogs: { include: { catalog: { select: { id: true, name: true } } } },
+        productAttributeValues: true,
+        productReviews: {
+          include: { user: { select: { id: true, name: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        },
+        statusHistory: {
+          include: { changedBy: { select: { id: true, name: true } } },
+          orderBy: { changedAt: "desc" },
+          take: 100,
+        },
+        stock: { select: { quantity: true, reserved: true } },
+        availabilityProjection: { select: { isAvailable: true } },
+      },
+    });
+
+    if (!row) return null;
+    return mapProductToDetails(row);
+  }
+
   static async create(input: CreateProductDto, userId: string) {
     const name = input.name.trim();
     if (name.length < PRODUCT_LIMITS.NAME_MIN || name.length > PRODUCT_LIMITS.NAME_MAX) throw new ProductError("Invalid product name length", "VALIDATION_ERROR", 400);

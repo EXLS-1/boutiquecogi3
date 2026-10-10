@@ -1,5 +1,5 @@
 // app/admin/products/drafts/page.tsx
-import { DraftManager } from "@/components/admin/DraftManager";
+import { DraftManager } from "@/components/admin/draft-manager";
 
 export const metadata = {
   title: "Brouillons & Validation | Administration Produits",

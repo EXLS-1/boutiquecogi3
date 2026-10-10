@@ -3,7 +3,11 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { isValidUuid } from "@/lib/utils/uuid";
-import { mapProductDetail, type ProductDetailData } from "./product-detail";
+import {
+  mapProductDetail,
+  PRODUCT_DETAIL_INCLUDE,
+  type ProductDetailData,
+} from "./product-detail";
 
 /** Source commune à la fiche produit et à l'aperçu public (UUID ou slug). */
 export const getProductData = cache(
@@ -19,34 +23,9 @@ export const getProductData = cache(
         deletedAt: null,
         status: "PUBLISHED",
       },
-      include: {
-        category: true,
-        stock: true,
-        availabilityProjection: true,
-        productImages: { orderBy: { position: "asc" } },
-        variants: {
-          where: { isActive: true },
-          orderBy: { createdAt: "asc" },
-          include: {
-            variantStocks: {
-              select: { quantity: true, reserved: true },
-            },
-          },
-        },
-        productTags: { include: { tag: true } },
-        productAttributeValues: { include: { attribute: true } },
-        productReviews: {
-          include: { user: { select: { name: true, image: true } } },
-          orderBy: { createdAt: "desc" },
-        },
-        productPrice: true,
-        coupon: true,
-        taxClass: true,
-      },
+      include: PRODUCT_DETAIL_INCLUDE,
     });
 
-    return product
-      ? mapProductDetail(product as Parameters<typeof mapProductDetail>[0])
-      : null;
+    return product ? mapProductDetail(product) : null;
   },
 );

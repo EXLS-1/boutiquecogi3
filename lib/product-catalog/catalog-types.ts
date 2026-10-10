@@ -201,11 +201,9 @@ export interface RawCatalogProduct {
 
 export const SORTABLE_FIELDS = [
   "createdAt",
-  "updatedAt", 
+  "updatedAt",
   "name",
-  // Price is stored in ProductPrice (a to-many relation), not Product.
-  // "popularity" — DÉSACTIVÉ: champ non existant dans Prisma
-  // Ajouter ici quand le champ est créé côté DB
+  "basePrice",
 ] as const;
 
 export type SortableField = (typeof SORTABLE_FIELDS)[number];

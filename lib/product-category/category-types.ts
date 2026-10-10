@@ -9,14 +9,18 @@
  */
 
 import { z } from "zod";
-import { RoleLevel } from "@/lib/auth/rbac";
+import type { RoleLevelValue } from "@/lib/auth/rbac";
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 1: NIVEAUX DE PRIVILÈGE RBAC (alignés lib/auth/rbac.ts)
 // ═════════════════════════════════════════════════════════════════════════════
 
-export type Role_Level = typeof RoleLevel[keyof typeof RoleLevel];
+export type Role_Level = RoleLevelValue;
 export type RbacLevel = Role_Level;
+
+export function isRoleLevel(value: number): value is Role_Level {
+  return Number.isInteger(value) && value >= 1 && value <= 7;
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 2: TYPES DE catalog
@@ -51,6 +55,9 @@ export interface CatalogDefinition {
   readonly requiresAuth: boolean;         // Nécessite une session authentifiée
   readonly metadata?: Record<string, unknown>;
 }
+
+export type CategoryDefinition = CatalogDefinition;
+export type categoryDefinition = CategoryDefinition;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 4: PROPS DU CATALOG CARD
@@ -96,26 +103,9 @@ export const categoryDefinitionSchema = z.object({
   type: z.enum(["static", "dynamic", "promotional", "new_arrival", "seasonal"]),
   sortOrder: z.number().int().min(0),
   isActive: z.boolean(),
-  minRbacLevel: z.number().int().min(1).max(7),
+  minRbacLevel: z.number().int().refine(isRoleLevel),
   requiresAuth: z.boolean(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type CategoryDefinitionValidated = z.infer<typeof categoryDefinitionSchema>;
-// -----------------------------------------------------------------------------
-// BARREL EXPORTS - Make all types easily importable
-// -----------------------------------------------------------------------------
-
-export {
-  CATALOG_TYPES,
-  CatalogType,
-  CatalogDefinition,
-  CatalogCardProps,
-  CatalogGridConfig,
-  categoryDefinitionSchema,
-  CategoryDefinitionValidated,
-  RbacLevel,
-  Role_Level,
-};
-
-

@@ -20,7 +20,13 @@ export function toCents(value: Prisma.Decimal | number | string): MoneyCents {
       ? Number(value)
       : value;
   if (!Number.isFinite(amount)) throw new TypeError("Le montant doit etre un nombre fini");
-  return Math.round(amount * 100);
+  const cents = Math.round(amount * 100);
+  // Les montants doivent rester des entiers sûrs : au-delà, l'arrondi
+  // perd des centimes silencieusement (ex. Decimal("1e15")).
+  if (!Number.isSafeInteger(cents)) {
+    throw new RangeError(`Montant hors borne sure : ${amount}`);
+  }
+  return cents;
 }
 
 function isWindowActive(startsAt: Date | null, endsAt: Date | null, at: Date): boolean {

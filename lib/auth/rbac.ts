@@ -200,6 +200,8 @@ export const PERMISSIONS = {
   "products:view:own": "products:view:own",
   "products:view:any": "products:view:any",
   "products:view:admin": "products:view:admin",
+  "products:manage_variants": "products:manage_variants",
+  "products:manage_reviews": "products:manage_reviews",
 
   "order:read:own": "order:read:own",
   "order:read:any": "order:read:any",
@@ -214,6 +216,7 @@ export const PERMISSIONS = {
   "orders:delete": "orders:delete",
   "orders:refund": "orders:refund",
   "orders:cancel": "orders:cancel",
+  "orders:process_refund": "orders:process_refund",
 
   "categories:read": "categories:read",
   "categories:create": "categories:create",
@@ -241,6 +244,15 @@ export const PERMISSIONS = {
   "media:delete": "media:delete",
   "media:read": "media:read",
   "media:manage": "media:manage",
+  "media:organize": "media:organize",
+  "payments:configure": "payments:configure",
+  "payments:refund": "payments:refund",
+  "payments:view_analytics": "payments:view_analytics",
+  "promotions:create": "promotions:create",
+  "promotions:update": "promotions:update",
+  "promotions:delete": "promotions:delete",
+  "promotions:manage_coupons": "promotions:manage_coupons",
+  "settings:system_config": "settings:system_config",
 
   "system:logs": "system:logs",
   "system:maintenance": "system:maintenance",

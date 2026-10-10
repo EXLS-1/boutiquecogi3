@@ -25,18 +25,20 @@
 
 import {
   CART_ISSUE_LABELS,
-  CART_ROUTES,
-  buildCartSummary,
+  MAX_CART_QUANTITY,
   buildSignInRedirect,
+  buildCartSummary,
   formatCartAmount,
   resolveCartCurrency,
-  resolveCartStock,
   resolveCartUnitPrice,
   type CartCurrency,
   type CartIssue,
   type CartLine,
   type CartLineInput,
 } from "@/lib/cart/cart-domain";
+
+// ─── 1. Utilisateur / session ────────────────────────────────────────────────
+
 
 // ─── 1. Utilisateur / session ────────────────────────────────────────────────
 
@@ -53,6 +55,10 @@ export interface CheckoutUser {
 /** Ligne de commande transmise à la Server Action `processCinetPayCheckout`. */
 export interface CheckoutLineItem {
   id: string;
+  /** Identifiant produit d'origine (traçabilité, déduplication). */
+  productId: string;
+  /** Variante choisie, si applicable. */
+  variantId?: string;
   name: string;
   price: number;
   quantity: number;
@@ -96,7 +102,7 @@ export const CHECKOUT_ISSUE_LABELS: Record<CheckoutIssueReason, string> =
   CART_ISSUE_LABELS;
 
 /** Quantité maximale par ligne (source unique : domaine panier). */
-export { MAX_CART_QUANTITY as MAX_CHECKOUT_QUANTITY };
+export const MAX_CHECKOUT_QUANTITY: number = MAX_CART_QUANTITY;
 
 /**
  * Numéros Mobile Money RDC : `+243 8XXXXXXXX`, `243 8XXXXXXXX` ou `08XXXXXXXX`.

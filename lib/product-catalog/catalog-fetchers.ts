@@ -134,7 +134,8 @@ export async function fetchCategoryPageData(
   categorySlug: string,
   page: number = 1,
   sortBy: SortableField = "createdAt",
-  catalogOption?: CatalogOption
+  sortOrder: "asc" | "desc" = "desc",
+  catalogOption?: CatalogOption,
 ): Promise<CatalogCategoryData> {
 
 
@@ -158,7 +159,7 @@ export async function fetchCategoryPageData(
             offset: 0,
             categorySlug,
             sortBy,
-            sortOrder: "desc",
+            sortOrder,
             catalogOption,
           });
           return products;

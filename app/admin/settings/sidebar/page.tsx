@@ -331,8 +331,11 @@ async function filterNavigationServer(
 ): Promise<SidebarItem[]> {
   const results = await Promise.all(
     items.map(async (item) => {
-      // niveau : userLevel doit être <= minLevel (1 = plus haut)
-      if (userLevel > item.minLevel) return null;
+      // niveau : userLevel doit être <= minLevel (1 = plus haut).
+      // minLevel est optionnel : un item sans minLevel reste visible pour tous
+      // les niveaux (comportement identique à l'ancienne comparaison, sans
+      // l'erreur « Object is possibly 'undefined' » sous strictNullChecks).
+      if (item.minLevel !== undefined && userLevel > item.minLevel) return null;
 
       if (item.maxLevel && userLevel < item.maxLevel) return null;
 

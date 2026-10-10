@@ -153,6 +153,9 @@ export const CART_ROUTES = {
   adminStock: "/admin/stock",
 } as const;
 
+/** Union des routes du parcours panier → commande. */
+export type CartRoute = (typeof CART_ROUTES)[keyof typeof CART_ROUTES];
+
 /** Construit l'URL de connexion en préservant la destination (`callbackUrl`). */
 export function buildSignInRedirect(callbackUrl: string): string {
   const target = callbackUrl.startsWith("/") ? callbackUrl : `/${callbackUrl}`;
@@ -181,20 +184,29 @@ export const CART_ISSUE_LABELS: Record<CartIssueReason, string> = {
 };
 
 /** Pluralisation du nombre d'articles (`1 article` / `2 articles`). */
-export function formatCartItemCount(count: number): string {
-  const safeCount = Number.isFinite(count) && count > 0 ? Math.trunc(count) : 0;
+export function formatCartItemCount(count: unknown): string {
+  const safeCount =
+    typeof count === "number" && Number.isFinite(count) && count > 0
+      ? Math.trunc(count)
+      : 0;
   return `${safeCount} article${safeCount > 1 ? "s" : ""}`;
 }
 
 /** Libellé accessible du badge / de l'icône panier. */
-export function formatCartBadgeLabel(count: number): string {
-  return `${formatCartItemCount(count)} dans le panier`;
+export function formatCartBadgeLabel(count: unknown): string {
+  const safeCount =
+    typeof count === "number" && Number.isFinite(count) && count > 0
+      ? Math.trunc(count)
+      : 0;
+  return `${formatCartItemCount(safeCount)} dans le panier`;
 }
 
 /** Compteur compact du badge (`150` → `99+`, jamais négatif). */
-export function formatCartBadgeCount(count: number): string {
+export function formatCartBadgeCount(count: unknown): string {
   const safeCount =
-    Number.isFinite(count) && count > 0 ? Math.trunc(count) : 0;
+    typeof count === "number" && Number.isFinite(count) && count > 0
+      ? Math.trunc(count)
+      : 0;
 
   return safeCount > MAX_CART_QUANTITY
     ? `${MAX_CART_QUANTITY}+`
@@ -861,16 +873,146 @@ export function isStockLow(
   return getStockLevel(available, alertThreshold) !== "ok";
 }
 
-/** Devise d'une commande (tolérante : fallback `USD`). */
-export function resolveOrderCurrency(raw: unknown): CartCurrency {
-  return resolveCartCurrency(typeof raw === "string" ? raw : undefined);
+export interface CartDomainOrderItemLike {
+  readonly id?: unknown;
+  readonly orderNumber?: unknown;
+  readonly user?: {
+    readonly email?: unknown;
+    readonly name?: unknown;
+  } | null;
 }
+
+export interface CartDomainOrderLike extends CartDomainOrderItemLike {
+  readonly items?: readonly unknown[] | null;
+  readonly totalAmount?: unknown;
+  readonly currency?: unknown;
+  readonly status?: unknown;
+  readonly paymentStatus?: unknown;
+  readonly createdAt?: unknown;
+}
+
+// ─── Commandes — formatage & libellés (source unique UI) ─────────────────────
 
 /** Nombre d'articles d'une commande (tolérant aux `items` absents). */
 export function getOrderItemsCount(order: {
   items?: readonly unknown[] | null;
 }): number {
   return Array.isArray(order?.items) ? order.items.length : 0;
+}
+
+/** `1 article` / `N articles` (tolérant aux entrées invalides). */
+export function formatCartItemCount(count: unknown): string {
+  const safe = typeof count === "number" && Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  return safe <= 1 ? `${safe} article` : `${safe} articles`;
+}
+
+/** Devise d'une commande (tolérante : fallback `USD`). */
+export function resolveOrderCurrency(raw: unknown): CartCurrency {
+  return resolveCartCurrency(typeof raw === "string" ? raw : undefined);
+}
+
+/**
+ * Montant d'une commande Prisma (`Int` en centimes) formaté en unités majeures.
+ * @returns `"—"` si le montant est inexploitable.
+ */
+export function formatOrderAmountMinor(amount: unknown, currency: CartCurrency = "USD"): string {
+  const safeCurrency = resolveCartCurrency(currency);
+  const cents = typeof amount === "number" && Number.isFinite(amount)
+    ? amount
+    : typeof amount === "string" && amount.trim() !== "" && Number.isFinite(Number(amount))
+      ? Number(amount)
+      : typeof (amount as { toNumber?: unknown })?.toNumber === "function"
+        ? (() => {
+            try {
+              const n = (amount as { toNumber: () => number }).toNumber();
+              return Number.isFinite(n) ? n : null;
+            } catch {
+              return null;
+            }
+          })()
+        : null;
+  if (cents === null || cents < 0) return "—";
+  return formatCartAmount(cents / 100, safeCurrency);
+}
+
+/** Date de commande affichable (`—` si absente ou invalide). */
+export function formatOrderDate(raw: unknown): string {
+  const date = raw instanceof Date ? raw : typeof raw === "string" || typeof raw === "number" ? new Date(raw) : null;
+  if (!date || Number.isNaN(date.getTime())) return "—";
+  try {
+    return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  } catch {
+    return date.toISOString();
+  }
+}
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  PENDING: "En attente",
+  CONFIRMED: "Confirmée",
+  PROCESSING: "En préparation",
+  SHIPPED: "Expédiée",
+  DELIVERED: "Livrée",
+  CANCELLED: "Annulée",
+  REFUNDED: "Remboursée",
+  FAILED: "Échouée",
+};
+
+/** Libellé humain d'un statut de commande (tolérant aux statuts inconnus). */
+export function getOrderStatusLabel(status: unknown): string {
+  if (typeof status !== "string" || status.trim() === "") return "Statut inconnu";
+  const key = status.trim().toUpperCase();
+  return ORDER_STATUS_LABELS[key] ?? status.trim();
+}
+
+const ORDER_PAYMENT_LABELS: Record<string, string> = {
+  PENDING: "Paiement en attente",
+  PAID: "Payée",
+  FAILED: "Paiement échoué",
+  REFUNDED: "Remboursée",
+  PARTIALLY_REFUNDED: "Partiellement remboursée",
+  CANCELLED: "Paiement annulé",
+};
+
+/** Statut de paiement normalisé (`PENDING` par défaut, jamais vide). */
+export function resolveOrderPaymentStatus(
+  order: { paymentStatus?: unknown; status?: unknown } | null | undefined,
+): string {
+  const raw = order && typeof order === "object"
+    ? order.paymentStatus ?? (order as { payment?: { status?: unknown } }).payment
+    : undefined;
+  const candidate = typeof raw === "object" && raw !== null && "status" in raw
+    ? (raw as { status?: unknown }).status
+    : raw;
+  if (typeof candidate === "string" && candidate.trim() !== "") return candidate.trim().toUpperCase();
+  return "PENDING";
+}
+
+/** Libellé humain d'un statut de paiement (tolérant aux statuts inconnus). */
+export function getOrderPaymentLabel(status: unknown): string {
+  if (typeof status !== "string" || status.trim() === "") return "Paiement en attente";
+  const key = status.trim().toUpperCase();
+  return ORDER_PAYMENT_LABELS[key] ?? status.trim();
+}
+
+/** `true` si la commande correspond à la requête (n°, email, nom — insensible à la casse). */
+export function matchesOrderQuery(
+  order: CartDomainOrderItemLike | null | undefined,
+  query: unknown,
+): boolean {
+  if (typeof query !== "string") return true;
+  const q = query.trim().toLowerCase();
+  if (q.length === 0) return true;
+  if (!order || typeof order !== "object") return false;
+  const id = typeof order.id === "string" ? order.id : "";
+  const orderNumber = typeof order.orderNumber === "string" ? order.orderNumber : "";
+  const email = typeof order.user?.email === "string" ? order.user.email : "";
+  const name = typeof order.user?.name === "string" ? order.user.name : "";
+  return (
+    id.toLowerCase().includes(q) ||
+    orderNumber.toLowerCase().includes(q) ||
+    email.toLowerCase().includes(q) ||
+    name.toLowerCase().includes(q)
+  );
 }
 
 // ─── Formatage ───────────────────────────────────────────────────────────────

@@ -17,14 +17,28 @@ import {
   resolveOrderPaymentStatus,
 } from "@/lib/cart/cart-domain";
 
+interface AdminOrderRow {
+  id: string;
+  orderNumber: string;
+  user: { email: string | null; name: string | null } | null;
+  items?: readonly unknown[] | null;
+  totalAmount: unknown;
+  currency: unknown;
+  status: unknown;
+  paymentStatus?: unknown;
+  payment?: { status?: unknown } | null;
+  createdAt: unknown;
+}
+
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const orders = await getAllOrdersAdmin();
-  const query = params?.q?.trim() ?? "";
+  const orders: readonly AdminOrderRow[] = await getAllOrdersAdmin();
+  const rawQuery = params?.q;
+  const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
   const visibleOrders = orders.filter((order) =>
     matchesOrderQuery(
       {

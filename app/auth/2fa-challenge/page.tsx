@@ -7,6 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Shield, KeyRound, AlertTriangle } from "lucide-react";
 
+function getResponseError(payload: unknown): string | undefined {
+  if (typeof payload !== "object" || payload === null || !("error" in payload)) {
+    return undefined;
+  }
+
+  return typeof payload.error === "string" ? payload.error : undefined;
+}
+
 export default function TwoFAChallengePage() {
   const router = useRouter();
   const [code, setCode] = useState("");
@@ -18,23 +26,26 @@ export default function TwoFAChallengePage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/2fa/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: code.trim() }),
-    });
+    try {
+      const res = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data: unknown = await res.json().catch(() => null);
 
-    const data = await res.json();
-    setLoading(false);
+      if (!res.ok) {
+        setError(getResponseError(data) ?? "Vérification échouée");
+        return;
+      }
 
-    if (!res.ok) {
-      setError(data.error || "Vérification échouée");
-      return;
+      router.push("/admin");
+      router.refresh();
+    } catch {
+      setError("Impossible de vérifier le code. Réessaie.");
+    } finally {
+      setLoading(false);
     }
-
-    // Succès → redirection admin
-    router.push("/admin");
-    router.refresh();
   };
 
   const maxLength = isBackup ? 8 : 6;
@@ -62,7 +73,9 @@ export default function TwoFAChallengePage() {
           <div className="space-y-4">
             <Input
               type="text"
-              inputMode="alphanumeric"
+              inputMode={isBackup ? "text" : "numeric"}
+              autoComplete="one-time-code"
+              pattern={isBackup ? "[A-Za-z0-9]*" : "[0-9]*"}
               maxLength={maxLength}
               placeholder={isBackup ? "ABCD1234" : "000000"}
               value={code}

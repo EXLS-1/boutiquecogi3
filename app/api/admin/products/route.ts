@@ -1,7 +1,10 @@
 // app/api/admin/products/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { ProductService } from "@/lib/product/productService";
+import { ProductService } from "@/lib/product/product-service";
+import { rateLimit } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 /**
@@ -38,47 +41,67 @@ const createProductSchema = z.object({
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session?.user) {
+    const h = await headers();
+    const session = await auth.api.getSession({ headers: h });
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Vérifier permission admin (RBAC Level 4+)
-    // if (session.user.roleLevel < 4) return ...
+    // RBAC : création produit réservée au staff (level <= 4 : SUPER_ADMIN → EDITOR)
+    const staff = await prisma.user.findUnique({
+      where: { id: sessionUserId },
+      include: { roleAssignment: { include: { roleConfig: true } } },
+    });
+    if (!staff?.roleAssignment || staff.roleAssignment.roleConfig.level > 4) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-        const body = await req.json();
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      req.headers.get("x-real-ip") ??
+      "unknown";
+    const rl = rateLimit(`admin-products:${sessionUserId}:${ip}`, 30, 60 * 1000);
+    if (!rl.success) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
+    const body: unknown = await req.json();
 
     // 1. Validation stricte par Zod (critères dynamiques minimaux → matrice complète)
     const baseData = createProductSchema.parse(body);
 
-    // 2. Transformation vers le DTO consommé par ProductService.createDynamicProduct
+    // 2. Transformation vers le DTO consommé par ProductService.create
     //    - images { url, altText, isPrimary }[]  →  string[] (URL simple, Prisma attend String[])
-    //    - priceAdjustment                       →  priceOffset   (aligné sur le schema service)
+    //    - priceOffset conservé tel quel (centimes), priceAdjustment n'existe pas côté service
     const servicePayload = {
       name: baseData.name,
       ...(baseData.slug ? { slug: baseData.slug } : {}),
       ...(baseData.description ? { description: baseData.description } : {}),
       ...(baseData.categoryId ? { categoryId: baseData.categoryId } : {}),
-      ...(baseData.basePrice !== undefined ? { basePrice: baseData.basePrice } : {}),
-      ...(baseData.compareAtPrice !== undefined ? { compareAtPrice: baseData.compareAtPrice } : {}),
+      ...(baseData.categoryId ? { categoryIds: [baseData.categoryId] } : {}),
+      // Service attend des centimes (Int) ; l'API reçoit des unités.
+      basePrice: Math.round(baseData.basePrice * 100),
+      ...(baseData.compareAtPrice !== undefined
+        ? { compareAtPrice: Math.round(baseData.compareAtPrice * 100) }
+        : {}),
       attributes: baseData.attributes ?? {},
       images: baseData.images?.map((img) => img.url) ?? [],
       variants: (baseData.variants ?? []).map((v) => ({
         ...(v.sku ? { sku: v.sku } : {}),
         attributes: v.attributes ?? {},
         ...(v.priceOffset !== undefined ? { priceOffset: v.priceOffset } : {}),
-        ...(v.initialStock !== undefined ? { initialStock: v.initialStock } : { initialStock: 0 }),
+        initialStock: v.initialStock ?? 0,
       })),
     };
 
     // 3. Exécution atomique (transaction Serializable + validation runtime)
-    const result = await ProductService.createProduct(servicePayload, session.user.id);
+    const result = await ProductService.create(servicePayload, sessionUserId);
 
     return NextResponse.json({
       success: true,
       data: {
         productId: result.productId,
-        variantCount: result.variantCount,
+        slug: result.slug,
+        variantCount: servicePayload.variants.length,
         totalStock: result.totalStock,
       },
     }, { status: 201 });

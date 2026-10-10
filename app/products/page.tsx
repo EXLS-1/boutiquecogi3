@@ -136,14 +136,12 @@ function buildSortConfig(
     ? explicitOrder[0]
     : explicitOrder;
 
-  const sortBy = SORTABLE_FIELDS.includes(sort as SortableField)
-    ? (sort as SortableField)
-    : "createdAt";
+  const sortBy = SORTABLE_FIELDS.find((field) => field === sort) ?? "createdAt";
 
   const sortOrder =
     normalizedOrder === "asc" || normalizedOrder === "desc"
       ? normalizedOrder
-      : defaultOrder[sortBy] || "asc";
+      : defaultOrder[sortBy];
 
   return {
     sortBy,
@@ -234,12 +232,11 @@ async function ProductCatalogFetcher({
   minPrice,
   maxPrice,
 }: FetcherProps) {
-  let products: Awaited<ReturnType<typeof searchCatalogProducts>>["products"];
-  let totalCount: Awaited<ReturnType<typeof searchCatalogProducts>>["totalCount"];
-  let hasError = false;
+  type ProductsResult = Awaited<ReturnType<typeof searchCatalogProducts>>;
+  let result: ProductsResult;
 
   try {
-    const result = await searchCatalogProducts({
+    result = await searchCatalogProducts({
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
       categorySlug: category === "all" ? undefined : category,
@@ -249,16 +246,9 @@ async function ProductCatalogFetcher({
       minPrice,
       maxPrice,
     });
-
-    products = result.products;
-    totalCount = result.totalCount;
   } catch (error) {
     // En production : envoyer vers votre systÃ¨me de logs (Sentry, etc.)
     console.error("[ProductCatalogFetcher] Erreur de chargement:", error);
-    hasError = true;
-  }
-
-  if (hasError) {
     return (
       <div className="text-center py-20 md:py-32">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
@@ -281,36 +271,17 @@ async function ProductCatalogFetcher({
     );
   }
 
-  const title =
-    category === "all"
-      ? "Nos Produits"
-      : category.charAt(0).toUpperCase() + category.slice(1);
-
-  // Typage explicite des props transmises Ã  ProductList
-  type ProductsResult = Awaited<ReturnType<typeof searchCatalogProducts>>;
-
-  interface ProductListProps {
-    products: ProductsResult["products"];
-    totalCount: ProductsResult["totalCount"];
-    title: string;
-    pageSize: number;
-  }
-
-  const props: ProductListProps = {
-    products: products!,
-    totalCount: totalCount!,
-    title,
-    pageSize: PAGE_SIZE,
-  };
-
-  const variantProductCount = products!.filter((product) => product.variantCount > 0).length;
+  const { products, totalCount } = result;
+  const variantProductCount = products.filter((product) => product.variantCount > 0).length;
 
   return (
     <>
       <ProductVariantCatalogSummary variantProductCount={variantProductCount} />
-      <ProductList {...props} />
+      <ProductList
+        products={products}
+        totalCount={totalCount}
+        pageSize={PAGE_SIZE}
+      />
     </>
   );
 }
-
-

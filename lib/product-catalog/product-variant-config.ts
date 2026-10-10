@@ -135,6 +135,7 @@ export function buildProductVariantConfig(
       priceAdjustment: safeInteger(variant.priceOffset) / 100,
       stockQuantity: availableStock(variant.variantStocks),
       isDefault: variant.id === defaultVariant.id,
+      images: [],
       ...(color ? { color: colorOption(input.id, color) } : {}),
       ...(size ? { size: sizeOption(input.id, size) } : {}),
       ...(material ? {
@@ -162,4 +163,3 @@ export function buildProductVariantConfig(
     maxQuantityPerOrder: Math.max(1, Math.trunc(input.maxQuantityPerOrder ?? 10)),
   };
 }
-

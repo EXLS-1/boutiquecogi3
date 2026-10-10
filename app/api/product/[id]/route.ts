@@ -4,14 +4,22 @@
 // La route GET supporte la recherche par ID, slug ou SKU pour plus de flexibilité dans l'accès aux produits. Les mises à jour et suppressions sont basées sur l'ID du produit trouvé.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ProductServiceError } from "@/server/services/product-service-error";
+import { ProductServiceError } from "@/lib/product/product-errors";
 import { normalizeCategoryIds, syncProductCategories } from "@/server/services/product-category-sync";
+import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+import { serializeDecimal } from "@/lib/product-catalog/catalog-types";
+import { z } from "zod";
+
+const productIdSchema = z.string().min(1).max(128);
 
 async function findProduct(id: string) {
+  const trimmed = id.trim();
+  if (!trimmed) return null;
   return prisma.product.findFirst({
     where: {
-      OR: [{ id }, { slug: id }, { variants: { some: { sku: id } } }],
+      OR: [{ id: trimmed }, { slug: trimmed }, { variants: { some: { sku: trimmed } } }],
       isArchived: false,
+      isdeleted: false,
     },
     include: {
       category: { select: { slug: true, name: true } },
@@ -20,6 +28,11 @@ async function findProduct(id: string) {
         include: { category: { select: { id: true, name: true, slug: true } } },
       },
       variants: { take: 1 },
+      productPrice: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { amount: true },
+      },
     },
   });
 }
@@ -29,8 +42,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const product = await findProduct(id);
+    const { id: rawId } = await params;
+    const parsedId = productIdSchema.safeParse(rawId?.trim());
+    if (!parsedId.success) {
+      return NextResponse.json(
+        { status: "error", message: "Invalid product identifier" },
+        { status: 400 },
+      );
+    }
+    const product = await findProduct(parsedId.data);
 
     if (!product) {
       return NextResponse.json(
@@ -39,13 +59,15 @@ export async function GET(
       );
     }
 
+    const priceCents = product.productPrice[0]?.amount ?? 0;
+
     return NextResponse.json({
       status: "success",
       data: {
         id: product.variants[0]?.sku ?? product.id,
         name: product.name,
         description: product.description,
-        price: Math.round(Number(product.basePrice) / 100),
+        price: serializeDecimal(priceCents) / 100,
         images: product.images,
         category: product.category?.slug ?? "femme",
         categories: product.categoryProducts.map((cp) => ({

@@ -16,10 +16,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
 import { mapCatalogProduct } from "@/lib/product-catalog/catalog-mappers";
-import {
-  normalizeProduct,
-  type RawCatalogProduct,
-} from "@/lib/product-catalog/catalog-types";
+import { serializeDecimal } from "@/lib/product-catalog/catalog-types";
+import { z } from "zod";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -27,6 +25,8 @@ interface RouteContext {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const previewIdSchema = z.string().min(1).max(128);
 
 /**
  * GET /api/product/[id]/preview
@@ -39,7 +39,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id: rawId } = await params;
+    const parsedId = previewIdSchema.safeParse(rawId?.trim());
+    if (!parsedId.success) {
+      return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 });
+    }
+    const id = parsedId.data;
 
     // ── 2. Charger le produit (y compris non publiés) ──
     const raw = await prisma.product.findUnique({
@@ -47,16 +52,21 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       include: {
         category: { select: { name: true, slug: true } },
         productImages: {
-          orderBy: { position: "asc" as const },
+          orderBy: { position: "asc" },
           select: { url: true, position: true },
         },
         availabilityProjection: {
           select: { isAvailable: true },
         },
+        productPrice: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { amount: true },
+        },
       },
     });
 
-    if (!raw) {
+    if (!raw || raw.isdeleted) {
       return NextResponse.json(
         { error: "Produit introuvable" },
         { status: 404 },
@@ -65,8 +75,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
     // ── 3. RBAC : accès aux brouillons ──
     // Level 1-3 voit tout ; Level 4+ voit uniquement ses propres produits.
+    // createdBy/editorId sont nullables : on exige un owner défini avant comparaison.
     if (user.level > 3) {
-      const isOwner = raw.createdBy === user.id || raw.userId === user.id;
+      const ownerId = raw.createdBy ?? raw.userId ?? null;
+      const isOwner = ownerId !== null && ownerId === user.id;
       if (!isOwner) {
         return NextResponse.json(
           { error: "Accès refusé à ce produit" },
@@ -76,14 +88,19 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 
     // ── 4. Normaliser (Decimal → number) puis mapper ──
-    const normalized = normalizeProduct(raw);
-    if (!normalized) {
-      return NextResponse.json({ error: "Produit invalide" }, { status: 500 });
-    }
-
-    const mapped = mapCatalogProduct(
-      normalized as unknown as RawCatalogProduct,
-    );
+    // normalizeProduct(s) attend productPrice[] ; ici on sérialise le montant
+    // resté en centimes (Int) vers des unités pour mapCatalogProduct.
+    const amountCents = raw.productPrice[0]?.amount ?? 0;
+    const mapped = mapCatalogProduct({
+      id: raw.id,
+      name: raw.name,
+      basePrice: serializeDecimal(amountCents) / 100,
+      category: raw.category,
+      productImages: raw.productImages,
+      availabilityProjection: raw.availabilityProjection,
+      createdAt: raw.createdAt,
+      updatedAt: raw.updatedAt,
+    } as unknown as Parameters<typeof mapCatalogProduct>[0]);
 
     return NextResponse.json({
       success: true,

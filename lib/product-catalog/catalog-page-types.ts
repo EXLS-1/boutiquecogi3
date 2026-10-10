@@ -61,9 +61,7 @@ export interface CatalogCategoryData {
 export interface CategoryPageProps {
   readonly params: Promise<{ readonly catalog: string }>;
   readonly searchParams?: Promise<{
-    readonly page?: string;
-    readonly sort?: string;
-    readonly filter?: string;
+    readonly [key: string]: string | string[] | undefined;
   }>;
 }
 

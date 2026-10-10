@@ -71,7 +71,7 @@ function mapProduct(p: {
   category: { slug: string } | null;
   variants: { sku: string }[];
 }): ProductSummary {
-    const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
+  const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
   return {
     id: p.variants[0]?.sku ?? p.id,
     name: p.name,
@@ -148,8 +148,7 @@ export const getProducts = cache(
         }),
       ]);
 
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: true,
         data: {
           products: products.map(mapProduct),
@@ -160,8 +159,7 @@ export const getProducts = cache(
       };
     } catch (error) {
       console.error("[getProducts]", error);
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Impossible de charger le catalogue.",
         code: "PRODUCT_FETCH_ERROR",
@@ -173,8 +171,9 @@ export const getProducts = cache(
 export const getProductByIdAction = cache(
   async (id: string): Promise<ActionResponse<ProductSummary | null>> => {
     try {
-      if (!id)   const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: false, error: "ID invalide" };
+      if (!id) {
+        return { success: false, error: "ID invalide" };
+      }
 
       const product = await prisma.product.findFirst({
         where: {
@@ -184,15 +183,13 @@ export const getProductByIdAction = cache(
         select: productSelect,
       });
 
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: true,
         data: product ? mapProduct(product) : null,
       };
     } catch (error) {
       console.error("[getProductByIdAction]", error);
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Impossible de charger le produit",
         code: "PRODUCT_FETCH_ERROR",
@@ -211,12 +208,10 @@ export const getFeaturedProducts = cache(
         select: productSelect,
       });
 
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: true, data: products.map(mapProduct) };
+      return { success: true, data: products.map(mapProduct) };
     } catch (error) {
       console.error("[getFeaturedProducts]", error);
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Impossible de charger les produits en vedette",
         code: "FEATURED_FETCH_ERROR",
@@ -262,8 +257,6 @@ async function verifyBulkLimit(role: Role, count: number): Promise<void> {
 function buildWhereFromFilters(
   filters?: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (!filters)   const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {};
   const where: Record<string, unknown> = {};
 
   if (filters.categoryId) where.categoryId = filters.categoryId;
@@ -296,8 +289,7 @@ export async function bulkDeleteProducts(
 
     const parsed = bulkDeleteSchema.safeParse(input);
     if (!parsed.success) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: `Validation: ${parsed.error.message}`,
         code: "VALIDATION_ERROR",
@@ -307,8 +299,7 @@ export async function bulkDeleteProducts(
     const { ids, softDelete } = parsed.data;
 
     if (!(await hasPermission(role, PERMISSIONS.PRODUCTS_DELETE))) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Permission PRODUCTS_DELETE requise",
         code: "FORBIDDEN",
@@ -322,8 +313,7 @@ export async function bulkDeleteProducts(
       where: { id: { in: ids } },
     });
     if (existingCount !== ids.length) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Certains produits n'existent pas",
         code: "NOT_FOUND",
@@ -341,36 +331,33 @@ export async function bulkDeleteProducts(
             updatedBy: userId,
           },
         });
-          const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { count: updated.count, softDeleted: true as const };
+        return { count: updated.count, softDeleted: true as const };
       }
 
       const deleted = await tx.product.deleteMany({
         where: { id: { in: ids } },
       });
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { count: deleted.count, softDeleted: false as const };
+      return { count: deleted.count, softDeleted: false as const };
     });
 
     revalidatePath("/products");
     revalidatePath("/admin/products");
 
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: true, data: result };
+    return { success: true, data: result };
   } catch (error) {
     console.error("[bulkDeleteProducts]", error);
     if (error instanceof Error && error.message.includes("Limite")) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: false, error: error.message, code: "QUOTA_EXCEEDED" };
+      return { success: false, error: error.message, code: "QUOTA_EXCEEDED" };
     }
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+    return {
       success: false,
       error: "Échec de la suppression",
       code: "BULK_DELETE_ERROR",
     };
   }
 }
+
+
 
 // ── 2. BULK UPDATE ──
 
@@ -381,8 +368,7 @@ export async function bulkUpdateProducts(
     const role = await getCurrentUserRole();
 
     if (!(await hasPermission(role, PERMISSIONS.PRODUCTS_UPDATE))) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Permission PRODUCTS_UPDATE requise",
         code: "FORBIDDEN",
@@ -391,8 +377,7 @@ export async function bulkUpdateProducts(
 
     const parsed = bulkUpdateSchema.safeParse(input);
     if (!parsed.success) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: `Validation: ${parsed.error.message}`,
         code: "VALIDATION_ERROR",
@@ -409,8 +394,7 @@ export async function bulkUpdateProducts(
     const whereClause = isRestricted
       ? {
           id: { in: ids },
-          createdBy: (await auth.api.getSession({ headers: await headers() }))
-            ?.user?.id,
+          createdBy: (await auth.api.getSession({ headers: await headers() }))?.user?.id,
         }
       : { id: { in: ids } };
 
@@ -419,17 +403,15 @@ export async function bulkUpdateProducts(
         where: whereClause,
         data: { ...data, updatedAt: new Date() },
       });
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { count: updated.count };
+      return { count: updated.count };
     });
 
     revalidatePath("/products");
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: true, data: result };
+
+    return { success: true, data: result };
   } catch (error) {
     console.error("[bulkUpdateProducts]", error);
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+    return {
       success: false,
       error: "Échec de la mise à jour",
       code: "BULK_UPDATE_ERROR",
@@ -437,7 +419,8 @@ export async function bulkUpdateProducts(
   }
 }
 
-// ── 3. BULK STATUS CHANGE ──
+
+
 
 export async function bulkChangeStatus(
   ids: string[],
@@ -451,8 +434,7 @@ export async function bulkChangeStatus(
         ? PERMISSIONS.PRODUCTS_BULK_EDIT
         : PERMISSIONS.PRODUCTS_UPDATE;
     if (!(await hasPermission(role, requiredPerm))) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: `Permission ${requiredPerm} requise`,
         code: "FORBIDDEN",
@@ -460,8 +442,7 @@ export async function bulkChangeStatus(
     }
 
     if (!ids.length || ids.length > 500) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Sélection invalide (1-500)",
         code: "VALIDATION_ERROR",
@@ -476,18 +457,9 @@ export async function bulkChangeStatus(
     });
 
     revalidatePath("/products");
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: true, data: { count: result.count, status } };
+
+    return { success: true, data: { count: result.count, status } };
   } catch (error) {
-    console.error("[bulkChangeStatus]", error);
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
-      success: false,
-      error: "Échec du changement de statut",
-      code: "BULK_STATUS_ERROR",
-    };
-  }
-}
 
 // ── 4. BULK DELETE CROSS-PAGES (selectAllMode) ──
 
@@ -496,11 +468,17 @@ export async function bulkDeleteAllPages(
   softDelete: boolean,
 ): Promise<ActionResponse<{ count: number; softDeleted: boolean }>> {
   try {
+
+// ── 4. BULK DELETE CROSS-PAGES (selectAllMode) ──
+
+  filters: Record<string, unknown> | undefined,
+  softDelete: boolean,
+): Promise<ActionResponse<{ count: number; softDeleted: boolean }>> {
+  try {
     const { userId, role } = await requireAdminOrSuperAdmin();
 
     if (!(await hasPermission(role, PERMISSIONS.PRODUCTS_DELETE))) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: false, error: "Permission requise", code: "FORBIDDEN" };
+      return { success: false, error: "Permission requise", code: "FORBIDDEN" };
     }
 
     const where = buildWhereFromFilters(filters);
@@ -511,8 +489,7 @@ export async function bulkDeleteAllPages(
 
     const ids = allProducts.map((p) => p.id);
     if (ids.length === 0) {
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+      return {
         success: false,
         error: "Aucun produit ne correspond aux critères",
         code: "NO_MATCH",
@@ -532,25 +509,21 @@ export async function bulkDeleteAllPages(
             updatedBy: userId,
           },
         });
-          const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { count: updated.count, softDeleted: true as const };
+        return { count: updated.count, softDeleted: true as const };
       }
       const deleted = await tx.product.deleteMany({
         where: { id: { in: ids } },
       });
-        const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { count: deleted.count, softDeleted: false as const };
+      return { count: deleted.count, softDeleted: false as const };
     });
 
     revalidatePath("/products");
     revalidatePath("/admin/products");
 
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return { success: true, data: result };
+    return { success: true, data: result };
   } catch (error) {
     console.error("[bulkDeleteAllPages]", error);
-      const basePriceNum = typeof p.basePrice === "bigint" ? Number(p.basePrice) : p.basePrice;
-  return {
+    return {
       success: false,
       error: "Échec de la suppression globale",
       code: "BULK_DELETE_ALL_ERROR",
@@ -558,3 +531,114 @@ export async function bulkDeleteAllPages(
   }
 }
 
+// ── 3. BULK STATUS CHANGE ──
+
+export async function bulkChangeStatus(
+  ids: string[],
+  status: "PUBLISHED" | "DRAFT" | "ARCHIVED",
+): Promise<ActionResponse<{ count: number; status: string }>> {
+  try {
+    const role = await getCurrentUserRole();
+
+    const requiredPerm =
+      status === "ARCHIVED"
+        ? PERMISSIONS.PRODUCTS_BULK_EDIT
+        : PERMISSIONS.PRODUCTS_UPDATE;
+    if (!(await hasPermission(role, requiredPerm))) {
+      return {
+        success: false,
+        error: `Permission ${requiredPerm} requise`,
+        code: "FORBIDDEN",
+      };
+    }
+
+    if (!ids.length || ids.length > 500) {
+      return {
+        success: false,
+        error: "Sélection invalide (1-500)",
+        code: "VALIDATION_ERROR",
+      };
+    }
+
+    await verifyBulkLimit(role, ids.length);
+
+    const result = await prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { status, isActive: status === "PUBLISHED", updatedAt: new Date() },
+    });
+
+    revalidatePath("/products");
+
+    return { success: true, data: { count: result.count, status } };
+  } catch (error) {
+    console.error("[bulkChangeStatus]", error);
+    return {
+      success: false,
+      error: "Échec du changement de statut",
+      code: "BULK_STATUS_ERROR",
+    };
+  }
+}
+
+// ── 4. BULK DELETE CROSS-PAGES (selectAllMode) ──
+
+export async function bulkDeleteAllPages(
+  filters: Record<string, unknown> | undefined,
+  softDelete: boolean,
+): Promise<ActionResponse<{ count: number; softDeleted: boolean }>> {
+  try {
+    const { userId, role } = await requireAdminOrSuperAdmin();
+
+    if (!(await hasPermission(role, PERMISSIONS.PRODUCTS_DELETE))) {
+      return { success: false, error: "Permission requise", code: "FORBIDDEN" };
+    }
+
+    const where = buildWhereFromFilters(filters);
+    const allProducts = await prisma.product.findMany({
+      where: { ...where, isArchived: false },
+      select: { id: true },
+    });
+
+    const ids = allProducts.map((p) => p.id);
+    if (ids.length === 0) {
+      return {
+        success: false,
+        error: "Aucun produit ne correspond aux critères",
+        code: "NO_MATCH",
+      };
+    }
+
+    await verifyBulkLimit(role, ids.length);
+
+    const result = await prisma.$transaction(async (tx) => {
+      if (softDelete) {
+        const updated = await tx.product.updateMany({
+          where: { id: { in: ids } },
+          data: {
+            deletedAt: new Date(),
+            isActive: false,
+            status: "ARCHIVED",
+            updatedBy: userId,
+          },
+        });
+        return { count: updated.count, softDeleted: true as const };
+      }
+      const deleted = await tx.product.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return { count: deleted.count, softDeleted: false as const };
+    });
+
+    revalidatePath("/products");
+    revalidatePath("/admin/products");
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("[bulkDeleteAllPages]", error);
+    return {
+      success: false,
+      error: "Échec de la suppression globale",
+      code: "BULK_DELETE_ALL_ERROR",
+    };
+  }
+}

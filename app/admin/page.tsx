@@ -47,22 +47,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     <div className="min-h-screen bg-cyan-100 p-1 text-cyan-600 md:p-3">
       {/* En-tête */}
       <header className="flex flex-col gap-4 border-b border-cyan-200 pb-6 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2 text-emerald-500">
-            <Shield className="h-5 w-5" aria-hidden="true" />
-            <span className="font-mono text-xs font-semibold uppercase tracking-widest">
-              Zone privilégiée
-            </span>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Portail Admin</h1>
-          <p className="mt-1 text-sm text-cyan-500">
-            Connecté en tant que{" "}
-            <span className="font-medium text-rose-500">
-              {session.userId}
-            </span>{" "}
-            — {session.role.name} (niveau {session.level})
-          </p>
-        </div>
+       
 
         <Button
           asChild
@@ -78,7 +63,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
       {/* Contenu protégé par le code PIN */}
       {pinEntryFresh ? (
-        <div className="mt-8 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="mt-8 flex flex-col gap-6 md:flex-row">
           <AdminModuleSidebar
             groups={ADMIN_MODULE_GROUPS}
             activeGroupId={activeGroup.id}
