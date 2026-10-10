@@ -69,6 +69,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       include: {
         category: { select: { id: true, name: true } },
         variants: { select: { id: true } },
+        productPrice: { select: { amount: true, currency: true } },
         _count: { select: { productReviews: true, orderItems: true } },
       },
     }),

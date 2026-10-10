@@ -42,6 +42,7 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: { select: { id: true; name: true } };
     variants: { select: { id: true } };
+    productPrice: { select: { amount: true; currency: true } };
     _count: { select: { productReviews: true; orderItems: true } };
   };
 }>;
@@ -158,11 +159,23 @@ export function ProductsTable({
     [router, pathname, searchParams, totalPages],
   );
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("fr-FR", { style: "currency", currency: "CDF" }).format(price);
   const formatPrice = (price: number | Prisma.Decimal | null | undefined) => {
     const numericPrice = typeof price === "number" ? price : price ? Number(price) : 0;
     return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "CDF" }).format(numericPrice);
+  };
+
+  /**
+   * Récupère le prix affichable d'un produit depuis sa relation `productPrice`.
+   * Le modèle `Product` n'expose pas de champ `price` direct : le prix vit dans
+   * la table `ProductPrice` (relation many). On privilégie l'entrée dont la
+   * devise correspond à celle du produit, puis la première disponible.
+   */
+  const getDisplayPrice = (product: ProductWithRelations): number => {
+    const prices = product.productPrice;
+    if (!prices || prices.length === 0) return 0;
+    const matching =
+      prices.find((p) => p.currency === product.currency) ?? prices[0];
+    return Number(matching?.amount ?? 0);
   };
 
   const getStatusBadge = (status: string) => {
@@ -263,7 +276,7 @@ export function ProductsTable({
                     <TableCell>{getStatusBadge(product.status)}</TableCell>
 
                     <TableCell className="text-right font-mono font-semibold text-sm">
-                      {formatPrice(product.price)}
+                      {formatPrice(getDisplayPrice(product))}
                     </TableCell>
 
                     <TableCell className="text-center font-mono text-xs text-muted-foreground">

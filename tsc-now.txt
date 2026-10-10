@@ -1,0 +1,200 @@
+app/(protected)/layout.tsx(26,7): error TS2322: Type 'Permission[]' is not assignable to type 'PermissionCode[]'.
+  Type 'Permission' is not assignable to type 'PermissionCode'.
+    Type '"products:manage_variants"' is not assignable to type 'PermissionCode'.
+app/admin/dashboard/analytics/page.tsx(67,35): error TS2339: Property 'toNumber' does not exist on type 'never'.
+app/admin/dashboard/audit/page.tsx(71,21): error TS2322: Type '{ stats: (PickEnumerable<AuditLogGroupByOutputType, "status"[]> & { _count: { id: number; }; })[]; events: (PickEnumerable<AuditLogGroupByOutputType, "action"[]> & { ...; })[]; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'stats' does not exist on type 'IntrinsicAttributes'.
+app/admin/dashboard/audit/page.tsx(79,24): error TS2322: Type '({ user: { name: string | null; id: string; email: string; } | null; } & { error: string | null; id: string; status: string | null; createdAt: Date; updatedAt: Date; userId: string | null; ... 24 more ...; sessionId: string | null; })[]' is not assignable to type 'AuditLogRow[]'.
+  Type '{ user: { name: string | null; id: string; email: string; } | null; } & { error: string | null; id: string; status: string | null; createdAt: Date; updatedAt: Date; userId: string | null; ... 24 more ...; sessionId: string | null; }' is not assignable to type 'AuditLogRow'.
+    Types of property 'status' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+app/admin/dashboard/layout.tsx(43,7): error TS2322: Type 'Permission[]' is not assignable to type 'PermissionCode[]'.
+  Type 'Permission' is not assignable to type 'PermissionCode'.
+    Type '"products:manage_variants"' is not assignable to type 'PermissionCode'.
+app/admin/dashboard/orders/page.tsx(74,26): error TS2322: Type '(PickEnumerable<OrderGroupByOutputType, "status"[]> & { _count: { id: number; }; _sum: { totalAmount: number | null; }; })[]' is not assignable to type '{ _count?: { id: number; } | undefined; _sum?: { totalAmount: number; } | undefined; }[]'.
+  Type 'PickEnumerable<OrderGroupByOutputType, "status"[]> & { _count: { id: number; }; _sum: { totalAmount: number | null; }; }' is not assignable to type '{ _count?: { id: number; } | undefined; _sum?: { totalAmount: number; } | undefined; }'.
+    The types of '_sum.totalAmount' are incompatible between these types.
+      Type 'number | null' is not assignable to type 'number'.
+        Type 'null' is not assignable to type 'number'.
+app/admin/dashboard/products/promotions/page.tsx(58,25): error TS2322: Type 'GetCouponAggregateType<{ _count: { id: true; }; _sum: { discountValue: true; }; }>' is not assignable to type '{ _count?: { id: number; } | undefined; _sum?: { discountValue: number; } | undefined; }'.
+  The types of '_sum.discountValue' are incompatible between these types.
+    Type 'number | null' is not assignable to type 'number'.
+      Type 'null' is not assignable to type 'number'.
+app/admin/dashboard/treasury/page.tsx(54,66): error TS2322: Type '{ id: number; }' is not assignable to type 'ReactNode'.
+app/admin/dashboard/treasury/page.tsx(60,27): error TS2322: Type 'GetPaymentAggregateType<{ _sum: { amount: true; }; _count: { id: true; }; where: { createdAt: { gte: Date; }; }; }>' is not assignable to type '{ _sum?: { amount: number; } | undefined; _count?: number | undefined; }'.
+  The types of '_sum.amount' are incompatible between these types.
+    Type 'number | null' is not assignable to type 'number'.
+      Type 'null' is not assignable to type 'number'.
+app/admin/products/page.tsx(13,8): error TS2307: Cannot find module '@/lib/product/product.repository' or its corresponding type declarations.
+app/admin/settings/videos/page.tsx(10,27): error TS2307: Cannot find module '@/components/dashboard/videos/video-grid' or its corresponding type declarations.
+app/admin/settings/videos/page.tsx(11,31): error TS2307: Cannot find module '@/components/dashboard/videos/video-uploader' or its corresponding type declarations.
+app/api/product/[id]/preview/route.ts(62,22): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'ProductPriceOrderByWithRelationInput | ProductPriceOrderByWithRelationInput[]'.
+app/api/product/[id]/preview/route.ts(93,29): error TS2339: Property 'productPrice' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'.
+app/api/product/[id]/preview/route.ts(98,21): error TS2551: Property 'category' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'. Did you mean 'categoryId'?
+app/api/product/[id]/preview/route.ts(99,26): error TS2339: Property 'productImages' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'.
+app/api/product/[id]/preview/route.ts(100,35): error TS2339: Property 'availabilityProjection' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'.
+app/api/product/[id]/route.ts(32,20): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'ProductPriceOrderByWithRelationInput | ProductPriceOrderByWithRelationInput[]'.
+app/api/product/[id]/route.ts(62,32): error TS2339: Property 'productPrice' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'.
+app/api/product/[id]/route.ts(67,21): error TS2339: Property 'variants' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'.
+app/api/product/[id]/route.ts(72,27): error TS2551: Property 'category' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'. Did you mean 'categoryId'?
+app/api/product/[id]/route.ts(73,29): error TS2339: Property 'categoryProducts' does not exist on type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }'.
+app/api/product/[id]/route.ts(73,51): error TS7006: Parameter 'cp' implicitly has an 'any' type.
+app/api/product/[id]/status/route.ts(7,10): error TS2305: Module '"@/lib/product/product-workflow"' has no exported member 'updateProductStatus'.
+app/api/product/[id]/status/route.ts(7,31): error TS2305: Module '"@/lib/product/product-workflow"' has no exported member 'ProductWorkflowError'.
+app/api/product/[id]/status/route.ts(80,18): error TS18046: 'error' is of type 'unknown'.
+app/api/product/[id]/status/route.ts(80,39): error TS18046: 'error' is of type 'unknown'.
+app/api/product/[id]/status/route.ts(81,19): error TS18046: 'error' is of type 'unknown'.
+app/api/product/import/route.ts(202,15): error TS2353: Object literal may only specify known properties, and 'price' does not exist in type 'Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput & object'.
+app/api/product/route.ts(123,32): error TS2345: Argument of type '(p: Product) => { id: string; name: string; description: string | null; price: number; images: string[]; category: string; categories: { id: string; name: string; slug: string; }[]; isFeatured: boolean; createdAt: Date; updatedAt: Date; }' is not assignable to parameter of type '(value: { category: { name: string; slug: string; } | null; categoryProducts: ({ category: { id: string; name: string; slug: string; }; } & { categoryId: string; productId: string; displayOrder: number; })[]; variants: { ...; }[]; } & { ...; }, index: number, array: ({ ...; } & { ...; })[]) => { ...; }'.
+  Types of parameters 'p' and 'value' are incompatible.
+    Property 'basePrice' is missing in type '{ category: { name: string; slug: string; } | null; categoryProducts: ({ category: { id: string; name: string; slug: string; }; } & { categoryId: string; productId: string; displayOrder: number; })[]; variants: { ...; }[]; } & { ...; }' but required in type 'Product'.
+app/api/product/route.ts(197,13): error TS2352: Conversion of type '{ isFeatured: boolean; variants: { create: { id: string; sku: string; attributes: {}; priceOffset: number; }; }; categoryId?: string | undefined; categoryProducts?: { create: { categoryId: string; displayOrder: number; }[]; } | undefined; ... 5 more ...; images: any[]; }' to type 'ProductCreateInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ isFeatured: boolean; variants: { create: { id: string; sku: string; attributes: {}; priceOffset: number; }; }; categoryId?: string | undefined; categoryProducts?: { create: { categoryId: string; displayOrder: number; }[]; } | undefined; ... 5 more ...; images: any[]; }' is missing the following properties from type 'ProductCreateInput': sku, productType, user
+components/admin/order-table.tsx(30,5): error TS2724: '"@/lib/cart/cart-domain"' has no exported member named 'formatOrderDateTime'. Did you mean 'formatOrderDate'?
+components/admin/product-crud-manager.tsx(100,19): error TS2345: Argument of type '{ id: string; name: string; slug: string; sku: string; status: ProductStatus; basePrice: number; price: number; currency: string; isActive: boolean; scheduledAt: string | null; ... 6 more ...; variants: { ...; }[]; }[]' is not assignable to parameter of type 'SetStateAction<SerializedProduct[]>'.
+  Type '{ id: string; name: string; slug: string; sku: string; status: ProductStatus; basePrice: number; price: number; currency: string; isActive: boolean; scheduledAt: string | null; ... 6 more ...; variants: { ...; }[]; }[]' is not assignable to type 'SerializedProduct[]'.
+    Type '{ id: string; name: string; slug: string; sku: string; status: $Enums.ProductStatus; basePrice: number; price: number; currency: string; isActive: boolean; scheduledAt: string | null; ... 6 more ...; variants: { ...; }[]; }' is not assignable to type 'SerializedProduct'.
+      Types of property 'currency' are incompatible.
+        Type 'string' is not assignable to type 'Currency'.
+components/admin/product-crud-manager.tsx(122,21): error TS2345: Argument of type '{ id: string; name: string; slug: string; sku: string; status: ProductStatus; basePrice: number; price: number; currency: string; isActive: boolean; scheduledAt: string | null; ... 6 more ...; variants: { ...; }[]; }[]' is not assignable to parameter of type 'SetStateAction<SerializedProduct[]>'.
+  Type '{ id: string; name: string; slug: string; sku: string; status: ProductStatus; basePrice: number; price: number; currency: string; isActive: boolean; scheduledAt: string | null; ... 6 more ...; variants: { ...; }[]; }[]' is not assignable to type 'SerializedProduct[]'.
+    Type '{ id: string; name: string; slug: string; sku: string; status: $Enums.ProductStatus; basePrice: number; price: number; currency: string; isActive: boolean; scheduledAt: string | null; ... 6 more ...; variants: { ...; }[]; }' is not assignable to type 'SerializedProduct'.
+      Types of property 'currency' are incompatible.
+        Type 'string' is not assignable to type 'Currency'.
+components/admin/products/product-detail-tabs.tsx(7,32): error TS2307: Cannot find module '@/lib/product/product.repository' or its corresponding type declarations.
+components/admin/products/product-detail-tabs.tsx(73,48): error TS2307: Cannot find module '@/lib/product/product.repository' or its corresponding type declarations.
+components/admin/products/product-kpi-cards.tsx(6,15): error TS2305: Module '"@/lib/product/types"' has no exported member 'ProductKpis'.
+components/admin/products/product-status-badge.tsx(4,62): error TS2307: Cannot find module '@/lib/product/constants' or its corresponding type declarations.
+components/admin/products/product-table.tsx(7,15): error TS2305: Module '"@/lib/product/types"' has no exported member 'ProductListResult'.
+components/admin/products/product-table.tsx(27,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+lib/auth/rbac.ts(357,14): error TS2740: Type '{ "users:read": { category: string; minLevel: number; isDangerous: false; description: string; }; "users:create": { category: string; minLevel: number; isDangerous: false; description: string; }; "users:update": { ...; }; ... 108 more ...; "system:settings:write": { ...; }; }' is missing the following properties from type 'Record<PermissionCode, { category: string; minLevel: number; isDangerous: boolean; description: string; }>': "products:manage_variants", "products:manage_reviews", "orders:process_refund", "media:organize", and 8 more.
+lib/cache/cacheConsumer.ts(308,18): error TS2353: Object literal may only specify known properties, and 'isActive' does not exist in type 'CategoryWhereInput'.
+lib/cache/cacheConsumer.ts(331,27): error TS7053: Element implicitly has an 'any' type because expression of type '3' can't be used to index type '{}'.
+  Property '3' does not exist on type '{}'.
+lib/cart/cart-domain.ts(187,17): error TS2323: Cannot redeclare exported variable 'formatCartItemCount'.
+lib/cart/cart-domain.ts(187,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(687,14): error TS2395: Individual declarations in merged declaration 'ORDER_STATUS_LABELS' must be all exported or all local.
+lib/cart/cart-domain.ts(698,14): error TS2395: Individual declarations in merged declaration 'ORDER_PAYMENT_LABELS' must be all exported or all local.
+lib/cart/cart-domain.ts(742,17): error TS2323: Cannot redeclare exported variable 'getOrderStatusLabel'.
+lib/cart/cart-domain.ts(742,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(754,17): error TS2323: Cannot redeclare exported variable 'getOrderPaymentLabel'.
+lib/cart/cart-domain.ts(754,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(765,17): error TS2323: Cannot redeclare exported variable 'resolveOrderPaymentStatus'.
+lib/cart/cart-domain.ts(765,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(811,17): error TS2323: Cannot redeclare exported variable 'formatOrderAmountMinor'.
+lib/cart/cart-domain.ts(811,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(904,17): error TS2323: Cannot redeclare exported variable 'formatCartItemCount'.
+lib/cart/cart-domain.ts(904,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(918,17): error TS2323: Cannot redeclare exported variable 'formatOrderAmountMinor'.
+lib/cart/cart-domain.ts(918,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(949,7): error TS2395: Individual declarations in merged declaration 'ORDER_STATUS_LABELS' must be all exported or all local.
+lib/cart/cart-domain.ts(961,17): error TS2323: Cannot redeclare exported variable 'getOrderStatusLabel'.
+lib/cart/cart-domain.ts(961,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(964,10): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<CartOrderStatus, string>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<CartOrderStatus, string>'.
+lib/cart/cart-domain.ts(967,7): error TS2395: Individual declarations in merged declaration 'ORDER_PAYMENT_LABELS' must be all exported or all local.
+lib/cart/cart-domain.ts(977,17): error TS2323: Cannot redeclare exported variable 'resolveOrderPaymentStatus'.
+lib/cart/cart-domain.ts(977,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(991,17): error TS2323: Cannot redeclare exported variable 'getOrderPaymentLabel'.
+lib/cart/cart-domain.ts(991,17): error TS2393: Duplicate function implementation.
+lib/cart/cart-domain.ts(994,10): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<CartPaymentStatus, string>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<CartPaymentStatus, string>'.
+lib/currency/exchange-rate-bcc.ts(154,53): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'Buffer'.
+  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'Buffer': maxByteLength, resizable, resize, detached, and 2 more.
+lib/logger.ts(923,7): error TS18047: 'fs' is possibly 'null'.
+lib/product-catalog/catalog-queries.ts(171,23): error TS2323: Cannot redeclare exported variable 'invalidateAllCatalogCaches'.
+lib/product-catalog/catalog-queries.ts(171,23): error TS2393: Duplicate function implementation.
+lib/product-catalog/catalog-queries.ts(724,23): error TS2323: Cannot redeclare exported variable 'invalidateAllCatalogCaches'.
+lib/product-catalog/catalog-queries.ts(724,23): error TS2393: Duplicate function implementation.
+lib/product-catalog/catalog-queries.ts(729,9): error TS2554: Expected 2 arguments, but got 1.
+lib/product/product-repository.ts(91,56): error TS2345: Argument of type '{ stock: { quantity: number; reserved: number; } | null; category: { name: string; id: string; } | null; productPrice: { id: string; currency: string; country: string | null; productId: string; ... 4 more ...; endsAt: Date | null; }[]; _count: { ...; }; productType: { ...; }; availabilityProjection: { ...; } | null;...' is not assignable to parameter of type 'ProductMapperRow'.
+  Types of property 'productPrice' are incompatible.
+    Type '{ id: string; currency: string; country: string | null; productId: string; amount: Decimal; compareAtPrice: number | null; region: string | null; startsAt: Date | null; endsAt: Date | null; }[]' is not assignable to type 'MapperPriceRow[]'.
+      Type '{ id: string; currency: string; country: string | null; productId: string; amount: Decimal; compareAtPrice: number | null; region: string | null; startsAt: Date | null; endsAt: Date | null; }' is not assignable to type 'MapperPriceRow'.
+        Types of property 'amount' are incompatible.
+          Type 'Decimal' is not assignable to type 'number'.
+lib/product/product-service.ts(56,32): error TS2345: Argument of type '{ stock: { quantity: number; reserved: number; } | null; productPrice: { id: string; currency: string; country: string | null; productId: string; amount: Decimal; compareAtPrice: number | null; region: string | null; startsAt: Date | null; endsAt: Date | null; }[]; ... 9 more ...; availabilityProjection: { ...; } | ...' is not assignable to parameter of type 'ProductMapperRow'.
+  Types of property 'productPrice' are incompatible.
+    Type '{ id: string; currency: string; country: string | null; productId: string; amount: Decimal; compareAtPrice: number | null; region: string | null; startsAt: Date | null; endsAt: Date | null; }[]' is not assignable to type 'MapperPriceRow[]'.
+      Type '{ id: string; currency: string; country: string | null; productId: string; amount: Decimal; compareAtPrice: number | null; region: string | null; startsAt: Date | null; endsAt: Date | null; }' is not assignable to type 'MapperPriceRow'.
+        Types of property 'amount' are incompatible.
+          Type 'Decimal' is not assignable to type 'number'.
+lib/product/productService.ts(113,11): error TS2352: Conversion of type '{ productId: string; slug: string; totalStock: number; }' to type '{ variants: { initialStock?: unknown; }[]; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'variants' is missing in type '{ productId: string; slug: string; totalStock: number; }' but required in type '{ variants: { initialStock?: unknown; }[]; }'.
+lib/product/productService.ts(122,19): error TS2352: Conversion of type '{ productId: string; slug: string; totalStock: number; }' to type '{ id: string; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'id' is missing in type '{ productId: string; slug: string; totalStock: number; }' but required in type '{ id: string; }'.
+lib/security/products.ts(271,40): error TS2339: Property 'basePrice' does not exist on type '{ category: { slug: string; } | null; variants: { sku: string; variantStocks: { quantity: number; reserved: number; }[]; }[]; } & { id: string; status: ProductStatus; name: string; description: string; ... 26 more ...; couponId: string | null; }'.
+lib/security/products.ts(353,15): error TS2339: Property 'basePrice' does not exist on type 'ProductWhereInput'.
+prisma.config.ts(18,5): error TS2353: Object literal may only specify known properties, and 'directUrl' does not exist in type '{ url?: string | undefined; shadowDatabaseUrl?: string | undefined; }'.
+prisma/seed/dev/08-orders.ts(54,35): error TS2339: Property 'toString' does not exist on type 'never'.
+prisma/seed/media.seed.ts(181,9): error TS2322: Type '{ width: number; height: number; } | null' is not assignable to type 'InputJsonValue | NullableJsonNullValueInput | undefined'.
+  Type 'null' is not assignable to type 'InputJsonValue | NullableJsonNullValueInput | undefined'.
+prisma/seed/media.seed.ts(192,41): error TS2322: Type '{ width: number; height: number; } | null' is not assignable to type 'InputJsonValue | NullableJsonNullValueInput | undefined'.
+  Type 'null' is not assignable to type 'InputJsonValue | NullableJsonNullValueInput | undefined'.
+prisma/seed/scenarios/inventory-conflict.ts(56,11): error TS2353: Object literal may only specify known properties, and 'price' does not exist in type 'Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput & object'.
+prisma/seed/test/03-minimal-catalog.ts(56,45): error TS2353: Object literal may only specify known properties, and 'price' does not exist in type '((Without<ProductUpdateInput, ProductUncheckedUpdateInput> & ProductUncheckedUpdateInput) | (Without<...> & ProductUpdateInput)) & object'.
+prisma/seed/test/03-minimal-catalog.ts(63,11): error TS2353: Object literal may only specify known properties, and 'price' does not exist in type 'Without<ProductCreateInput, ProductUncheckedCreateInput> & ProductUncheckedCreateInput & object'.
+prisma/seed/utils/uuid.ts(11,22): error TS2724: '"node:crypto"' has no exported member named 'randomUUIDv7'. Did you mean 'randomUUID'?
+prisma/seed/video.seed.ts(214,36): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'InputJsonValue | JsonNull | undefined'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+prisma/seed/video.seed.ts(222,36): error TS2322: Type 'Record<string, unknown>' is not assignable to type 'InputJsonValue | JsonNull | undefined'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+server/actions/product-actions.ts(117,38): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(117,75): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(119,28): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(120,35): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(121,40): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(124,36): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(126,37): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(128,30): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(131,31): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(195,31): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(197,38): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(197,75): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(199,38): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-actions.ts(201,37): error TS2345: Argument of type 'FormDataEntryValue | null' is not assignable to parameter of type 'FormDataEntryValue | undefined'.
+  Type 'null' is not assignable to type 'FormDataEntryValue | undefined'.
+server/actions/product-draft-actions.ts(308,16): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'ProductPriceOrderByWithRelationInput | ProductPriceOrderByWithRelationInput[]'.
+server/actions/product-draft-actions.ts(326,49): error TS2344: Type '{ select: { id: true; name: true; slug: true; sku: true; status: true; currency: true; isActive: true; scheduledAt: true; publishedAt: true; createdAt: true; updatedAt: true; images: true; category: { select: { ...; }; }; productPrice: { ...; }; variants: { ...; }; _count: { ...; }; }; }' does not satisfy the constraint 'boolean | ProductDefaultArgs<DefaultArgs> | null | undefined'.
+  Type '{ select: { id: true; name: true; slug: true; sku: true; status: true; currency: true; isActive: true; scheduledAt: true; publishedAt: true; createdAt: true; updatedAt: true; images: true; category: { select: { ...; }; }; productPrice: { ...; }; variants: { ...; }; _count: { ...; }; }; }' is not assignable to type 'ProductDefaultArgs<DefaultArgs>'.
+    The types of 'select.productPrice' are incompatible between these types.
+      Type '{ orderBy: { createdAt: "desc"; }; take: number; select: { amount: true; currency: true; }; }' is not assignable to type 'boolean | Product$productPriceArgs<DefaultArgs> | undefined'.
+        Type '{ orderBy: { createdAt: "desc"; }; take: number; select: { amount: true; currency: true; }; }' is not assignable to type 'Product$productPriceArgs<DefaultArgs>'.
+          Types of property 'orderBy' are incompatible.
+            Type '{ createdAt: "desc"; }' is not assignable to type 'ProductPriceOrderByWithRelationInput | ProductPriceOrderByWithRelationInput[] | undefined'.
+server/actions/product-draft-actions.ts(494,9): error TS2322: Type '{ id: true; name: true; slug: true; sku: true; status: true; currency: true; isActive: true; scheduledAt: true; publishedAt: true; createdAt: true; updatedAt: true; images: true; category: { select: { id: true; name: true; slug: true; }; }; productPrice: { ...; }; variants: { ...; }; _count: { ...; }; }' is not assignable to type 'ProductSelect<DefaultArgs>'.
+  Types of property 'productPrice' are incompatible.
+    Type '{ orderBy: { createdAt: "desc"; }; take: number; select: { amount: true; currency: true; }; }' is not assignable to type 'boolean | Product$productPriceArgs<DefaultArgs> | undefined'.
+      Type '{ orderBy: { createdAt: "desc"; }; take: number; select: { amount: true; currency: true; }; }' is not assignable to type 'Product$productPriceArgs<DefaultArgs>'.
+        Types of property 'orderBy' are incompatible.
+          Type '{ createdAt: "desc"; }' is not assignable to type 'ProductPriceOrderByWithRelationInput | ProductPriceOrderByWithRelationInput[] | undefined'.
+server/actions/product-draft-actions.ts(504,32): error TS2345: Argument of type '(p: { name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; currency: Currency; sku: string; slug: string; images: string[]; isActive: boolean; ... 5 more ...; variants: { ...; }[]; }) => { ...; }' is not assignable to parameter of type '(value: { name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; ... 22 more ...; publishedById: string | null; }, index: number, array: { ...; }[]) => { ...; }'.
+  Types of parameters 'p' and 'value' are incompatible.
+    Type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }' is missing the following properties from type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; currency: Currency; sku: string; slug: string; images: string[]; isActive: boolean; ... 5 more ...; variants: { ...; }[]; }': category, productPrice, _count, variants
+server/actions/product-draft-actions.ts(526,7): error TS2322: Type '{ id: true; name: true; slug: true; sku: true; status: true; currency: true; isActive: true; scheduledAt: true; publishedAt: true; createdAt: true; updatedAt: true; images: true; category: { select: { id: true; name: true; slug: true; }; }; productPrice: { ...; }; variants: { ...; }; _count: { ...; }; }' is not assignable to type 'ProductSelect<DefaultArgs>'.
+  Types of property 'productPrice' are incompatible.
+    Type '{ orderBy: { createdAt: "desc"; }; take: number; select: { amount: true; currency: true; }; }' is not assignable to type 'boolean | Product$productPriceArgs<DefaultArgs> | undefined'.
+      Type '{ orderBy: { createdAt: "desc"; }; take: number; select: { amount: true; currency: true; }; }' is not assignable to type 'Product$productPriceArgs<DefaultArgs>'.
+        Types of property 'orderBy' are incompatible.
+          Type '{ createdAt: "desc"; }' is not assignable to type 'ProductPriceOrderByWithRelationInput | ProductPriceOrderByWithRelationInput[] | undefined'.
+server/actions/product-draft-actions.ts(532,57): error TS2345: Argument of type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }' is not assignable to parameter of type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; currency: Currency; sku: string; slug: string; images: string[]; isActive: boolean; ... 5 more ...; variants: { ...; }[]; }'.
+  Type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; userId: string; currency: Currency; couponId: string | null; sku: string; ... 21 more ...; publishedById: string | null; }' is missing the following properties from type '{ name: string; id: string; status: ProductStatus; createdAt: Date; updatedAt: Date; currency: Currency; sku: string; slug: string; images: string[]; isActive: boolean; ... 5 more ...; variants: { ...; }[]; }': category, productPrice, _count, variants
+server/actions/product-draft-actions.ts(707,27): error TS2339: Property 'basePrice' does not exist on type '{ variants: { id: string; createdAt: Date; sku: string; isActive: boolean; productId: string; attributes: JsonValue; priceOffset: number; }[]; productImages: { id: string; productId: string; url: string; alt: string | null; position: number; }[]; } & { ...; }'.
+server/actions/product-dynamic-actions.ts(46,5): error TS2554: Expected 2 arguments, but got 1.
+store/admin/products/product-list.store.ts(12,16): error TS7008: Member 'm' implicitly has an 'any' type.
+store/admin/products/product-list.store.ts(72,7): error TS2741: Property 'm' is missing in type '{ page: number; limit: number; total: number; totalPages: number; search: string; status: never[]; productTypeId: null; categoryId: null; sortBy: "createdAt"; sortOrder: "desc"; selectedIds: Set<string>; isLoading: false; error: null; }' but required in type 'ProductListFilters'.
+tmp-units-probe.ts(26,32): error TS2353: Object literal may only specify known properties, and 'basePrice' does not exist in type 'ProductSelect<DefaultArgs>'.

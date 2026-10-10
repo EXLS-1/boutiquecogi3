@@ -44,6 +44,8 @@ export function ProductVariantPurchase({ config, product }: ProductVariantPurcha
       isPromoted: product.isFeatured,
       isNewArrival: false,
       discountPercent: 0,
+      variantCount: product.variants?.length ?? 0,
+      hasAvailableVariant: variant.stockQuantity > 0,
     };
     addItem(cartProduct, quantity, variant.id);
     toast.success(`${product.name} — ${variant.sku} ajouté au panier`);
