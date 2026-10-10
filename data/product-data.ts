@@ -556,7 +556,7 @@ export const productData: ProductCatalog = {
         name: "Chemise Bleue Elegant",
         price: 45,
         size: "36 à 48",
-        sound: "Bleu",
+        couleur: "Bleu",
         image: "/pict02.webp",
         description: "Chemise bleue de qualité supérieure pour homme",
         category: "homme",

@@ -5,22 +5,28 @@ import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+type ScrollAreaOrientation = "vertical" | "horizontal"
+
 function ScrollArea({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>) {
+  // Robust logic: children is optional at runtime — render Viewport only
+  // with valid content and keep the default ScrollBar so overflow stays usable.
+  const hasChildren = React.Children.count(children) > 0
+
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      className={cn("relative", className ?? "")}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
         className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
       >
-        {children}
+        {hasChildren ? children : null}
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
@@ -32,18 +38,25 @@ function ScrollBar({
   className,
   orientation = "vertical",
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+}: React.ComponentPropsWithoutRef<
+  typeof ScrollAreaPrimitive.ScrollAreaScrollbar
+>) {
+  // Robust logic: coerce any unexpected orientation value to "vertical" so
+  // TypeScript narrows to the Radix union and styling stays deterministic.
+  const safeOrientation: ScrollAreaOrientation =
+    orientation === "horizontal" ? "horizontal" : "vertical"
+
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       data-slot="scroll-area-scrollbar"
-      orientation={orientation}
+      orientation={safeOrientation}
       className={cn(
         "flex touch-none p-px transition-colors select-none",
-        orientation === "vertical" &&
+        safeOrientation === "vertical" &&
           "h-full w-2.5 border-l border-l-transparent",
-        orientation === "horizontal" &&
+        safeOrientation === "horizontal" &&
           "h-2.5 flex-col border-t border-t-transparent",
-        className
+        className ?? ""
       )}
       {...props}
     >

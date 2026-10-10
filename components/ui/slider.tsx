@@ -5,6 +5,10 @@ import { Slider as SliderPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+type SliderRootProps = React.ComponentPropsWithoutRef<
+  typeof SliderPrimitive.Root
+>
+
 function Slider({
   className,
   defaultValue,
@@ -12,27 +16,47 @@ function Slider({
   min = 0,
   max = 100,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
-  const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
-    [value, defaultValue, min, max]
+}: SliderRootProps) {
+  // Robust logic: normalize Radix controlled/uncontrolled values to a finite
+  // number array. Falls back to [min] when no value is provided, clamps every
+  // entry to [safeMin, safeMax], and renders one thumb per entry so the
+  // slider never crashes on undefined / NaN / out-of-range input.
+  const safeMin = Number.isFinite(min) ? min : 0
+  const safeMax = Number.isFinite(max) ? max : 100
+  const lower = Math.min(safeMin, safeMax)
+  const upper = Math.max(safeMin, safeMax)
+
+  const clampToRange = React.useCallback(
+    (n: number) => {
+      if (!Number.isFinite(n)) return lower
+      return Math.min(upper, Math.max(lower, n))
+    },
+    [lower, upper]
   )
+
+  const _values = React.useMemo<number[]>(() => {
+    const raw = Array.isArray(value)
+      ? value
+      : Array.isArray(defaultValue)
+        ? defaultValue
+        : [lower]
+    const numeric = raw.filter(
+      (n): n is number => typeof n === "number" && Number.isFinite(n)
+    )
+    const clamped = numeric.map(clampToRange)
+    return clamped.length > 0 ? clamped : [lower]
+  }, [value, defaultValue, lower, clampToRange])
 
   return (
     <SliderPrimitive.Root
       data-slot="slider"
       defaultValue={defaultValue}
       value={value}
-      min={min}
-      max={max}
+      min={lower}
+      max={upper}
       className={cn(
         "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
-        className
+        className ?? ""
       )}
       {...props}
     >
