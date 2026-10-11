@@ -173,7 +173,25 @@ export async function POST(request: NextRequest) {
       revalidateTag(CACHE_TAGS.CATEGORIES, "default");
     }
 
-    // 7. Transaction atomique d'insertion
+    // 7. Résolution du type de produit par défaut (colonne `productTypeId` obligatoire)
+    const defaultProductType = await prisma.productTypeConfig.findFirst({
+      where: { isDefault: true, isActive: true },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    }) ?? await prisma.productTypeConfig.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!defaultProductType) {
+      return NextResponse.json(
+        { error: "Aucun type de produit actif n'est configuré ; import impossible." },
+        { status: 400 },
+      );
+    }
+    const defaultProductTypeId = defaultProductType.id;
+
+    // 8. Transaction atomique d'insertion
     const results = await prisma.$transaction(
       async (tx) => {
         const created = [];
@@ -199,8 +217,7 @@ export async function POST(request: NextRequest) {
               slug,
               sku: product.sku,
               description: product.description || "",
-              price: product.basePrice,
-              basePrice: product.basePrice,
+              productTypeId: defaultProductTypeId,
               status,
               isActive: product.isActive,
               isArchived: false,
@@ -212,6 +229,10 @@ export async function POST(request: NextRequest) {
                 ? categoryMap.get(product.categoryName)
                 : null,
               images: product.imageUrls,
+              // Le prix vit dans la grille `productPrice` (montant en centimes).
+              productPrice: {
+                create: { currency: "USD", amount: product.basePrice },
+              },
               productImages: {
                 create: product.imageUrls.map((url, i) => ({
                   url,

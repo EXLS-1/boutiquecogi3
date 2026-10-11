@@ -252,6 +252,7 @@ type DbProduct = Prisma.ProductGetPayload<{
         variantStocks: { select: { quantity: true; reserved: true } };
       };
     };
+    productPrice: { select: { amount: true }; take: 1; orderBy: { startsAt: "desc" } };
   };
 }>;
 
@@ -267,8 +268,15 @@ function sumVariantStocks(
   );
 }
 
+/** Prix de base (USD) dérivé de la grille tarifaire `productPrice` (montant en centimes). */
+function resolveBasePriceUSD(product: DbProduct): number {
+  const raw = product.productPrice?.[0]?.amount;
+  const cents = raw == null ? 0 : Number(raw);
+  return Number.isFinite(cents) ? cents / 100 : 0;
+}
+
 function mapDbProduct(p: DbProduct): Product {
-  const priceUSD = Math.round(Number(p.basePrice ?? 0)) / 100;
+  const priceUSD = resolveBasePriceUSD(p);
   const image = p.images[0] ?? "/media/placeholder.webp";
 
   return {
@@ -350,9 +358,15 @@ export const getAllProducts = cache(
       }
 
       if (minPrice !== undefined || maxPrice !== undefined) {
-        where.basePrice = {
-          ...(minPrice !== undefined ? { gte: minPrice * 100 } : {}),
-          ...(maxPrice !== undefined ? { lte: maxPrice * 100 } : {}),
+        // Le prix vit dans la grille `productPrice` (montant en centimes) ; on
+        // filtre sur l'existence d'au moins une ligne dans la borne demandée.
+        where.productPrice = {
+          some: {
+            amount: {
+              ...(minPrice !== undefined ? { gte: minPrice * 100 } : {}),
+              ...(maxPrice !== undefined ? { lte: maxPrice * 100 } : {}),
+            },
+          },
         };
       }
 
@@ -369,6 +383,11 @@ export const getAllProducts = cache(
                 },
               },
               take: 1,
+            },
+            productPrice: {
+              select: { amount: true },
+              take: 1,
+              orderBy: { startsAt: "desc" },
             },
           },
           orderBy: { createdAt: "desc" },

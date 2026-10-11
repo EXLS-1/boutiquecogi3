@@ -301,11 +301,12 @@ export class CacheConsumer {
 
   private async rebuildCategoryTree(catalogId: string): Promise<void> {
     // Category is linked to catalogs via CategoryCatalog (categoryId/parentCategoryId)
-    // and carries `isActive` + `displayOrder`. Keep the query schema-valid and
-    // bounded; catalogId is retained for logging/metrics correlation.
+    // and carries `isNavigable` + `displayOrder` (le schéma n'expose pas `isActive`).
+    // On filtre sur les catégories navigables et non supprimées ; catalogId est
+    // conservé pour la corrélation logs/metrics.
     try {
       await prisma.category.findMany({
-        where: { isActive: true },
+        where: { isNavigable: true, deletedAt: null },
         orderBy: { displayOrder: "asc" },
         take: 50,
         select: { id: true },
@@ -328,7 +329,14 @@ export class CacheConsumer {
       1,
     );
 
-    const deliveryCount = pending?.[0]?.[3] ?? 0;
+    // XPENDING (range form) renvoie [ [id, consumer, idleMs, deliveryCount], ... ].
+    // Le type ioredis est large : on lit le 4e élément de façon défensive.
+    const firstEntry = Array.isArray(pending) ? (pending[0] as unknown[] | undefined) : undefined;
+    const rawDeliveryCount = Array.isArray(firstEntry) ? firstEntry[3] : undefined;
+    const deliveryCount =
+      typeof rawDeliveryCount === "number" && Number.isFinite(rawDeliveryCount)
+        ? rawDeliveryCount
+        : Number(rawDeliveryCount) || 0;
 
     if (deliveryCount >= 3) {
       await client.xadd(

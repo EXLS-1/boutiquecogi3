@@ -3,7 +3,6 @@
 // La route GET /api/products supporte la pagination, les filtres par catégorie, recherche textuelle, produits en vedette et filtrage par prix.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
 import { slugify } from "@/lib/utils/slug";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { ProductServiceError } from "@/server/services/product-service-error";
@@ -26,7 +25,7 @@ function buildWhereClause(filters: ProductFilters) {
     isFeatured?: boolean;
     category?: { slug: string };
     OR?: Array<{ name?: object; description?: object }>;
-    basePrice?: { gte?: number; lte?: number };
+    productPrice?: { some: { amount: { gte?: number; lte?: number } } };
   } = { isArchived: false };
 
   if (filters.category && filters.category !== "all") {
@@ -45,13 +44,15 @@ function buildWhereClause(filters: ProductFilters) {
   }
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-    where.basePrice = {};
-    if (filters.minPrice !== undefined) {
-      where.basePrice.gte = Math.round(filters.minPrice * 100);
-    }
-    if (filters.maxPrice !== undefined) {
-      where.basePrice.lte = Math.round(filters.maxPrice * 100);
-    }
+    // Le prix vit dans la grille `productPrice` (montant en centimes).
+    where.productPrice = {
+      some: {
+        amount: {
+          ...(filters.minPrice !== undefined ? { gte: Math.round(filters.minPrice * 100) } : {}),
+          ...(filters.maxPrice !== undefined ? { lte: Math.round(filters.maxPrice * 100) } : {}),
+        },
+      },
+    };
   }
 
   return where;
@@ -97,35 +98,24 @@ export async function GET(request: NextRequest) {
           include: { category: { select: { id: true, name: true, slug: true } } },
         },
         variants: true,
+        productPrice: {
+          orderBy: { startsAt: "desc" },
+          take: 1,
+          select: { amount: true },
+        },
       },
     });
 
-    // Prisma renvoie `Decimal` pour les champs numériques (basePrice).
-    // On évite un typage strict `number` pour supprimer l'erreur TS.
-    type Product = {
-      id: string;
-      name: string;
-      description: string | null;
-      basePrice: unknown; // Prisma.Decimal
-      images: string[] | null;
-      category?: { slug?: string } | null;
-      categoryProducts?: Array<{ category: { id: string; name: string; slug: string } }> | null;
-      isFeatured: boolean;
-      createdAt: Date;
-      updatedAt: Date;
-      variants?: Array<{ sku?: string }> | null;
-    };
-
-
+    // Le prix n'est plus un scalaire `basePrice` : il vit dans la grille
+    // `productPrice` (montant en centimes). On convertit en unités majeures.
     return NextResponse.json({
       status: "success",
       data: {
-        products: products.map((p: Product) => ({
+        products: products.map((p) => ({
           id: p.variants?.[0]?.sku ?? p.id,
           name: p.name,
           description: p.description,
-          // Ensure Prisma Decimal from Prisma is converted to number
-          price: Math.round(Number(p.basePrice) / 100),
+          price: Math.round(Number(p.productPrice?.[0]?.amount ?? 0) / 100),
 
           images: p.images ?? [],
           category: p.category?.slug ?? "femme",
@@ -193,13 +183,35 @@ export async function POST(request: NextRequest) {
     const slug = slugify(`${name}-${Date.now()}`);
     const basePrice = Math.round(Number(price) * 100);
 
+    // Type de produit obligatoire (`productTypeId` NOT NULL) : on retombe sur
+    // le type par défaut actif, comme l'import.
+    const defaultProductType = await prisma.productTypeConfig.findFirst({
+      where: { isDefault: true, isActive: true },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    }) ?? await prisma.productTypeConfig.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!defaultProductType) {
+      return NextResponse.json(
+        { status: "error", message: "Aucun type de produit actif n'est configuré." },
+        { status: 400 },
+      );
+    }
+
     const product = await prisma.product.create({
       data: {
         id: generateUUIDv7(),
         name: name.trim(),
         slug,
+        sku: slug,
         description: String(description || ""),
-        basePrice,
+        productTypeId: defaultProductType.id,
+        productPrice: {
+          create: { currency: "USD", amount: basePrice },
+        },
         images: Array.isArray(images) ? images : [],
         ...(categories.length > 0
           ? {
@@ -221,7 +233,7 @@ export async function POST(request: NextRequest) {
             priceOffset: 0,
           },
         },
-      } as Prisma.ProductCreateInput,
+      },
       include: {
         category: { select: { id: true, name: true, slug: true } },
         categoryProducts: {

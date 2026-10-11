@@ -8,7 +8,8 @@
 // triabilité séquentielle en B-Tree PostgreSQL, on dérive les bits
 // depuis un hash SHA-256 du namespace + index.
 
-import { createHash, randomUUIDv7 } from "node:crypto";
+import { createHash } from "node:crypto";
+import { uuidv7 } from "uuidv7";
 
 /** Base temporelle fixe pour que les UUIDS déterministes restent triables. */
 const BASE_TIMESTAMP_MS = 1775000000000;
@@ -47,5 +48,5 @@ export function generateDeterministicUuidV7(
 
 /** Alias : UUID v7 natif (non déterministe) pour les données du prod. */
 export function generateUUIDv7(): string {
-  return randomUUIDv7();
+  return uuidv7();
 }

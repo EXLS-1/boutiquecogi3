@@ -29,7 +29,7 @@ async function findProduct(id: string) {
       },
       variants: { take: 1 },
       productPrice: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { startsAt: "desc" },
         take: 1,
         select: { amount: true },
       },

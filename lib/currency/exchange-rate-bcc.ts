@@ -151,7 +151,11 @@ async function parseExcel(buffer: Buffer): Promise<ExchangeRate | null> {
   try {
     const workbook = new Workbook();
     // `workbook.xlsx.load` is typed loosely across exceljs versions; await it directly.
-    const loadedWorkbook = await workbook.xlsx.load(buffer);
+    // Le buffer issu de `Buffer.from(arrayBuffer())` est `Buffer<ArrayBufferLike>` ;
+    // on le convertit explicitement vers le type attendu par exceljs.
+    const loadedWorkbook = await workbook.xlsx.load(
+      buffer as unknown as Parameters<typeof workbook.xlsx.load>[0],
+    );
     const sheet = loadedWorkbook.worksheets[0];
     if (!sheet) return null;
 

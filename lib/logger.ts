@@ -919,8 +919,10 @@ export function createFileTransport(filepath: string): LogTransport {
       if (!fs) {
         fs = require('fs');
       }
+      const writeFs = fs;
+      if (!writeFs) return;
       const line = JSON.stringify(entry) + '\n';
-      fs.appendFileSync(filepath, line, { encoding: 'utf-8' });
+      writeFs.appendFileSync(filepath, line, { encoding: 'utf-8' });
     } catch {
       // Silently fail in browser/edge environments
     }

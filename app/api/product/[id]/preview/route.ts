@@ -59,7 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           select: { isAvailable: true },
         },
         productPrice: {
-          orderBy: { createdAt: "desc" },
+          orderBy: { startsAt: "desc" },
           take: 1,
           select: { amount: true },
         },

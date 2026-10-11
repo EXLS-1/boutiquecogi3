@@ -900,39 +900,9 @@ export function getOrderItemsCount(order: {
   return Array.isArray(order?.items) ? order.items.length : 0;
 }
 
-/** `1 article` / `N articles` (tolérant aux entrées invalides). */
-export function formatCartItemCount(count: unknown): string {
-  const safe = typeof count === "number" && Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
-  return safe <= 1 ? `${safe} article` : `${safe} articles`;
-}
-
 /** Devise d'une commande (tolérante : fallback `USD`). */
 export function resolveOrderCurrency(raw: unknown): CartCurrency {
   return resolveCartCurrency(typeof raw === "string" ? raw : undefined);
-}
-
-/**
- * Montant d'une commande Prisma (`Int` en centimes) formaté en unités majeures.
- * @returns `"—"` si le montant est inexploitable.
- */
-export function formatOrderAmountMinor(amount: unknown, currency: CartCurrency = "USD"): string {
-  const safeCurrency = resolveCartCurrency(currency);
-  const cents = typeof amount === "number" && Number.isFinite(amount)
-    ? amount
-    : typeof amount === "string" && amount.trim() !== "" && Number.isFinite(Number(amount))
-      ? Number(amount)
-      : typeof (amount as { toNumber?: unknown })?.toNumber === "function"
-        ? (() => {
-            try {
-              const n = (amount as { toNumber: () => number }).toNumber();
-              return Number.isFinite(n) ? n : null;
-            } catch {
-              return null;
-            }
-          })()
-        : null;
-  if (cents === null || cents < 0) return "—";
-  return formatCartAmount(cents / 100, safeCurrency);
 }
 
 /** Date de commande affichable (`—` si absente ou invalide). */
@@ -944,54 +914,6 @@ export function formatOrderDate(raw: unknown): string {
   } catch {
     return date.toISOString();
   }
-}
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: "En attente",
-  CONFIRMED: "Confirmée",
-  PROCESSING: "En préparation",
-  SHIPPED: "Expédiée",
-  DELIVERED: "Livrée",
-  CANCELLED: "Annulée",
-  REFUNDED: "Remboursée",
-  FAILED: "Échouée",
-};
-
-/** Libellé humain d'un statut de commande (tolérant aux statuts inconnus). */
-export function getOrderStatusLabel(status: unknown): string {
-  if (typeof status !== "string" || status.trim() === "") return "Statut inconnu";
-  const key = status.trim().toUpperCase();
-  return ORDER_STATUS_LABELS[key] ?? status.trim();
-}
-
-const ORDER_PAYMENT_LABELS: Record<string, string> = {
-  PENDING: "Paiement en attente",
-  PAID: "Payée",
-  FAILED: "Paiement échoué",
-  REFUNDED: "Remboursée",
-  PARTIALLY_REFUNDED: "Partiellement remboursée",
-  CANCELLED: "Paiement annulé",
-};
-
-/** Statut de paiement normalisé (`PENDING` par défaut, jamais vide). */
-export function resolveOrderPaymentStatus(
-  order: { paymentStatus?: unknown; status?: unknown } | null | undefined,
-): string {
-  const raw = order && typeof order === "object"
-    ? order.paymentStatus ?? (order as { payment?: { status?: unknown } }).payment
-    : undefined;
-  const candidate = typeof raw === "object" && raw !== null && "status" in raw
-    ? (raw as { status?: unknown }).status
-    : raw;
-  if (typeof candidate === "string" && candidate.trim() !== "") return candidate.trim().toUpperCase();
-  return "PENDING";
-}
-
-/** Libellé humain d'un statut de paiement (tolérant aux statuts inconnus). */
-export function getOrderPaymentLabel(status: unknown): string {
-  if (typeof status !== "string" || status.trim() === "") return "Paiement en attente";
-  const key = status.trim().toUpperCase();
-  return ORDER_PAYMENT_LABELS[key] ?? status.trim();
 }
 
 /** `true` si la commande correspond à la requête (n°, email, nom — insensible à la casse). */

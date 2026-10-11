@@ -51,7 +51,7 @@ export default async function TreasuryPage({ searchParams }: TreasuryPageProps) 
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Trésorerie</h1>
           <p className="text-muted-foreground mt-1">
-            {(stats._sum.amount || 0).toLocaleString()} FCFA sur {stats._count} transactions
+            {(stats._sum.amount || 0).toLocaleString()} FCFA sur {stats._count.id} transactions
           </p>
         </div>
       </div>

@@ -164,14 +164,6 @@ export async function invalidateCatalogCache(tag: string): Promise<void> {
   revalidateCatalogTag(tag);
 }
 
-/**
- * Invalide TOUS les caches catalog.
- * À utiliser avec parcimonie (ex: après import massif).
- */
-export async function invalidateAllCatalogCaches(): Promise<void> {
-  Object.values(CACHE_TAGS).forEach((tag) => revalidateCatalogTag(tag));
-}
-
 // ═════════════════════════════════════════════════════════════════════════════
 // SECTION 3: QUERIES
 // ═════════════════════════════════════════════════════════════════════════════
@@ -726,7 +718,7 @@ export async function invalidateAllCatalogCaches(): Promise<void> {
   await Promise.all(
     tags.map(async (tag) => {
       try {
-        revalidateTag(tag);
+        revalidateTag(tag, "default");
       } catch (error) {
         console.warn(`[catalog-cache] revalidateTag("${tag}") a échoué`, error);
       }

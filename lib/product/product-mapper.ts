@@ -23,7 +23,8 @@ export type LegacyAmount = Prisma.Decimal | number | string | null | undefined;
 export interface MapperPriceRow {
   id: string;
   currency: string;
-  amount: number;
+  /** Montant brut (Decimal legacy, number ou string) — converti en centimes en aval. */
+  amount: LegacyAmount;
   compareAtPrice?: number | null;
   country?: string | null;
   region?: string | null;
@@ -184,7 +185,7 @@ function mapVariants(row: ProductMapperRow): ProductDetailsVariant[] {
 
 function mapPrices(row: ProductMapperRow): ProductDetailsPrice[] {
   return allPrices(row).map((p) => ({
-    id: p.id, currency: p.currency, amount: p.amount ?? 0,
+    id: p.id, currency: p.currency, amount: legacyToCents(p.amount),
     compareAtPrice: p.compareAtPrice ?? null,
     country: p.country ?? null, region: p.region ?? null,
     startsAt: p.startsAt ?? null, endsAt: p.endsAt ?? null,
@@ -259,5 +260,3 @@ export function mapProductToDetails(row: ProductMapperRow): ProductDetails {
     createdAt: row.createdAt, updatedAt: row.updatedAt,
   };
 }
-
-

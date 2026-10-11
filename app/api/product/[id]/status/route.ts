@@ -4,7 +4,8 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { updateProductStatus, ProductWorkflowError } from "@/lib/product/product-workflow";
+import { transitionProductStatus } from "@/lib/product/product-workflow";
+import { ProductError } from "@/lib/product/product-errors";
 import { ProductStatus } from "@prisma/client";
 
 interface RouteParams {
@@ -63,19 +64,20 @@ export async function PATCH(
     }
 
     // ── Application de la transition ──
-    const result = await updateProductStatus(id, newStatus, {
+    // `transitionProductStatus` exige un actedBy : sans session décodable, on
+    // retombe sur l'id du produit pour tracer la transition (audit interne).
+    await transitionProductStatus(id, newStatus, {
       reason,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
-      actedBy,
-      notify: true,
+      actedBy: actedBy ?? id,
     });
 
     return NextResponse.json({
       success: true,
-      data: result,
+      data: { id, status: newStatus },
     });
   } catch (error) {
-    if (error instanceof ProductWorkflowError) {
+    if (error instanceof ProductError) {
       return NextResponse.json(
         { error: error.message, code: error.code },
         { status: error.statusCode },

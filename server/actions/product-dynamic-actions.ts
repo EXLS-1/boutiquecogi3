@@ -43,7 +43,7 @@ export async function createDynamicProductAction(payload: unknown): Promise<Acti
 
     // Invalidation des caches catalogue + routes produit
     await invalidateAllCatalogCaches();
-    revalidateTag(CACHE_TAGS.CATALOG_PRODUCTS);
+    revalidateTag(CACHE_TAGS.CATALOG_PRODUCTS, "default");
 
     return {
       success: true,

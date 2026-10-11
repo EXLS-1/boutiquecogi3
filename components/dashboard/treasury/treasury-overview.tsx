@@ -2,7 +2,7 @@
   stats,
   paymentMethods = [],
 }: {
-  stats?: { _sum?: { amount: number }; _count?: number };
+  stats?: { _sum?: { amount: number | null }; _count?: { id: number } };
   paymentMethods?: unknown[];
   canViewAnalytics?: boolean;
 }) {

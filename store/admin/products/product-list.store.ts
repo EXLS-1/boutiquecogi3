@@ -9,7 +9,7 @@ import { create } from "zustand";
 
 export interface ProductListFilters {
   // Pagination
-  page: number;m
+  page: number;
   limit: number;
   total: number;
   totalPages: number;

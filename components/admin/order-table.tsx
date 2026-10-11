@@ -27,7 +27,6 @@ import {
     canTransitionOrderStatus,
     formatOrderAmountMinor,
     formatOrderDate,
-    formatOrderDateTime,
     getOrderItemsCount,
     getOrderPaymentLabel,
     getOrderStatusLabel,

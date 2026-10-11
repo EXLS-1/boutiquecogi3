@@ -7,8 +7,8 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getServerRBACSession } from "@/lib/rbac/server";
 
-import { VideoGrid } from "@/components/dashboard/videos/video-grid";
-import { VideoUploader } from "@/components/dashboard/videos/video-uploader";
+import { VideoGrid } from "@/components/dashboard/video/video-grid";
+import { VideoUploader } from "@/components/dashboard/video/video-uploader";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface VideosPageProps {
