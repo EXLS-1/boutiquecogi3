@@ -45,6 +45,23 @@ export const TestMinimalCatalogSeeder: Seeder = {
     });
 
     // 2. Produits
+    // `productTypeId` est obligatoire : on retombe sur le type par défaut actif.
+    const defaultProductType =
+      (await ctx.prisma.productTypeConfig.findFirst({
+        where: { isDefault: true, isActive: true },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      })) ??
+      (await ctx.prisma.productTypeConfig.findFirst({
+        where: { isActive: true },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      }));
+    if (!defaultProductType) {
+      ctx.logger.warn("Aucun type de produit actif — exécuter d'abord le seed des types.");
+      return;
+    }
+
     const products = [
       { id: product1Id, name: "Produit Test 1", sku: "TEST-PROD-1", slug: "produit-test-1", price: 2500, catId: categoryId },
       { id: product2Id, name: "Produit Test 2", sku: "TEST-PROD-2", slug: "produit-test-2", price: 5000, catId: categoryId },
@@ -53,20 +70,21 @@ export const TestMinimalCatalogSeeder: Seeder = {
     for (const p of products) {
       await ctx.prisma.product.upsert({
         where: { slug: p.slug },
-        update: { name: p.name, sku: p.sku, price: p.price },
+        update: { name: p.name, sku: p.sku },
         create: {
           id: p.id,
           name: p.name,
           sku: p.sku,
           slug: p.slug,
           description: `Description ${p.name}`,
-          price: p.price,
-          basePrice: p.price,
+          productTypeId: defaultProductType.id,
           currency: "USD",
           categoryId: p.catId,
           userId: creator.id,
           isActive: true,
           status: "PUBLISHED",
+          // Le prix vit dans la grille `productPrice` (montant en centimes).
+          productPrice: { create: { currency: "USD", amount: p.price } },
         },
       });
     }

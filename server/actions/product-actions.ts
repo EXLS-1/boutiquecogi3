@@ -11,14 +11,14 @@ import { generateSlug } from '@/lib/utils/slug';
 import { generateSKU } from '@/lib/utils/sku'
 
 /** Coerce a FormData entry to trimmed string (File entries are rejected). */
-function formText(value: FormDataEntryValue | undefined): string | undefined {
+function formText(value: FormDataEntryValue | null | undefined): string | undefined {
     if (typeof value !== 'string') return undefined;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
 }
 
 /** Coerce a FormData entry to a finite number, or undefined when absent/invalid. */
-function formNumber(value: FormDataEntryValue | undefined): number | undefined {
+function formNumber(value: FormDataEntryValue | null | undefined): number | undefined {
     if (typeof value !== 'string') return undefined;
     const trimmed = value.trim();
     if (!trimmed) return undefined;

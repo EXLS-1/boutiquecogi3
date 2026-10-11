@@ -1,6 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
+
+/** Convertit un objet libre en `InputJsonValue` Prisma valide. */
+function toInputJson(value: Record<string, unknown>): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}
 
 interface VideoTypeConfig {
   videoType: string;
@@ -211,7 +216,7 @@ export async function seedStreamingConfig(prisma: PrismaClient) {
         label: config.label, description: config.description,
         provider: config.provider, whoCanConfigure: config.whoCanConfigure,
         requiredPermission: config.requiredPermission, minRoleLevel: config.minRoleLevel,
-        isActive: config.isActive, settings: config.settings,
+        isActive: config.isActive, settings: toInputJson(config.settings),
       },
       create: {
         id: generateUUIDv7(), configName: config.configName, label: config.label,
@@ -219,7 +224,7 @@ export async function seedStreamingConfig(prisma: PrismaClient) {
         whoCanConfigure: config.whoCanConfigure,
         requiredPermission: config.requiredPermission,
         minRoleLevel: config.minRoleLevel,
-        isActive: config.isActive, settings: config.settings,
+        isActive: config.isActive, settings: toInputJson(config.settings),
       },
     });
     console.log(`   ✓ ${config.label} [provider:${config.provider}, active:${config.isActive}, config:L${config.minRoleLevel}]`);

@@ -26,7 +26,12 @@ export const DevOrdersSeeder: Seeder = {
 
     // Récupérer produits + variantes réels pour construire les GeneratedVariant
     const products = await ctx.prisma.product.findMany({
-      select: { id: true, name: true, price: true, variants: { select: { id: true, sku: true } } },
+      select: {
+        id: true,
+        name: true,
+        productPrice: { orderBy: { startsAt: "desc" }, take: 1, select: { amount: true } },
+        variants: { select: { id: true, sku: true } },
+      },
       take: 30,
     });
 
@@ -43,7 +48,10 @@ export const DevOrdersSeeder: Seeder = {
     for (const product of products) {
       productIds.push(product.id);
       productNames.push(product.name);
-      const priceUsdCents = Math.round(Number(product.price) * 100);
+      // Prix de base (centimes) issu de la grille `productPrice`.
+      const priceCents = Number(product.productPrice?.[0]?.amount ?? 0);
+      const priceUsdCents = priceCents;
+      const priceUsdMajor = (priceCents / 100).toFixed(2);
       for (const v of product.variants) {
         generatedVariants.push({
           id: v.id,
@@ -51,7 +59,7 @@ export const DevOrdersSeeder: Seeder = {
           sku: v.sku,
           attributes: {},
           priceOffset: 0,
-          priceUSD: product.price.toString(),
+          priceUSD: priceUsdMajor,
           priceCDF: String(usdCentsToCdf(priceUsdCents)),
         });
       }

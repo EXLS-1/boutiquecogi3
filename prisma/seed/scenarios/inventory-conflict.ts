@@ -44,6 +44,24 @@ export const InventoryConflictScenario: Seeder = {
       });
 
       const creatorId = users[0].id;
+
+      // `productTypeId` est obligatoire : on retombe sur le type par défaut actif.
+      const defaultProductType =
+        (await tx.productTypeConfig.findFirst({
+          where: { isDefault: true, isActive: true },
+          select: { id: true },
+          orderBy: { createdAt: "asc" },
+        })) ??
+        (await tx.productTypeConfig.findFirst({
+          where: { isActive: true },
+          select: { id: true },
+          orderBy: { createdAt: "asc" },
+        }));
+      if (!defaultProductType) {
+        ctx.logger.warn("Aucun type de produit actif — exécuter d'abord le seed des types.");
+        return;
+      }
+
       await tx.product.upsert({
         where: { id: productId },
         update: {},
@@ -53,13 +71,14 @@ export const InventoryConflictScenario: Seeder = {
           slug: "iphone-edition-limitee-kinshasa",
           sku: "SKU-FLASH-001",
           description: "Produit test pour simulation de conflit d'inventaire.",
-          price: 120000,
-          basePrice: 120000,
+          productTypeId: defaultProductType.id,
           currency: "USD",
           categoryId,
           userId: creatorId,
           isActive: true,
           status: "PUBLISHED",
+          // Le prix vit dans la grille `productPrice` (montant en centimes).
+          productPrice: { create: { currency: "USD", amount: 120000 } },
         },
       });
 

@@ -107,22 +107,15 @@ class DynamicProductService {
       userId
     );
 
-    const variants = Array.isArray(
-      (created as { variants?: unknown }).variants
-    )
-      ? ((created as { variants: { initialStock?: unknown }[] }).variants)
-      : [];
-    const totalStock = variants.reduce(
-      (sum, v) =>
-        sum + (typeof v.initialStock === "number" && Number.isFinite(v.initialStock) ? v.initialStock : 0),
-      0
-    );
+    // `CanonicalProductService.create` retourne déjà
+    // `{ productId, slug, totalStock }` : on s'en sert directement, sans cast.
+    const variantCount = input.variants?.length ?? 0;
 
     return {
-      productId: (created as { id: string }).id,
-      slug: (created as { slug: string }).slug,
-      variantCount: variants.length,
-      totalStock,
+      productId: created.productId,
+      slug: created.slug,
+      variantCount,
+      totalStock: created.totalStock,
     };
   }
 

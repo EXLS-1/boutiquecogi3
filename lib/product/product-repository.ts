@@ -1,8 +1,11 @@
 import { Prisma, ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { mapProductToListItem } from "./product-mapper";
-import type { ProductQuery, ProductListResult, ProductKpis } from "./product-types";
+import type { ProductQuery, ProductListResult, ProductKpis, ProductStockState } from "./product-types";
 import { STOCK_THRESHOLDS } from "./product-constant";
+
+// Ré-export pour les consommateurs admin (app/admin/products, ProductFilters…).
+export type { ProductStockState };
 
 function buildProductWhere(query: ProductQuery): Prisma.ProductWhereInput {
   const and: Prisma.ProductWhereInput[] = [];

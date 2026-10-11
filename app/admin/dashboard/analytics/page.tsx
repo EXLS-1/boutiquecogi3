@@ -31,7 +31,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [paidOrders, userGrowth, topProducts] = await Promise.all([
+  const [paidOrders, userGrowth, revenueByProduct] = await Promise.all([
     prisma.order.findMany({
       where: { createdAt: { gte: since }, status: { not: "CANCELLED" } },
       select: { createdAt: true, totalAmount: true },
@@ -41,12 +41,26 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
       where: { createdAt: { gte: since } },
       _count: { id: true },
     }),
-    prisma.product.findMany({
+    // Le CA par produit n'est pas une colonne : on l'agrège depuis OrderItem
+    // (subtotal en centimes) sur les commandes non annulées de la période.
+    prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: { order: { createdAt: { gte: since }, status: { not: "CANCELLED" } } },
+      _sum: { subtotal: true, quantity: true },
+      orderBy: { _sum: { subtotal: "desc" } },
       take: 20,
-      orderBy: { soldCount: "desc" },
-      select: { id: true, name: true, soldCount: true, totalRevenue: true },
     }),
   ]);
+
+  // Résolution des noms produits + du compteur de ventes (soldCount) en parallèle.
+  const topProductIds = revenueByProduct.map((row) => row.productId);
+  const productMeta = topProductIds.length
+    ? await prisma.product.findMany({
+        where: { id: { in: topProductIds } },
+        select: { id: true, name: true, soldCount: true },
+      })
+    : [];
+  const productMetaById = new Map(productMeta.map((p) => [p.id, p]));
 
   // Agrégation jour par jour côté serveur : les montants sont déjà des
   // entiers en centimes (Int), donc sérialisables vers le client.
@@ -60,12 +74,16 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
   }
   const revenueData = [...byDay.values()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   const growthData = userGrowth.map((row) => ({ createdAt: row.createdAt, users: row._count.id }));
-  const performanceProducts = topProducts.map((product) => ({
-    id: product.id,
-    name: product.name,
-    soldCount: product.soldCount,
-    revenue: product.totalRevenue.toNumber(),
-  }));
+  const performanceProducts = revenueByProduct.map((row) => {
+    const meta = productMetaById.get(row.productId);
+    return {
+      id: row.productId,
+      name: meta?.name ?? "Produit supprimé",
+      soldCount: meta?.soldCount ?? row._sum.quantity ?? 0,
+      // subtotal est en centimes ; on convertit en unités majeures.
+      revenue: (row._sum.subtotal ?? 0) / 100,
+    };
+  });
 
   return (
     <div className="space-y-6">

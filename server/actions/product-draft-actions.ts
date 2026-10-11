@@ -305,7 +305,7 @@ const draftSummarySelect = {
   images: true,
   category: { select: { id: true, name: true, slug: true } },
   productPrice: {
-    orderBy: { createdAt: "desc" as const },
+    orderBy: { startsAt: "desc" as const },
     take: 1,
     select: { amount: true, currency: true },
   },
@@ -681,6 +681,7 @@ export async function duplicateDraftProductAction(
       include: {
         productImages: { orderBy: { position: "asc" as const } },
         variants: true,
+        productPrice: { orderBy: { startsAt: "desc" as const }, take: 1 },
       },
     });
     if (!source) {
@@ -704,7 +705,23 @@ export async function duplicateDraftProductAction(
         slug: ids.slug,
         sku: ids.sku,
         description: source.description,
-        basePrice: source.basePrice,
+        // Le prix vit dans la grille `productPrice` : on recopie la ligne
+        // courante de la source (montant en centimes) si elle existe.
+        ...(source.productPrice?.[0]
+          ? {
+              productPrice: {
+                create: {
+                  currency: source.productPrice[0].currency,
+                  amount: source.productPrice[0].amount,
+                  compareAtPrice: source.productPrice[0].compareAtPrice,
+                  country: source.productPrice[0].country,
+                  region: source.productPrice[0].region,
+                  startsAt: source.productPrice[0].startsAt,
+                  endsAt: source.productPrice[0].endsAt,
+                },
+              },
+            }
+          : {}),
         // FK obligatoire héritée de la source (Product.productTypeId non nullable).
         productTypeId: source.productTypeId,
         categoryId: source.categoryId,

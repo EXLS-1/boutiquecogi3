@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { ROLES, PERMISSIONS } from "@/lib/auth/rbac";
 
@@ -18,6 +18,13 @@ interface MediaTypeConfig {
   storageBucket: string;
   isPublic: boolean;
   requiresCompression: boolean;
+}
+
+/** Convertit `maxDimensions` en entrée JSON Prisma valide (null → DbNull). */
+function toJsonDimensions(
+  value: MediaTypeConfig["maxDimensions"],
+): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+  return value === null ? Prisma.DbNull : value;
 }
 
 const MEDIA_TYPES: MediaTypeConfig[] = [
@@ -178,7 +185,7 @@ export async function seedMediaTypes(prisma: PrismaClient) {
       update: {
         label: media.label, description: media.description,
         allowedExtensions: media.allowedExtensions, maxFileSize: media.maxFileSize,
-        maxDimensions: media.maxDimensions,
+        maxDimensions: toJsonDimensions(media.maxDimensions),
         whoCanUpload: media.whoCanUpload, whoCanDelete: media.whoCanDelete,
         requiredPermissionUpload: media.requiredPermissionUpload,
         requiredPermissionDelete: media.requiredPermissionDelete,
@@ -189,7 +196,7 @@ export async function seedMediaTypes(prisma: PrismaClient) {
       create: {
         id: generateUUIDv7(), mediaType: media.mediaType, label: media.label,
         description: media.description, allowedExtensions: media.allowedExtensions,
-        maxFileSize: media.maxFileSize, maxDimensions: media.maxDimensions,
+        maxFileSize: media.maxFileSize, maxDimensions: toJsonDimensions(media.maxDimensions),
         whoCanUpload: media.whoCanUpload, whoCanDelete: media.whoCanDelete,
         requiredPermissionUpload: media.requiredPermissionUpload,
         requiredPermissionDelete: media.requiredPermissionDelete,

@@ -6,6 +6,9 @@ import type { PermissionCode } from "@/lib/auth/rbac";
 export type DynamicAttributeValue = string | number | boolean;
 export type DynamicAttributes = Record<string, DynamicAttributeValue>;
 
+/** États de stock synthétiques exposés par la couche repository/admin. */
+export type ProductStockState = "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+
 export interface VariantInputDto {
   sku?: string;
   attributes: DynamicAttributes;

@@ -1,7 +1,7 @@
 ﻿export interface AuditLogRow {
   id: string;
   action: string;
-  status: string;
+  status: string | null;
   createdAt: Date;
   user?: { id: string; email: string | null; name: string | null } | null;
 }

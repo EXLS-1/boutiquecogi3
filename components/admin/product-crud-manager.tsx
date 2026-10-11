@@ -15,7 +15,6 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Loader2, PackagePlus, Pencil, Trash2, Copy, Plus, RefreshCw } from "lucide-react";
-import type { Currency } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,7 +50,7 @@ type SerializedProduct = {
   status: string;
   basePrice: number;
   price: number;
-  currency: Currency;
+  currency: string;
   isActive: boolean;
   scheduledAt: string | null;
   publishedAt: string | null;
