@@ -213,6 +213,9 @@ export async function POST(request: NextRequest) {
           create: { currency: "USD", amount: basePrice },
         },
         images: Array.isArray(images) ? images : [],
+        // `Product.userId` est requis : cette route d'administration n'expose pas
+        // de session, on retombe donc sur le compte système (comme l'import).
+        userId: "00000000-0000-7000-8000-000000000000",
         ...(categories.length > 0
           ? {
               categoryId: categories[0].id,

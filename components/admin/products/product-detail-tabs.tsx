@@ -4,7 +4,6 @@
 // =============================================================================
 
 import { Suspense } from "react";
-import { getVariantList } from "@/lib/product/product.repository";
 import { ProductAnalytics } from "./product-analytics";
 import { ProductOverviewCard } from "./product-overview-card";
 import { VariantTable } from "./variant-table";
@@ -70,8 +69,23 @@ export async function TabContent({
 }
 
 async function OverviewTab({ product, productId }: { product: any; productId: string }) {
-  const { getProductAnalytics } = await import("@/lib/product/product.repository");
-  const analytics = await getProductAnalytics(productId);
+  const { prisma } = await import("@/lib/prisma");
+  // Analytics produit : CA et volume agrégés depuis OrderItem (montants en
+  // centimes), plus le total d'avis et de variantes.
+  const [revenue, reviews, variantCount] = await Promise.all([
+    prisma.orderItem.aggregate({
+      where: { productId, order: { status: { not: "CANCELLED" } } },
+      _sum: { subtotal: true, quantity: true },
+    }),
+    prisma.review.count({ where: { productId } }),
+    prisma.productVariant.count({ where: { productId } }),
+  ]);
+  const analytics = {
+    revenue: (revenue._sum.subtotal ?? 0) / 100,
+    unitsSold: revenue._sum.quantity ?? 0,
+    reviews,
+    variantCount,
+  };
   return (
     <div className="space-y-6">
       <ProductOverviewCard product={product} />
@@ -81,7 +95,12 @@ async function OverviewTab({ product, productId }: { product: any; productId: st
 }
 
 async function VariantsTab({ productId }: { productId: string }) {
-  const variants = await getVariantList(productId);
+  const { prisma } = await import("@/lib/prisma");
+  const variants = await prisma.productVariant.findMany({
+    where: { productId },
+    orderBy: { createdAt: "asc" },
+    include: { variantStocks: true },
+  });
   return <VariantTable variants={variants} productId={productId} />;
 }
 

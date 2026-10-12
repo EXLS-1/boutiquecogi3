@@ -11,6 +11,26 @@ export const PRODUCT_STATUS = {
   DISCONTINUED: ProductStatus.DISCONTINUED,
 } as const;
 
+/** Libellés FR d'affichage des statuts produit (source unique UI). */
+export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
+  [ProductStatus.DRAFT]: "Brouillon",
+  [ProductStatus.PENDING]: "En révision",
+  [ProductStatus.SCHEDULED]: "Programmé",
+  [ProductStatus.PUBLISHED]: "Publié",
+  [ProductStatus.ARCHIVED]: "Archivé",
+  [ProductStatus.DISCONTINUED]: "Arrêté",
+} as const;
+
+/** Classes Tailwind de couleur par statut produit (source unique UI). */
+export const PRODUCT_STATUS_COLORS: Record<ProductStatus, string> = {
+  [ProductStatus.DRAFT]: "bg-gray-100 text-gray-700",
+  [ProductStatus.PENDING]: "bg-yellow-100 text-yellow-800",
+  [ProductStatus.SCHEDULED]: "bg-blue-100 text-blue-800",
+  [ProductStatus.PUBLISHED]: "bg-green-100 text-green-800",
+  [ProductStatus.ARCHIVED]: "bg-slate-100 text-slate-700",
+  [ProductStatus.DISCONTINUED]: "bg-red-100 text-red-800",
+} as const;
+
 export const VARIANT_STATUS = {
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",

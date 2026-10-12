@@ -761,25 +761,29 @@ export function getOrderPaymentLabel(status: unknown): string {
  * renvoyées par les services : `paymentStatus` à plat (admin) ou relation
  * `payment.status` (`getUserOrders` du compte client), avec repli sur `isPaid`.
  * Évite les `as { ... }` locaux dans les pages.
+ *
+ * Le paramètre accepte n'importe quel objet (les formes Prisma varient :
+ * `payment` peut être `Payment | null`, `paymentStatus` un enum…). On ne lit
+ * que les champs connus, de façon défensive.
  */
 export function resolveOrderPaymentStatus(
-  order:
-    | {
-        paymentStatus?: unknown;
-        payment?: { status?: unknown } | null;
-        isPaid?: unknown;
-      }
-    | null
-    | undefined,
+  order: unknown,
 ): CartPaymentStatus | null {
-  const flat = normalizePaymentStatus(order?.paymentStatus);
+  if (!order || typeof order !== "object") return null;
+  const record = order as {
+    paymentStatus?: unknown;
+    payment?: { status?: unknown } | null;
+    isPaid?: unknown;
+  };
+
+  const flat = normalizePaymentStatus(record.paymentStatus);
   if (flat) return flat;
 
-  const nested = normalizePaymentStatus(order?.payment?.status);
+  const nested = normalizePaymentStatus(record.payment?.status);
   if (nested) return nested;
 
-  if (order?.isPaid === true) return "COMPLETED";
-  if (order?.isPaid === false) return "PENDING";
+  if (record.isPaid === true) return "COMPLETED";
+  if (record.isPaid === false) return "PENDING";
   return null;
 }
 

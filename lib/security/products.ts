@@ -457,6 +457,11 @@ export async function getProductById(
               },
               take: 1,
             },
+            productPrice: {
+              select: { amount: true },
+              take: 1,
+              orderBy: { startsAt: "desc" },
+            },
           },
         },
       },
@@ -476,6 +481,11 @@ export async function getProductById(
             variantStocks: { select: { quantity: true, reserved: true } },
           },
           take: 1,
+        },
+        productPrice: {
+          select: { amount: true },
+          take: 1,
+          orderBy: { startsAt: "desc" },
         },
       },
     });
@@ -520,6 +530,11 @@ export async function getProductsByIds(
             sku: true,
             variantStocks: { select: { quantity: true, reserved: true } },
           },
+        },
+        productPrice: {
+          select: { amount: true },
+          take: 1,
+          orderBy: { startsAt: "desc" },
         },
       },
     });
