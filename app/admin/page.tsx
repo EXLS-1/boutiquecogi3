@@ -1,14 +1,12 @@
 // app/admin/page.tsx
 
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Shield } from "lucide-react";
 
 import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { AdminModuleMain } from "@/components/admin/shared/admin-module-main";
 import { AdminModuleNav } from "@/components/admin/shared/admin-module-nav";
 import { AdminModuleSidebar } from "@/components/admin/shared/admin-module-sidebar";
-import { Button } from "@/components/ui/button";
+
 import { getServerRBACSession } from "@/lib/auth/server";
 import {
   ADMIN_MODULE_GROUPS,
@@ -46,31 +44,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <div className="min-h-screen bg-cyan-100 p-1 text-cyan-600 md:p-3">
       {/* En-tête */}
-      <header className="flex flex-col gap-4 border-b border-cyan-200 pb-6 md:flex-row md:items-center md:justify-between">
-       
-
-        <Button
-          asChild
-          variant="outline"
-          className="border-cyan-300 bg-white text-rose-500 hover:bg-cyan-50"
-        >
-          <Link href="/" className="flex items-center gap-2">
-            Retour à l&apos;accueil
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </Button>
+      <header className="flex items-center justify-end border-b border-cyan-200 pb-6">
+        <AdminModuleNav modules={activeGroup.modules} />
       </header>
 
       {/* Contenu protégé par le code PIN */}
       {pinEntryFresh ? (
-        <div className="mt-8 flex flex-col gap-6 md:flex-row">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
           <AdminModuleSidebar
             groups={ADMIN_MODULE_GROUPS}
             activeGroupId={activeGroup.id}
+            session={session}
           />
 
           <div className="min-w-0 space-y-6">
-            <AdminModuleNav modules={activeGroup.modules} />
+           
             <AdminModuleMain group={activeGroup} />
           </div>
         </div>
