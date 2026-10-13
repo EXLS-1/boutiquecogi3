@@ -43,10 +43,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="min-h-screen bg-cyan-100 p-1 text-cyan-600 md:p-3">
-      {/* En-tête */}
-      <header className="flex items-center justify-end border-b border-cyan-200 pb-6">
-        <AdminModuleNav modules={activeGroup.modules} />
-      </header>
+      {/* En-tête — sécurisé par le code PIN */}
+      {pinEntryFresh ? (
+        <header className="flex items-center justify-end border-b border-cyan-400 pb-6">
+          <AdminModuleNav modules={activeGroup.modules} />
+        </header>
+      ) : null}
 
       {/* Contenu protégé par le code PIN */}
       {pinEntryFresh ? (
@@ -58,7 +60,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           />
 
           <div className="min-w-0 space-y-6">
-           
             <AdminModuleMain group={activeGroup} />
           </div>
         </div>
