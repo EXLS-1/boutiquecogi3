@@ -819,9 +819,37 @@ const ROLE_DETAILS: Record<string, { name: string; color: string }> = {
 
 /**
  * Récupère la session enrichie avec les rôles, niveaux et permissions (compatibilité RBAC).
+ *
+ * ISOLATION DE DÉFAILLANCE : une panne du store sous-jacent (Redis/Prisma)
+ * ne doit jamais produire une erreur de runtime opaque. L'erreur d'origine
+ * est journalisée avec son vrai contexte (message + stack + cause) puis une
+ * exception explicite est levée.
+ *
+ * Stratégie retenue : THROW (≠ return null) — retourner null signifierait
+ * « non authentifié » et redirigerait vers /auth/sign-in un utilisateur
+ * pourtant connecté, masquant la vraie cause (indisponibilité du store).
  */
 export async function getServerRBACSession() {
-  const context = await resolveAuthContext();
+  let context: Awaited<ReturnType<typeof resolveAuthContext>>;
+  try {
+    context = await resolveAuthContext();
+  } catch (error: unknown) {
+    // Log critique avec le vrai contexte (jamais un objet vide) :
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(
+      "[Auth:Critical] Failed to resolve session due to underlying store failure:",
+      {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+      }
+    );
+    // Exception HTTP propre et explicite (503-equivalent) — la stack d'origine
+    // est conservée via `cause` pour l'audit.
+    throw new Error("Authentication service temporarily unavailable", {
+      cause: err,
+    });
+  }
   if (!context) return null;
 
   const { role, level, id } = context.user;

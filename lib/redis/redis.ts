@@ -598,26 +598,30 @@ export class RedisClient {
         durationMs: Date.now() - start,
       });
       return result;
-    } catch (err) {
+    } catch (error: unknown) {
       this.circuitBreaker.recordFailure();
+      // Normalisation : on ne perd JAMAIS le message d'origine, la stack, ni
+      // les propriétés réseau (code, errno) — un throw non-Error (string,
+      // objets ioredis…) est wrappé dans une Error porteuse du même message.
+      const err = error instanceof Error ? error : new Error(String(error));
       // Diagnostic complet : nom, code et cause (ex: "NOAUTH Authentication
       // required." = mot de passe Redis manquant → définir REDIS_PASSWORD).
-      const message = err instanceof Error ? err.message : String(err);
-      const name = err instanceof Error ? err.name : "UnknownError";
-      const code =
-        err instanceof Error && "code" in err
-          ? String((err as { code?: unknown }).code)
-          : undefined;
-      const hint = /NOAUTH|AUTH/i.test(message)
+      const extra = err as Error & { code?: unknown; errno?: unknown };
+      const hint = /NOAUTH|AUTH/i.test(err.message)
         ? " — Redis exige un mot de passe : définissez REDIS_PASSWORD dans .env.local"
         : "";
       this.logger.error("Operation failed", {
         operation: operationName,
-        error: message,
-        errorName: name,
-        errorCode: code,
+        error: err.message,
+        errorName: err.name,
+        errorCode: extra.code !== undefined ? String(extra.code) : undefined,
+        errno: extra.errno !== undefined ? String(extra.errno) : undefined,
+        // Stack complète de l'erreur d'origine (indispensable en prod/audit)
+        stack: err.stack,
         hint: hint || undefined,
       });
+      // On rethrow l'erreur NORMALISÉE : l'appelant reçoit toujours un Error
+      // porteur du message, de la stack et du code d'origine.
       throw err;
     }
   }
