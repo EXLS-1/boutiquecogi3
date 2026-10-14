@@ -7,19 +7,21 @@
 
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
+import type { Prisma } from "@prisma/client";
 import {
   AUDIT_ACTIONS,
   AUDIT_SEVERITY,
-  AUDIT_DEFAULT_LIMIT,
-  AUDIT_MAX_LIMIT,
-  AUDIT_MAX_PAYLOAD_SIZE,
-  AUDIT_SANITIZE_FIELDS,
   type AuditLogData,
   type AuditLogFilter,
   type AuditLogQuery,
   type AuditLogStats,
-  type AuditSeverity,
 } from "./types";
+import {
+  AUDIT_DEFAULT_LIMIT,
+  AUDIT_MAX_LIMIT,
+  AUDIT_MAX_PAYLOAD_SIZE,
+  AUDIT_SANITIZE_FIELDS,
+} from "./constants";
 import { getCurrentUserWithRole } from "@/lib/auth/rbac";
 
 // ───────────────────────────────────────────
@@ -30,9 +32,9 @@ import { getCurrentUserWithRole } from "@/lib/auth/rbac";
  * Sanitize les données sensibles avant stockage
  */
 function sanitizeData(data: unknown): unknown {
-  if (!data || typeof data !== "object") return data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
   
-  const sanitized = { ...data };
+  const sanitized: Record<string, unknown> = { ...data };
   
   for (const field of AUDIT_SANITIZE_FIELDS) {
     if (field in sanitized) {
@@ -47,6 +49,33 @@ function sanitizeData(data: unknown): unknown {
   }
   
   return sanitized;
+}
+
+function attachSeverity(payload: unknown, severity: string): unknown {
+  const record =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : payload === undefined
+        ? {}
+        : { value: payload };
+
+  return { ...record, __auditSeverity: severity };
+}
+
+function getAuditSeverity(log: {
+  payload: unknown;
+  status: string | null;
+}): string {
+  if (
+    log.payload &&
+    typeof log.payload === "object" &&
+    !Array.isArray(log.payload) &&
+    typeof log.payload.__auditSeverity === "string"
+  ) {
+    return log.payload.__auditSeverity;
+  }
+
+  return log.status === "FAILED" ? AUDIT_SEVERITY.ERROR : AUDIT_SEVERITY.INFO;
 }
 
 /**
@@ -152,7 +181,6 @@ export async function logAudit(data: AuditLogData): Promise<void> {
         oldValue: sanitizedOldValue ? JSON.parse(JSON.stringify(sanitizedOldValue)) : undefined,
         newValue: sanitizedNewValue ? JSON.parse(JSON.stringify(sanitizedNewValue)) : undefined,
         metadata: sanitizedMetadata ? JSON.parse(JSON.stringify(sanitizedMetadata)) : undefined,
-        severity,
         status: data.success === false ? "FAILED" : "SUCCESS",
         error: data.error,
         details: data.details,
@@ -162,7 +190,7 @@ export async function logAudit(data: AuditLogData): Promise<void> {
         os: metadata.os,
         device: metadata.device,
         duration: data.duration,
-        payload: sanitizedMetadata ? JSON.parse(JSON.stringify(sanitizedMetadata)) : undefined,
+        payload: JSON.parse(JSON.stringify(attachSeverity(sanitizedMetadata, severity))),
       },
     }).catch((error) => {
       // Log l'erreur dans un système de monitoring sans faire planter la requête
@@ -210,7 +238,6 @@ export async function logAuditSync(data: AuditLogData): Promise<void> {
       oldValue: sanitizedOldValue ? JSON.parse(JSON.stringify(sanitizedOldValue)) : undefined,
       newValue: sanitizedNewValue ? JSON.parse(JSON.stringify(sanitizedNewValue)) : undefined,
       metadata: sanitizedMetadata ? JSON.parse(JSON.stringify(sanitizedMetadata)) : undefined,
-      severity,
       status: data.success === false ? "FAILED" : "SUCCESS",
       error: data.error,
       details: data.details,
@@ -220,7 +247,7 @@ export async function logAuditSync(data: AuditLogData): Promise<void> {
       os: metadata.os,
       device: metadata.device,
       duration: data.duration,
-      payload: sanitizedMetadata ? JSON.parse(JSON.stringify(sanitizedMetadata)) : undefined,
+      payload: JSON.parse(JSON.stringify(attachSeverity(sanitizedMetadata, severity))),
     },
   });
 }
@@ -269,18 +296,24 @@ export async function getAuditLogs(query: AuditLogQuery = {}): Promise<{
   const skip = (validPage - 1) * validLimit;
   
   // Construit le filtre Prisma
-  const where: Record<string, unknown> = {};
+  const where: Prisma.AuditLogWhereInput = {};
   
   if (filter.userId) where.userId = filter.userId;
   if (filter.action) where.action = filter.action;
   if (filter.entity) where.entity = filter.entity;
   if (filter.entityId) where.entityId = filter.entityId;
-  if (filter.severity) where.severity = filter.severity;
+  if (filter.severity) {
+    where.payload = {
+      path: ["__auditSeverity"],
+      equals: filter.severity,
+    };
+  }
   
   if (filter.startDate || filter.endDate) {
-    where.createdAt = {};
-    if (filter.startDate) where.createdAt.gte = filter.startDate;
-    if (filter.endDate) where.createdAt.lte = filter.endDate;
+    where.createdAt = {
+      ...(filter.startDate ? { gte: filter.startDate } : {}),
+      ...(filter.endDate ? { lte: filter.endDate } : {}),
+    };
   }
   
   if (filter.search) {
@@ -312,7 +345,10 @@ export async function getAuditLogs(query: AuditLogQuery = {}): Promise<{
   ]);
   
   return {
-    logs,
+    logs: logs.map((log) => ({
+      ...log,
+      severity: getAuditSeverity(log),
+    })),
     total,
     page: validPage,
     limit: validLimit,
@@ -324,7 +360,7 @@ export async function getAuditLogs(query: AuditLogQuery = {}): Promise<{
  * Récupère un log spécifique par ID
  */
 export async function getAuditLogById(id: string) {
-  return prisma.auditLog.findUnique({
+  const log = await prisma.auditLog.findUnique({
     where: { id },
     include: {
       user: {
@@ -337,6 +373,8 @@ export async function getAuditLogById(id: string) {
       },
     },
   });
+
+  return log ? { ...log, severity: getAuditSeverity(log) } : null;
 }
 
 /**
@@ -353,7 +391,8 @@ export async function getAuditStats(days: number = 30): Promise<AuditLogStats> {
     select: {
       action: true,
       entity: true,
-      severity: true,
+      payload: true,
+      status: true,
       createdAt: true,
     },
   });
@@ -367,7 +406,8 @@ export async function getAuditStats(days: number = 30): Promise<AuditLogStats> {
   for (const log of logs) {
     byAction[log.action] = (byAction[log.action] || 0) + 1;
     if (log.entity) byEntity[log.entity] = (byEntity[log.entity] || 0) + 1;
-    bySeverity[log.severity] = (bySeverity[log.severity] || 0) + 1;
+    const severity = getAuditSeverity(log);
+    bySeverity[severity] = (bySeverity[severity] || 0) + 1;
     
     const dateKey = log.createdAt.toISOString().split("T")[0];
     byDayMap.set(dateKey, (byDayMap.get(dateKey) || 0) + 1);

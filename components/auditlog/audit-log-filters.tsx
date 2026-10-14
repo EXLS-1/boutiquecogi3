@@ -8,17 +8,40 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Search, X } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { Search, X } from "lucide-react";
 import type { AuditLogFilter } from "@/lib/audit/types";
 import { AUDIT_ACTIONS, AUDIT_ENTITIES, AUDIT_SEVERITY } from "@/lib/audit/types";
 
 interface AuditLogFiltersProps {
   onFilterChange: (filter: AuditLogFilter) => void;
   initialFilter?: AuditLogFilter;
+}
+
+function toDateInputValue(date: Date | undefined): string {
+  if (!date || Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function fromDateInputValue(value: string, endOfDay: boolean): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+
+  const [, yearText, monthText, dayText] = match;
+  const date = new Date(Number(yearText), Number(monthText) - 1, Number(dayText));
+  if (
+    date.getFullYear() !== Number(yearText) ||
+    date.getMonth() !== Number(monthText) - 1 ||
+    date.getDate() !== Number(dayText)
+  ) {
+    return undefined;
+  }
+
+  if (endOfDay) date.setHours(23, 59, 59, 999);
+  return date;
 }
 
 export function AuditLogFilters({ onFilterChange, initialFilter = {} }: AuditLogFiltersProps) {
@@ -32,7 +55,9 @@ export function AuditLogFilters({ onFilterChange, initialFilter = {} }: AuditLog
     onFilterChange(newFilter);
   };
 
-  const handleDateChange = (type: "start" | "end", date: Date | undefined) => {
+  const handleDateChange = (type: "start" | "end", value: string) => {
+    const date = fromDateInputValue(value, type === "end");
+
     if (type === "start") {
       setStartDate(date);
       handleFilterChange("startDate", date);
@@ -122,39 +147,24 @@ export function AuditLogFilters({ onFilterChange, initialFilter = {} }: AuditLog
 
       {/* Dates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-start text-left font-normal">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "dd/MM/yyyy", { locale: fr }) : "Date de début"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={(date) => handleDateChange("start", date)}
-              locale={fr}
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-start text-left font-normal">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "dd/MM/yyyy", { locale: fr }) : "Date de fin"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={(date) => handleDateChange("end", date)}
-              locale={fr}
-            />
-          </PopoverContent>
-        </Popover>
+        <label className="space-y-1 text-sm font-medium text-slate-600">
+          Date de début
+          <Input
+            type="date"
+            value={toDateInputValue(startDate)}
+            onChange={(event) => handleDateChange("start", event.target.value)}
+            aria-label="Date de début"
+          />
+        </label>
+        <label className="space-y-1 text-sm font-medium text-slate-600">
+          Date de fin
+          <Input
+            type="date"
+            value={toDateInputValue(endDate)}
+            onChange={(event) => handleDateChange("end", event.target.value)}
+            aria-label="Date de fin"
+          />
+        </label>
       </div>
 
       {/* Bouton de réinitialisation */}

@@ -28,7 +28,7 @@ interface AuditLogDetailsProps {
     metadata: unknown;
     severity: string;
     status: string | null;
-    error: string | null;
+    error: unknown;
     details: string | null;
     ipAddress: string | null;
     userAgent: string | null;
@@ -42,6 +42,13 @@ interface AuditLogDetailsProps {
 }
 
 export function AuditLogDetails({ log, onClose }: AuditLogDetailsProps) {
+  const errorText =
+    typeof log.error === "string"
+      ? log.error
+      : log.error == null
+        ? null
+        : JSON.stringify(log.error);
+
   return (
     <Dialog open={true} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -112,10 +119,10 @@ export function AuditLogDetails({ log, onClose }: AuditLogDetailsProps) {
           </div>
 
           {/* Erreur */}
-          {log.error && (
+          {errorText != null && errorText !== "" && (
             <div className="border-t pt-4">
               <h3 className="text-sm font-semibold text-red-600 mb-2">Erreur</h3>
-              <p className="text-sm text-red-600 bg-red-50 p-3 rounded">{log.error}</p>
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded">{errorText}</p>
             </div>
           )}
 

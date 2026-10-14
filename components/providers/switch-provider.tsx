@@ -124,7 +124,7 @@ export function SwitchProvider({
         return;
       }
 
-      const validation = await validateAuditToken(approvalToken);
+      const validation = await validateAuditToken(approvalToken, targetRole);
       if (!validation.valid) {
         setAuditState({ status: "rejected", reason: validation.error });
         return;
