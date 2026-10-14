@@ -3,8 +3,8 @@
 
 import { ReactNode } from "react";
 import { useSwitchRBAC } from "@/components/providers/switch-provider";
-import { PERMISSIONS, type Permission } from "@/lib/auth/rbac-shared";
-import { AuditModeSwitcher } from "./audit-mode-switcher";
+import { AuditModeSwitcher } from "@/components/dashboard/audit-mode-switcher";
+import buildDashboardMenu from "@/components/dashboard/Admin-dashboard-menu";
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -20,7 +20,7 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const { activeRole, activeLevel, isAuditMode, hasPermission } = useSwitchRBAC();
 
-  const nav = buildDashboardNav(hasPermission);
+  const nav = buildDashboardMenu(hasPermission);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -101,42 +101,3 @@ export function DashboardShell({
   );
 }
 
-function buildDashboardNav(can: (permission: Permission) => boolean) {
-  return [
-    {
-      title: "Vue générale",
-      items: [{ href: "/dashboard", label: "Overview" }],
-    },
-    {
-      title: "Commerce",
-      items: [
-        can(PERMISSIONS.CATEGORIES_READ) && { href: "/dashboard/categories", label: "Category" },
-        can(PERMISSIONS.ORDERS_READ) && { href: "/dashboard/orders", label: "Order" },
-        can(PERMISSIONS.ORDERS_READ) && { href: "/dashboard/checkout", label: "Checkout" },
-        can(PERMISSIONS.PRODUCTS_READ) && { href: "/dashboard/wishlist", label: "Wishlist" },
-        can(PERMISSIONS.PRODUCTS_READ) && { href: "/dashboard/products", label: "Product" },
-      ].filter(Boolean) as { href: string; label: string }[],
-    },
-    {
-      title: "Ops & contenu",
-      items: [
-        can(PERMISSIONS.SYSTEM_LOGS) && { href: "/dashboard/audit", label: "Audit" },
-        can(PERMISSIONS.MEDIA_READ) && { href: "/dashboard/media", label: "Media" },
-        can(PERMISSIONS.CONTENT_READ) && { href: "/dashboard/video", label: "Video" },
-      ].filter(Boolean) as { href: string; label: string }[],
-    },
-    {
-      title: "Finance",
-      items: [can(PERMISSIONS.ANALYTICS_READ) && { href: "/dashboard/tresory", label: "Tresory" }].filter(
-        Boolean,
-      ) as { href: string; label: string }[],
-    },
-    {
-      title: "Administration",
-      items: [
-        can(PERMISSIONS.USERS_READ) && { href: "/dashboard/users", label: "Users" },
-        can(PERMISSIONS.SETTINGS_ROLES_MANAGE) && { href: "/dashboard/roles", label: "Roles" },
-      ].filter(Boolean) as { href: string; label: string }[],
-    },
-  ];
-}

@@ -79,7 +79,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Activités récentes",
         description: "Consulter le journal des actions récentes sur la plateforme.",
-        href: "/dashboard",
+        href: "/admin/dashboard",
         cta: "Afficher",
         icon: ClipboardList,
         tone: "text-cyan-200",
@@ -87,7 +87,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Alertes opérationnelles",
         description: "Surveiller les seuils critiques et notifications système.",
-        href: "/dashboard/alerts",
+        href: "/admin/dashboard/alerts",
         cta: "Afficher",
         icon: Activity,
         tone: "text-rose-500",
@@ -119,7 +119,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Paniers actifs",
         description: "Suivre les paniers en cours et les taux d'abandon.",
-        href: "/dashboard/carts",
+        href: "/admin/dashboard/carts",
         cta: "Afficher",
         icon: PackagePlus,
         tone: "text-amber-500",
@@ -127,7 +127,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Ventes",
         description: "Indicateurs de chiffre d'affaires et performances.",
-        href: "/dashboard/analytics",
+        href: "/admin/dashboard/analytics",
         cta: "Afficher",
         icon: BarChart3,
         tone: "text-cyan-200",
@@ -135,7 +135,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Paiements",
         description: "Synthèse des transactions et rapprochements.",
-        href: "/dashboard/treasury",
+        href: "/admin/dashboard/treasury",
         cta: "Afficher",
         icon: CreditCard,
         tone: "text-blue-500",
@@ -143,7 +143,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Chiffre d'affaires",
         description: "Tableau de bord financier et prévisions.",
-        href: "/dashboard/revenue",
+        href: "/admin/dashboard/revenue",
         cta: "Afficher",
         icon: TrendingUp,
         tone: "text-cyan-200",
@@ -159,7 +159,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Graphiques",
         description: "Visualisations et rapports graphiques interactifs.",
-        href: "/dashboard/analytics",
+        href: "/admin/dashboard/analytics",
         cta: "Afficher",
         icon: BarChart3,
         tone: "text-indigo-500",
@@ -167,7 +167,7 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       {
         title: "Audit",
         description: "Visualisations interactifs de l'audit.",
-        href: "/dashboard/audit",
+        href: "/admin/dashboard/auditlog",
         cta: "Afficher",
         icon: BarChart3,
         tone: "text-indigo-500",

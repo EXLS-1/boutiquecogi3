@@ -21,10 +21,10 @@ export default async function DashboardPage() {
   // Le dashboard est STRICTEMENT réservé au staff (niveaux 1-5)
   // Level 6 = CLIENT = aucun accès, même en lecture seule
 
-  if (session.level >= 6) {
+  if (session.level >= 3) {
     redirect("/unauthorized");
   }
 
-  // ✅ Level 1-5 : rendu du contenu dashboard
+  // ✅ Level 1-2 : rendu du contenu dashboard
   return <DashboardContent session={session} />;
 }
