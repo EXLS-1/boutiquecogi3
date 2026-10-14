@@ -1,89 +1,55 @@
-// components/admin/audit-log-viewer.tsx
-// Ce composant est responsable de l'affichage des journaux d'audit dans un format de table.
-// Il reçoit une liste d'entrées de journaux d'audit en tant que prop et les affiche dans une table avec des colonnes pour la date, l'utilisateur, l'action, l'entité, etc.
-// Le composant utilise des composants de table personnalisés pour un style cohérent avec le reste de l'application.
-// Note: Ce composant est conçu pour être utilisé dans la page d'administration des journaux d'audit, mais il peut être réutilisé ailleurs si nécessaire.
+// components/auditlog/audit-log-viewer.tsx
+// ============================================
+// VIEWER COMPLET DES LOGS D'AUDIT
+// ============================================
 "use client";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { useState } from "react";
+import { AuditLogFilters } from "./audit-log-filters";
+import { AuditLogTable } from "./audit-log-table";
+import { AuditLogDetails } from "./audit-log-details";
+import { getAuditLogs } from "@/lib/audit/audit.service";
+import type { AuditLogFilter } from "@/lib/audit/types";
 
-// Définition du type pour une entrée de journal d'audit
-interface AuditLogEntry {
-  id: string;
-  userId: string | null;
-  user: {
-    name: string | null;
-    email: string;
-  } | null;
-  action: string;
-  entity: string | null;
-  entityType: string | null;
-  entityId: string | null;
-  oldValue: unknown;
-  newValue: unknown;
-  metadata: unknown;
-  ip: string | null;
-  userAgent: string | null;
-  createdAt: Date;
+interface AuditLogViewerProps {
+  initialLogs: Awaited<ReturnType<typeof getAuditLogs>>;
 }
 
-export function AuditLogViewer({ initialAuditLogs }: { initialAuditLogs: AuditLogEntry[] }) {
+export function AuditLogViewer({ initialLogs }: AuditLogViewerProps) {
+  const [logs, setLogs] = useState(initialLogs.logs);
+  const [page, setPage] = useState(initialLogs.page);
+  const [totalPages, setTotalPages] = useState(initialLogs.totalPages);
+  const [filter, setFilter] = useState<AuditLogFilter>({});
+  const [selectedLog, setSelectedLog] = useState<typeof logs[0] | null>(null);
+
+  const handleFilterChange = async (newFilter: AuditLogFilter) => {
+    setFilter(newFilter);
+    const result = await getAuditLogs({ filter: newFilter, page: 1 });
+    setLogs(result.logs);
+    setPage(result.page);
+    setTotalPages(result.totalPages);
+  };
+
+  const handlePageChange = async (newPage: number) => {
+    const result = await getAuditLogs({ filter, page: newPage });
+    setLogs(result.logs);
+    setPage(result.page);
+    setTotalPages(result.totalPages);
+  };
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <Table>
-        <TableHeader className="bg-slate-50">
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Utilisateur</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Entité</TableHead>
-            <TableHead>ID Entité</TableHead>
-            <TableHead>IP</TableHead>
-            <TableHead>Détails</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {initialAuditLogs.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                Aucun journal d&apos;audit trouvé.
-              </TableCell>
-            </TableRow>
-          ) : (
-            initialAuditLogs.map((log) => (
-              <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                <TableCell className="text-slate-500 text-sm">
-                  {format(log.createdAt, "dd/MM/yyyy HH:mm", { locale: fr })}
-                </TableCell>
-                <TableCell className="font-medium text-slate-900">
-                  {log.user?.name || log.user?.email || log.userId || "Système"}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    {log.action}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-slate-600">{log.entityType || log.entity || "N/A"}</TableCell>
-                <TableCell className="font-mono text-xs text-slate-700">{log.entityId?.substring(0, 8) || "N/A"}</TableCell>
-                <TableCell className="text-slate-500 text-xs">{log.ip || "N/A"}</TableCell>
-                <TableCell className="text-slate-500 text-xs max-w-50 truncate">
-                  {log.oldValue && log.newValue ? `Changement: ${JSON.stringify(log.oldValue)} -> ${JSON.stringify(log.newValue)}` : JSON.stringify(log.metadata || {})}
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+    <div className="space-y-6">
+      <AuditLogFilters onFilterChange={handleFilterChange} initialFilter={filter} />
+      <AuditLogTable
+        logs={logs}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        onViewDetails={setSelectedLog}
+      />
+      {selectedLog && (
+        <AuditLogDetails log={selectedLog} onClose={() => setSelectedLog(null)} />
+      )}
     </div>
   );
 }

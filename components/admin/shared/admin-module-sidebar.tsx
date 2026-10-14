@@ -14,7 +14,7 @@ import { Shield } from "lucide-react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import type { AdminModuleGroup } from "@/lib/constants/admin-navigation";
-import { cn } from "@/lib/utils/utils";
+import { cn } from "@/lib/utils/cn";
 
 /** Identité minimale de la session RBAC affichée dans l'en-tête. */
 export type AdminModuleSidebarSession = {

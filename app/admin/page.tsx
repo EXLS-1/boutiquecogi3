@@ -42,12 +42,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     <div className="min-h-screen bg-cyan-100 p-1 text-cyan-600 md:p-3">
       {pinEntryFresh ? (
         <>
-          {/* En-tête */}
-          <header className="flex items-center justify-end border-b border-cyan-400 pb-6">
-            <div className="flex items-center gap-4">
-            </div>
-          </header>
-
+                  
           {/* Contenu principal */}
           <div className="mt-8 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
             <div className="sticky top-28 self-start">

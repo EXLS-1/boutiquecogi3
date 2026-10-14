@@ -458,7 +458,7 @@ model AuditLog {
   id         String  @id @default(uuid(7)) @db.Uuid
   user       User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId     String? @db.Uuid
-  roleLevel  Int     @default(0)
+  roleLevel  Int     @default(7)
   action     String // ex: "ROLE_CREATED", "USER_BLOCKED"
   targetId   String? @db.Uuid
   targetType String? // "ROLE", "USER", "PRODUCT"
