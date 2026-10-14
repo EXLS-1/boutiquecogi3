@@ -1,12 +1,9 @@
 // app/admin/page.tsx
-
 import { redirect } from "next/navigation";
-
 import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { AdminModuleMain } from "@/components/admin/shared/admin-module-main";
 import { AdminModuleNav } from "@/components/admin/shared/admin-module-nav";
 import { AdminModuleSidebar } from "@/components/admin/shared/admin-module-sidebar";
-
 import { getServerRBACSession } from "@/lib/auth/server";
 import {
   ADMIN_MODULE_GROUPS,
@@ -43,27 +40,31 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
     <div className="min-h-screen bg-cyan-100 p-1 text-cyan-600 md:p-3">
-      {/* En-tête — sécurisé par le code PIN */}
       {pinEntryFresh ? (
-        <header className="flex items-center justify-end border-b border-cyan-400 pb-6">
-          <AdminModuleNav modules={activeGroup.modules} />
-        </header>
-      ) : null}
+        <>
+          {/* En-tête */}
+          <header className="flex items-center justify-end border-b border-cyan-400 pb-6">
+            <div className="flex items-center gap-4">
+            </div>
+          </header>
 
-      {/* Contenu protégé par le code PIN */}
-      {pinEntryFresh ? (
-        <div className="mt-8 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
-          <AdminModuleSidebar
-            groups={ADMIN_MODULE_GROUPS}
-            activeGroupId={activeGroup.id}
-            session={session}
-          />
-
-          <div className="min-w-0 space-y-6">
-            <AdminModuleMain group={activeGroup} />
+          {/* Contenu principal */}
+          <div className="mt-8 grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+            <div className="sticky top-28 self-start">
+              <AdminModuleSidebar
+                groups={ADMIN_MODULE_GROUPS}
+                activeGroupId={activeGroup.id}
+                session={session}
+              />
+            </div>
+            <div className="min-w-0 space-y-6">
+               <AdminModuleNav modules={activeGroup.modules} />
+              <AdminModuleMain group={activeGroup} />
+            </div>
           </div>
-        </div>
+        </>
       ) : (
+        /* Portail PIN — seule chose visible si le code n'est pas frais */
         <div className="mt-8">
           <AdminPinGate />
         </div>

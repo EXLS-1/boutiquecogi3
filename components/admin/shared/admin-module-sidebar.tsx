@@ -49,7 +49,7 @@ export function AdminModuleSidebar({
       className="w-full shrink-0 space-y-4"
     >
       {/* En-tête identité */}
-      <div className="border-b border-cyan-300 pb-4">
+      <div className="border-b border-cyan-400 pb-4">
         <div className="mb-1 flex items-center gap-2 text-emerald-500">
           <Shield className="h-5 w-5" aria-hidden="true" />
           <span className="font-mono text-xs font-semibold uppercase tracking-widest">
@@ -92,7 +92,7 @@ export function AdminModuleSidebar({
         })}
       </ul>
 
-      <SignOutButton className="w-full bg-rose-100 text-red-500 shadow-sm transition-all duration-300 hover:bg-rose-500 hover:text-white active:scale-95">
+      <SignOutButton className="w-full bg-rose-100 border-rose-500 text-red-500 shadow-sm transition-all duration-300 hover:border-rose-500 hover:bg-rose-500 hover:text-white active:scale-95">
         Déconnexion
       </SignOutButton>
     </nav>
