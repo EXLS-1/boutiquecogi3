@@ -13,7 +13,7 @@ const productIdsSchema = z.array(productIdSchema).max(DEFAULT_MAX_ITEMS);
 export type WishlistProduct = {
   id: string;
   name: string;
-  price: number;
+  productPrice: number;
   image: string;
   slug: string;
   category?: string;
@@ -49,7 +49,7 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
               id: true,
               name: true,
               slug: true,
-              price: true,
+              productPrice: true,
               images: true,
               category: { select: { name: true } },
             },
@@ -87,7 +87,7 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
     return {
       id: product.id,
       name: product.name,
-      price: toPriceNumber(product.price),
+      productPrice: toPriceNumber(product.productPrice),
       image: firstImage,
       slug: product.slug,
       category: product.category?.name,

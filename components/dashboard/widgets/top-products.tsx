@@ -51,8 +51,15 @@ async function fetchTopProducts(limit: number = 6): Promise<TopProduct[]> {
       name: true,
       sku: true,
       soldCount: true,
-      price: true,
       images: true,
+      // Le modèle Product n'a pas de champ `price` scalaire : les prix vivent
+      // dans la relation ProductPrice (1:N). On récupère la ligne de prix la
+      // plus récente (par startsAt, sans prix futur/planifié en tête).
+      productPrice: {
+        select: { amount: true },
+        orderBy: { startsAt: { sort: "desc", nulls: "last" } },
+        take: 1,
+      },
     },
     where: {
       soldCount: { gt: 0 },
@@ -60,16 +67,18 @@ async function fetchTopProducts(limit: number = 6): Promise<TopProduct[]> {
     },
   });
 
-  const maxSold = Math.max(...products.map((p) => p.soldCount ?? 0), 1);
+  return products.map((product) => {
+    const unitPrice = Number(product.productPrice[0]?.amount ?? 0);
 
-  return products.map((product) => ({
-    id: product.id,
-    name: product.name,
-    sku: product.sku,
-    sold: product.soldCount ?? 0,
-    revenue: (product.soldCount ?? 0) * Number(product.price ?? 0),
-    imageUrl: product.images?.[0] ?? null,
-  }));
+    return {
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      sold: product.soldCount ?? 0,
+      revenue: (product.soldCount ?? 0) * unitPrice,
+      imageUrl: product.images[0] ?? null,
+    };
+  });
 }
 
 // ───────────────────────────────────────────

@@ -36,18 +36,24 @@ export async function DashboardContent({ session }: DashboardContentProps) {
   const hasPermission = (permission: string) => permissionsSet.has(permission);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-cyan-400">
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">
-            Niveau d&apos;accès :{" "}
+          <p className="mt-1 text-cyan-400 text-muted-foreground">
+            <span className="block">Bienvenue sur le tableau de bord administratif.</span>
+            <span className="block">Niveau d&apos;accès :{" "}</span>
             <span
-              className="font-semibold"
+              className="block font-semibold"
               style={{ "--role-color": session.role.color } as React.CSSProperties}
             >
-              {session.role.name} (Level {level})
+              {session.role.name}
+            </span>
+            <span
+              className="block font-mono text-sm text-cyan-500"
+            >
+               (Level {level})
             </span>
           </p>
         </div>

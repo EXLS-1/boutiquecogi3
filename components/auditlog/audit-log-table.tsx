@@ -69,34 +69,34 @@ function getSeverityVariant(severity: string): "default" | "secondary" | "destru
 
 export function AuditLogTable({ logs, page, totalPages, onPageChange, onViewDetails }: AuditLogTableProps) {
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="space-y-4 rounded-xl border bg-card p-4">
+      <div className="rounded-xl border border-cyan-400 bg-cyan-50 shadow-sm overflow-hidden">
         <Table>
-          <TableHeader className="bg-slate-50">
+          <TableHeader className="bg-cyan-100">
             <TableRow>
               <TableHead className="w-[180px]">Date</TableHead>
               <TableHead>Utilisateur</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Entité</TableHead>
               <TableHead>Sévérité</TableHead>
-              <TableHead>IP</TableHead>
+        
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {logs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                  Aucun journal d'audit trouvé.
+                <TableCell colSpan={7} className="text-center py-8 text-cyan-400">
+                  Aucun journal d&apos;audit trouvé.
                 </TableCell>
               </TableRow>
             ) : (
               logs.map((log) => (
-                <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                  <TableCell className="text-slate-500 text-sm">
+                <TableRow key={log.id} className="hover:bg-cyan-100 transition-colors">
+                  <TableCell className="text-cyan-400 text-sm">
                     {format(log.createdAt, "dd/MM/yyyy HH:mm", { locale: fr })}
                   </TableCell>
-                  <TableCell className="font-medium text-slate-900">
+                  <TableCell className="font-medium text-cyan-400">
                     {log.user?.name || log.user?.email || log.userId || "Système"}
                   </TableCell>
                   <TableCell>
@@ -104,17 +104,15 @@ export function AuditLogTable({ logs, page, totalPages, onPageChange, onViewDeta
                       {log.action}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-cyan-400">
                     {log.entityType || log.entity || "N/A"}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={getSeverityVariant(log.severity)}>
+                  <TableCell className="text-cyan-400">
+                    <Badge variant={getSeverityVariant(log.severity)} className="bg-blue-50 text-blue-700 border-blue-200">
                       {log.severity}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-500 text-xs">
-                    {log.ipAddress || "N/A"}
-                  </TableCell>
+
                   <TableCell>
                     {onViewDetails && (
                       <Button
@@ -136,7 +134,7 @@ export function AuditLogTable({ logs, page, totalPages, onPageChange, onViewDeta
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-cyan-400">
             Page {page} sur {totalPages}
           </div>
           <div className="flex gap-2">

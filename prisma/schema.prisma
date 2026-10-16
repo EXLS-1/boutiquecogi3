@@ -455,13 +455,19 @@ model Dashboard {
 }
 
 model AuditLog {
-  id         String  @id @default(uuid(7)) @db.Uuid
-  user       User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId     String? @db.Uuid
+  id String @id @default(uuid(7)) @db.Uuid
+
+  user       User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId     String  @db.Uuid
   roleLevel  Int     @default(7)
-  action     String // ex: "ROLE_CREATED", "USER_BLOCKED"
+  action     String // ex: "ROLE_CREATED", "USER_BLOCKED", "PRODUCT_CREATE", "ORDER_PAID"
   targetId   String? @db.Uuid
   targetType String? // "ROLE", "USER", "PRODUCT"
+
+  // Snapshots figés pour l'affichage ultra-rapide (Dénormalisation intentionnelle)
+  actorName  String?
+  actorEmail String?
+
   entity     String?
   entityType String?
   entityId   String?

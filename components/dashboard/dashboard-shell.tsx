@@ -18,9 +18,9 @@ export function DashboardShell({
   userEmail,
   userName,
 }: DashboardShellProps) {
-  const { activeRole, activeLevel, isAuditMode, hasPermission } = useSwitchRBAC();
+  const { activeRole, activeLevel, isAuditMode } = useSwitchRBAC();
 
-  const nav = buildDashboardMenu(hasPermission);
+  const nav = buildDashboardMenu();
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">

@@ -166,7 +166,7 @@ async function AuditLogPreviewContent({
       <div className="space-y-3">
         {logs.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
-            Aucune entrée d'audit.
+            Aucune entrée d&apos;audit.
           </p>
         ) : (
           logs.map((log) => (

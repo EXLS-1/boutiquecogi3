@@ -1,4 +1,5 @@
-// app/dashboard/page.tsx
+// app/admin/dashboard/page.tsx
+
 // Page PROXY — vérifie l'autorisation AVANT tout rendu
 // Pas de middleware, pas de client-side check — tout côté serveur
 
@@ -9,17 +10,12 @@ import { DashboardContent } from "@/components/dashboard/dashboard-content";
 export default async function DashboardPage() {
   const session = await getServerRBACSession();
 
-  // Non authentifié → login
+// Non authentifié → login
   if (!session) {
     redirect("/auth/sign-in?callbackUrl=/dashboard");
   }
 
-
-  // =============================================================================
-  // BLOCAGE LEVEL 6 (USER/CLIENT) — REDIRECTION VERS PAGE D'ERREUR
-  // =============================================================================
-  // Le dashboard est STRICTEMENT réservé au staff (niveaux 1-5)
-  // Level 6 = CLIENT = aucun accès, même en lecture seule
+// Le dashboard est STRICTEMENT réservé au staff Admin (niveaux 1-2)
 
   if (session.level >= 3) {
     redirect("/unauthorized");
