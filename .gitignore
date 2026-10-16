@@ -22,8 +22,7 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Prisma
-/prisma/migrations
+# Prisma migrations are versioned alongside the schema.
 
 # PostgreSQL local portable (binaires + donnees, voir start-local-pg.cmd)
 .local-pg/

@@ -457,8 +457,8 @@ model Dashboard {
 model AuditLog {
   id String @id @default(uuid(7)) @db.Uuid
 
-  user       User    @relation(fields: [userId], references: [id], onDelete: Restrict)
-  userId     String  @db.Uuid
+  user       User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String? @db.Uuid
   roleLevel  Int     @default(7)
   action     String // ex: "ROLE_CREATED", "USER_BLOCKED", "PRODUCT_CREATE", "ORDER_PAID"
   targetId   String? @db.Uuid
@@ -467,6 +467,8 @@ model AuditLog {
   // Snapshots figés pour l'affichage ultra-rapide (Dénormalisation intentionnelle)
   actorName  String?
   actorEmail String?
+
+  severity AuditSeverity @default(INFO) // Niveau de gravité typé et indexé
 
   entity     String?
   entityType String?
@@ -500,6 +502,7 @@ model AuditLog {
   @@index([entity])
   @@index([createdAt])
   @@index([targetId, targetType])
+  @@index([severity]) // Crucial pour filtrer rapidement par niveau dans l'interface admin
   @@map("audit_log")
 }
 
@@ -566,6 +569,12 @@ model AuditEventType {
 
   @@index([event, severity, createdAt])
   @@map("audit_event_type")
+}
+
+enum AuditSeverity {
+  INFO // Actions courantes et non destructrices (ex: consultation, mise à jour mineure)
+  WARNING // Actions sensibles nécessitant de l'attention (ex: changement de paramètres, rôles)
+  CRITICAL // Actions destructrices ou financières (ex: suppression de données, échec critique)
 }
 
 // ==========================================
