@@ -99,11 +99,10 @@ async function fetchAuditLogs(limit: number = 6): Promise<AuditEntry[]> {
       entity: true,
       entityId: true,
       createdAt: true,
-      user: {
-        select: {
-          name: true,
-        },
-      },
+      // Snapshots figés (dénormalisés) — ZÉRO jointure : l'acteur est lu
+      // directement depuis audit_log, pas depuis la table user.
+      actorName: true,
+      actorEmail: true,
       metadata: true,
       error: true,
     },
@@ -119,7 +118,8 @@ async function fetchAuditLogs(limit: number = 6): Promise<AuditEntry[]> {
       action: log.action,
       entity: log.entity ?? "",
       entityId: log.entityId,
-      userName: log.user?.name ?? null,
+      // Repli propre : nom figé → email figé → rien (n'affiche pas la ligne « par »).
+      userName: log.actorName ?? log.actorEmail ?? null,
       severity,
       createdAt: log.createdAt,
       details,

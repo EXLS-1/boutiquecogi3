@@ -6,6 +6,7 @@ import RevenueChart from "@/components/dashboard/widgets/revenue-chart";
 import RecentOrders from "@/components/dashboard/widgets/recent-orders";
 import TopProducts from "@/components/dashboard/widgets/top-products";
 import CategoryBreakdown from "@/components/dashboard/widgets/category-breakdown";
+import ActivityFeed from "@/components/dashboard/widgets/activity-feed";
 import AuditLogPreview from "@/components/dashboard/widgets/audit-log-preview";
 import TreasurySummary from "@/components/dashboard/widgets/treasury-summary";
 import MediaStorageStats from "@/components/dashboard/widgets/media-storage-stats";
@@ -117,6 +118,9 @@ export async function DashboardContent({ session }: DashboardContentProps) {
         <section className="grid gap-4">
           <Suspense fallback={<Skeleton className="h-96" />}>
             <AuditLogPreview />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <ActivityFeed />
           </Suspense>
         </section>
       )}
