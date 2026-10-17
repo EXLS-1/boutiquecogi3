@@ -47,6 +47,15 @@ export async function attachTagsAction(input: unknown) {
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "TAG_ATTACH",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: { tagIds: data.tagIds },
+    });
+
     return actionSuccess("TAGS_ATTACHED", "Tags attachés avec succès", result);
   } catch (error) {
     if (error instanceof ProductError) {
@@ -91,6 +100,15 @@ export async function detachTagsAction(input: unknown) {
     revalidatePath(`/admin/products/tags`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "TAG_DETACH",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: { tagIds: data.tagIds },
+    });
 
     return actionSuccess("TAGS_DETACHED", "Tags détachés avec succès", result);
   } catch (error) {

@@ -14,8 +14,8 @@
 
 import { Prisma } from "@prisma/client";
 import { withSecurePrisma } from "@/server/core/secure-prisma";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 import { PERMISSIONS } from "@/lib/auth/rbac";
-import { generateUUIDv7 } from "@/lib/utils/uuid";
 import {
   listDeletedAccountsSchema,
   restoreDeletedAccountSchema,
@@ -339,23 +339,22 @@ export const DeletedAccountRegistryService = {
             },
           });
 
-          await tx.auditLog.create({
-            data: {
-              id: generateUUIDv7(),
-              userId: ctx.userId,
-              roleLevel: ctx.roleLevel,
-              action: "ACCOUNT_RESTORED",
-              targetId: entry.userId,
-              targetType: "USER",
-              details: JSON.stringify({
-                registryId,
-                userEmail: originalEmail,
-                restoredBy: ctx.userId,
-                restoredByRole: ctx.roleName,
-                note: note || "Restauration via DeletedAccountRegistryService",
-              }),
-              ipAddress: "auto",
-              createdAt: new Date(),
+          // Audit via recordAuditLog (snapshot acteur frais + sévérité
+          // CRITICAL : la restauration de données personnelles est
+          // une opération sensible selon la matrice d'audit).
+          await recordAuditLog({
+            userId: ctx.userId,
+            roleLevel: ctx.roleLevel,
+            action: "ACCOUNT_RESTORE",
+            targetId: entry.userId,
+            targetType: "USER",
+            severity: AuditSeverity.CRITICAL,
+            details: {
+              registryId,
+              userEmail: originalEmail,
+              restoredBy: ctx.userId,
+              restoredByRole: ctx.roleName,
+              note: note || "Restauration via DeletedAccountRegistryService",
             },
           });
         });
@@ -369,7 +368,14 @@ export const DeletedAccountRegistryService = {
       {
         minRoleLevel: 2,
         requiredPermissions: [PERMISSIONS["users:update"]],
-        auditLog: true,
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: "ACCOUNT_RESTORE",
+          severity: AuditSeverity.CRITICAL,
+          targetType: "USER",
+          targetId: parsed.data.registryId,
+          success: false,
+        },
       }
     );
   },

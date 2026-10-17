@@ -48,6 +48,15 @@ export async function assignCatalogAction(input: unknown) {
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "CATALOG_ASSIGN",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { catalogId: data.catalogId },
+    });
+
     return actionSuccess("CATALOG_ASSIGNED", "Catalogue assigné avec succès", {
       productId: data.productId,
       catalogId: data.catalogId,
@@ -99,6 +108,15 @@ export async function removeCatalogAction(input: unknown) {
     revalidatePath(`/admin/products/catalogs`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "CATALOG_REMOVE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { catalogId: data.catalogId },
+    });
 
     return actionSuccess("CATALOG_REMOVED", "Catalogue retiré avec succès", {
       productId: data.productId,
@@ -172,6 +190,15 @@ export async function setCatalogPriceOverrideAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}/pricing`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "CATALOG_PRICE_OVERRIDE_UPDATE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { catalogId: data.catalogId, priceOverride: data.priceOverride },
+    });
 
     return actionSuccess("CATALOG_PRICE_OVERRIDE_SET", "Prix de surcharge défini avec succès", {
       productId: data.productId,

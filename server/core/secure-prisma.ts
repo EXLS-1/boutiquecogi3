@@ -91,7 +91,8 @@ async function buildSecureContext(): Promise<SecureContext> {
 export type SecureAuditOptions<T> = {
   /** Action en clair, ex: "ACCOUNT_DELETE", "ROLE_UPDATE", "STOCK_ADJUST". */
   action: string
-  /** Sévérité selon la matrice d'audit (INFO par défaut sur succès). */
+  /** Sévérité selon la matrice d'audit ; omise → résolution automatique via
+   *  `resolveAuditSeverity(action)` (INFO / WARNING / CRITICAL). */
   severity?: AuditSeverity
   /** Type de ressource cible: "ROLE", "USER", "ACCOUNT", "ORDER", "PRODUCT"... */
   targetType?: string
@@ -134,7 +135,10 @@ export async function withSecurePrisma<T>(
         error instanceof Error ? error.message : 'Authentification requise'
       await recordAuditLog({
         action: options.audit.action,
-        targetId: options.audit.targetId,
+        targetId:
+          typeof options.audit.targetId === 'string'
+            ? options.audit.targetId
+            : undefined,
         userId: await getAuditActorId(),
         severity: AuditSeverity.CRITICAL,
         status: 'FAILED',
@@ -235,7 +239,8 @@ export async function withSecurePrisma<T>(
         targetId: resolvedTargetId,
         userId: ctx.userId,
         roleLevel: ctx.roleLevel,
-        severity: audit.severity ?? AuditSeverity.INFO,
+        // Sévérité déclarée, sinon résolution via la matrice (resolveAuditSeverity)
+        severity: audit.severity,
         status: 'SUCCESS',
         targetType: audit.targetType,
         details: resolvedDetails,
@@ -260,7 +265,7 @@ export async function withSecurePrisma<T>(
         severity:
           error instanceof AuthorizationError
             ? AuditSeverity.CRITICAL
-            : audit.severity ?? AuditSeverity.WARNING,
+            : audit.severity,
         status: 'FAILED',
         targetType: audit.targetType,
         details: {
