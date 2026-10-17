@@ -10,7 +10,10 @@
 import { prisma } from "@/lib/prisma";
 import { AuditSeverity } from "@prisma/client";
 
+// Ré-export pour commodité : les Server Actions importent la sévérité
+// directement depuis ce module (source unique de vérité de l'audit).
 export { AuditSeverity };
+
 
 const GENERIC_UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

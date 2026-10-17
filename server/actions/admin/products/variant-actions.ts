@@ -14,6 +14,7 @@ import {
   updateVariant,
 } from "@/lib/product/variant/variant.service";
 import { PRODUCT_LIMITS } from "@/lib/product/product-constant";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 const MAX_BULK_VARIANTS = PRODUCT_LIMITS.VARIANT_MAX;
 
@@ -77,6 +78,15 @@ export async function bulkGenerateVariantsAction(input: unknown) {
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "VARIANTS_BULK_CREATE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { count: result.count, attributeKeys: data.attributeKeys },
+    });
+
     return actionSuccess("VARIANTS_BULK_CREATED", `Variantes générées avec succès`, result);
   } catch (error) {
     if (error instanceof ProductError) {
@@ -123,6 +133,15 @@ export async function createVariantAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "VARIANT_CREATE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { variantId: result.id, sku: result.sku },
+    });
 
     return actionSuccess("VARIANT_CREATED", "Variante créée avec succès", result);
   } catch (error) {
@@ -172,6 +191,15 @@ export async function deleteVariantAction(input: unknown) {
     revalidatePath(`/admin/products/${variant.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "VARIANT_DELETE",
+      targetId: data.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: user.id,
+      severity: AuditSeverity.CRITICAL,
+      details: { productId: variant.productId, reason: data.reason },
+    });
 
     return actionSuccess("VARIANT_DELETED", "Variante supprimée avec succès", {
       variantId: data.variantId,
@@ -239,6 +267,15 @@ export async function updateVariantAction(input: unknown) {
     revalidatePath(`/admin/products/${variant.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "VARIANT_UPDATE",
+      targetId: data.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: { productId: variant.productId, sku: data.sku, isActive: data.isActive },
+    });
 
     return actionSuccess("VARIANT_UPDATED", "Variante mise à jour avec succès", {
       variantId: data.variantId,

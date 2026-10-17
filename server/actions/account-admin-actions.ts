@@ -151,7 +151,7 @@ export async function deleteAccountAction(
       targetId: parsed.data.accountId,
       targetType: "ACCOUNT",
       severity: AuditSeverity.CRITICAL,
-      status: "FAILURE",
+      status: "FAILED",
       error: getErrorMessage(error),
     });
 

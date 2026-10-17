@@ -15,6 +15,7 @@ import type {
 } from '@prisma/client';
 
 import { prisma } from '@/server/core/secure-prisma';
+import { recordAuditLog, AuditSeverity } from '@/server/services/audit.service';
 
 const roleInclude = {
   rolePermissions: { select: { permissionId: true } },
@@ -163,8 +164,30 @@ export const RoleRepository = {
 
   /* ── Audit ─────────────────────────────────────────── */
 
-  createAuditLog(data: Prisma.AuditLogUncheckedCreateInput): Promise<AuditLog> {
-    return prisma.auditLog.create({ data });
+  /**
+   * Écrit une entrée d'audit via `recordAuditLog` (server/services/audit.service)
+   * — source unique de vérité : snapshot acteur frais (actorName/actorEmail),
+   * sévérité WARNING par défaut (toutes les mutations de ce module sont
+   * sensibles selon la matrice d'audit), et jamais bloquant.
+   */
+  async createAuditLog(
+    data: Prisma.AuditLogUncheckedCreateInput,
+  ): Promise<AuditLog | null> {
+    return recordAuditLog({
+      action: data.action,
+      targetId: data.targetId ?? undefined,
+      userId: data.userId ?? null,
+      severity: data.severity ?? AuditSeverity.WARNING,
+      status: data.status ?? undefined,
+      actorSnapshot:
+        data.actorName || data.actorEmail
+          ? { name: data.actorName ?? null, email: data.actorEmail ?? null }
+          : undefined,
+      targetType: data.targetType ?? undefined,
+      roleLevel: data.roleLevel ?? undefined,
+      details: data.details ?? undefined,
+      error: data.error ?? undefined,
+    });
   },
 
   listAuditLogs(filter: { action?: string; take: number }): Promise<AuditLogRow[]> {

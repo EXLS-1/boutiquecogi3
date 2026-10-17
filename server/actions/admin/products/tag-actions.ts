@@ -10,6 +10,7 @@ import {
   attachProductTags,
   detachProductTags,
 } from "@/lib/product/product-associations.service";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 const AttachTagsSchema = z.object({
   productId: z.string().uuid("ID de produit invalide"),

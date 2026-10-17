@@ -2,6 +2,8 @@ import { PERMISSIONS } from '@/lib/auth/rbac';
 import { roleRestrictionsSchema } from '@/lib/roles/role-schema';
 import { assertRoleMutationAllowed } from '@/lib/roles/role.policy';
 import { withSecurePrisma } from '@/server/core/secure-prisma';
+import { recordAuditLog } from '@/server/services/audit.service';
+import { AuditSeverity } from '@prisma/client';
 import type { RoleRestrictions } from '@/lib/roles/role-schema';
 
 export class RoleAdminServiceError extends Error {
@@ -95,22 +97,32 @@ export const RoleAdminService = {
             data: permissions.map(({ id }) => ({ roleconfigId: roleId, permissionId: id })),
           });
         }
-        await tx.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ROLE_PERMISSIONS_UPDATED',
-            targetId: roleId,
-            targetType: 'ROLE',
-            details: JSON.stringify({ permissionIds }),
-          },
-        });
+      });
+
+      // Audit via recordAuditLog (snapshot acteur frais + sévérité WARNING :
+      // reconfiguration des permissions d'un rôle = opération sensible)
+      await recordAuditLog({
+        userId: ctx.userId,
+        roleLevel: ctx.roleLevel,
+        action: 'ROLE_PERMISSIONS_UPDATE',
+        targetId: roleId,
+        targetType: 'ROLE',
+        severity: AuditSeverity.WARNING,
+        details: { permissionIds },
       });
 
       return { roleId };
     }, {
       minRoleLevel: 1,
       requiredPermissions: [PERMISSIONS['role:edit']],
+      // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus via
+      // recordAuditLog (le targetId n'est connu qu'au cœur de l'opération).
+      audit: {
+        action: 'ROLE_PERMISSIONS_UPDATE',
+        severity: AuditSeverity.WARNING,
+        targetType: 'ROLE',
+        success: false,
+      },
     });
   },
 
@@ -132,21 +144,31 @@ export const RoleAdminService = {
           where: { id: roleId },
           data: { restrictions: parsed.data as RoleRestrictions },
         }),
-        ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ROLE_RESTRICTIONS_UPDATED',
-            targetId: roleId,
-            targetType: 'ROLE',
-            details: JSON.stringify({ restrictions: parsed.data }),
-          },
-        }),
       ]);
+
+      // Audit via recordAuditLog (snapshot acteur frais + sévérité WARNING)
+      await recordAuditLog({
+        userId: ctx.userId,
+        roleLevel: ctx.roleLevel,
+        action: 'ROLE_RESTRICTIONS_UPDATE',
+        targetId: roleId,
+        targetType: 'ROLE',
+        severity: AuditSeverity.WARNING,
+        details: { restrictions: parsed.data },
+      });
+
       return { roleId };
     }, {
       minRoleLevel: 1,
       requiredPermissions: [PERMISSIONS['role:edit']],
+      // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+      audit: {
+        action: 'ROLE_RESTRICTIONS_UPDATE',
+        severity: AuditSeverity.WARNING,
+        targetType: 'ROLE',
+        targetId: roleId,
+        success: false,
+      },
     });
   },
 
@@ -191,14 +213,16 @@ export const RoleAdminService = {
           create: { ...input, grantedBy: ctx.userId },
           update: { isGranted: input.isGranted, expiresAt: input.expiresAt, grantedBy: ctx.userId, grantedAt: new Date() },
         });
-        await tx.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'PERMISSION_OVERRIDE_UPDATED',
-            targetId: assignment.userId,
-            targetType: 'USER',
-            details: JSON.stringify({ permissionId: input.permissionId, isGranted: input.isGranted }),
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'PERMISSION_OVERRIDE_UPDATE',
+          targetId: assignment.userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            permissionId: input.permissionId,
+            isGranted: input.isGranted,
           },
         });
         return override;
@@ -206,6 +230,14 @@ export const RoleAdminService = {
     }, {
       minRoleLevel: 1,
       requiredPermissions: [PERMISSIONS['permission:override']],
+      // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus
+      // (le targetId utilisateur n'est connu qu'au cœur de l'opération).
+      audit: {
+        action: 'PERMISSION_OVERRIDE_UPDATE',
+        severity: AuditSeverity.WARNING,
+        targetType: 'USER',
+        success: false,
+      },
     });
   },
 
@@ -215,7 +247,7 @@ export const RoleAdminService = {
         OR: [
           { targetType: { in: ['ROLE', 'USER'] }, action: { startsWith: 'ROLE_' } },
           { action: { startsWith: 'PERMISSION_OVERRIDE_' } },
-          { action: { in: ['USER_BLOCKED', 'USER_UNBLOCKED'] } },
+          { action: { in: ['USER_BLOCK', 'USER_UNBLOCK', 'USER_BLOCKED', 'USER_UNBLOCKED'] } },
         ],
       },
       orderBy: { createdAt: 'desc' },

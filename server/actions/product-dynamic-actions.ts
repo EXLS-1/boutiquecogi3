@@ -42,7 +42,7 @@ export async function createDynamicProductAction(payload: unknown): Promise<Acti
         action: "PRODUCT_CREATE",
         userId: null,
         severity: AuditSeverity.WARNING,
-        status: "FAILURE",
+        status: "FAILED",
         error: "Non authentifié",
       });
       return { success: false, error: "Non authentifié.", code: "UNAUTHORIZED" };
@@ -77,7 +77,7 @@ export async function createDynamicProductAction(payload: unknown): Promise<Acti
       action: "PRODUCT_CREATE",
       userId,
       severity: AuditSeverity.WARNING,
-      status: "FAILURE",
+      status: "FAILED",
       error: errorMsg,
     });
     if (error instanceof ProductError) {
@@ -107,7 +107,7 @@ export async function addStockAction(input: {
         targetType: "PRODUCT_VARIANT",
         userId: null,
         severity: AuditSeverity.WARNING,
-        status: "FAILURE",
+        status: "FAILED",
         error: "Non authentifié",
       });
       return { success: false, error: "Non authentifié.", code: "UNAUTHORIZED" };
@@ -146,7 +146,7 @@ export async function addStockAction(input: {
       targetType: "PRODUCT_VARIANT",
       userId,
       severity: AuditSeverity.WARNING,
-      status: "FAILURE",
+      status: "FAILED",
       error: errorMsg,
     });
     if (error instanceof ProductError) {

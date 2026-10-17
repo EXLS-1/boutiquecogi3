@@ -9,6 +9,7 @@ import { ProductService } from "@/lib/product/product-service";
 import { ProductError } from "@/lib/product/product-errors";
 import { ProductStatus } from "@prisma/client";
 import { discontinueProduct } from "@/lib/product/product-service-publish";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 const ApproveSchema = z.object({
   productId: z.string().uuid("ID de produit invalide"),
@@ -46,6 +47,15 @@ export async function approveProductAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRODUCT_APPROVE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { reason: data.reason },
+    });
 
     return actionSuccess("PRODUCT_APPROVED", "Produit approuvé et publié");
   } catch (error) {
@@ -95,6 +105,15 @@ export async function archiveProductAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRODUCT_ARCHIVE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { reason: data.reason },
+    });
 
     return actionSuccess("PRODUCT_ARCHIVED", "Produit archivé avec succès", {
       productId: data.productId,
@@ -147,6 +166,15 @@ export async function discontinueProductAction(input: unknown) {
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "PRODUCT_DISCONTINUE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { reason: data.reason ?? "Arrêt commercial" },
+    });
+
     return actionSuccess("PRODUCT_DISCONTINUED", "Produit arrêté avec succès", {
       productId: data.productId,
       status: "DISCONTINUED",
@@ -193,6 +221,15 @@ export async function publishProductAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRODUCT_PUBLISH",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { reason: data.reason },
+    });
 
     return actionSuccess("PRODUCT_PUBLISHED", "Produit publié avec succès", {
       productId: data.productId,
@@ -245,6 +282,15 @@ export async function rejectProductAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRODUCT_REJECT",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { reason: data.reason ?? "Rejeté par l'administrateur" },
+    });
 
     return actionSuccess("PRODUCT_REJECTED", "Produit rejeté et retourné en brouillon", {
       productId: data.productId,

@@ -116,7 +116,7 @@ export const RoleService = {
         requiredPermissions: [PERMISSIONS['role:create']],
         // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
         audit: {
-          action: 'ROLE_CREATED',
+          action: 'ROLE_CREATE',
           severity: AuditSeverity.WARNING,
           targetType: 'ROLE',
           success: false,

@@ -785,12 +785,30 @@ export async function duplicateDraftProductAction(
 
     revalidateDraftPaths(copy.id);
 
+    await recordAuditLog({
+      action: "PRODUCT_DRAFT_DUPLICATE",
+      targetId: copy.id,
+      targetType: "PRODUCT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      details: { sourceId: productId, name: copy.name },
+    });
+
     return {
       success: true,
       data: copy,
       message: `Copie créée : "${copy.name}"`,
     };
   } catch (error) {
+    await recordAuditLog({
+      action: "PRODUCT_DRAFT_DUPLICATE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      status: "FAILED",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+    });
     return toActionError(error);
   }
 }
@@ -854,12 +872,30 @@ export async function createVariantAction(
 
     revalidateDraftPaths(productId);
 
+    await recordAuditLog({
+      action: "PRODUCT_VARIANT_CREATE",
+      targetId: variant.id,
+      targetType: "PRODUCT_VARIANT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      details: { productId, sku: variant.sku },
+    });
+
     return {
       success: true,
       data: serializeVariant(variant),
       message: `Variante "${sku}" ajoutée`,
     };
   } catch (error) {
+    await recordAuditLog({
+      action: "PRODUCT_VARIANT_CREATE",
+      targetId: productId,
+      targetType: "PRODUCT_VARIANT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      status: "FAILED",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+    });
     return toActionError(error);
   }
 }
@@ -928,12 +964,30 @@ export async function updateVariantAction(
 
     revalidateDraftPaths(variant.productId);
 
+    await recordAuditLog({
+      action: "PRODUCT_VARIANT_UPDATE",
+      targetId: variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      details: data,
+    });
+
     return {
       success: true,
       data: serializeVariant(updated),
       message: `Variante "${updated.sku}" mise à jour`,
     };
   } catch (error) {
+    await recordAuditLog({
+      action: "PRODUCT_VARIANT_UPDATE",
+      targetId: variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      status: "FAILED",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+    });
     return toActionError(error);
   }
 }
@@ -986,12 +1040,31 @@ export async function deleteVariantAction(
 
     revalidateDraftPaths(variant.productId);
 
+    await recordAuditLog({
+      action: "PRODUCT_VARIANT_DELETE",
+      targetId: variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.CRITICAL,
+      details: { sku: variant.sku, productId: variant.productId },
+    });
+
     return {
       success: true,
       data: { deleted: true },
       message: `Variante "${variant.sku}" supprimée`,
     };
   } catch (error) {
+    await recordAuditLog({
+      action: "PRODUCT_VARIANT_DELETE",
+      targetId: variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.CRITICAL,
+      status: "FAILED",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+    });
+
     return toActionError(error);
   }
 }

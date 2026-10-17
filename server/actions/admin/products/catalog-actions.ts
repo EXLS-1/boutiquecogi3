@@ -11,6 +11,7 @@ import { removeCatalogFromProduct } from "@/lib/product/catalog/catalog.service"
 import { assertCatalogIsActive } from "@/lib/product/catalog/catalog.service";
 import { setCatalogOverride, PricingError } from "@/lib/product/pricing/price.service";
 import { getProductById } from "@/lib/product/product-service-helpers";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 const AssignCatalogSchema = z.object({
   productId: z.string().uuid("ID de produit invalide"),

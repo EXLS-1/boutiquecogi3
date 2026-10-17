@@ -13,6 +13,7 @@ import {
   setPrice,
   toCents,
 } from "@/lib/product/pricing/price.service";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 const CreatePriceSchema = z.object({
   productId: z.string().uuid("ID de produit invalide"),
@@ -59,6 +60,15 @@ export async function createPriceAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRICE_CREATE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { currency: data.currency, amount: data.amount },
+    });
 
     return actionSuccess("PRICE_CREATED", "Prix créé avec succès", {
       productId: data.productId,
@@ -111,6 +121,15 @@ export async function deletePriceAction(input: unknown) {
     revalidatePath(`/admin/products/${price.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRICE_DELETE",
+      targetId: data.priceId,
+      targetType: "PRODUCT_PRICE",
+      userId: user.id,
+      severity: AuditSeverity.CRITICAL,
+      details: { productId: price.productId, amount: price.amount },
+    });
 
     return actionSuccess("PRICE_DELETED", "Prix supprimé avec succès", {
       priceId: data.priceId,
@@ -177,6 +196,15 @@ export async function updatePriceAction(input: unknown) {
     revalidatePath(`/admin/products/${price.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRICE_UPDATE",
+      targetId: data.priceId,
+      targetType: "PRODUCT_PRICE",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { productId: price.productId, amount: data.amount },
+    });
 
     return actionSuccess("PRICE_UPDATED", "Prix mis à jour avec succès", {
       priceId: data.priceId,

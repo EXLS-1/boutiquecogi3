@@ -79,7 +79,7 @@ export async function adjustStockAction(
       targetId: productId,
       targetType: "PRODUCT",
       severity,
-      status: "FAILURE",
+      status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
       details: { type, quantity, reason },
     });
@@ -129,7 +129,7 @@ export async function reserveStockAction(
       targetId: productId,
       targetType: "PRODUCT",
       severity: AuditSeverity.WARNING,
-      status: "FAILURE",
+      status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
       details: { quantity, orderId },
     });
@@ -179,7 +179,7 @@ export async function releaseStockAction(
       targetId: productId,
       targetType: "PRODUCT",
       severity: AuditSeverity.WARNING,
-      status: "FAILURE",
+      status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
       details: { quantity, orderId },
     });
@@ -309,7 +309,7 @@ export async function initStockAction(
       targetId: productId,
       targetType: "PRODUCT",
       severity: AuditSeverity.WARNING,
-      status: "FAILURE",
+      status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
       details: { initialQuantity },
     });

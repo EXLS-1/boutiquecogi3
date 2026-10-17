@@ -299,7 +299,9 @@ export const AccountSelfService = {
           action: "ACCOUNT_SELF_DELETE",
           severity: AuditSeverity.CRITICAL,
           targetType: "USER",
-          targetId: ctx.userId,
+          // ctx.userId n'est PAS accessible ici : l'identifiant de la ressource
+          // cible (l'utilisateur lui-même) figure sur l'entrée de succès émise
+          // via recordAuditLog ci-dessus. L'échec reste correlable par action.
           success: false,
         },
       }

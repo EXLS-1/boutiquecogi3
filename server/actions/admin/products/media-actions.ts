@@ -5,6 +5,7 @@ import { z } from "zod";
 import { hasPermission, resolvePermissionCode } from "@/lib/auth/rbac";
 import { requireAuth } from "@/lib/auth/session-provider";
 import { actionError, actionSuccess } from "./_shared/action-result";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 import { ProductError } from "@/lib/product/product-errors";
 import {
   attachProductMedia,
@@ -47,6 +48,15 @@ export async function attachMediaAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}/media`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "MEDIA_ATTACH",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: { count: data.urls.length },
+    });
 
     return actionSuccess("MEDIA_ATTACHED", "Médias attachés avec succès", result);
   } catch (error) {
@@ -93,6 +103,15 @@ export async function detachMediaAction(input: unknown) {
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "MEDIA_DETACH",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: { mediaIds: data.mediaIds },
+    });
+
     return actionSuccess("MEDIA_DETACHED", "Médias détachés avec succès", result);
   } catch (error) {
     if (error instanceof ProductError) {
@@ -137,6 +156,15 @@ export async function reorderMediaAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}/media`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "MEDIA_REORDER",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: { count: data.orderedMediaIds.length },
+    });
 
     return actionSuccess("MEDIA_REORDERED", "Médias réordonnancés avec succès", result);
   } catch (error) {
