@@ -1,4 +1,4 @@
-﻿// server/services/account-self-service.ts
+// server/services/account-self-service.ts
 // ============================================
 // AccountSelfService â€” Auto-suppression de compte utilisateur
 // ============================================
@@ -14,11 +14,12 @@
 // RBAC : L'utilisateur ne peut supprimer que son propre compte
 
 import { withSecurePrisma } from "@/server/core/secure-prisma";
+import { recordAuditLog } from "@/server/services/audit.service";
 import { prisma } from "@/lib/prisma";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { auth } from "@/lib/auth";
 import type { SelfDeleteAccountInput } from "@/lib/validations/account.schema";
-import { Prisma } from "@prisma/client";
+import { AuditSeverity, Prisma } from "@prisma/client";
 
 // â”€â”€â”€ Erreur mÃ©tier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -263,24 +264,20 @@ export const AccountSelfService = {
             });
           }
 
-          // 5e. CrÃ©er un audit log
-          await tx.auditLog.create({
-            data: {
-              id: generateUUIDv7(),
-              userId: ctx.userId,
-              roleLevel: ctx.roleLevel,
-              action: "ACCOUNT_SELF_DELETED",
-              targetId: ctx.userId,
-              targetType: "USER",
-              details: JSON.stringify({
-                reason,
-                anonymizedEmail,
-                hasOrders: user.orders.length > 0,
-                hasAddresses: user.addresses.length > 0,
-                registryId: registryEntry.id,
-              }),
-              ipAddress: "auto",
-              createdAt: new Date(),
+          // 5e. Audit log via recordAuditLog avec sévérité CRITICAL
+          await recordAuditLog({
+            action: "ACCOUNT_SELF_DELETE",
+            targetId: ctx.userId,
+            targetType: "USER",
+            userId: ctx.userId,
+            roleLevel: ctx.roleLevel,
+            severity: AuditSeverity.CRITICAL,
+            details: {
+              reason,
+              anonymizedEmail,
+              hasOrders: user.orders.length > 0,
+              hasAddresses: user.addresses.length > 0,
+              registryId: registryEntry.id,
             },
           });
 
@@ -290,15 +287,21 @@ export const AccountSelfService = {
         return {
           success: true,
           message:
-            "Votre compte a Ã©tÃ© supprimÃ© avec succÃ¨s. Toutes vos donnÃ©es personnelles ont Ã©tÃ© anonymisÃ©es. Un registre interne conserve une trace pour des raisons lÃ©gales et de traÃ§abilitÃ©.",
+            "Votre compte a été supprimé avec succès. Toutes vos données personnelles ont été anonymisées. Un registre interne conserve une trace pour des raisons légales et de traçabilité.",
           deletedAt: new Date().toISOString(),
           registryId: result.id,
           anonymizedEmail,
         };
       },
       {
-        minRoleLevel: 7, // Tous les utilisateurs authentifiÃ©s peuvent supprimer leur compte
-        auditLog: false, // On gÃ¨re l'audit manuellement dans la transaction
+        minRoleLevel: 7, // Tous les utilisateurs authentifiés peuvent supprimer leur compte
+        audit: {
+          action: "ACCOUNT_SELF_DELETE",
+          severity: AuditSeverity.CRITICAL,
+          targetType: "USER",
+          targetId: ctx.userId,
+          success: false,
+        },
       }
     );
   },

@@ -7,6 +7,7 @@
 
 import { PERMISSIONS } from '@/lib/auth/rbac';
 import { withSecurePrisma } from '@/server/core/secure-prisma';
+import { recordAuditLog, AuditSeverity } from '@/server/services/audit.service';
 import { createRoleSchema, updateRoleSchema, roleIdSchema } from './role.schemas';
 import { RoleRepository } from './role.repository';
 import { assertRoleOperationAllowed, RolePolicyError } from './role.policy';
@@ -105,13 +106,14 @@ export const RoleService = {
               create: permissions.map(({ id }) => ({ permissionId: id })),
             },
           });
-          await RoleRepository.createAuditLog({
+          await recordAuditLog({
             userId: ctx.userId,
             roleLevel: ctx.roleLevel,
-            action: 'ROLE_CREATED',
+            action: 'ROLE_CREATE',
             targetId: created.id,
             targetType: 'ROLE',
-            details: JSON.stringify({ name: parsed.name, level: parsed.level }),
+            severity: AuditSeverity.WARNING,
+            details: { name: parsed.name, level: parsed.level },
           });
           const full = await RoleRepository.findRoleWithRelations(created.id);
           if (!full) throw new RoleServiceError('Rôle introuvable', 'NOT_FOUND');
@@ -140,13 +142,14 @@ export const RoleService = {
             ...(parsed.isActive !== undefined ? { isActive: parsed.isActive } : {}),
             updatedBy: ctx.userId,
           });
-          await RoleRepository.createAuditLog({
+          await recordAuditLog({
             userId: ctx.userId,
             roleLevel: ctx.roleLevel,
-            action: 'ROLE_UPDATED',
+            action: 'ROLE_UPDATE',
             targetId: roleId,
             targetType: 'ROLE',
-            details: JSON.stringify(parsed),
+            severity: AuditSeverity.WARNING,
+            details: parsed,
           });
         },
         { minRoleLevel: 1, requiredPermissions: [PERMISSIONS['role:edit']] },
@@ -167,12 +170,13 @@ export const RoleService = {
           if (!existing) throw new RoleServiceError('Rôle introuvable', 'NOT_FOUND');
           assertRoleOperationAllowed(ctx, existing, isActive ? 'activate' : 'deactivate');
           await RoleRepository.updateRole(roleId, { isActive, updatedBy: ctx.userId });
-          await RoleRepository.createAuditLog({
+          await recordAuditLog({
             userId: ctx.userId,
             roleLevel: ctx.roleLevel,
-            action: isActive ? 'ROLE_ACTIVATED' : 'ROLE_DEACTIVATED',
+            action: isActive ? 'ROLE_ACTIVATE' : 'ROLE_DEACTIVATE',
             targetId: roleId,
             targetType: 'ROLE',
+            severity: AuditSeverity.WARNING,
           });
         },
         { minRoleLevel: 1, requiredPermissions: [PERMISSIONS['role:edit']] },
@@ -209,13 +213,14 @@ export const RoleService = {
                   blockedReason: null,
                 },
           );
-          await RoleRepository.createAuditLog({
+          await recordAuditLog({
             userId: ctx.userId,
             roleLevel: ctx.roleLevel,
-            action: blocked ? 'ROLE_BLOCKED' : 'ROLE_UNBLOCKED',
+            action: blocked ? 'ROLE_BLOCK' : 'ROLE_UNBLOCK',
             targetId: roleId,
             targetType: 'ROLE',
-            details: JSON.stringify({ reason: reason ?? null }),
+            severity: AuditSeverity.WARNING,
+            details: { reason: reason ?? null },
           });
         },
         { minRoleLevel: 1, requiredPermissions: [PERMISSIONS['role:edit']] },

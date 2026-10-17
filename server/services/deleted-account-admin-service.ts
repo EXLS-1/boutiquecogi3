@@ -8,6 +8,7 @@
 // ============================================
 
 import { withSecurePrisma } from "@/server/core/secure-prisma";
+import { recordAuditLog } from "@/server/services/audit.service";
 import { PERMISSIONS } from "@/lib/auth/rbac";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { prisma } from "@/lib/prisma";
@@ -17,7 +18,7 @@ import {
   type ListDeletedAccountsInput,
   type RestoreDeletedAccountInput,
 } from "@/lib/validations/account.schema";
-import { Prisma } from "@prisma/client";
+import { AuditSeverity, Prisma } from "@prisma/client";
 
 // ─── Erreur métier ─────────────────────────
 
@@ -247,24 +248,20 @@ export const DeletedAccountAdminService = {
             },
           });
 
-          // 2c. Audit log
-          await tx.auditLog.create({
-            data: {
-              id: generateUUIDv7(),
-              userId: ctx.userId,
-              roleLevel: ctx.roleLevel,
-              action: "ACCOUNT_RESTORED",
-              targetId: entry.userId,
-              targetType: "USER",
-              details: JSON.stringify({
-                registryId,
-                userEmail: entry.userEmail,
-                restoredBy: ctx.userId,
-                restoredByRole: ctx.roleName,
-                note: note || "Aucune note fournie",
-              }),
-              ipAddress: "auto",
-              createdAt: new Date(),
+          // 2c. Audit log via recordAuditLog avec sévérité CRITICAL
+          await recordAuditLog({
+            action: "ACCOUNT_RESTORE",
+            targetId: entry.userId,
+            targetType: "USER",
+            userId: ctx.userId,
+            roleLevel: ctx.roleLevel,
+            severity: AuditSeverity.CRITICAL,
+            details: {
+              registryId,
+              userEmail: entry.userEmail,
+              restoredBy: ctx.userId,
+              restoredByRole: ctx.roleName,
+              note: note || "Aucune note fournie",
             },
           });
 
@@ -280,7 +277,13 @@ export const DeletedAccountAdminService = {
       {
         minRoleLevel: 2, // ADMIN+
         requiredPermissions: [PERMISSIONS["users:block"]],
-        auditLog: true,
+        audit: {
+          action: "ACCOUNT_RESTORE",
+          severity: AuditSeverity.CRITICAL,
+          targetType: "USER",
+          targetId: parsed.data.registryId,
+          success: false,
+        },
       }
     );
   },

@@ -6,34 +6,47 @@ import { UserAdminService } from '@/server/services/user-admin-service'
 import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role.schema'
 import { revalidatePath } from 'next/cache'
 import { AuthorizationError } from '@/server/core/secure-prisma'
+import type { ActionResult } from '@/server/core/action-result'
+import { recordServerActionAudit, AuditSeverity } from '@/server/services/audit.service'
 
-type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; code: string; fieldErrors?: Record<string, string[] | undefined> }
 
 // ─── Bloquer un utilisateur ───
 
 export async function blockUserAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const raw = Object.fromEntries(formData)
+  const raw = Object.fromEntries(formData)
 
-    const parsed = blockUserSchema.safeParse({
-      userId: raw.userId,
-      reason: raw.reason,
-      blockedUntil: raw.blockedUntil || null,
-      permanent: raw.permanent === 'on' || raw.permanent === 'true',
+  const parsed = blockUserSchema.safeParse({
+    userId: raw.userId,
+    reason: raw.reason,
+    blockedUntil: raw.blockedUntil || null,
+    permanent: raw.permanent === 'on' || raw.permanent === 'true',
+  })
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Données invalides',
+      code: 'VALIDATION_ERROR',
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    }
+  }
+
+  try {
+    const result = await UserAdminService.block(parsed.data)
+
+    await recordServerActionAudit({
+      action: 'USER_BLOCK',
+      targetId: parsed.data.userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      details: {
+        email: result.email,
+        reason: parsed.data.reason,
+        permanent: result.permanent,
+        blockedUntil: result.blockedUntil,
+      },
     })
 
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: 'Données invalides',
-        code: 'VALIDATION_ERROR',
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      }
-    }
-
-    const result = await UserAdminService.block(parsed.data)
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${parsed.data.userId}`)
 
@@ -43,6 +56,14 @@ export async function blockUserAction(formData: FormData): Promise<ActionResult>
       message: `Utilisateur ${result.email} bloqué${result.permanent ? ' définitivement' : ''}`,
     }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'USER_BLOCK',
+      targetId: parsed.data.userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      status: 'FAILURE',
+      error: error instanceof Error ? error.message : 'Erreur inconnue',
+    })
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code }
     }
@@ -56,32 +77,44 @@ export async function blockUserAction(formData: FormData): Promise<ActionResult>
 // ─── Débloquer un utilisateur ───
 
 export async function unblockUserAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const raw = Object.fromEntries(formData)
+  const raw = Object.fromEntries(formData)
 
-    const parsed = unblockUserSchema.safeParse({
-      userId: raw.userId,
-      reason: raw.reason || undefined,
+  const parsed = unblockUserSchema.safeParse({
+    userId: raw.userId,
+    reason: raw.reason || undefined,
+  })
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Données invalides',
+      code: 'VALIDATION_ERROR',
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    }
+  }
+
+  try {
+    const result = await UserAdminService.unblock(parsed.data)
+
+    await recordServerActionAudit({
+      action: 'USER_UNBLOCK',
+      targetId: parsed.data.userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      details: { email: result.email, reason: parsed.data.reason },
     })
 
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: 'Données invalides',
-        code: 'VALIDATION_ERROR',
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      }
-    }
-
-    const result = await UserAdminService.unblock(parsed.data)
     revalidatePath('/admin/users')
-
-    return {
-      success: true,
-      data: result,
-      message: `Utilisateur ${result.email} débloqué`,
-    }
+    return { success: true, data: result, message: `Utilisateur ${result.email} débloqué` }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'USER_UNBLOCK',
+      targetId: parsed.data.userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      status: 'FAILURE',
+      error: error instanceof Error ? error.message : 'Erreur inconnue',
+    })
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code }
     }
@@ -128,15 +161,28 @@ export async function assignRoleAction(
 ): Promise<ActionResult> {
   try {
     const result = await UserAdminService.assignRole({ userId, roleId })
+
+    await recordServerActionAudit({
+      action: 'ROLE_ASSIGN',
+      targetId: userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      details: { roleId },
+    })
+
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${userId}`)
 
-    return {
-      success: true,
-      data: result,
-      message: `Rôle assigné avec succès`,
-    }
+    return { success: true, data: result, message: `Rôle assigné avec succès` }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'ROLE_ASSIGN',
+      targetId: userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      status: 'FAILURE',
+      error: error instanceof Error ? error.message : 'Erreur inconnue',
+    })
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code }
     }
@@ -153,33 +199,37 @@ export async function updateUserRole(
   userId: string,
   role: string
 ): Promise<ActionResult> {
+  if (!userId || typeof userId !== 'string') {
+    return { success: false, error: 'ID utilisateur invalide', code: 'VALIDATION_ERROR' }
+  }
+  if (!role || typeof role !== 'string') {
+    return { success: false, error: 'Rôle invalide', code: 'VALIDATION_ERROR' }
+  }
+
   try {
-    if (!userId || typeof userId !== 'string') {
-      return {
-        success: false,
-        error: 'ID utilisateur invalide',
-        code: 'VALIDATION_ERROR',
-      }
-    }
-
-    if (!role || typeof role !== 'string') {
-      return {
-        success: false,
-        error: 'Rôle invalide',
-        code: 'VALIDATION_ERROR',
-      }
-    }
-
     const result = await UserAdminService.assignRole({ userId, roleId: role })
+
+    await recordServerActionAudit({
+      action: 'ROLE_ASSIGN',
+      targetId: userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      details: { roleId: role },
+    })
+
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${userId}`)
 
-    return {
-      success: true,
-      data: result,
-      message: `Rôle mis à jour avec succès`,
-    }
+    return { success: true, data: result, message: `Rôle mis à jour avec succès` }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'ROLE_ASSIGN',
+      targetId: userId,
+      targetType: 'USER',
+      severity: AuditSeverity.WARNING,
+      status: 'FAILURE',
+      error: error instanceof Error ? error.message : 'Erreur inconnue',
+    })
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code }
     }

@@ -20,17 +20,9 @@ import {
 } from "@/lib/validations/account.schema";
 import { revalidatePath } from "next/cache";
 import { AuthorizationError } from "@/server/core/secure-prisma";
+import type { ActionResult } from "@/server/core/action-result";
+import { recordServerActionAudit, AuditSeverity } from "@/server/services/audit.service";
 
-// ─── Helper types ───────────────────────────
-
-type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | {
-      success: false;
-      error: string;
-      code: string;
-      fieldErrors?: Record<string, string[] | undefined>;
-    };
 
 function getErrorCode(error: unknown): string {
   if (error instanceof DeletedAccountAdminServiceError) return error.code;
@@ -99,31 +91,45 @@ export async function getDeletedAccountDetailAction(
 export async function restoreDeletedAccountAction(
   formData: FormData
 ): Promise<ActionResult> {
+  const raw = Object.fromEntries(formData);
+  const parsed = restoreDeletedAccountSchema.safeParse({
+    registryId: raw.registryId,
+    note: raw.note || undefined,
+  });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: "Données invalides",
+      code: "VALIDATION_ERROR",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
   try {
-    const raw = Object.fromEntries(formData);
-    const parsed = restoreDeletedAccountSchema.safeParse({
-      registryId: raw.registryId,
-      note: raw.note || undefined,
+    const result = await DeletedAccountAdminService.restore(parsed.data);
+
+    await recordServerActionAudit({
+      action: "ACCOUNT_RESTORE",
+      targetId: parsed.data.registryId,
+      targetType: "ACCOUNT",
+      severity: AuditSeverity.CRITICAL,
+      details: { note: parsed.data.note },
     });
 
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: "Données invalides",
-        code: "VALIDATION_ERROR",
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      };
-    }
-
-    const result = await DeletedAccountAdminService.restore(parsed.data);
     revalidatePath("/admin/accounts/deleted");
 
-    return {
-      success: true,
-      data: result,
-      message: `Compte restauré avec succès`,
-    };
+    return { success: true, data: result, message: `Compte restauré avec succès` };
   } catch (error) {
+    await recordServerActionAudit({
+      action: "ACCOUNT_RESTORE",
+      targetId: parsed.data.registryId,
+      targetType: "ACCOUNT",
+      severity: AuditSeverity.CRITICAL,
+      status: "FAILURE",
+      error: getErrorMessage(error),
+    });
+
     return {
       success: false,
       error: getErrorMessage(error),

@@ -4,15 +4,9 @@ import { StockService } from "@/server/services/stock-service";
 import { revalidatePath } from "next/cache";
 import { AuthorizationError } from "@/server/core/secure-prisma";
 import type { StockMovementType } from "@prisma/client";
+import type { ActionResult } from "@/server/core/action-result";
+import { recordServerActionAudit, AuditSeverity } from "@/server/services/audit.service";
 
-type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | {
-      success: false;
-      error: string;
-      code: string;
-      fieldErrors?: Record<string, string[]>;
-    };
 
 // ─── Helpers de validation ───
 
@@ -36,46 +30,64 @@ function validateNumber(raw: unknown, field: string): number {
 export async function adjustStockAction(
   formData: FormData
 ): Promise<ActionResult> {
+  let productId: string;
+  let type: StockMovementType;
+  let quantity: number;
+  let reason: string | undefined;
+
   try {
-    const productId = validateProductId(formData.get("productId"));
-    const type = formData.get("type") as StockMovementType;
-    const quantity = validateNumber(formData.get("quantity"), "Quantité");
-    const reason = (formData.get("reason") as string) || undefined;
+    productId = validateProductId(formData.get("productId"));
+    type = formData.get("type") as StockMovementType;
+    quantity = validateNumber(formData.get("quantity"), "Quantité");
+    reason = (formData.get("reason") as string) || undefined;
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : "Paramètres invalides",
+      code: "VALIDATION_ERROR",
+    };
+  }
 
-    const validTypes: StockMovementType[] = [
-      "IN",
-      "OUT",
-      "ADJUSTMENT",
-      "RETURN",
-    ];
-    if (!validTypes.includes(type)) {
-      return {
-        success: false,
-        error: "Type de mouvement invalide",
-        code: "VALIDATION_ERROR",
-      };
-    }
+  const validTypes: StockMovementType[] = ["IN", "OUT", "ADJUSTMENT", "RETURN"];
+  if (!validTypes.includes(type)) {
+    return { success: false, error: "Type de mouvement invalide", code: "VALIDATION_ERROR" };
+  }
 
+  // Mouvements OUT/ADJUSTMENT qui zeroing peuvent être critiques
+  const isDestructive = (type === "OUT" || type === "ADJUSTMENT") && quantity === 0;
+  const severity = isDestructive ? AuditSeverity.CRITICAL : AuditSeverity.WARNING;
+
+  try {
     const stock = await StockService.adjust(productId, type, quantity, reason);
+
+    await recordServerActionAudit({
+      action: "STOCK_ADJUST",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity,
+      details: { type, quantity, reason },
+    });
+
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${productId}`);
     revalidatePath(`/products/${productId}`);
 
-    return {
-      success: true,
-      data: stock,
-      message: `Stock ajusté : ${type} ${quantity} unité(s)`,
-    };
+    return { success: true, data: stock, message: `Stock ajusté : ${type} ${quantity} unité(s)` };
   } catch (error) {
+    await recordServerActionAudit({
+      action: "STOCK_ADJUST",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity,
+      status: "FAILURE",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+      details: { type, quantity, reason },
+    });
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code };
     }
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-        code: "SERVICE_ERROR",
-      };
+      return { success: false, error: error.message, code: "SERVICE_ERROR" };
     }
     return { success: false, error: "Erreur serveur", code: "INTERNAL_ERROR" };
   }
@@ -88,16 +100,21 @@ export async function reserveStockAction(
   quantity: number,
   orderId: string
 ): Promise<ActionResult> {
-  try {
-    if (!productId || !orderId || quantity <= 0) {
-      return {
-        success: false,
-        error: "Paramètres de réservation invalides",
-        code: "VALIDATION_ERROR",
-      };
-    }
+  if (!productId || !orderId || quantity <= 0) {
+    return { success: false, error: "Paramètres de réservation invalides", code: "VALIDATION_ERROR" };
+  }
 
+  try {
     const stock = await StockService.reserve(productId, quantity, orderId);
+
+    await recordServerActionAudit({
+      action: "STOCK_RESERVE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity: AuditSeverity.INFO,
+      details: { quantity, orderId },
+    });
+
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/products/${productId}`);
 
@@ -107,15 +124,20 @@ export async function reserveStockAction(
       message: `${quantity} unité(s) réservée(s) pour la commande ${orderId}`,
     };
   } catch (error) {
+    await recordServerActionAudit({
+      action: "STOCK_RESERVE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity: AuditSeverity.WARNING,
+      status: "FAILURE",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+      details: { quantity, orderId },
+    });
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code };
     }
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-        code: "SERVICE_ERROR",
-      };
+      return { success: false, error: error.message, code: "SERVICE_ERROR" };
     }
     return { success: false, error: "Erreur serveur", code: "INTERNAL_ERROR" };
   }
@@ -128,16 +150,21 @@ export async function releaseStockAction(
   quantity: number,
   orderId: string
 ): Promise<ActionResult> {
-  try {
-    if (!productId || !orderId || quantity <= 0) {
-      return {
-        success: false,
-        error: "Paramètres de libération invalides",
-        code: "VALIDATION_ERROR",
-      };
-    }
+  if (!productId || !orderId || quantity <= 0) {
+    return { success: false, error: "Paramètres de libération invalides", code: "VALIDATION_ERROR" };
+  }
 
+  try {
     const stock = await StockService.release(productId, quantity, orderId);
+
+    await recordServerActionAudit({
+      action: "STOCK_RELEASE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity: AuditSeverity.INFO,
+      details: { quantity, orderId },
+    });
+
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/products/${productId}`);
 
@@ -147,15 +174,20 @@ export async function releaseStockAction(
       message: `${quantity} unité(s) libérée(s) de la commande ${orderId}`,
     };
   } catch (error) {
+    await recordServerActionAudit({
+      action: "STOCK_RELEASE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity: AuditSeverity.WARNING,
+      status: "FAILURE",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+      details: { quantity, orderId },
+    });
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code };
     }
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-        code: "SERVICE_ERROR",
-      };
+      return { success: false, error: error.message, code: "SERVICE_ERROR" };
     }
     return { success: false, error: "Erreur serveur", code: "INTERNAL_ERROR" };
   }
@@ -248,19 +280,21 @@ export async function initStockAction(
   productId: string,
   initialQuantity: number = 0
 ): Promise<ActionResult> {
-  try {
-    if (!productId || initialQuantity < 0) {
-      return {
-        success: false,
-        error: "Paramètres invalides",
-        code: "VALIDATION_ERROR",
-      };
-    }
+  if (!productId || initialQuantity < 0) {
+    return { success: false, error: "Paramètres invalides", code: "VALIDATION_ERROR" };
+  }
 
-    const stock = await StockService.createForProduct(
-      productId,
-      initialQuantity
-    );
+  try {
+    const stock = await StockService.createForProduct(productId, initialQuantity);
+
+    await recordServerActionAudit({
+      action: "STOCK_INIT",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity: AuditSeverity.INFO,
+      details: { initialQuantity },
+    });
+
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${productId}`);
 
@@ -270,15 +304,20 @@ export async function initStockAction(
       message: `Stock initialisé à ${initialQuantity} unité(s)`,
     };
   } catch (error) {
+    await recordServerActionAudit({
+      action: "STOCK_INIT",
+      targetId: productId,
+      targetType: "PRODUCT",
+      severity: AuditSeverity.WARNING,
+      status: "FAILURE",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+      details: { initialQuantity },
+    });
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message, code: error.code };
     }
     if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-        code: "SERVICE_ERROR",
-      };
+      return { success: false, error: error.message, code: "SERVICE_ERROR" };
     }
     return { success: false, error: "Erreur serveur", code: "INTERNAL_ERROR" };
   }

@@ -10,20 +10,15 @@ import {
   AccountSelfServiceError,
 } from "@/server/services/account-self-service";
 import { selfDeleteAccountSchema } from "@/lib/validations/account.schema";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { AuthorizationError } from "@/server/core/secure-prisma";
 
-// ─── Helper types ───────────────────────────
+import type { ActionResult } from "@/server/core/action-result";
+import {
+  recordServerActionAudit,
+  AuditSeverity,
+  getAuditActorId,
+} from "@/server/services/audit.service";
 
-type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | {
-      success: false;
-      error: string;
-      code: string;
-      fieldErrors?: Record<string, string[] | undefined>;
-    };
 
 function getErrorCode(error: unknown): string {
   if (error instanceof AccountSelfServiceError) return error.code;
@@ -74,28 +69,36 @@ function toFieldErrors(
 export async function deleteMyAccountAction(
   formData: FormData
 ): Promise<ActionResult> {
+  const raw = Object.fromEntries(formData);
+  const parsed = selfDeleteAccountSchema.safeParse({
+    reason: formEntryToString(raw.reason),
+    password: formEntryToString(raw.password),
+    confirmation: parseConfirmationValue(raw.confirmation),
+  });
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: "Données invalides",
+      code: "VALIDATION_ERROR",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  // Capturer l'acteur avant la suppression (la session sera invalide après)
+  const actorId = await getAuditActorId();
+
   try {
-    const raw = Object.fromEntries(formData);
-    const parsed = selfDeleteAccountSchema.safeParse({
-      reason: formEntryToString(raw.reason),
-      password: formEntryToString(raw.password),
-      confirmation: parseConfirmationValue(raw.confirmation),
-    });
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: "Données invalides",
-        code: "VALIDATION_ERROR",
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      };
-    }
-
     const result = await AccountSelfService.deleteMyAccount(parsed.data);
 
-    // Rediriger vers une page de confirmation après suppression
-    // On ne peut pas redirect() ici car on est dans un try/catch avec return
-    // Le client fera la redirection
+    // L'opération est irréversible — audit obligatoire même si actorId est l'utilisateur lui-même
+    await recordServerActionAudit({
+      action: "ACCOUNT_SELF_DELETE",
+      targetId: actorId,
+      targetType: "ACCOUNT",
+      severity: AuditSeverity.CRITICAL,
+      details: { reason: parsed.data.reason },
+    });
 
     return {
       success: true,
@@ -103,6 +106,15 @@ export async function deleteMyAccountAction(
       message: result.message,
     };
   } catch (error) {
+    await recordServerActionAudit({
+      action: "ACCOUNT_SELF_DELETE",
+      targetId: actorId,
+      targetType: "ACCOUNT",
+      severity: AuditSeverity.CRITICAL,
+      status: "FAILURE",
+      error: getErrorMessage(error),
+    });
+
     return {
       success: false,
       error: getErrorMessage(error),

@@ -8,10 +8,8 @@ import { actionError, actionSuccess } from "./_shared/action-result";
 import type { ActionResult } from "./_shared/action-result";
 import { ProductService } from "@/lib/product/product-service";
 import { ProductError } from "@/lib/product/product-errors";
-import {
-  restoreProduct,
-  updateProduct,
-} from "@/lib/product/product-service-helpers";
+import { restoreProduct, updateProduct } from "@/lib/product/product-service-helpers";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 // ───────────────────────────────────────────
 // SCHEMA DE VALIDATION
@@ -93,6 +91,19 @@ export async function createProductAction(input: unknown) {
     // 6. Revalidation du cache
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${result.productId}`);
+
+    await recordAuditLog({
+      action: "PRODUCT_CREATE",
+      targetId: result.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: {
+        name: data.name,
+        slug: result.slug,
+        totalStock: result.totalStock,
+      },
+    });
 
     return actionSuccess("PRODUCT_CREATED", "Produit créé avec succès", {
       productId: result.productId,
@@ -188,6 +199,19 @@ export async function updateProductAction(input: unknown): Promise<ActionResult>
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "PRODUCT_UPDATE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: {
+        name: data.name,
+        sku: data.sku,
+        basePrice: data.basePrice,
+      },
+    });
+
     return actionSuccess("PRODUCT_UPDATED", "Produit mis à jour avec succès", {
       productId: data.productId,
     });
@@ -234,6 +258,15 @@ export async function softDeleteProductAction(input: unknown) {
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
 
+    await recordAuditLog({
+      action: "PRODUCT_DELETE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.CRITICAL,
+      details: { reason: data.reason },
+    });
+
     return actionSuccess("PRODUCT_DELETED", "Produit supprimé avec succès", {
       productId: data.productId,
     });
@@ -279,6 +312,14 @@ export async function restoreProductAction(input: unknown) {
     revalidatePath(`/admin/products/${data.productId}`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "PRODUCT_RESTORE",
+      targetId: data.productId,
+      targetType: "PRODUCT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+    });
 
     return actionSuccess("PRODUCT_RESTORED", "Produit restauré avec succès", {
       productId: data.productId,

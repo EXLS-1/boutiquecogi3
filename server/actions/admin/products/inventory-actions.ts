@@ -10,6 +10,7 @@ import { getVariantById } from "@/lib/product/product-service-helpers";
 import { adjustStock, transferStock } from "@/lib/product/inventory/inventory.service";
 import { releaseStock, reserveStock } from "@/lib/product/inventory/reservation.service";
 import { InventoryError } from "@/lib/product/inventory/inventory.types";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 const AdjustStockSchema = z.object({
   variantId: z.string().uuid("ID de variante invalide"),
@@ -59,6 +60,20 @@ export async function adjustStockAction(input: unknown) {
     revalidatePath(`/admin/products/${variant.productId}/inventory`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "STOCK_ADJUST",
+      targetId: data.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: {
+        delta: data.delta,
+        warehouseId: data.warehouseId,
+        reason: data.reason,
+        productId: variant.productId,
+      },
+    });
 
     return actionSuccess("STOCK_ADJUSTED", "Stock ajusté avec succès", result);
   } catch (error) {
@@ -120,6 +135,19 @@ export async function releaseStockAction(input: unknown) {
     revalidatePath(`/admin/products/${variant.productId}/inventory`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "STOCK_RELEASE",
+      targetId: data.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: {
+        quantity: data.quantity,
+        warehouseId: data.warehouseId,
+        productId: variant.productId,
+      },
+    });
 
     return actionSuccess("STOCK_RELEASED", "Stock libéré avec succès", result);
   } catch (error) {
@@ -183,6 +211,20 @@ export async function reserveStockAction(input: unknown) {
     revalidatePath(`/admin/products/${variant.productId}/inventory`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "STOCK_RESERVE",
+      targetId: data.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: user.id,
+      severity: AuditSeverity.INFO,
+      details: {
+        quantity: data.quantity,
+        orderId: data.orderId,
+        warehouseId: data.warehouseId,
+        productId: variant.productId,
+      },
+    });
 
     return actionSuccess("STOCK_RESERVED", "Stock réservé avec succès", result);
   } catch (error) {
@@ -249,6 +291,20 @@ export async function transferStockAction(input: unknown) {
     revalidatePath(`/admin/products/${fromVariant.productId}/inventory`);
     revalidateTag("admin:products:list", "max");
     revalidateTag("admin:products:kpis", "max");
+
+    await recordAuditLog({
+      action: "STOCK_TRANSFER",
+      targetId: data.fromVariantId,
+      targetType: "PRODUCT_VARIANT",
+      userId: user.id,
+      severity: AuditSeverity.WARNING,
+      details: {
+        fromVariantId: data.fromVariantId,
+        toVariantId: data.toVariantId,
+        quantity: data.quantity,
+        reason: data.reason,
+      },
+    });
 
     return actionSuccess("STOCK_TRANSFERRED", "Transfert effectué avec succès", result);
   } catch (error) {

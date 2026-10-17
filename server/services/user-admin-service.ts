@@ -1,6 +1,8 @@
 // server/services/user-admin-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
+import { recordAuditLog } from '@/server/services/audit.service'
+import { AuditSeverity } from '@prisma/client'
 import { blockUserSchema, unblockUserSchema, assignRoleSchema } from '@/lib/validations/role.schema'
 import { PERMISSIONS, ROLES, ROLE_HIERARCHY, getRoleLevel } from '@/lib/auth/rbac'
 import type { BlockUserInput, UnblockUserInput, AssignRoleInput } from '@/lib/validations/role.schema'
@@ -90,22 +92,21 @@ export const UserAdminService = {
         })
 
         // ─── Audit log ───
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'USER_BLOCKED',
-            targetId: userId,
-            targetType: 'USER',
-            details: JSON.stringify({
-              blockedUserEmail: targetUser.email,
-              blockedUserName: targetUser.name,
-              reason,
-              blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
-              blockedBy: ctx.userId,
-              blockedByRole: ctx.roleName,
-            }),
-          }
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
         })
 
         return {
@@ -120,7 +121,14 @@ export const UserAdminService = {
       {
         minRoleLevel: 2, // ADMIN+
         requiredPermissions: [PERMISSIONS['users:block']],
-        auditLog: true,
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
       }
     )
   },
@@ -162,19 +170,18 @@ export const UserAdminService = {
           }
         })
 
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'USER_UNBLOCKED',
-            targetId: userId,
-            targetType: 'USER',
-            details: JSON.stringify({
-              unblockedUserEmail: targetUser.email,
-              reason: reason || 'Aucune raison fournie',
-              unblockedBy: ctx.userId,
-            }),
-          }
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_UNBLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            unblockedUserEmail: targetUser.email,
+            reason: reason || 'Aucune raison fournie',
+            unblockedBy: ctx.userId,
+          },
         })
 
         return {
@@ -187,7 +194,14 @@ export const UserAdminService = {
       {
         minRoleLevel: 2, // ADMIN+
         requiredPermissions: [PERMISSIONS['users:block']],
-        auditLog: true,
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_UNBLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
       }
     )
   },
@@ -300,19 +314,18 @@ export const UserAdminService = {
           }
         })
 
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ROLE_ASSIGNED',
-            targetId: userId,
-            targetType: 'USER',
-            details: JSON.stringify({
-              assignedRole: role.role,
-              assignedRoleLevel: role.level,
-              previousRole: targetUser.roleAssignment?.roleConfig?.role,
-            }),
-          }
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'ROLE_ASSIGN',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            assignedRole: role.role,
+            assignedRoleLevel: role.level,
+            previousRole: targetUser.roleAssignment?.roleConfig?.role,
+          },
         })
 
         return {
@@ -325,7 +338,14 @@ export const UserAdminService = {
       {
         minRoleLevel: 2, // ADMIN+
         requiredPermissions: [PERMISSIONS['role:assign']],
-        auditLog: true,
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'ROLE_ASSIGN',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
       }
     )
   },

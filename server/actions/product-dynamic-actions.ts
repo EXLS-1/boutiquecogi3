@@ -21,10 +21,10 @@ import {
   invalidateAllCatalogCaches,
   CACHE_TAGS,
 } from "@/lib/product-catalog/catalog-queries";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
+import type { ActionResult } from "@/server/core/action-result";
 
-type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; code: string; details?: unknown };
+export type { ActionResult };
 
 /**
  * Crée dynamiquement un produit (minimal ou complet) + son inventaire.
@@ -33,13 +33,34 @@ type ActionResult<T = unknown> =
  * Toujours atomique : produit + ≥1 variante + stock + mouvements.
  */
 export async function createDynamicProductAction(payload: unknown): Promise<ActionResult> {
+  let userId: string | null = null;
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
+    userId = session?.user?.id ?? null;
+    if (!userId) {
+      await recordAuditLog({
+        action: "PRODUCT_CREATE",
+        userId: null,
+        severity: AuditSeverity.WARNING,
+        status: "FAILURE",
+        error: "Non authentifié",
+      });
       return { success: false, error: "Non authentifié.", code: "UNAUTHORIZED" };
     }
 
-    const result = await ProductService.createDynamicProduct(payload, session.user.id);
+    const result = await ProductService.createDynamicProduct(payload, userId);
+
+    await recordAuditLog({
+      action: "PRODUCT_CREATE",
+      targetId: result.productId,
+      targetType: "PRODUCT",
+      userId,
+      severity: AuditSeverity.WARNING,
+      details: {
+        variantCount: result.variantCount,
+        totalStock: result.totalStock,
+      },
+    });
 
     // Invalidation des caches catalogue + routes produit
     await invalidateAllCatalogCaches();
@@ -51,8 +72,16 @@ export async function createDynamicProductAction(payload: unknown): Promise<Acti
       message: `Produit créé : ${result.variantCount} variante(s), ${result.totalStock} unité(s) en stock.`,
     };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : "Erreur serveur inattendue.";
+    await recordAuditLog({
+      action: "PRODUCT_CREATE",
+      userId,
+      severity: AuditSeverity.WARNING,
+      status: "FAILURE",
+      error: errorMsg,
+    });
     if (error instanceof ProductError) {
-      return { success: false, error: error.message, code: error.code, details: error.details };
+      return { success: false, error: error.message, code: error.code };
     }
     console.error("[createDynamicProductAction]", error);
     return { success: false, error: "Erreur serveur inattendue.", code: "INTERNAL_ERROR" };
@@ -67,9 +96,20 @@ export async function addStockAction(input: {
   quantity: number;
   notes?: string;
 }): Promise<ActionResult> {
+  let userId: string | null = null;
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.id) {
+    userId = session?.user?.id ?? null;
+    if (!userId) {
+      await recordAuditLog({
+        action: "STOCK_ADJUST",
+        targetId: input.variantId,
+        targetType: "PRODUCT_VARIANT",
+        userId: null,
+        severity: AuditSeverity.WARNING,
+        status: "FAILURE",
+        error: "Non authentifié",
+      });
       return { success: false, error: "Non authentifié.", code: "UNAUTHORIZED" };
     }
 
@@ -80,16 +120,39 @@ export async function addStockAction(input: {
         reason: "RESTOCK",
         notes: input.notes,
       },
-      session.user.id
+      userId
     );
+
+    await recordAuditLog({
+      action: "STOCK_ADJUST",
+      targetId: input.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId,
+      severity: AuditSeverity.WARNING,
+      details: {
+        quantity: input.quantity,
+        reason: "RESTOCK",
+        notes: input.notes,
+      },
+    });
 
     await invalidateAllCatalogCaches();
     return { success: true, data: result, message: "Stock mis à jour." };
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : "Erreur serveur inattendue.";
+    await recordAuditLog({
+      action: "STOCK_ADJUST",
+      targetId: input.variantId,
+      targetType: "PRODUCT_VARIANT",
+      userId,
+      severity: AuditSeverity.WARNING,
+      status: "FAILURE",
+      error: errorMsg,
+    });
     if (error instanceof ProductError) {
       return { success: false, error: error.message, code: error.code };
     }
     console.error("[addStockAction]", error);
     return { success: false, error: "Erreur serveur inattendue.", code: "INTERNAL_ERROR" };
   }
-}
+}

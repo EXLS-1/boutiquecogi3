@@ -1,6 +1,8 @@
 // server/services/order-admin-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
+import { recordAuditLog } from '@/server/services/audit.service'
+import { AuditSeverity } from '@prisma/client'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
 import type { OrderStatusEnum as OrderStatus } from '@prisma/client'
 
@@ -221,18 +223,22 @@ export const OrderAdminService = {
                     },
                 })
 
-                await ctx.prisma.auditLog.create({
-                    data: {
-                        userId: ctx.userId,
-                        roleLevel: ctx.roleLevel,
-                        action: 'ORDER_STATUS_UPDATED',
-                        targetId: orderId,
-                        targetType: 'ORDER',
-                        details: JSON.stringify({
-                            previousStatus: order.status,
-                            newStatus,
-                            reason: reason || 'Aucune raison fournie',
-                        }),
+                // Audit via recordAuditLog (snapshot acteur frais + sévérité :
+                // CRITICAL pour les transitions destructrices/financières)
+                await recordAuditLog({
+                    userId: ctx.userId,
+                    roleLevel: ctx.roleLevel,
+                    action: 'ORDER_STATUS_UPDATE',
+                    targetId: orderId,
+                    targetType: 'ORDER',
+                    severity:
+                        newStatus === 'CANCELLED' || newStatus === 'REFUNDED'
+                            ? AuditSeverity.CRITICAL
+                            : AuditSeverity.WARNING,
+                    details: {
+                        previousStatus: order.status,
+                        newStatus,
+                        reason: reason || 'Aucune raison fournie',
                     },
                 })
 
@@ -241,7 +247,14 @@ export const OrderAdminService = {
             {
                 minRoleLevel: 4, // SUPERVISOR+
                 requiredPermissions: [PERMISSIONS['order:status:update']],
-                auditLog: true,
+                // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+                audit: {
+                    action: 'ORDER_STATUS_UPDATE',
+                    severity: AuditSeverity.WARNING,
+                    targetType: 'ORDER',
+                    targetId: orderId,
+                    success: false,
+                },
             }
         )
     },

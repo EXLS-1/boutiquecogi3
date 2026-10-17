@@ -6,8 +6,10 @@ import { RoleService, RoleServiceError } from '@/server/services/role-service'
 import { createRoleSchema, updateRoleSchema } from '@/lib/validations/role.schema'
 import { revalidatePath } from 'next/cache'
 import { AuthorizationError } from '@/server/core/secure-prisma'
+import type { ActionResult } from '@/server/core/action-result'
+import { recordServerActionAudit, AuditSeverity } from '@/server/services/audit.service'
 
-// ─── Helper type pour les erreurs avec code ───
+// ─── Error helpers ────────────────────────────────────────────────────────────
 
 interface AppError extends Error {
   code?: string
@@ -25,42 +27,49 @@ function getErrorMessage(error: unknown): string {
   return 'Erreur serveur inattendue'
 }
 
-type ActionResult<T = unknown> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string; code: string; fieldErrors?: Record<string, string[]> }
-
 export async function createRoleAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const raw = Object.fromEntries(formData)
+  const raw = Object.fromEntries(formData)
 
-    const parsed = createRoleSchema.safeParse({
-      name: raw.name,
-      level: Number(raw.level),
-      description: raw.description || '',
-      defaultPermissionCodes: raw.defaultPermissionCodes
-        ? JSON.parse(raw.defaultPermissionCodes as string)
-        : [],
-      isActive: raw.isActive === 'on' || raw.isActive === 'true',
+  const parsed = createRoleSchema.safeParse({
+    name: raw.name,
+    level: Number(raw.level),
+    description: raw.description || '',
+    defaultPermissionCodes: raw.defaultPermissionCodes
+      ? JSON.parse(raw.defaultPermissionCodes as string)
+      : [],
+    isActive: raw.isActive === 'on' || raw.isActive === 'true',
+  })
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Données invalides',
+      code: 'VALIDATION_ERROR',
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    }
+  }
+
+  try {
+    const role = await RoleService.create(parsed.data)
+
+    await recordServerActionAudit({
+      action: 'ROLE_CREATE',
+      targetId: role.id,
+      targetType: 'ROLE',
+      severity: AuditSeverity.WARNING,
+      details: { name: role.name, level: role.level },
     })
 
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: 'Données invalides',
-        code: 'VALIDATION_ERROR',
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      }
-    }
-
-    const role = await RoleService.create(parsed.data)
     revalidatePath('/admin/roles')
-
-    return {
-      success: true,
-      data: role,
-      message: `Rôle "${role.name}" créé avec succès`,
-    }
+    return { success: true, data: role, message: `Rôle "${role.name}" créé avec succès` }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'ROLE_CREATE',
+      targetType: 'ROLE',
+      severity: AuditSeverity.WARNING,
+      status: 'FAILURE',
+      error: getErrorMessage(error),
+    })
     return { success: false, error: getErrorMessage(error), code: getErrorCode(error) }
   }
 }
@@ -78,34 +87,48 @@ export async function updateRoleAction(
   roleId: string,
   formData: FormData
 ): Promise<ActionResult> {
+  const raw = Object.fromEntries(formData)
+
+  const updateData: Record<string, unknown> = {}
+  if (raw.description !== undefined) updateData.description = raw.description
+  if (raw.isActive !== undefined) updateData.isActive = raw.isActive === 'on' || raw.isActive === 'true'
+  if (raw.defaultPermissionCodes) {
+    updateData.defaultPermissionCodes = JSON.parse(raw.defaultPermissionCodes as string)
+  }
+
+  const parsed = updateRoleSchema.safeParse(updateData)
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Données invalides',
+      code: 'VALIDATION_ERROR',
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    }
+  }
+
   try {
-    const raw = Object.fromEntries(formData)
-
-    // Construire l'objet data pour la validation
-    const updateData: Record<string, unknown> = {}
-    if (raw.description !== undefined) updateData.description = raw.description
-    if (raw.isActive !== undefined) updateData.isActive = raw.isActive === 'on' || raw.isActive === 'true'
-    if (raw.defaultPermissionCodes) {
-      updateData.defaultPermissionCodes = JSON.parse(raw.defaultPermissionCodes as string)
-    }
-
-    // Validation via Zod
-    const parsed = updateRoleSchema.safeParse(updateData)
-
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: 'Données invalides',
-        code: 'VALIDATION_ERROR',
-        fieldErrors: parsed.error.flatten().fieldErrors,
-      }
-    }
-
     const role = await RoleService.update(roleId, parsed.data)
-    revalidatePath('/admin/roles')
 
+    await recordServerActionAudit({
+      action: 'ROLE_UPDATE',
+      targetId: roleId,
+      targetType: 'ROLE',
+      severity: AuditSeverity.WARNING,
+      details: { changes: parsed.data },
+    })
+
+    revalidatePath('/admin/roles')
     return { success: true, data: role, message: 'Rôle mis à jour' }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'ROLE_UPDATE',
+      targetId: roleId,
+      targetType: 'ROLE',
+      severity: AuditSeverity.WARNING,
+      status: 'FAILURE',
+      error: getErrorMessage(error),
+    })
     return { success: false, error: getErrorMessage(error), code: getErrorCode(error) }
   }
 }
@@ -113,9 +136,25 @@ export async function updateRoleAction(
 export async function deleteRoleAction(roleId: string): Promise<ActionResult> {
   try {
     const result = await RoleService.delete(roleId)
+
+    await recordServerActionAudit({
+      action: 'ROLE_DELETE',
+      targetId: roleId,
+      targetType: 'ROLE',
+      severity: AuditSeverity.CRITICAL,
+    })
+
     revalidatePath('/admin/roles')
     return { success: true, data: result, message: 'Rôle supprimé' }
   } catch (error) {
+    await recordServerActionAudit({
+      action: 'ROLE_DELETE',
+      targetId: roleId,
+      targetType: 'ROLE',
+      severity: AuditSeverity.CRITICAL,
+      status: 'FAILURE',
+      error: getErrorMessage(error),
+    })
     return { success: false, error: getErrorMessage(error), code: getErrorCode(error) }
   }
 }

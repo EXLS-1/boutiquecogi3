@@ -1,6 +1,8 @@
 // server/services/role-service.ts
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
+import { recordAuditLog } from '@/server/services/audit.service'
+import { AuditSeverity } from '@prisma/client'
 import { createRoleSchema, type CreateRoleInput, type UpdateRoleInput } from '@/lib/validations/role.schema'
 import { PERMISSIONS, ROLE_HIERARCHY } from '@/lib/auth/rbac'
 import { assertRoleMutationAllowed } from '@/lib/roles/role.policy'
@@ -84,20 +86,19 @@ export const RoleService = {
         })
 
         // ─── Audit log ───
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ROLE_CREATED',
-            targetId: roleConfig.id,
-            targetType: 'ROLE',
-            details: JSON.stringify({
-              roleName: roleNameFromLevel,
-              level: roleConfig.level,
-              permissions: parsed.data.defaultPermissionCodes,
-              createdBy: ctx.userId,
-            }),
-          }
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'ROLE_CREATE',
+          targetId: roleConfig.id,
+          targetType: 'ROLE',
+          severity: AuditSeverity.WARNING,
+          details: {
+            roleName: roleNameFromLevel,
+            level: roleConfig.level,
+            permissions: parsed.data.defaultPermissionCodes,
+            createdBy: ctx.userId,
+          },
         })
 
         return {
@@ -113,7 +114,13 @@ export const RoleService = {
       {
         minRoleLevel: 1, // SUPER_ADMIN uniquement
         requiredPermissions: [PERMISSIONS['role:create']],
-        auditLog: true,
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'ROLE_CREATED',
+          severity: AuditSeverity.WARNING,
+          targetType: 'ROLE',
+          success: false,
+        },
         customCheck: (ctx) => ctx.roleLevel === 1, // Double sécurité
       }
     )
@@ -220,15 +227,14 @@ export const RoleService = {
           }
         })
 
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ROLE_UPDATED',
-            targetId: roleId,
-            targetType: 'ROLE',
-            details: JSON.stringify({ changes: data }),
-          }
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'ROLE_UPDATE',
+          targetId: roleId,
+          targetType: 'ROLE',
+          severity: AuditSeverity.WARNING,
+          details: { changes: data },
         })
 
         return updated
@@ -236,6 +242,14 @@ export const RoleService = {
       {
         minRoleLevel: 1,
         requiredPermissions: [PERMISSIONS['role:edit']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'ROLE_UPDATE',
+          severity: AuditSeverity.WARNING,
+          targetType: 'ROLE',
+          targetId: roleId,
+          success: false,
+        },
       }
     )
   },
@@ -275,15 +289,14 @@ export const RoleService = {
           ctx.prisma.roleConfig.delete({ where: { id: roleId } })
         ])
 
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ROLE_DELETED',
-            targetId: roleId,
-            targetType: 'ROLE',
-            details: JSON.stringify({ roleName: role.role, level: role.level }),
-          }
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'ROLE_DELETE',
+          targetId: roleId,
+          targetType: 'ROLE',
+          severity: AuditSeverity.CRITICAL,
+          details: { roleName: role.role, level: role.level },
         })
 
         return { success: true, deletedRole: role.role }
@@ -291,7 +304,14 @@ export const RoleService = {
       {
         minRoleLevel: 1,
         requiredPermissions: [PERMISSIONS['role:delete']],
-        auditLog: true,
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'ROLE_DELETE',
+          severity: AuditSeverity.CRITICAL,
+          targetType: 'ROLE',
+          targetId: roleId,
+          success: false,
+        },
       }
     )
   }

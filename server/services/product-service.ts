@@ -1,7 +1,6 @@
-// server/services/product-service.ts
-
 import { withSecurePrisma, type SecureContext } from '@/server/core/secure-prisma'
 import { PERMISSIONS, hasPermissionOnResult } from '@/lib/auth/rbac'
+import { AuditSeverity } from '@/server/services/audit.service'
 import { generateUUIDv7 } from '@/lib/utils/uuid'
 import { generateSlug } from '@/lib/utils/slug'
 import { generateSKU } from '@/lib/utils/sku'
@@ -85,7 +84,13 @@ export const ProductService = {
       {
         minRoleLevel: 4, // EDITOR minimum
         requiredPermissions: [PERMISSIONS['products:create']],
-        auditLog: true,
+        audit: {
+          action: 'PRODUCT_CREATE',
+          severity: AuditSeverity.WARNING,
+          targetType: 'PRODUCT',
+          targetId: (p) => p.id,
+          details: (p) => ({ name: p.name, sku: p.sku, basePrice: p.basePrice }),
+        },
       }
     )
   },
@@ -156,7 +161,13 @@ export const ProductService = {
       {
         minRoleLevel: 4,
         requiredPermissions: [PERMISSIONS['products:update']],
-        auditLog: true,
+        audit: {
+          action: 'PRODUCT_UPDATE',
+          severity: AuditSeverity.WARNING,
+          targetType: 'PRODUCT',
+          targetId: productId,
+          details: data,
+        },
       }
     )
   },
@@ -186,7 +197,12 @@ export const ProductService = {
       {
         minRoleLevel: 4,
         requiredPermissions: [PERMISSIONS['products:delete']],
-        auditLog: true,
+        audit: {
+          action: 'PRODUCT_DELETE',
+          severity: AuditSeverity.CRITICAL,
+          targetType: 'PRODUCT',
+          targetId: productId,
+        },
       }
     )
   },

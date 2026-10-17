@@ -33,32 +33,33 @@ async function assertSuperAdminSafety(tx: Prisma.TransactionClient, targetRole: 
   if (count <= 1) throw new CannotModifyTargetUserError();
 }
 
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
+
 function serializeSnapshot(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
 async function writeAudit(
-  tx: Prisma.TransactionClient,
+  _tx: Prisma.TransactionClient,
   actor: AuthorizedActor,
   action: string,
   targetId: string,
   oldValue: Prisma.InputJsonValue | undefined,
   newValue: Prisma.InputJsonValue | undefined,
 ) {
-  await tx.auditLog.create({
-    data: {
-      userId: actor.userId,
-      roleLevel: actor.level,
-      action,
-      targetId,
-      targetType: USER_TARGET_TYPE,
-      entity: USER_TARGET_TYPE,
-      entityType: USER_TARGET_TYPE,
-      entityId: targetId,
-      oldValue,
-      newValue,
-      status: "SUCCESS",
-    },
+  const severity = action.toUpperCase().includes("DELETE")
+    ? AuditSeverity.CRITICAL
+    : AuditSeverity.WARNING;
+
+  await recordAuditLog({
+    action,
+    targetId,
+    targetType: USER_TARGET_TYPE,
+    userId: actor.userId,
+    roleLevel: actor.level,
+    severity,
+    status: "SUCCESS",
+    details: { oldValue, newValue },
   });
 }
 

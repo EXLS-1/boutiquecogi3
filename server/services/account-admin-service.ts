@@ -1,4 +1,4 @@
-﻿// server/services/account-admin-service.ts
+// server/services/account-admin-service.ts
 // ============================================
 // AccountAdminService â€” Gestion admin des comptes (Account model)
 // ============================================
@@ -7,6 +7,8 @@
 // Permissions : accounts:read, accounts:delete
 
 import { withSecurePrisma } from '@/server/core/secure-prisma'
+import { recordAuditLog } from '@/server/services/audit.service'
+import { AuditSeverity } from '@prisma/client'
 import { PERMISSIONS } from '@/lib/auth/rbac'
 import { generateUUIDv7 } from '@/lib/utils/uuid'
 import {
@@ -284,21 +286,21 @@ export const AccountAdminService = {
           )
         }
 
-        // 4. Audit log avant suppression
-        await ctx.prisma.auditLog.create({
-          data: {
-            userId: ctx.userId,
-            roleLevel: ctx.roleLevel,
-            action: 'ACCOUNT_DELETED',
-            targetId: accountId,
-            targetType: 'ACCOUNT',
-            details: JSON.stringify({
-              deletedAccountProvider: account.providerId,
-              deletedAccountType: account.type,
-              userEmail: account.user?.email,
-              reason: reason || 'Aucune raison fournie',
-              deletedBy: ctx.userId,
-            }),
+        // 4. Audit log avant suppression — via recordAuditLog (snapshot acteur
+        //    frais + sévérité CRITICAL selon la matrice d'audit)
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'ACCOUNT_DELETE',
+          targetId: accountId,
+          targetType: 'ACCOUNT',
+          severity: AuditSeverity.CRITICAL,
+          details: {
+            deletedAccountProvider: account.providerId,
+            deletedAccountType: account.type,
+            userEmail: account.user?.email,
+            reason: reason || 'Aucune raison fournie',
+            deletedBy: ctx.userId,
           },
         })
 
@@ -316,7 +318,15 @@ export const AccountAdminService = {
       {
         minRoleLevel: 2,
         requiredPermissions: [PERMISSIONS['users:block']],
-        auditLog: true,
+        // Traçabilité des ÉCHECS (refus RBAC / erreur métier) via
+        // recordAuditLog — le succès est journalisé ci-dessus avec détails riches.
+        audit: {
+          action: 'ACCOUNT_DELETE',
+          severity: AuditSeverity.CRITICAL,
+          targetType: 'ACCOUNT',
+          targetId: accountId,
+          success: false,
+        },
       }
     )
   },

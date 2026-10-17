@@ -1,7 +1,16 @@
 import { getSessionFromProvider } from "@/lib/auth/session-provider";
-import { recordAuditLog } from "@/server/services/audit.service";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 type AsyncAction = (...args: never[]) => Promise<unknown>;
+
+export interface AuditActionOptions<T extends AsyncAction = AsyncAction> {
+  severity?: AuditSeverity;
+  targetType?: string;
+  targetId?: string | ((...args: Parameters<T>) => string | undefined | null);
+  details?:
+    | Record<string, unknown>
+    | ((...args: Parameters<T>) => Record<string, unknown> | undefined);
+}
 
 async function safeRecordAuditLog(
   params: Parameters<typeof recordAuditLog>[0],
@@ -20,7 +29,21 @@ async function safeRecordAuditLog(
 export function auditServerAction<T extends AsyncAction>(
   action: string,
   run: T,
+): T;
+export function auditServerAction<T extends AsyncAction>(
+  action: string,
+  options: AuditActionOptions<T>,
+  run: T,
+): T;
+export function auditServerAction<T extends AsyncAction>(
+  action: string,
+  runOrOptions: T | AuditActionOptions<T>,
+  maybeRun?: T,
 ): T {
+  const isOptions = typeof runOrOptions === "object" && runOrOptions !== null;
+  const options = (isOptions ? runOrOptions : {}) as AuditActionOptions<T>;
+  const run = (isOptions ? maybeRun : runOrOptions) as T;
+
   return (async (...args: Parameters<T>): Promise<Awaited<ReturnType<T>>> => {
     let userId: string | null = null;
     try {
@@ -31,15 +54,31 @@ export function auditServerAction<T extends AsyncAction>(
       console.error("[SERVER_ACTION_AUDIT_ACTOR_ERROR]", error);
     }
 
+    const resolvedTargetId =
+      typeof options.targetId === "function"
+        ? (options.targetId(...args) ?? undefined)
+        : options.targetId ?? undefined;
+
+    const resolvedDetails =
+      typeof options.details === "function"
+        ? options.details(...args)
+        : options.details;
+
     const attempt = await safeRecordAuditLog({
       action,
       userId,
       status: "ATTEMPT",
+      ...(resolvedTargetId !== undefined && { targetId: resolvedTargetId }),
+      ...(options.targetType !== undefined && { targetType: options.targetType }),
+      ...(options.severity !== undefined && { severity: options.severity }),
+      ...(resolvedDetails !== undefined && { details: resolvedDetails }),
     });
 
     try {
       const result = await run(...args);
       let outcome = "SUCCESS";
+      let errorMsg: string | undefined;
+
       try {
         if (
           typeof result === "object" &&
@@ -48,10 +87,14 @@ export function auditServerAction<T extends AsyncAction>(
           result.success === false
         ) {
           outcome = "FAILURE";
+          if ("error" in result && typeof result.error === "string") {
+            errorMsg = result.error;
+          }
         }
       } catch (error) {
         console.error("[SERVER_ACTION_AUDIT_OUTCOME_ERROR]", error);
       }
+
       await safeRecordAuditLog({
         action,
         userId,
@@ -59,9 +102,15 @@ export function auditServerAction<T extends AsyncAction>(
         actorSnapshot: attempt
           ? { name: attempt.actorName, email: attempt.actorEmail }
           : undefined,
+        ...(resolvedTargetId !== undefined && { targetId: resolvedTargetId }),
+        ...(options.targetType !== undefined && { targetType: options.targetType }),
+        ...(options.severity !== undefined && { severity: options.severity }),
+        ...(resolvedDetails !== undefined && { details: resolvedDetails }),
+        ...(errorMsg !== undefined && { error: errorMsg }),
       });
       return result;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Erreur inattendue";
       await safeRecordAuditLog({
         action,
         userId,
@@ -69,8 +118,14 @@ export function auditServerAction<T extends AsyncAction>(
         actorSnapshot: attempt
           ? { name: attempt.actorName, email: attempt.actorEmail }
           : undefined,
+        ...(resolvedTargetId !== undefined && { targetId: resolvedTargetId }),
+        ...(options.targetType !== undefined && { targetType: options.targetType }),
+        ...(options.severity !== undefined && { severity: options.severity }),
+        ...(resolvedDetails !== undefined && { details: resolvedDetails }),
+        error: errorMsg,
       });
       throw error;
     }
   }) as T;
 }
+

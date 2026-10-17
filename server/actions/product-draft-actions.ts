@@ -28,6 +28,7 @@ import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { generateSlug } from "@/lib/utils/slug";
 import { generateSKU } from "@/lib/utils/sku";
+import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 // ═══════════════════════════════════════════
 // TYPES
@@ -444,6 +445,15 @@ export async function createDraftProductAction(
 
     revalidateDraftPaths(product.id);
 
+    await recordAuditLog({
+      action: "PRODUCT_DRAFT_CREATE",
+      targetId: product.id,
+      targetType: "PRODUCT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      details: { name: product.name },
+    });
+
     return {
       success: true,
       data: product,
@@ -593,6 +603,15 @@ export async function updateDraftProductAction(
 
     revalidateDraftPaths(productId);
 
+    await recordAuditLog({
+      action: "PRODUCT_DRAFT_UPDATE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.WARNING,
+      details: data,
+    });
+
     return {
       success: true,
       data: updated,
@@ -654,6 +673,15 @@ export async function deleteDraftProductAction(
     });
 
     revalidateDraftPaths(productId);
+
+    await recordAuditLog({
+      action: "PRODUCT_DRAFT_DELETE",
+      targetId: productId,
+      targetType: "PRODUCT",
+      userId: auth.ctx.userId,
+      severity: AuditSeverity.CRITICAL,
+      details: { name: product.name },
+    });
 
     return {
       success: true,
