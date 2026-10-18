@@ -41,9 +41,8 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-cyan-400 text-muted-foreground">
-            <span className="block">Bienvenue sur le tableau de bord administratif.</span>
+            
             <span className="block">Niveau d&apos;accès :{" "}</span>
             <span
               className="block font-semibold"

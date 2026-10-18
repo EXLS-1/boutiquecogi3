@@ -14,7 +14,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 type DashboardLayoutProps = { children: ReactNode };
 
-const DASHBOARD_MAX_ALLOWED_LEVEL = 5;
+const DASHBOARD_MAX_ALLOWED_LEVEL = 2;
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const session = await getServerRBACSession();

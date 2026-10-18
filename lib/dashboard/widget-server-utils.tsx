@@ -25,7 +25,7 @@ export interface WidgetProps {
   className?: string;
 }
 
-export type TimeRange = "7d" | "30d" | "90d" | "1y";
+export type TimeRange = "1d" | "7d" | "30d" | "90d" | "1y";
 
 // ───────────────────────────────────────────
 // GUARD : Vérification RBAC pour widgets
@@ -136,6 +136,9 @@ export function getDateRange(range: TimeRange): { start: Date; end: Date } {
   const start = new Date();
 
   switch (range) {
+    case "1d":
+      start.setDate(end.getDate() - 1);
+      break;
     case "7d":
       start.setDate(end.getDate() - 7);
       break;

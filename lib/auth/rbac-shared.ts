@@ -179,6 +179,7 @@ export const PERMISSIONS = {
   "role:edit": "role:edit",
   "role:delete": "role:delete",
   "role:assign": "role:assign",
+ 
   "permission:override": "permission:override",
   "permission:grant:any": "permission:grant:any",
   "permission:revoke:own": "permission:revoke:own",
@@ -186,13 +187,15 @@ export const PERMISSIONS = {
   "permission:view:own": "permission:view:own",
   "permission:view:any": "permission:view:any",
   "permission:view:assigned": "permission:view:assigned",
-  "product:read": "product:read",
-  "product:create": "product:create",
-  "product:edit:own": "product:edit:own",
-  "product:edit:any": "product:edit:any",
-  "product:delete:own": "product:delete:own",
-  "product:delete:any": "product:delete:any",
-  "product:moderate": "product:moderate",
+
+  "Product-variant:read": "Product-variant:read",
+  "Product-variant:create": "Product-variant:create",
+  "Product-variant:edit:own": "Product-variant:edit:own",
+  "Product-variant:edit:any": "Product-variant:edit:any",
+  "Product-variant:delete:own": "Product-variant:delete:own",
+  "Product-variant:delete:any": "Product-variant:delete:any",
+  "Product-variant:moderate": "Product-variant:moderate",
+
   "products:read": "products:read",
   "products:create": "products:create",
   "products:update": "products:update",
@@ -242,21 +245,23 @@ export const PERMISSIONS = {
   "settings:update": "settings:update",
   "settings:billing": "settings:billing",
   "settings:roles-manage": "settings:roles-manage",
+  "settings:system_config": "settings:system_config",
 
   "media:upload": "media:upload",
   "media:delete": "media:delete",
   "media:read": "media:read",
   "media:manage": "media:manage",
   "media:organize": "media:organize",
+ 
   "payments:configure": "payments:configure",
   "payments:refund": "payments:refund",
   "payments:view_analytics": "payments:view_analytics",
+ 
   "promotions:create": "promotions:create",
   "promotions:update": "promotions:update",
   "promotions:delete": "promotions:delete",
   "promotions:manage_coupons": "promotions:manage_coupons",
-  "settings:system_config": "settings:system_config",
-
+  
   "system:logs": "system:logs",
   "system:maintenance": "system:maintenance",
   "system:backup": "system:backup",

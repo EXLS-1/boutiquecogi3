@@ -52,7 +52,7 @@ interface QuickAction {
 const ALL_ACTIONS: QuickAction[] = [
   {
     label: "Nouveau produit",
-    href: "/dashboard/products/new",
+    href: "/admin/dashboard/products/new",
     icon: Package,
     permission: PERMISSIONS.PRODUCTS_CREATE,
     variant: "default",
@@ -60,7 +60,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Nouvelle commande",
-    href: "/dashboard/orders/new",
+    href: "/admin/dashboard/orders/new",
     icon: ShoppingCart,
     permission: PERMISSIONS.ORDERS_CREATE,
     variant: "secondary",
@@ -68,7 +68,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Nouvel utilisateur",
-    href: "/dashboard/users/new",
+    href: "/admin/dashboard/users/new",
     icon: Users,
     permission: PERMISSIONS.USERS_CREATE,
     variant: "secondary",
@@ -76,7 +76,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Rapport rapide",
-    href: "/dashboard/reports/quick",
+    href: "/admin/dashboard/reports/quick",
     icon: BarChart3,
     permission: PERMISSIONS.REPORTS_GENERATE,
     variant: "outline",
@@ -84,7 +84,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Contenu",
-    href: "/dashboard/content/new",
+    href: "/admin/dashboard/content/new",
     icon: FileText,
     permission: PERMISSIONS.CONTENT_CREATE,
     variant: "outline",
@@ -92,7 +92,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Média",
-    href: "/dashboard/media/upload",
+    href: "/admin/dashboard/media/upload",
     icon: Image,
     permission: PERMISSIONS.MEDIA_UPLOAD,
     variant: "outline",
@@ -100,7 +100,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Paramètres",
-    href: "/dashboard/settings",
+    href: "/admin/settings",
     icon: Settings,
     permission: PERMISSIONS.SETTINGS_UPDATE,
     variant: "ghost",
@@ -108,7 +108,7 @@ const ALL_ACTIONS: QuickAction[] = [
   },
   {
     label: "Audit",
-    href: "/dashboard/audit",
+    href: "/admin/dashboard/auditlog",
     icon: Shield,
     permission: PERMISSIONS.SYSTEM_LOGS,
     variant: "ghost",
@@ -167,13 +167,15 @@ async function QuickActionsContent({ className }: WidgetProps) {
                 key={action.label}
                 variant={action.variant}
                 size="sm"
-                className="h-auto py-3 px-3 justify-start gap-2 text-left"
+                className="h-auto py-3 px-3 justify-start gap-2 text-left text-cyan-400 border-cyan-400 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-500"
                 asChild
               >
                 <Link href={action.href}>
                   <Icon className="h-4 w-4 shrink-0" />
                   <div className="flex flex-col items-start min-w-0">
-                    <span className="text-xs font-medium">{action.label}</span>
+                    <span className="text-xs font-medium text-cyan-500">
+                      {action.label}
+                      </span>
                     <span className="text-[10px] text-muted-foreground truncate w-full">
                       {action.description}
                     </span>

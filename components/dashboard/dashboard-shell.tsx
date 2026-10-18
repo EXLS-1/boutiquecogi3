@@ -3,7 +3,7 @@
 
 import { ReactNode } from "react";
 import { useSwitchRBAC } from "@/components/providers/switch-provider";
-import { AuditModeSwitcher } from "@/components/dashboard/audit-mode-switcher";
+import { AuditModeSwitcher } from "@/components/providers/audit-mode-switcher";
 import buildDashboardMenu from "@/components/dashboard/Admin-dashboard-menu";
 
 interface DashboardShellProps {
@@ -27,7 +27,7 @@ export function DashboardShell({
       {/* Sidebar */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white">
         <div className="border-b border-slate-200 p-4">
-          <p className="text-sm text-slate-500">Dashboard</p>
+          <p className="text-sm text-slate-500">Admin Dashboard</p>
           <h1 className="text-lg font-semibold">RBAC Control Center</h1>
           <div className="mt-1 flex items-center gap-2">
             <p className="text-xs text-slate-500">
@@ -80,9 +80,12 @@ export function DashboardShell({
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="flex items-center justify-between px-4 py-3 lg:px-6">
             <div>
-              <h2 className="text-base font-semibold">Dashboard</h2>
-              <p className="text-xs text-slate-500">
-                Accès conditionné par rôle, niveau et permissions
+              <h2 className="text-base font-semibold text-cyan-500">
+                Admin Dashboard
+              </h2>
+              <p className="text-xs text-cyan-400">
+                <span className="block">Bienvenue sur le Dashboard administratif.</span>
+                <span className="block">Accès conditionné par role, niveau et permissions.</span>
               </p>
             </div>
             <div className="flex items-center gap-6">
