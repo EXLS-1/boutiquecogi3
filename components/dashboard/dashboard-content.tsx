@@ -113,7 +113,7 @@ export async function DashboardContent({ session }: DashboardContentProps) {
       )}
 
       {/* LEVEL 2 : Audit & Logs */}
-      {hasPermission(PERMISSIONS.SYSTEM_LOGS) && (
+      {hasPermission(PERMISSIONS.AUDIT_VIEW_LOGS) && (
         <section className="grid gap-4">
           <Suspense fallback={<Skeleton className="h-96" />}>
             <AuditLogPreview />

@@ -2,7 +2,7 @@ import type { Permission } from "@/lib/auth/rbac";
 
 export const GROUP_PERMISSION_MAP = {
   // Admin sensible
-  "Audit / Logs": "SYSTEM_LOGS",
+  "Audit / Logs": "AUDIT_VIEW_LOGS",
   "Rôles & Permissions": "SETTINGS_ROLES_MANAGE",
   "Maintenance": "SYSTEM_MAINTENANCE",
   "Sauvegardes": "SYSTEM_BACKUP",
@@ -56,6 +56,7 @@ type PermissionToken = (typeof GROUP_PERMISSION_MAP)[keyof typeof GROUP_PERMISSI
 const TOKEN_TO_PERMISSION: Record<PermissionToken, Permission> = {
   // Admin sensibles
   SYSTEM_LOGS: "system:logs",
+  AUDIT_VIEW_LOGS: "auditlog:view-logs",
   SETTINGS_ROLES_MANAGE: "settings:roles-manage",
   SYSTEM_MAINTENANCE: "system:maintenance",
   SYSTEM_BACKUP: "system:backup",

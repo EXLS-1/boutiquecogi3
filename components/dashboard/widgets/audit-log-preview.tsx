@@ -142,7 +142,7 @@ async function AuditLogPreviewContent({
   }
 
   const { role } = userData;
-  const allowed = await hasPermission(role, PERMISSIONS.SYSTEM_LOGS);
+  const allowed = await hasPermission(role, PERMISSIONS.AUDIT_VIEW_LOGS);
 
   if (!allowed) {
     return <WidgetForbidden title="Journal d'audit" />;

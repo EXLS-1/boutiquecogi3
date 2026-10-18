@@ -77,8 +77,8 @@ export const ADMIN_MODULE_GROUPS: AdminModuleGroup[] = [
       "Accès rapide aux indicateurs (KPI) principaux, journaux et actions prioritaires.",
     modules: [
       {
-        title: "Activités récentes",
-        description: "Consulter le journal des actions récentes sur la plateforme.",
+        title: "Vue Générale",
+        description: "Consulter le Tableau de Bord Admin.",
         href: "/admin/dashboard",
         cta: "Afficher",
         icon: ClipboardList,

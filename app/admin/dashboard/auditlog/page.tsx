@@ -7,7 +7,7 @@
 //   - lib/audit/audit.service.ts (lecture/agrégation)
 //   - components/auditlog/audit-log-viewer.tsx (UI atomique)
 //
-// Sécurité : accès réservé aux rôles disposant de la permission `audit:view-logs`.
+// Sécurité : accès réservé aux rôles disposant de la permission `auditlog:view-logs`.
 // SEO : metadata statique + `force-dynamic` pour garantir la fraîcheur des données.
 // ============================================
 
@@ -50,7 +50,7 @@ export default async function AuditLogPage() {
   const { user, role } = userData;
 
   // 2. Vérification de la permission RBAC
-  const canViewLogs = await hasPermission(role, PERMISSIONS["audit:view-logs"]);
+  const canViewLogs = await hasPermission(role, PERMISSIONS["auditlog:view-logs"]);
   if (!canViewLogs) {
     return <AccessDeniedFallback />;
   }

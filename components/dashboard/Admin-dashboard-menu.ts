@@ -4,8 +4,8 @@
 export default function buildDashboardMenu () {
   return [
     {
-      title: "Vue générale",
-      items: [{ href: "/dashboard", label: "Overview" }],
+      title: "Dashboard",
+      items: [{ href: "/admin/dashboard", label: "Vue générale" }],
     },
     {
       title: "Menus de Pilotage",

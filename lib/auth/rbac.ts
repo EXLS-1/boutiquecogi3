@@ -174,6 +174,8 @@ export const PERMISSIONS = {
   "role:edit": "role:edit",
   "role:delete": "role:delete",
   "role:assign": "role:assign",
+
+  "auditlog:view-logs": "auditlog:view-logs",
   
   "permission:override": "permission:override",
   "permission:grant:any": "permission:grant:any",
@@ -182,6 +184,11 @@ export const PERMISSIONS = {
   "permission:view:own": "permission:view:own",
   "permission:view:any": "permission:view:any",
   "permission:view:assigned": "permission:view:assigned",
+
+  "Product-variant:read": "Product-variant:read",
+  "Product-variant:create": "Product-variant:create",
+  "Product-variant:edit:any": "Product-variant:edit:any",
+  "Product-variant:delete:any": "Product-variant:delete:any",
   
   "product:read": "product:read",
   "product:create": "product:create",
@@ -191,7 +198,7 @@ export const PERMISSIONS = {
   "product:delete:any": "product:delete:any",
   "product:moderate": "product:moderate",
   "products:read": "products:read",
-  "products:create": "products:create",
+  "products:create": "product:create",
   "products:update": "products:update",
   "products:delete": "products:delete",
   "products:bulk-edit": "products:bulk-edit",
@@ -247,6 +254,8 @@ export const PERMISSIONS = {
   "media:organize": "media:organize",
   "payments:configure": "payments:configure",
   "payments:refund": "payments:refund",
+  "payments:view": "payments:view",
+  "payments:cancel": "payments:view",
   "payments:view_analytics": "payments:view_analytics",
   "promotions:create": "promotions:create",
   "promotions:update": "promotions:update",
@@ -287,7 +296,7 @@ export const PERMISSIONS = {
   "audit:switch-self": "audit:switch-self",
   "audit:switch-others": "audit:switch-others",
   "audit:approve-request": "audit:approve-request",
-  "audit:view-logs": "audit:view-logs",
+  "audit:view-logs": "auditlog:view-logs",
 
   // Legacy aliases retained for older seed/admin code references.
   USERS_READ: "users:read",
@@ -310,7 +319,7 @@ export const PERMISSIONS = {
   ROLE_ASSIGN: "role:assign",
   PERMISSION_OVERRIDE: "permission:override",
   PRODUCTS_READ: "products:read",
-  PRODUCTS_CREATE: "products:create",
+  PRODUCTS_CREATE: "product:create",
   PRODUCTS_UPDATE: "products:update",
   PRODUCTS_DELETE: "products:delete",
   PRODUCTS_BULK_EDIT: "products:bulk-edit",
@@ -351,10 +360,15 @@ export const PERMISSIONS = {
   AUDIT_SWITCH_SELF: "audit:switch-self",
   AUDIT_SWITCH_OTHERS: "audit:switch-others",
   AUDIT_APPROVE_REQUEST: "audit:approve-request",
-  AUDIT_VIEW_LOGS: "audit:view-logs"
+  AUDIT_VIEW_LOGS: "auditlog:view-logs"
 } as const;
 
 export const PERMISSION_META: Record<PermissionCode, { category: string; minLevel: number; isDangerous: boolean; description: string }> = {
+  [PERMISSIONS["auditlog:view-logs"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Consulter les journaux d’audit" },
+  [PERMISSIONS["Product-variant:read"]]: { category: "PRODUCT", minLevel: 1, isDangerous: false, description: "Lire les variantes produit" },
+  [PERMISSIONS["Product-variant:create"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Créer une variante produit" },
+  [PERMISSIONS["Product-variant:edit:any"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Modifier toute variante produit" },
+  [PERMISSIONS["Product-variant:delete:any"]]: { category: "PRODUCT", minLevel: 2, isDangerous: true, description: "Supprimer toute variante produit" },
   [PERMISSIONS["users:read"]]: { category: "USER", minLevel: 1, isDangerous: false, description: "Lire les utilisateurs" },
   [PERMISSIONS["users:create"]]: { category: "USER", minLevel: 2, isDangerous: false, description: "Créer un utilisateur" },
   [PERMISSIONS["users:update"]]: { category: "USER", minLevel: 2, isDangerous: false, description: "Modifier un utilisateur" },
@@ -441,6 +455,7 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   [PERMISSIONS["media:organize"]]: { category: "MEDIA", minLevel: 3, isDangerous: false, description: "Organiser les médias" },
   [PERMISSIONS["payments:configure"]]: { category: "PAYMENT", minLevel: 2, isDangerous: true, description: "Configurer les paiements" },
   [PERMISSIONS["payments:refund"]]: { category: "PAYMENT", minLevel: 2, isDangerous: true, description: "Rembourser un paiement" },
+  [PERMISSIONS["payments:view"]]: { category: "PAYMENT", minLevel: 3, isDangerous: false, description: "Voir les paiements" },
   [PERMISSIONS["payments:view_analytics"]]: { category: "PAYMENT", minLevel: 3, isDangerous: false, description: "Voir les analytics de paiement" },
   [PERMISSIONS["promotions:create"]]: { category: "PROMOTION", minLevel: 3, isDangerous: false, description: "Créer une promotion" },
   [PERMISSIONS["promotions:update"]]: { category: "PROMOTION", minLevel: 3, isDangerous: false, description: "Modifier une promotion" },
@@ -1129,9 +1144,7 @@ const PERMISSION_ALIASES: Record<string, Permission> = {
   "product:delete:own": PERMISSIONS["products:delete"],
   "product:delete:any": PERMISSIONS["products:delete"],
   "product:moderate": PERMISSIONS["products:update"],
-  "settings:system_config": PERMISSIONS["system:config"],
   "payments:configure": PERMISSIONS["settings:billing"],
-  "payments:view_analytics": PERMISSIONS["analytics:read"],
   "media:organize": PERMISSIONS["media:manage"],
   "orders:process_refund": PERMISSIONS["orders:refund"],
   "users:search": PERMISSIONS["users:search:filter"],

@@ -253,6 +253,9 @@ export const PERMISSIONS = {
   "media:manage": "media:manage",
   "media:organize": "media:organize",
  
+  "payments:view": "payments:view",
+  "payments:cancel": "payments:view",
+  "payments:update": "payments:update",
   "payments:configure": "payments:configure",
   "payments:refund": "payments:refund",
   "payments:view_analytics": "payments:view_analytics",
@@ -292,10 +295,16 @@ export const PERMISSIONS = {
   "finance:withdraw": "finance:withdraw",
   "finance:config": "finance:config",
 
+  "audit:view-logs": "audit:view-logs",
   "audit:switch-self": "audit:switch-self",
   "audit:switch-others": "audit:switch-others",
+  "audit:request-switch": "audit:request-switch",
+  "audit:request-approval": "audit:request-approval",
+  "audit:request-cancel": "audit:request-cancel",
   "audit:approve-request": "audit:approve-request",
-  "audit:view-logs": "audit:view-logs",
+  "audit:approve-switch": "audit:approve-switch",
+  "audit:approve-cancel": "audit:approve-cancel",
+ 
 
   // ─── Permissions atomiques (canoniques) ───
   // NOTE: les clés legacy (products:moderate, products:bulk-edit…) sont conservées

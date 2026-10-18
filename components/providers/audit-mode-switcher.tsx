@@ -97,19 +97,19 @@ export function AuditModeSwitcher() {
         </>
       ) : (
         <>
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-slate-500" />
-            <span className="text-xs font-medium text-slate-600">{realRole}</span>
-            <span className="text-[10px] text-slate-400">· Niv. {realLevel}</span>
+          <div className="flex items-center gap-2 text-cyan-500">
+            <Shield className="h-4 w-4" />
+            <span className="text-xs font-medium">{realRole}</span>
+            <span className="text-[10px]">· Niv. {realLevel}</span>
           </div>
 
           {auditableRoles.length > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-cyan-500 bg-cyan-50 border border-cyan-200 rounded px-2 py-1">
               <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as Role)}>
-                <SelectTrigger className="h-8 w-[150px] text-xs">
+                <SelectTrigger className="h-8 w-[150px] text-xs border-cyan-200 bg-cyan-100">
                   <SelectValue placeholder="Simuler un rôle..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-cyan-200 bg-cyan-100 text-cyan-500">
                   {auditableRoles.map((r) => (
                     <SelectItem key={r.role} value={r.role} className="text-xs">
                       {r.label} (Niv. {r.level})
@@ -147,7 +147,7 @@ export function AuditModeSwitcher() {
                   variant="secondary"
                   onClick={handleDirectStart}
                   disabled={!selectedRole || isTransitioning}
-                  className="h-8 gap-1 text-xs"
+                  className="h-8 gap-1 text-xs text-cyan-500 hover:text-rose-500"
                 >
                   {isTransitioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}
                   Auditer

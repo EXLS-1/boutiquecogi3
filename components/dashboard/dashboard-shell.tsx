@@ -27,10 +27,10 @@ export function DashboardShell({
       {/* Sidebar */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white">
         <div className="border-b border-slate-200 p-4">
-          <p className="text-sm text-slate-500">Admin Dashboard</p>
+          <p className="text-sm text-emeraude-500">Admin Dashboard</p>
           <h1 className="text-lg font-semibold">RBAC Control Center</h1>
           <div className="mt-1 flex items-center gap-2">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-emeraude-500">
               Rôle: <span className="font-medium text-slate-700">{activeRole}</span> · Niveau: {activeLevel}
             </p>
             {isAuditMode && (
@@ -63,11 +63,11 @@ export function DashboardShell({
           ))}
         </nav>
 
-        <div className="border-t border-slate-200 p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        <div className="border-t border-cyan-500 p-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wide">
             Contexte de sécurité
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs">
             {isAuditMode
               ? "Simulation applicative en cours. Les permissions affichées sont celles du rôle audité."
               : "Session authentifiée avec droits réels."}
@@ -90,9 +90,9 @@ export function DashboardShell({
             </div>
             <div className="flex items-center gap-6">
               <AuditModeSwitcher />
-              <div className="text-right text-xs text-slate-500">
-                <div className="font-medium text-slate-700">{userEmail ?? "Sans email"}</div>
-                <div>{userName ?? "—"}</div>
+              <div className="text-right text-xs text-emeraude-700">
+                <div className="font-medium">{userEmail}</div>
+                <div>{userName}</div>
               </div>
             </div>
           </div>

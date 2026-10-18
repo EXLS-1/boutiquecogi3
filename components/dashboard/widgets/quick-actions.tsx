@@ -13,6 +13,7 @@ import {
   getCurrentUserWithRole,
   hasPermission,
   type Role,
+  type PermissionCode,
 } from "@/lib/auth/rbac";
 import {
   WidgetShell,
@@ -27,8 +28,8 @@ import {
   Settings,
   FileText,
   BarChart3,
-  Image,
   Shield,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -40,7 +41,7 @@ interface QuickAction {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  permission: string | null;
+  permissions: readonly PermissionCode[];
   variant: "default" | "secondary" | "outline" | "ghost";
   description: string;
 }
@@ -50,92 +51,32 @@ interface QuickAction {
 // ───────────────────────────────────────────
 
 const ALL_ACTIONS: QuickAction[] = [
-  {
-    label: "Nouveau produit",
-    href: "/admin/dashboard/products/new",
-    icon: Package,
-    permission: PERMISSIONS.PRODUCTS_CREATE,
-    variant: "default",
-    description: "Ajouter un produit au catalogue",
-  },
-  {
-    label: "Nouvelle commande",
-    href: "/admin/dashboard/orders/new",
-    icon: ShoppingCart,
-    permission: PERMISSIONS.ORDERS_CREATE,
-    variant: "secondary",
-    description: "Créer une commande manuelle",
-  },
-  {
-    label: "Nouvel utilisateur",
-    href: "/admin/dashboard/users/new",
-    icon: Users,
-    permission: PERMISSIONS.USERS_CREATE,
-    variant: "secondary",
-    description: "Inviter un membre d'équipe",
-  },
-  {
-    label: "Rapport rapide",
-    href: "/admin/dashboard/reports/quick",
-    icon: BarChart3,
-    permission: PERMISSIONS.REPORTS_GENERATE,
-    variant: "outline",
-    description: "Générer un rapport PDF",
-  },
-  {
-    label: "Contenu",
-    href: "/admin/dashboard/content/new",
-    icon: FileText,
-    permission: PERMISSIONS.CONTENT_CREATE,
-    variant: "outline",
-    description: "Créer une page ou article",
-  },
-  {
-    label: "Média",
-    href: "/admin/dashboard/media/upload",
-    icon: Image,
-    permission: PERMISSIONS.MEDIA_UPLOAD,
-    variant: "outline",
-    description: "Uploader des fichiers",
-  },
-  {
-    label: "Paramètres",
-    href: "/admin/settings",
-    icon: Settings,
-    permission: PERMISSIONS.SETTINGS_UPDATE,
-    variant: "ghost",
-    description: "Configurer la boutique",
-  },
-  {
-    label: "Audit",
-    href: "/admin/dashboard/auditlog",
-    icon: Shield,
-    permission: PERMISSIONS.SYSTEM_LOGS,
-    variant: "ghost",
-    description: "Consulter les logs système",
-  },
+  { label: "Audit", href: "/admin/dashboard/auditlog", icon: Shield, permissions: [PERMISSIONS["auditlog:view-logs"]], variant: "ghost", description: "Consulter les journaux d’audit" },
+  { label: "Utilisateurs", href: "/admin/users", icon: Users, permissions: [PERMISSIONS["users:create"], PERMISSIONS["users:block"], PERMISSIONS["users:delete"]], variant: "secondary", description: "Gérer les comptes utilisateurs" },
+  { label: "Rôles", href: "/admin/roles", icon: Shield, permissions: [PERMISSIONS["role:view"], PERMISSIONS["role:assign"]], variant: "outline", description: "Consulter et attribuer les rôles" },
+  { label: "Produits", href: "/admin/products", icon: Package, permissions: [PERMISSIONS["products:create"], PERMISSIONS["products:update"], PERMISSIONS["products:delete"], PERMISSIONS["products:manage_variants"]], variant: "default", description: "Gérer le catalogue produits" },
+  { label: "Variantes produit", href: "/admin/products", icon: Package, permissions: [PERMISSIONS["Product-variant:read"], PERMISSIONS["Product-variant:create"], PERMISSIONS["Product-variant:edit:any"], PERMISSIONS["Product-variant:delete:any"]], variant: "outline", description: "Gérer les variantes du catalogue" },
+  { label: "Commandes", href: "/admin/dashboard/orders", icon: ShoppingCart, permissions: [PERMISSIONS["orders:read"], PERMISSIONS["orders:cancel"]], variant: "secondary", description: "Consulter et gérer les commandes" },
+  { label: "Paiements", href: "/admin/dashboard/treasury", icon: CreditCard, permissions: [PERMISSIONS["payments:view"], PERMISSIONS["payments:cancel"], PERMISSIONS["payments:view_analytics"]], variant: "ghost", description: "Consulter les paiements" },
+  { label: "Analytics", href: "/admin/dashboard/analytics", icon: BarChart3, permissions: [PERMISSIONS["analytics:read"]], variant: "outline", description: "Analyser les performances" },
+  { label: "Rapports", href: "/admin/dashboard/analytics", icon: FileText, permissions: [PERMISSIONS["reports:generate"]], variant: "outline", description: "Accéder aux rapports" },
+  { label: "Paramètres", href: "/admin/settings", icon: Settings, permissions: [PERMISSIONS["settings:update"], PERMISSIONS["settings:system_config"]], variant: "ghost", description: "Configurer la boutique" },
 ];
-
 // ───────────────────────────────────────────
 // FILTRAGE DES ACTIONS PAR RÔLE
 // ───────────────────────────────────────────
 
 async function filterActions(role: Role): Promise<QuickAction[]> {
-  const filtered: QuickAction[] = [];
+  const visibleActions = await Promise.all(
+    ALL_ACTIONS.map(async (action) => {
+      const grants = await Promise.all(
+        action.permissions.map((permission) => hasPermission(role, permission)),
+      );
+      return grants.some(Boolean);
+    }),
+  );
 
-  for (const action of ALL_ACTIONS) {
-    if (action.permission === null) {
-      filtered.push(action);
-      continue;
-    }
-
-    const hasPerm = await hasPermission(role, action.permission as typeof PERMISSIONS[keyof typeof PERMISSIONS]);
-    if (hasPerm) {
-      filtered.push(action);
-    }
-  }
-
-  return filtered;
+  return ALL_ACTIONS.filter((_, index) => visibleActions[index]);
 }
 
 // ───────────────────────────────────────────
@@ -173,7 +114,7 @@ async function QuickActionsContent({ className }: WidgetProps) {
                 <Link href={action.href}>
                   <Icon className="h-4 w-4 shrink-0" />
                   <div className="flex flex-col items-start min-w-0">
-                    <span className="text-xs font-medium text-cyan-500">
+                    <span className="text-xs font-medium">
                       {action.label}
                       </span>
                     <span className="text-[10px] text-muted-foreground truncate w-full">
