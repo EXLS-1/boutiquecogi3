@@ -200,6 +200,7 @@ async function main(): Promise<void> {
       await tx.session.deleteMany({ where: { userId: user.id } });
       await tx.auditLog.create({
         data: {
+          userId: user.id,
           roleLevel: 0,
           action: "USER_ROLE_CHANGED",
           targetId: user.id,

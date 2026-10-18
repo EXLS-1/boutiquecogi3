@@ -247,9 +247,11 @@ export const AccountAdminService = {
       throw new AccountAdminServiceError('DonnÃ©es invalides', 'VALIDATION_ERROR')
     }
 
+    const { accountId } = parsed.data
+
     return withSecurePrisma(
       async (ctx) => {
-        const { accountId, reason } = parsed.data
+        const { reason } = parsed.data
 
         // 1. VÃ©rifier que le compte existe
         const account = await ctx.prisma.account.findUnique({

@@ -28,7 +28,11 @@ import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { generateSlug } from "@/lib/utils/slug";
 import { generateSKU } from "@/lib/utils/sku";
-import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
+import {
+  recordAuditLog,
+  recordServerActionAudit,
+  AuditSeverity,
+} from "@/server/services/audit.service";
 
 // ═══════════════════════════════════════════
 // TYPES
@@ -800,11 +804,10 @@ export async function duplicateDraftProductAction(
       message: `Copie créée : "${copy.name}"`,
     };
   } catch (error) {
-    await recordAuditLog({
+    await recordServerActionAudit({
       action: "PRODUCT_DRAFT_DUPLICATE",
       targetId: productId,
       targetType: "PRODUCT",
-      userId: auth.ctx.userId,
       severity: AuditSeverity.WARNING,
       status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
@@ -820,6 +823,8 @@ export async function duplicateDraftProductAction(
 export async function createVariantAction(
   input: z.input<typeof createVariantSchema>,
 ): Promise<DraftActionResult<ReturnType<typeof serializeVariant>>> {
+  let auditProductId: string | undefined;
+
   try {
     const auth = await requireAuth();
     if (!auth.ok) return auth.result;
@@ -827,6 +832,7 @@ export async function createVariantAction(
     const parsed = createVariantSchema.safeParse(input);
     if (!parsed.success) return toActionError(parsed.error);
     const { productId, ...data } = parsed.data;
+    auditProductId = productId;
 
     const product = await prisma.product.findFirst({
       where: { id: productId, isdeleted: false, ...ownershipWhere(auth.ctx) },
@@ -887,11 +893,10 @@ export async function createVariantAction(
       message: `Variante "${sku}" ajoutée`,
     };
   } catch (error) {
-    await recordAuditLog({
+    await recordServerActionAudit({
       action: "PRODUCT_VARIANT_CREATE",
-      targetId: productId,
+      targetId: auditProductId,
       targetType: "PRODUCT_VARIANT",
-      userId: auth.ctx.userId,
       severity: AuditSeverity.WARNING,
       status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
@@ -979,11 +984,10 @@ export async function updateVariantAction(
       message: `Variante "${updated.sku}" mise à jour`,
     };
   } catch (error) {
-    await recordAuditLog({
+    await recordServerActionAudit({
       action: "PRODUCT_VARIANT_UPDATE",
       targetId: variantId,
       targetType: "PRODUCT_VARIANT",
-      userId: auth.ctx.userId,
       severity: AuditSeverity.WARNING,
       status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",
@@ -1055,11 +1059,10 @@ export async function deleteVariantAction(
       message: `Variante "${variant.sku}" supprimée`,
     };
   } catch (error) {
-    await recordAuditLog({
+    await recordServerActionAudit({
       action: "PRODUCT_VARIANT_DELETE",
       targetId: variantId,
       targetType: "PRODUCT_VARIANT",
-      userId: auth.ctx.userId,
       severity: AuditSeverity.CRITICAL,
       status: "FAILED",
       error: error instanceof Error ? error.message : "Erreur inconnue",

@@ -187,7 +187,7 @@ export const RoleRepository = {
       roleLevel: data.roleLevel ?? undefined,
       details: data.details ?? undefined,
       error: data.error ?? undefined,
-    });
+    }).then((record) => record ?? null);
   },
 
   listAuditLogs(filter: { action?: string; take: number }): Promise<AuditLogRow[]> {

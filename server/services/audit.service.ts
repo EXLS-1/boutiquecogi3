@@ -96,13 +96,18 @@ export async function recordAuditLog({
 }: LogActionParams) {
   try {
     // Resolve the actor from the database rather than trusting action input.
-    // A missing/deleted actor is represented by a null FK while snapshots remain.
+    // The generated Prisma client requires an actor relation for audit writes.
     const user = userId
       ? await prisma.user.findUnique({
           where: { id: userId },
-          select: { name: true, email: true },
+          select: { id: true, name: true, email: true },
         })
       : null;
+
+    if (!user) {
+      console.error("[CRITICAL_AUDIT_ERROR] Cannot persist audit log without a valid actor.");
+      return null;
+    }
 
     const detailString = serializeDetails(details);
     const validTargetId = toUuidOrNull(targetId);
@@ -112,7 +117,7 @@ export async function recordAuditLog({
       data: {
         action,
         targetId: validTargetId ?? undefined,
-        userId: user ? userId! : null,
+        userId: user.id,
         actorName: user?.name ?? actorSnapshot?.name ?? null,
         actorEmail: user?.email ?? actorSnapshot?.email ?? null,
         severity: effectiveSeverity,

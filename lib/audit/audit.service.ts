@@ -160,6 +160,11 @@ export async function logAudit(data: AuditLogData): Promise<void> {
         roleLevel = userData.level;
       }
     }
+
+    if (!userId) {
+      console.warn("[AuditLog] Skipping audit entry because no actor is available.");
+      return;
+    }
     
     // Sanitize les données sensibles
     const sanitizedOldValue = sanitizeData(data.oldValue);
@@ -219,6 +224,11 @@ export async function logAuditSync(data: AuditLogData): Promise<void> {
       userId = userData.user.id;
       roleLevel = userData.level;
     }
+  }
+
+  if (!userId) {
+    console.warn("[AuditLog] Skipping audit entry because no actor is available.");
+    return;
   }
   
   const sanitizedOldValue = sanitizeData(data.oldValue);
