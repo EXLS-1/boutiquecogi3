@@ -108,7 +108,10 @@ export function auditServerAction<T extends AsyncAction>(
         ...(resolvedDetails !== undefined && { details: resolvedDetails }),
         ...(errorMsg !== undefined && { error: errorMsg }),
       });
-      return result;
+      // `run` est contraint `(...args: never[]) => Promise<unknown>` : le type
+      // précis est retrouvé via le générique T — on retourne le résultat tel
+      // quel (jamais transformé).
+      return result as Awaited<ReturnType<T>>;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Erreur inattendue";
       await safeRecordAuditLog({

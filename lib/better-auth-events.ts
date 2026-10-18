@@ -39,6 +39,16 @@ export async function publishAuthBusinessEvent(input: PublishInput) {
     metadata = {},
   } = input;
 
+  // Le client Prisma généré exige un `userId` obligatoire (relation `user`) :
+  // un événement sans acteur identifié est ignoré proprement (warn) plutôt
+  // que de faire échouer la création.
+  if (!userId) {
+    console.warn(
+      `[AUTH_HOOK] Événement "${action}" ignoré : aucun utilisateur associé.`,
+    );
+    return null;
+  }
+
   void prisma.auditLog
     .create({
       data: {
@@ -46,7 +56,7 @@ export async function publishAuthBusinessEvent(input: PublishInput) {
         action,
         entityType,
         entityId,
-        userId: userId ?? undefined,
+        userId,
         ip,
         userAgent,
         metadata,

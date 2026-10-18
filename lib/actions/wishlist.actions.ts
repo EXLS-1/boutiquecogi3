@@ -13,7 +13,13 @@ const productIdsSchema = z.array(productIdSchema).max(DEFAULT_MAX_ITEMS);
 export type WishlistProduct = {
   id: string;
   name: string;
-  productPrice: number;
+  /**
+   * Prix canonique — aligné sur `WishlistItem` (store/use-wishlist) pour que
+   * les Server Actions alimentent `setItems()` directement, sans mapping.
+   */
+  price: number;
+  /** Alias historique (champ produit) — conservé pour compatibilité. */
+  productPrice?: number;
   image: string;
   slug: string;
   category?: string;
@@ -84,10 +90,12 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
     // `images` may be null/undefined at runtime even if typed as string[].
     const images = Array.isArray(product.images) ? product.images : [];
     const firstImage = images.length > 0 && typeof images[0] === "string" ? images[0] : "/placeholder.webp";
+    const price = toPriceNumber(product.productPrice);
     return {
       id: product.id,
       name: product.name,
-      productPrice: toPriceNumber(product.productPrice),
+      price,
+      productPrice: price,
       image: firstImage,
       slug: product.slug,
       category: product.category?.name,

@@ -84,7 +84,7 @@ export async function bulkGenerateVariantsAction(input: unknown) {
       targetType: "PRODUCT",
       userId: user.id,
       severity: AuditSeverity.WARNING,
-      details: { count: result.count, attributeKeys: data.attributeKeys },
+      details: { count: result.variantCount, attributeKeys: data.attributeKeys },
     });
 
     return actionSuccess("VARIANTS_BULK_CREATED", `Variantes générées avec succès`, result);

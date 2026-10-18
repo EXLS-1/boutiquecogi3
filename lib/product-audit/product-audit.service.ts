@@ -34,9 +34,20 @@ export async function recordProductAudit(
   tx?: Tx
 ): Promise<void> {
   const client = tx ?? prisma;
+
+  // Le client Prisma généré exige un `userId` obligatoire : sans acteur,
+  // l'écriture d'audit est ignorée (warn) au lieu de faire échouer — voire de
+  // faire rouler-back — la transaction métier qui l'entoure.
+  if (!input.userId) {
+    console.warn(
+      `[PRODUCT_AUDIT] Écriture "${input.action}" ignorée : aucun acteur fourni (produit ${input.productId}).`,
+    );
+    return;
+  }
+
   await client.auditLog.create({
     data: {
-      userId: input.userId ?? undefined,
+      userId: input.userId,
       roleLevel: input.roleLevel ?? 0,
       action: input.action,
       targetId: input.productId,

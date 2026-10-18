@@ -89,7 +89,10 @@ export const ProductService = {
           severity: AuditSeverity.WARNING,
           targetType: 'PRODUCT',
           targetId: (p) => p.id,
-          details: (p) => ({ name: p.name, sku: p.sku, basePrice: p.basePrice }),
+          // `basePrice` est capturé depuis la demande (input) : la table
+          // `product` ne porte plus ce scalar (la grille `productPrice` fait
+          // foi) — p n'expose que name/sku du produit créé.
+          details: (p) => ({ name: p.name, sku: p.sku, basePrice: input.basePrice }),
         },
       }
     )

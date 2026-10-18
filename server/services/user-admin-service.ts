@@ -24,8 +24,702 @@ export const UserAdminService = {
       throw new UserAdminError('Données invalides', 'VALIDATION_ERROR')
     }
 
+     const { userId, reason, blockedUntil, permanent } = parsed.data
     return withSecurePrisma(
       async (ctx) => {
+        const { userId, reason, blockedUntil, permanent } = parsed.data
+        // 1. Ne pas se bloquer soi-même
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas bloquer votre propre compte',
+            'SELF_BLOCK_FORBIDDEN'
+          )
+        }
+
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Appliquer le blocage
+        let updateData: any = {
+          blockedUntil: blockedUntil ?? null,
+          blockedBy: ctx.userId,
+          permanent,
+        }
+
+        if (blockedUntil) {
+          updateData.blockedUntil = blockedUntil
+        }
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas bloquer votre propre compte',
+            'SELF_BLOCK_FORBIDDEN'
+          )
+        }
+
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Vérifier la cohérence temporelle
+        if (!permanent && !blockedUntil) {
+          throw new UserAdminError(
+            'Précisez une date de fin ou cochez "permanent"',
+            'INVALID_BLOCK_DURATION'
+          )
+        }
+
+        if (blockedUntil && blockedUntil < new Date()) {
+          throw new UserAdminError(
+            'La date de fin doit être dans le futur',
+            'PAST_DATE'
+          )
+        }
+
+        // ─── Exécution atomique ───
+        const assignment = await ctx.prisma.roleAssignment.update({
+          where: { userId },
+          data: {
+            isBlocked: true,
+            blockedReason: reason,
+            blockedAt: new Date(),
+            blockedUntil: permanent ? null : blockedUntil,
+          },
+          include: {
+            user: { select: { email: true, name: true } }
+          }
+        })
+
+        // ─── Audit log ───
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
+        })
+
+        return {
+          success: true,
+          userId,
+          email: targetUser.email,
+          blockedUntil: permanent ? null : blockedUntil,
+          permanent,
+          reason,
+        }
+      },
+      {
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
+      }
+    )
+  },
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas bloquer votre propre compte',
+            'SELF_BLOCK_FORBIDDEN'
+          )
+        }
+
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Vérifier la cohérence temporelle
+        if (!permanent && !blockedUntil) {
+          throw new UserAdminError(
+            'Précisez une date de fin ou cochez "permanent"',
+            'INVALID_BLOCK_DURATION'
+          )
+        }
+
+        if (blockedUntil && blockedUntil < new Date()) {
+          throw new UserAdminError(
+            'La date de fin doit être dans le futur',
+            'PAST_DATE'
+          )
+        }
+
+        // ─── Exécution atomique ───
+        const assignment = await ctx.prisma.roleAssignment.update({
+          where: { userId },
+          data: {
+            isBlocked: true,
+            blockedReason: reason,
+            blockedAt: new Date(),
+            blockedUntil: permanent ? null : blockedUntil,
+          },
+          include: {
+            user: { select: { email: true, name: true } }
+          }
+        })
+
+        // ─── Audit log ───
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
+        })
+
+        return {
+          success: true,
+          userId,
+          email: targetUser.email,
+          blockedUntil: permanent ? null : blockedUntil,
+          permanent,
+          reason,
+        }
+      },
+      {
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
+      }
+    )
+  },
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas bloquer votre propre compte',
+            'SELF_BLOCK_FORBIDDEN'
+          )
+        }
+
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Vérifier la cohérence temporelle
+        if (!permanent && !blockedUntil) {
+          throw new UserAdminError(
+            'Précisez une date de fin ou cochez "permanent"',
+            'INVALID_BLOCK_DURATION'
+          )
+        }
+
+        if (blockedUntil && blockedUntil < new Date()) {
+          throw new UserAdminError(
+            'La date de fin doit être dans le futur',
+            'PAST_DATE'
+          )
+        }
+
+        // ─── Exécution atomique ───
+        const assignment = await ctx.prisma.roleAssignment.update({
+          where: { userId },
+          data: {
+            isBlocked: true,
+            blockedReason: reason,
+            blockedAt: new Date(),
+            blockedUntil: permanent ? null : blockedUntil,
+          },
+          include: {
+            user: { select: { email: true, name: true } }
+          }
+        })
+
+        // ─── Audit log ───
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
+        })
+
+        return {
+          success: true,
+          userId,
+          email: targetUser.email,
+          blockedUntil: permanent ? null : blockedUntil,
+          permanent,
+          reason,
+        }
+      },
+      {
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
+      }
+    )
+  },
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas bloquer votre propre compte',
+            'SELF_BLOCK_FORBIDDEN'
+          )
+        }
+
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Vérifier la cohérence temporelle
+        if (!permanent && !blockedUntil) {
+          throw new UserAdminError(
+            'Précisez une date de fin ou cochez "permanent"',
+            'INVALID_BLOCK_DURATION'
+          )
+        }
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Vérifier la cohérence temporelle
+        if (!permanent && !blockedUntil) {
+
+        if (blockedUntil && blockedUntil < new Date()) {
+          throw new UserAdminError(
+            'La date de fin doit être dans le futur',
+            'PAST_DATE'
+          )
+        }
+
+        // ─── Exécution atomique ───
+        const assignment = await ctx.prisma.roleAssignment.update({
+          where: { userId },
+          data: {
+            isBlocked: true,
+            blockedReason: reason,
+            blockedAt: new Date(),
+            blockedUntil: permanent ? null : blockedUntil,
+          },
+          throw new UserAdminError(
+            'Précisez une date de fin ou cochez "permanent"',
+            'INVALID_BLOCK_DURATION'
+          )
+        }
+
+        if (blockedUntil && blockedUntil < new Date()) {
+          include: {
+            user: { select: { email: true, name: true } }
+          }
+        })
+
+        // ─── Audit log ───
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+          throw new UserAdminError(
+            'La date de fin doit être dans le futur',
+            'PAST_DATE'
+          )
+        }
+
+        // ─── Exécution atomique ───
+        const assignment = await ctx.prisma.roleAssignment.update({
+          where: { userId },
+          data: {
+            isBlocked: true,
+            blockedReason: reason,
+            blockedAt: new Date(),
+            blockedUntil: permanent ? null : blockedUntil,
+          },
+          include: {
+            user: { select: { email: true, name: true } }
+          }
+        })
+
+        // ─── Audit log ───
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
+        })
+
+        return {
+          success: true,
+          userId,
+          email: targetUser.email,
+          blockedUntil: permanent ? null : blockedUntil,
+          permanent,
+          reason,
+        }
+      },
+      {
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
+      }
+    )
+  },
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
+        })
+
+        return {
+          success: true,
+          userId,
+          email: targetUser.email,
+          blockedUntil: permanent ? null : blockedUntil,
+          permanent,
+          reason,
+        }
+      },
+      {
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
+      }
+    )
+  },
+        // 1. Ne pas se bloquer soi-même
+        if (userId === ctx.userId) {
+          throw new UserAdminError(
+            'Vous ne pouvez pas bloquer votre propre compte',
+            'SELF_BLOCK_FORBIDDEN'
+          )
+        }
+
+        // 2. Vérifier que la cible existe
+        const targetUser = await ctx.prisma.user.findUnique({
+          where: { id: userId },
+          include: { roleAssignment: { include: { roleConfig: true } } }
+        })
+
+        if (!targetUser) {
+          throw new UserAdminError('Utilisateur non trouvé', 'USER_NOT_FOUND')
+        }
+
+        // 3. Ne pas bloquer un SUPER_ADMIN (level 1)
+        if (targetUser.roleAssignment?.roleConfig?.role === 'SUPER_ADMIN') {
+          throw new UserAdminError(
+            'Impossible de bloquer un SUPER_ADMIN',
+            'SUPER_ADMIN_IMMUNITY'
+          )
+        }
+
+        // 4. Ne pas bloquer un utilisateur déjà bloqué
+        if (targetUser.roleAssignment?.isBlocked) {
+          throw new UserAdminError(
+            'Utilisateur déjà bloqué',
+            'ALREADY_BLOCKED'
+          )
+        }
+
+        // 5. Vérifier la cohérence temporelle
+        if (!permanent && !blockedUntil) {
+          throw new UserAdminError(
+            'Précisez une date de fin ou cochez "permanent"',
+            'INVALID_BLOCK_DURATION'
+          )
+        }
+
+        if (blockedUntil && blockedUntil < new Date()) {
+          throw new UserAdminError(
+            'La date de fin doit être dans le futur',
+            'PAST_DATE'
+          )
+        }
+
+        // ─── Exécution atomique ───
+        const assignment = await ctx.prisma.roleAssignment.update({
+          where: { userId },
+          data: {
+            isBlocked: true,
+            blockedReason: reason,
+            blockedAt: new Date(),
+            blockedUntil: permanent ? null : blockedUntil,
+          },
+          include: {
+            user: { select: { email: true, name: true } }
+          }
+        })
+
+        // ─── Audit log ───
+        await recordAuditLog({
+          userId: ctx.userId,
+          roleLevel: ctx.roleLevel,
+          action: 'USER_BLOCK',
+          targetId: userId,
+          targetType: 'USER',
+          severity: AuditSeverity.WARNING,
+          details: {
+            blockedUserEmail: targetUser.email,
+            blockedUserName: targetUser.name,
+            reason,
+            blockedUntil: permanent ? 'PERMANENT' : blockedUntil?.toISOString(),
+            blockedBy: ctx.userId,
+            blockedByRole: ctx.roleName,
+          },
+        })
+
+        return {
+          success: true,
+          userId,
+          email: targetUser.email,
+          blockedUntil: permanent ? null : blockedUntil,
+          permanent,
+          reason,
+        }
+      },
+      {
+        minRoleLevel: 2, // ADMIN+
+        requiredPermissions: [PERMISSIONS['users:block']],
+        // Traçabilité des ÉCHECS — le succès est journalisé ci-dessus.
+        audit: {
+          action: 'USER_BLOCK',
+          severity: AuditSeverity.WARNING,
+          targetType: 'USER',
+          targetId: userId,
+          success: false,
+        },
+      }
+    )
+  },
         const { userId, reason, blockedUntil, permanent } = parsed.data
 
         // 1. Ne pas se bloquer soi-même
@@ -126,6 +820,7 @@ export const UserAdminService = {
           action: 'USER_BLOCK',
           severity: AuditSeverity.WARNING,
           targetType: 'USER',
+           targetId: userId,
           targetId: userId,
           success: false,
         },

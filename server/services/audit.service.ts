@@ -112,7 +112,7 @@ export async function recordAuditLog({
       data: {
         action,
         targetId: validTargetId ?? undefined,
-        userId: user ? userId : null,
+        userId: user ? userId! : null,
         actorName: user?.name ?? actorSnapshot?.name ?? null,
         actorEmail: user?.email ?? actorSnapshot?.email ?? null,
         severity: effectiveSeverity,

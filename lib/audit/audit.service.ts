@@ -69,10 +69,12 @@ function getAuditSeverity(log: {
   if (
     log.payload &&
     typeof log.payload === "object" &&
-    !Array.isArray(log.payload) &&
-    typeof log.payload.__auditSeverity === "string"
+    !Array.isArray(log.payload)
   ) {
-    return log.payload.__auditSeverity;
+    const payload = log.payload as Record<string, unknown>;
+    if (typeof payload.__auditSeverity === "string") {
+      return payload.__auditSeverity;
+    }
   }
 
   return log.status === "FAILED" ? AUDIT_SEVERITY.ERROR : AUDIT_SEVERITY.INFO;
