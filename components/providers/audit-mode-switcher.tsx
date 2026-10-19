@@ -1,4 +1,5 @@
-// components/dashboard/audit-mode-switcher.tsx
+// components/providers/audit-mode-switcher.tsx
+
 "use client";
 
 import { useState } from "react";
@@ -178,7 +179,7 @@ export function AuditModeSwitcher() {
           <DialogHeader>
             <DialogTitle>Demande d&apos;approbation d&apos;audit</DialogTitle>
             <DialogDescription>
-              Un SUPER_ADMIN doit approuver votre demande pour auditer le rôle {selectedRole}.
+              Un ADMIN doit approuver votre demande pour auditer le rôle {selectedRole}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -207,7 +208,7 @@ export function AuditModeSwitcher() {
           <DialogHeader>
             <DialogTitle>Token d&apos;approbation</DialogTitle>
             <DialogDescription>
-              Saisissez le token fourni par le SUPER_ADMIN.
+              Saisissez le token fourni par le ADMIN.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

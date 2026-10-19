@@ -50,6 +50,10 @@ export function PinManagement() {
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
+  // Retour visuel quand le champ contient une valeur saisie
+  const hasPinValue = pin.length > 0;
+  const hasConfirmPinValue = confirmPin.length > 0;
+
   // Rafraîchit l'état du PIN (utilisé après une action réussie)
   const loadPinInfo = async () => {
     try {
@@ -322,12 +326,19 @@ export function PinManagement() {
                     type={showPin ? "text" : "password"}
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    placeholder="******"
+                    placeholder="Tapez votre code PIN"
                     maxLength={6}
                     autoComplete="new-password"
-                    className="text-center text-lg font-mono tracking-widest pr-10"
+                    aria-label="Code PIN"
+                    className={`text-center text-lg font-mono tracking-widest pr-10 transition-colors ${
+                      pin.length > 0
+                        ? showPin
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                          : "border-emerald-500 bg-emerald-50 text-emerald-900"
+                        : "border-input"
+                    }`}
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-opacity hover:text-slate-600">
                     {showPin ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </div>
                 </div>
@@ -363,12 +374,19 @@ export function PinManagement() {
                     type={showConfirmPin ? "text" : "password"}
                     value={confirmPin}
                     onChange={(e) => setConfirmPin(e.target.value)}
-                    placeholder="******"
+                    placeholder="Confirmez votre code PIN"
                     maxLength={6}
                     autoComplete="new-password"
-                    className="text-center text-lg font-mono tracking-widest pr-10"
+                    aria-label="Confirmer le code PIN"
+                    className={`text-center text-lg font-mono tracking-widest pr-10 transition-colors ${
+                      confirmPin.length > 0
+                        ? showConfirmPin
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-900"
+                          : "border-emerald-500 bg-emerald-50 text-emerald-900"
+                        : "border-input"
+                    }`}
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-opacity hover:text-slate-600">
                     {showConfirmPin ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </div>
                 </div>
