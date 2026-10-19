@@ -7,9 +7,10 @@
  * - Champ unique (6 caractères alphanumériques + spéciaux)
  * - Masqué par défaut (type="password") → affiche ******
  * - Case à cocher "Afficher le code" pour révéler
+ * - Auto-soumission au 6e caractère pour une réactivité maximale
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { verifyAdminPinAction } from "@/lib/pin/admin-pin-actions";
 import { Button } from "@/components/ui/button";
@@ -25,8 +26,7 @@ export type AdminPinGateProps = {
   /**
    * Callback après vérification réussie.
    * Par défaut : `router.refresh()` → le serveur re-rend la page avec la
-   * session PIN valide (le layout ré-affiche le contenu, ou le gate en cas
-   * d'échec — fail-closed).
+   * session PIN valide.
    */
   onVerified?: () => void;
 };
@@ -38,7 +38,7 @@ export type AdminPinGateProps = {
 export function AdminPinGate({ onVerified }: AdminPinGateProps) {
   const router = useRouter();
   const [pin, setPin] = useState("");
-  const [showPin, setShowPin] = useState(false); // ← Masqué par défaut
+  const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,12 +47,45 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
     inputRef.current?.focus();
   }, []);
 
+  const submitPin = useCallback(
+    async (codeToVerify: string) => {
+      if (codeToVerify.length !== 6 || isLoading) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await verifyAdminPinAction(codeToVerify);
+        if (!result.success) {
+          setError(result.error || "Code PIN incorrect");
+          setPin("");
+          inputRef.current?.focus();
+          return;
+        }
+
+        if (typeof onVerified === "function") onVerified();
+        else router.refresh();
+      } catch {
+        setError("Impossible de vérifier le PIN pour le moment. Réessayez.");
+        setPin("");
+        inputRef.current?.focus();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isLoading, onVerified, router]
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Limiter à 6 caractères
     if (value.length <= 6) {
       setPin(value);
       setError(null);
+
+      // Auto-soumission instantanée dès que le code atteint 6 caractères
+      if (value.length === 6) {
+        submitPin(value);
+      }
     }
   };
 
@@ -64,27 +97,9 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await verifyAdminPinAction(pin);
-      if (!result.success) {
-        setError(result.error || "Code PIN incorrect");
-        setPin("");
-        inputRef.current?.focus();
-        return;
-      }
-
-      if (typeof onVerified === "function") onVerified();
-      else router.refresh();
-    } catch {
-      setError("Impossible de vérifier le PIN pour le moment. Réessayez.");
-      setPin("");
-    } finally {
-      setIsLoading(false);
-    }
+    await submitPin(pin);
   };
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md space-y-6 rounded-lg border border-cyan-200 bg-white p-8 shadow-lg">
@@ -122,7 +137,7 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
                 maxLength={6}
                 disabled={isLoading}
                 autoComplete="off"
-                className="h-12 text-center text-lg font-mono tracking-widest pr-10"
+                className="h-12 text-center text-lg font-mono tracking-widest pr-10 text-slate-900 placeholder:text-slate-400 bg-white"
                 aria-label="Code PIN à 6 caractères"
               />
               {/* Indicateur visuel du type */}
@@ -171,7 +186,7 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
 
         {/* Info */}
         <p className="text-center text-xs text-slate-500">
-          Le code est requis à chaque accès et après 5 min d&apos;inactivité
+          Le code est requis à chaque accès et après 1 min d&apos;inactivité
         </p>
       </div>
     </div>

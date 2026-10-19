@@ -1,4 +1,4 @@
-// app/dashboard/layout.tsx
+// app/admin/dashboard/layout.tsx
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getServerRBACSession } from "@/lib/auth/server";
@@ -14,22 +14,20 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 type DashboardLayoutProps = { children: ReactNode };
 
-const DASHBOARD_MAX_ALLOWED_LEVEL = 2;
-
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const session = await getServerRBACSession();
 
   if (!session) {
-    redirect("/auth/sign-in?callbackUrl=/dashboard");
+    redirect("/auth/sign-in?callbackUrl=/admin/dashboard");
   }
 
-  // Vérification uniforme du niveau RBAC
-  if (session.level > DASHBOARD_MAX_ALLOWED_LEVEL) {
+  if (session.level > 2) {
     redirect("/unauthorized");
   }
 
   const roleName = session.role.name as Role;
 
+  // Exécution parallèle optimisée des politiques de sécurité et des permissions
   const [permissions, restrictions, requiresAuditApproval] = await Promise.all([
     getClientPermissions(roleName),
     getClientRestrictions(roleName),
@@ -40,14 +38,16 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     <SwitchProvider
       initialRole={roleName}
       initialLevel={session.level}
-      initialPermissions={permissions}
+      initialPermissions={permissions.map((permission) =>
+        permission === "auditlog:view-logs" ? "audit:view-logs" : permission
+      )}
       initialRestrictions={restrictions}
       requiresAuditApproval={requiresAuditApproval}
     >
       <DashboardShell
-        userEmail={""}
-        userName={null}
-        userImage={null}
+        userEmail={session.user.email ?? ""}
+        userName={session.user.name ?? null}
+        userImage={session.user.image ?? null}
       >
         {children}
       </DashboardShell>
