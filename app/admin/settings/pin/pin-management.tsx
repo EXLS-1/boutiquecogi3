@@ -84,7 +84,7 @@ export function PinManagement() {
 
   const handleCreateOrUpdate = async () => {
     if (pin.length !== 6) {
-      setError("Le PIN doit contenir le nombre exact des caractères");
+      setError("Le PIN doit contenir exactement 6 caractères");
       return;
     }
     if (pin !== confirmPin) {
@@ -96,25 +96,28 @@ export function PinManagement() {
     setError(null);
     setSuccess(null);
 
-    const result = await createOrUpdatePinAction(pin);
+    try {
+      const result = await createOrUpdatePinAction(pin);
+      if (!result.success) {
+        setError(result.error || "Erreur lors de l'enregistrement du PIN");
+        return;
+      }
 
-    if (!result.success) {
-      setError(result.error || "Erreur lors de la création");
-    } else {
       setSuccess(
         result.warning
-          ? `PIN créé/modifié avec succès — ${result.warning}`
-          : "PIN créé/modifié avec succès",
+          ? `PIN enregistré — ${result.warning}`
+          : "PIN enregistré avec succès",
       );
       setShowForm(false);
       setPin("");
       setConfirmPin("");
       await loadPinInfo();
+    } catch {
+      setError("Erreur lors de l'enregistrement du PIN");
+    } finally {
+      setActionLoading(false);
     }
-
-    setActionLoading(false);
   };
-
   const handleEnable = async () => {
     setActionLoading(true);
     setError(null);
@@ -138,7 +141,7 @@ export function PinManagement() {
   const handleDisable = async () => {
     if (
       !confirm(
-        "Désactiver le code PIN ? L&apos;administrateurs n&apos;aura plus besoin de saisir le code.",
+        "Désactiver le code PIN ? Les administrateurs n'auront plus besoin de saisir le code.",
       )
     ) {
       return;
@@ -226,6 +229,13 @@ export function PinManagement() {
                   {new Date(pinInfo.updatedAt).toLocaleString("fr-FR")}
                 </p>
               </div>
+            </div>
+          )}
+
+          {pinInfo.updatedBy && (
+            <div className="flex items-center justify-between">
+              <p className="font-medium text-slate-800">Modifié par</p>
+              <p className="text-sm text-slate-500">{pinInfo.updatedBy}</p>
             </div>
           )}
 

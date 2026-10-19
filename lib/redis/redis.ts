@@ -504,7 +504,7 @@ export class RedisClient {
         });
 
         this.client.on("error", (err: Error) => {
-          this.logger.error("Connection error", {
+          this.logger.warn("Connection error", {
             error: err.message,
             stack: err.stack,
           });
@@ -559,7 +559,11 @@ export class RedisClient {
   }
 
   isHealthy(): boolean {
-    return this.isConnected && this.circuitBreaker.getState() !== "OPEN";
+    // The ready event can lag behind a socket failure. Check ioredis directly
+    // so optional callers do not issue commands while the client is reconnecting.
+    const clientReady = this.client?.status === "ready";
+    this.isConnected = clientReady;
+    return clientReady && this.circuitBreaker.getState() !== "OPEN";
   }
 
   getMetrics() {
@@ -610,7 +614,12 @@ export class RedisClient {
       const hint = /NOAUTH|AUTH/i.test(err.message)
         ? " — Redis exige un mot de passe : définissez REDIS_PASSWORD dans .env.local"
         : "";
-      this.logger.error("Operation failed", {
+      const logOperationFailure = /ECONNREFUSED|ETIMEDOUT|ECONNRESET|EPIPE|NOAUTH|READONLY/i.test(
+        err.message,
+      )
+        ? this.logger.warn.bind(this.logger)
+        : this.logger.error.bind(this.logger);
+      logOperationFailure("Operation failed", {
         operation: operationName,
         error: err.message,
         errorName: err.name,

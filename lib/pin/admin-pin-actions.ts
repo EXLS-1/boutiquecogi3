@@ -193,7 +193,7 @@ export async function createOrUpdatePinAction(
 
     // Le nouveau PIN révoque les sessions PIN en cours (re-vérification exigée).
     await clearAdminPinVerification();
-    revalidatePath("/super_admin");
+    revalidatePath("/admin/settings/pin");
     return { success: true, warning: result.warning };
   } catch (error) {
     console.error(
@@ -253,7 +253,7 @@ export async function enablePinAction(): Promise<PinActionResult> {
       return { success: false, error: "Impossible d'activer le PIN" };
     }
 
-    revalidatePath("/super_admin");
+    revalidatePath("/admin/settings/pin");
     return { success: true, warning: result.warning };
   } catch (error) {
     console.error("[ADMIN_PIN_ENABLE_ERROR] Erreur d'activation :", error);
@@ -277,7 +277,7 @@ export async function disablePinAction(): Promise<PinActionResult> {
     // Révoque les sessions PIN en cours : plus aucune page admin protégée par
     // le PIN tant que la protection n'est pas réactivée.
     await clearAdminPinVerification();
-    revalidatePath("/super_admin");
+    revalidatePath("/admin/settings/pin");
     return { success: true, warning: result.warning };
   } catch (error) {
     console.error("[ADMIN_PIN_DISABLE_ERROR] Erreur de désactivation :", error);

@@ -30,7 +30,7 @@ const ENV_FILES = [".env.local", ".env"] as const;
  *   aucun échappement n'est nécessaire.
  */
 function upsertEnvLine(content: string, key: string, value: string): string {
-  const lineRegex = new RegExp(`^[ \\t]*${key}=[^\\r\\n]*$`, "m");
+  const lineRegex = new RegExp(`^[ \\t]*${key}=[^\\r\\n]*$`, "gm");
   const newLine = `${key}="${value}"`;
 
   if (lineRegex.test(content)) {
@@ -45,7 +45,7 @@ function upsertEnvLine(content: string, key: string, value: string): string {
 /**
  * Écrit (upsert) une variable d'environnement dans `.env.local` et `.env`.
  *
- * @returns La liste des fichiers réellement modifiés (vide si aucun accessible).
+ * @returns La liste des fichiers synchronisés avec la valeur demandée.
  */
 export async function upsertEnvFiles(
   key: string,
@@ -64,10 +64,8 @@ export async function upsertEnvFiles(
       }
 
       const next = upsertEnvLine(content, key, value);
-      if (next !== content) {
-        await fs.writeFile(filePath, next, "utf8");
-        updated.push(fileName);
-      }
+      if (next !== content) await fs.writeFile(filePath, next, "utf8");
+      updated.push(fileName);
     } catch (error) {
       // FS lecture seule / permission refusée → best-effort, jamais bloquant.
       console.error(

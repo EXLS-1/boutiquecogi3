@@ -67,24 +67,24 @@ export function AdminPinGate({ onVerified }: AdminPinGateProps) {
     setIsLoading(true);
     setError(null);
 
-    const result = await verifyAdminPinAction(pin);
-
-    if (!result.success) {
-      setError(result.error || "Code PIN incorrect");
-      setPin("");
-      inputRef.current?.focus();
-    } else {
-      // Défaut : refresh → le serveur re-rend la page (fail-closed).
-      if (typeof onVerified === "function") {
-        onVerified();
-      } else {
-        router.refresh();
+    try {
+      const result = await verifyAdminPinAction(pin);
+      if (!result.success) {
+        setError(result.error || "Code PIN incorrect");
+        setPin("");
+        inputRef.current?.focus();
+        return;
       }
+
+      if (typeof onVerified === "function") onVerified();
+      else router.refresh();
+    } catch {
+      setError("Impossible de vérifier le PIN pour le moment. Réessayez.");
+      setPin("");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
-
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-md space-y-6 rounded-lg border border-cyan-200 bg-white p-8 shadow-lg">
