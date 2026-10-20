@@ -14,7 +14,7 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
 
   if (!authContext?.isAuthenticated) {
     // Redirection dynamique sécurisée conservant la destination requise
-    redirect(`/auth/sign-in?callbackUrl=/dashboard`);
+    redirect(`/auth/sign-in?callbackUrl=/admin/dashboard`);
   }
 
   // 2. Contrôle 2FA global

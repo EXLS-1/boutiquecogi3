@@ -1256,13 +1256,19 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     return null;
   }
 
-  // Récupération optimisée du rôle/niveau et sécurité utilisateur en 1 requête
+  // Récupération du rôle affecté, de son niveau et de la sécurité utilisateur
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
       role: true,
-      level: true,
-      security: {
+      roleAssignment: {
+        select: {
+          roleConfig: {
+            select: { role: true, level: true },
+          },
+        },
+      },
+      userSecurity: {
         select: { twoFactorEnabled: true },
       },
     },
@@ -1270,7 +1276,9 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 
   if (!dbUser) return null;
 
-  const security = dbUser.security as { twoFactorEnabled: boolean } | null;
+  const role = normalizeRole(dbUser.roleAssignment?.roleConfig.role ?? dbUser.role);
+  const level = dbUser.roleAssignment?.roleConfig.level ?? getRoleLevel(role);
+  const security = dbUser.userSecurity;
   let is2FAVerified = true;
   if (security?.twoFactorEnabled) {
     const token = session.session?.token;
@@ -1280,8 +1288,8 @@ export async function getAuthContext(): Promise<AuthContext | null> {
   return {
     isAuthenticated: true,
     user: session.user,
-    role: normalizeRole(dbUser.role),
-    level: dbUser.level,
+    role,
+    level,
     is2FAVerified,
   };
 }
