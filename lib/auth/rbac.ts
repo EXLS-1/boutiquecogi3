@@ -19,11 +19,15 @@ import {
   Users
 } from "lucide-react";
 
+
+import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { verify2FAVerified } from "@/lib/2fa-cookie";
+
 // ───────────────────────────────────────────
 // 1. TYPES & CONSTANTS & INSTANCE PRISMA
 // ───────────────────────────────────────────
-
-import { prisma } from "@/lib/prisma";
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 export type Level = (typeof LEVELS)[keyof typeof LEVELS];
@@ -175,7 +179,7 @@ export const PERMISSIONS = {
   "role:delete": "role:delete",
   "role:assign": "role:assign",
 
-  "auditlog:view-logs": "auditlog:view-logs",
+  "audit:view-logs": "audit:view-logs",
   
   "permission:override": "permission:override",
   "permission:grant:any": "permission:grant:any",
@@ -198,7 +202,7 @@ export const PERMISSIONS = {
   "product:delete:any": "product:delete:any",
   "product:moderate": "product:moderate",
   "products:read": "products:read",
-  "products:create": "product:create",
+  "products:create": "products:create",
   "products:update": "products:update",
   "products:delete": "products:delete",
   "products:bulk-edit": "products:bulk-edit",
@@ -296,7 +300,7 @@ export const PERMISSIONS = {
   "audit:switch-self": "audit:switch-self",
   "audit:switch-others": "audit:switch-others",
   "audit:approve-request": "audit:approve-request",
-  "audit:view-logs": "auditlog:view-logs",
+  "audit:view-logs": "audit:view-logs",
 
   // Legacy aliases retained for older seed/admin code references.
   USERS_READ: "users:read",
@@ -360,11 +364,11 @@ export const PERMISSIONS = {
   AUDIT_SWITCH_SELF: "audit:switch-self",
   AUDIT_SWITCH_OTHERS: "audit:switch-others",
   AUDIT_APPROVE_REQUEST: "audit:approve-request",
-  AUDIT_VIEW_LOGS: "auditlog:view-logs"
+  AUDIT_VIEW_LOGS: "audit:view-logs"
 } as const;
 
 export const PERMISSION_META: Record<PermissionCode, { category: string; minLevel: number; isDangerous: boolean; description: string }> = {
-  [PERMISSIONS["auditlog:view-logs"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Consulter les journaux d’audit" },
+  [PERMISSIONS["audit:view-logs"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Consulter les journaux d’audit" },
   [PERMISSIONS["Product-variant:read"]]: { category: "PRODUCT", minLevel: 1, isDangerous: false, description: "Lire les variantes produit" },
   [PERMISSIONS["Product-variant:create"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Créer une variante produit" },
   [PERMISSIONS["Product-variant:edit:any"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Modifier toute variante produit" },
@@ -448,7 +452,6 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   [PERMISSIONS["audit:switch-self"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Audit soi-même" },
   [PERMISSIONS["audit:switch-others"]]: { category: "AUDIT", minLevel: 1, isDangerous: true, description: "Audit d'autres" },
   [PERMISSIONS["audit:approve-request"]]: { category: "AUDIT", minLevel: 1, isDangerous: true, description: "Approuver une requête d'audit" },
-  [PERMISSIONS["audit:view-logs"]]: { category: "AUDIT", minLevel: 2, isDangerous: false, description: "Voir les logs d'audit" },
   [PERMISSIONS["products:manage_variants"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Gérer les variantes" },
   [PERMISSIONS["products:manage_reviews"]]: { category: "PRODUCT", minLevel: 3, isDangerous: false, description: "Gérer les avis produit" },
   [PERMISSIONS["orders:process_refund"]]: { category: "ORDER", minLevel: 2, isDangerous: true, description: "Traiter un remboursement" },
@@ -464,61 +467,61 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   [PERMISSIONS["settings:system_config"]]: { category: "SYSTEM", minLevel: 1, isDangerous: true, description: "Configuration système" },
   "users:search": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "users:filter:active": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "users:filter:blocked": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "users:filter:inactive": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "permission:grant:any": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "permission:revoke:own": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "permission:revoke:any": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "permission:view:own": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "permission:view:any": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "permission:view:assigned": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
@@ -542,13 +545,13 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   },
   "analytics:dashboard:view": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "analytics:dashboard:export": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
@@ -566,91 +569,91 @@ export const PERMISSION_META: Record<PermissionCode, { category: string; minLeve
   },
   "reports:view": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "media:manage": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:cache:clear": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:restart": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:theme:switch": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:theme:manage": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:feature-flags:read": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:feature-flags:update": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:api-keys:create": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:api-keys:delete": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:api-keys:read": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:api-keys:rotate": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:api-keys:revoke": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:settings:read": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   },
   "system:settings:write": {
     category: "",
-    minLevel: 0,
+    minLevel: 1,
     isDangerous: false,
     description: ""
   }
@@ -1232,6 +1235,56 @@ export async function getNumericRestriction(
 // ───────────────────────────────────────────
 // 9. INTEGRATION BETTER-AUTH (Singleton)
 // ───────────────────────────────────────────
+
+export interface AuthContext {
+  isAuthenticated: true;
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+  };
+  role: Role;
+  level: number;
+  is2FAVerified: boolean;
+}
+
+export async function getAuthContext(): Promise<AuthContext | null> {
+  const h = await headers();
+  const session = await auth.api.getSession({ headers: h });
+
+  if (!session?.user) {
+    return null;
+  }
+
+  // Récupération optimisée du rôle/niveau et sécurité utilisateur en 1 requête
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      role: true,
+      level: true,
+      security: {
+        select: { twoFactorEnabled: true },
+      },
+    },
+  });
+
+  if (!dbUser) return null;
+
+  const security = dbUser.security as { twoFactorEnabled: boolean } | null;
+  let is2FAVerified = true;
+  if (security?.twoFactorEnabled) {
+    const token = session.session?.token;
+    is2FAVerified = token ? await verify2FAVerified(token) : false;
+  }
+
+  return {
+    isAuthenticated: true,
+    user: session.user,
+    role: normalizeRole(dbUser.role),
+    level: dbUser.level,
+    is2FAVerified,
+  };
+}
 
 export async function getCurrentUserRole(): Promise<Role> {
   const userData = await getCurrentUserFromProvider();

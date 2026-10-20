@@ -1,49 +1,37 @@
-// app/admin/layout.tsx
 import { ReactNode } from "react";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerRBACSession } from "@/lib/auth/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { verify2FAVerified } from "@/lib/2fa-cookie";
+import { getAuthContext } from "@/lib/auth/rbac"; // Source de vérité unifiée
 import { isPinEnabled, isAdminPinVerified } from "@/lib/pin/admin-pin";
 import { AdminPinGate } from "@/components/admin/admin-pin-gate";
 import { AdminPinSession } from "@/components/admin/admin-pin-session";
 
-export default async function AdminLayout({ children }: { children: ReactNode }) {
-  // 1. Source de vérité unique pour la session et le RBAC
-  const session = await getServerRBACSession();
+interface AdminLayoutProps {
+  children: ReactNode;
+}
 
-  if (!session) {
+export default async function AdminLayout({ children }: AdminLayoutProps) {
+  // 1. Authentification & RBAC unifiés
+  const authContext = await getAuthContext();
+
+  if (!authContext?.isAuthenticated) {
     redirect("/auth/sign-in?callbackUrl=/admin");
   }
 
-  // 2. Contrôle d'accès unifié par niveau (Fail-closed)
-  if (session.level > 2) {
+  // 2. Vérification 2FA
+  if (!authContext.is2FAVerified) {
+    redirect("/admin/verify-2fa");
+  }
+
+  // 3. Contrôle d'accès strict au périmètre Admin (RBAC Level Check)
+  // Niveau 1 et 2 uniquement (ex: 1 = SuperAdmin, 2 = Admin)
+  if (authContext.level > 2) {
     redirect("/unauthorized");
   }
 
-  // 3. Vérification 2FA (nécessite le token brut de la session d'authentification)
-  const h = await headers();
-  const rawAuthSession = await auth.api.getSession({ headers: h });
-
-  const security = await prisma.userSecurity.findUnique({
-    where: { userId: session.user.id },
-    select: { twoFactorEnabled: true },
-  });
-
-  if (security?.twoFactorEnabled) {
-    const sessionToken = rawAuthSession?.session?.token;
-    if (!sessionToken) redirect("/admin/verify-2fa");
-
-    const isVerified = await verify2FAVerified(sessionToken);
-    if (!isVerified) redirect("/admin/verify-2fa");
-  }
-
-  // 4. Code PIN administrateur (Isolation stricte et verrouillage temporel)
+  // 4. Verrouillage additionnel par PIN Administrateur (Defense in Depth)
   const pinEnabled = await isPinEnabled();
   if (pinEnabled) {
-    const pinVerified = await isAdminPinVerified(session.user.id);
+    const pinVerified = await isAdminPinVerified(authContext.user.id);
 
     if (!pinVerified) {
       return <AdminPinGate />;

@@ -150,7 +150,7 @@ export function SignInForm() {
   const isFormDisabled = isSubmitting || cooldown > 0;
 
   return (
-    <Card className="w-full max-w-sm shadow-xl bg-cyan-100">
+    <Card className="w-full max-w-sm shadow-xl bg-cyan-100 sticky top-28 self-start">
       <CardHeader>
         <CardTitle className="text-2xl text-cyan-700">Connexion</CardTitle>
       </CardHeader>

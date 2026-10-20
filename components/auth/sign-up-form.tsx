@@ -105,7 +105,7 @@ export function SignUpForm() {
   };
 
   return (
-    <Card className="w-full max-w-sm shadow-xl bg-cyan-100">
+    <Card className="w-full max-w-sm shadow-xl bg-cyan-100 sticky top-28 self-start">
       <CardHeader>
         <CardTitle className="text-2xl text-cyan-700">Inscription</CardTitle>
       </CardHeader>

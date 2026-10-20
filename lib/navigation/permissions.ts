@@ -55,15 +55,14 @@ type PermissionToken = (typeof GROUP_PERMISSION_MAP)[keyof typeof GROUP_PERMISSI
 
 const TOKEN_TO_PERMISSION: Record<PermissionToken, Permission> = {
   // Admin sensibles
-  SYSTEM_LOGS: "system:logs",
-  AUDIT_VIEW_LOGS: "auditlog:view-logs",
+  AUDIT_VIEW_LOGS: "audit:view-logs",
   SETTINGS_ROLES_MANAGE: "settings:roles-manage",
   SYSTEM_MAINTENANCE: "system:maintenance",
   SYSTEM_BACKUP: "system:backup",
 
   // Produits
   PRODUCTS_READ: "products:read",
-  PRODUCTS_CREATE: "products:create",
+  PRODUCTS_CREATE: "product:create",
   PRODUCTS_UPDATE: "products:update",
   PRODUCTS_DELETE: "products:delete",
   PRODUCTS_IMPORT: "products:import",

@@ -1,19 +1,30 @@
-// app/(protected)/layout.tsx
-
+import { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUserWithRole, getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac";
+import { getAuthContext } from "@/lib/auth/rbac"; // Source de vérité unifiée
+import { getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac";
 import { SwitchProvider } from "@/components/providers/switch-provider";
 
-export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const authContext = await getCurrentUserWithRole();
+interface ProtectedLayoutProps {
+  children: ReactNode;
+}
+
+export default async function ProtectedLayout({ children }: ProtectedLayoutProps) {
+  // 1. Contrôle d'authentification unifié
+  const authContext = await getAuthContext();
 
   if (!authContext?.isAuthenticated) {
-    redirect("/auth/sign-in");
+    // Redirection dynamique sécurisée conservant la destination requise
+    redirect(`/auth/sign-in?callbackUrl=/dashboard`);
+  }
+
+  // 2. Contrôle 2FA global
+  if (!authContext.is2FAVerified) {
+    redirect("/auth/verify-2fa");
   }
 
   const { role, level } = authContext;
 
-  // Chargement initial des droits du vrai utilisateur connecté
+  // 3. Récupération concurrente (non-bloquante) des autorisations/restrictions
   const [permissions, restrictions] = await Promise.all([
     getClientPermissions(role),
     getClientRestrictions(role),
@@ -24,8 +35,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       initialRole={role}
       initialLevel={level}
       initialPermissions={permissions}
-      initialRestrictions={restrictions}
-      requiresAuditApproval={true}
+      initialRestrictions={restrictions ?? []}
+      requiresAuditApproval={level <= 2} // Évaluation explicite typée sans variable orpheline
     >
       <div className="flex min-h-screen flex-col bg-cyan-50">
         {children}

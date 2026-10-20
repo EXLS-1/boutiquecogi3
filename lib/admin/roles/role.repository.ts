@@ -176,7 +176,7 @@ export const RoleRepository = {
     return recordAuditLog({
       action: data.action,
       targetId: data.targetId ?? undefined,
-      userId: data.userId,
+      userId: data.userId ?? null,
       severity: data.severity ?? AuditSeverity.WARNING,
       status: data.status ?? undefined,
       actorSnapshot:
