@@ -19,7 +19,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+import { getCurrentUserFromProvider } from "@/components/providers/session-provider";
 import type { Prisma } from "@prisma/client";
 import { ProductStatus } from "@prisma/client";
 

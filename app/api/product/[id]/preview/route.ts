@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+import { getCurrentUserFromProvider } from "@/components/providers/session-provider";
 import { mapCatalogProduct } from "@/lib/product-catalog/catalog-mappers";
 import { serializeDecimal } from "@/lib/product-catalog/catalog-types";
 import { z } from "zod";

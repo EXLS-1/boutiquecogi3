@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ProductServiceError } from "@/lib/product/product-errors";
 import { normalizeCategoryIds, syncProductCategories } from "@/server/services/product-category-sync";
-import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+import { getCurrentUserFromProvider } from "@/components/providers/session-provider";
 import { serializeDecimal } from "@/lib/product-catalog/catalog-types";
 import { z } from "zod";
 

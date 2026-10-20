@@ -1,4 +1,4 @@
-import { getSessionFromProvider } from "@/lib/auth/session-provider";
+import { getSessionFromProvider } from "@/components/providers/session-provider";
 import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 
 type AsyncAction = (...args: never[]) => Promise<unknown>;

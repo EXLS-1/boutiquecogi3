@@ -24,7 +24,7 @@ import { Prisma, ProductStatus } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+import { getCurrentUserFromProvider } from "@/components/providers/session-provider";
 import { generateUUIDv7 } from "@/lib/utils/uuid";
 import { generateSlug } from "@/lib/utils/slug";
 import { generateSKU } from "@/lib/utils/sku";

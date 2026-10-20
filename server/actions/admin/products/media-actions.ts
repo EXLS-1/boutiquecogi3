@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { hasPermission, resolvePermissionCode } from "@/lib/auth/rbac";
-import { requireAuth } from "@/lib/auth/session-provider";
+import { requireAuth } from "@/components/providers/session-provider";
 import { actionError, actionSuccess } from "./_shared/action-result";
 import { recordAuditLog, AuditSeverity } from "@/server/services/audit.service";
 import { ProductError } from "@/lib/product/product-errors";

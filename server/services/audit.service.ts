@@ -144,7 +144,7 @@ export async function recordAuditLog({
 export async function getAuditActorId(): Promise<string | null> {
   try {
     const { getSessionFromProvider } = await import(
-      "@/lib/auth/session-provider"
+      "@/components/providers/session-provider"
     );
     const session = await getSessionFromProvider();
     if (session?.user?.id) return session.user.id;

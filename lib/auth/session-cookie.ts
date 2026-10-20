@@ -1,3 +1,7 @@
+// lib/auth/session-cookie.ts
+
+import { getCookieValue } from "@/lib/utils/cookies";
+
 const DEFAULT_COOKIE_PREFIX = "better-auth";
 
 export function getAuthCookiePrefix(): string {

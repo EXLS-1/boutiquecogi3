@@ -8,7 +8,7 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { Role as PrismaRole } from "@prisma/client";
-import { getCurrentUserFromProvider } from "@/lib/auth/session-provider";
+import { getCurrentUserFromProvider } from "@/components/providers/session-provider";
 import {
   Crown,
   Shield,
