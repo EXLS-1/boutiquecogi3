@@ -90,11 +90,18 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: requireEmailVerification,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendAuthVerificationEmail({
-        to: user.email,
-        name: user.name,
-        url,
-      });
+      try {
+        console.log(`[AUTH] Tentative d'envoi de l'e-mail de vérification à ${user.email}...`);
+        await sendAuthVerificationEmail({
+          to: user.email,
+          name: user.name,
+          url,
+        });
+        console.log(`[AUTH] E-mail de vérification envoyé avec succès à ${user.email}`);
+      } catch (error) {
+        console.error(`[AUTH ERROR] Échec critique de l'envoi SMTP à ${user.email} :`, error);
+        throw new Error("Impossible d'envoyer l'e-mail de confirmation. Vérifiez la configuration SMTP.");
+      }
     },
   },
   user: {

@@ -16,6 +16,12 @@ export default function VideoPlayerClient({ videos }: VideoPlayerClientProps) {
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.play().catch((error) => {
+        // Changing the source or removing the element can cancel an in-flight
+        // play() request. This is expected browser behavior, not a playback fault.
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
         console.error("Autoplay failed:", error);
       });
     }

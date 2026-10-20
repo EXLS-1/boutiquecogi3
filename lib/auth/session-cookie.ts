@@ -57,12 +57,4 @@ function hasCookie(cookieHeader: string, name: string): boolean {
   return getCookieValue(cookieHeader, name) !== null;
 }
 
-function getCookieValue(cookieHeader: string, name: string): string | null {
-  const prefix = `${name}=`;
-  const cookie = cookieHeader
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(prefix));
 
-  return cookie ? cookie.slice(prefix.length) : null;
-}
