@@ -858,6 +858,13 @@ export async function getServerRBACSession() {
   return {
     level,
     userId: id,
+    roleCode: role,
+    user: {
+      id,
+      name: context.user.name,
+      email: context.user.email,
+      image: context.user.image ?? null,
+    },
     role: roleInfo,
     effectivePermissions: context.permissions,
   };

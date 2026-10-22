@@ -20,7 +20,7 @@ import { createAuthMiddleware } from "better-auth/api";
 import { hasPublicSignupPrivilegeFields } from "@/lib/auth/public-signup-schema";
 import { getAuthCookiePrefix } from "@/lib/auth/session-cookie";
 import {
-  assertEmailVerificationSmtpConfigured,
+  assertResendConfigured,
   sendAuthVerificationEmail,
 } from "@/lib/auth/email-verification";
 
@@ -29,7 +29,7 @@ const requireEmailVerification =
   process.env.EMAIL_VERIFICATION_REQUIRED === "true";
 
 if (requireEmailVerification) {
-  assertEmailVerificationSmtpConfigured();
+  assertResendConfigured();
 }
 
 function requiredEnv(name: string): string {
@@ -99,8 +99,8 @@ export const auth = betterAuth({
         });
         console.log(`[AUTH] E-mail de vérification envoyé avec succès à ${user.email}`);
       } catch (error) {
-        console.error(`[AUTH ERROR] Échec critique de l'envoi SMTP à ${user.email} :`, error);
-        throw new Error("Impossible d'envoyer l'e-mail de confirmation. Vérifiez la configuration SMTP.");
+        console.error(`[AUTH ERROR] Échec critique de l'envoi Resend à ${user.email} :`, error);
+        throw new Error("Impossible d'envoyer l'e-mail de confirmation. Vérifiez la configuration Resend.");
       }
     },
   },

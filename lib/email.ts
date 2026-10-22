@@ -2,9 +2,19 @@
 // Safe email abstraction — NEVER throws, logs warnings on missing API key.
 // Uses Resend via raw fetch (no dependency on resend npm package).
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || "security@boutiquecogi3.com";
 const APP_NAME = "Boutiquecogi3";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL =
+  process.env.MAIL_FROM ||
+  `${APP_NAME} <${process.env.FROM_EMAIL || "noreply@boutiquecogi3.com"}>`;
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+]);
 
 interface EmailPayload {
   to: string;
@@ -13,10 +23,19 @@ interface EmailPayload {
   text?: string;
 }
 
-export async function sendEmail(payload: EmailPayload): Promise<void> {
+export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.warn("[Email] RESEND_API_KEY manquant — notification non envoyée");
-    return;
+    return false;
+  }
+
+  const senderAddress = FROM_EMAIL.match(/<([^<>]+)>/)?.[1] ?? FROM_EMAIL;
+  const senderDomain = senderAddress.split("@").pop()?.trim().toLowerCase();
+  if (senderDomain && PUBLIC_EMAIL_DOMAINS.has(senderDomain)) {
+    console.error(
+      "[Email] MAIL_FROM doit utiliser une adresse d'un domaine vérifié dans Resend; les adresses de messagerie publique ne sont pas acceptées."
+    );
+    return false;
   }
 
   try {
@@ -27,7 +46,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `${APP_NAME} <${FROM_EMAIL}>`,
+        from: FROM_EMAIL,
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
@@ -38,9 +57,13 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
     if (!res.ok) {
       const err = await res.text().catch(() => "unknown");
       console.error(`[Email] Échec envoi à ${payload.to}:`, err);
+      return false;
     }
+
+    return true;
   } catch (err) {
     console.error(`[Email] Exception lors de l'envoi à ${payload.to}:`, err);
+    return false;
   }
 }
 
