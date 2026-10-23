@@ -28,7 +28,7 @@ export function NavbarSecondary({ className }: NavbarSecondaryProps) {
   return (
     <nav
       className={cn(
-        "fixed top-14 left-0 right-0 z-40 border-b border-cyan-700 bg-cyan-100 shadow-md",
+        "fixed top-14 left-0 right-0 z-40 border-b border-cyan-500 bg-cyan-100 shadow-md invisible opacity-0 pointer-events-none transition-opacity duration-200 group-hover:visible group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 group-focus-within:pointer-events-auto",
         className
       )}
     >

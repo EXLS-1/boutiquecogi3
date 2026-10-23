@@ -26,13 +26,14 @@ export function WishlistBadge() {
   return (
     <Link 
       href="/wishlist" 
-      className="relative flex items-center justify-center p-2 rounded-full transition-all duration-200 hover:bg-rose-50 group"
+      className="relative flex items-center justify-center p-2 rounded-full transition-all duration-200 group/wishlist hover:animate-pulse"
       aria-label="Voir mes favoris"
     >
       <Heart 
         className={cn(
-          "h-6 w-6 transition-all duration-300 group-hover:scale-110",
-          totalItems > 0 ? "text-rose-500 fill-rose-500" : "text-cyan-700 group-hover:text-rose-500"
+          "h-6 w-6 transition-all duration-300 group-hover/wishlist:scale-110",
+          "text-cyan-700 group-hover/wishlist:text-rose-500 group-hover/wishlist:fill-rose-500",
+          totalItems > 0 && "fill-cyan-700"
         )} 
       />
       {totalItems > 0 && (

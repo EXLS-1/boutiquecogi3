@@ -1,8 +1,11 @@
+// components/navbar-primo/navbar-profile-button.tsx
+
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMounted } from "@/hooks/use-mounted";
 import { authClient } from "@/lib/auth/auth-client";
 import { useRBAC } from "@/hooks/rbac/use-rbac";
 import { LogOut, LayoutDashboard } from "lucide-react";
@@ -33,6 +36,7 @@ function getInitials(name?: string | null): string {
 
 export function NavbarProfileButton() {
   const router = useRouter();
+  const mounted = useMounted();
   const { data: session, isPending } = authClient.useSession();
   const { roleConfig, isAdmin, isStaff } = useRBAC();
   const user = session?.user ?? null;
@@ -42,7 +46,7 @@ export function NavbarProfileButton() {
 
   const initials = getInitials(user?.name);
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
 
@@ -84,12 +88,15 @@ export function NavbarProfileButton() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          aria-label="Menu utilisateur"
-          className="relative group outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 rounded-full transition-transform active:scale-95"
+          aria-label={`Menu utilisateur de ${user.name}`}
+          className="relative group flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 rounded-md transition-transform active:scale-95"
         >
-          <Avatar className="h-9 w-9 cursor-pointer border border-cyan-100 shadow-sm group-hover:border-cyan-300">
+          <span className="max-w-40 truncate text-sm font-medium text-cyan-500">
+            Bonjour, {user.name}
+          </span>
+          <Avatar className="h-9 w-9 shrink-0 cursor-pointer border border-cyan-100 shadow-sm group-hover:border-cyan-300">
             <AvatarImage src={user.image || undefined} alt={user.name || "Utilisateur"} />
-            <AvatarFallback className="bg-cyan-700 text-white text-[10px] font-bold">
+            <AvatarFallback className="bg-cyan-500 text-white text-[10px] font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>

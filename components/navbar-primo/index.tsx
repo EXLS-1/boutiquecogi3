@@ -20,16 +20,16 @@ export function Navbar({
   logo = "Boutique COGI",
 }: NavbarProps) {
   return (
-    <NavbarShell>
+    <NavbarShell className="bg-cyan-50">
       <div className="flex items-center gap-4">
         <NavbarBrand logo={logo} />
       </div>
 
-      <div className="flex justify-center gap-7 px-4 w-xl mx-auto border-cyan-700">
+      <div className="flex justify-center gap-7 px-4 w-xl mx-auto border-cyan-500">
         <NavbarSearch />
         <CurrencySelector />
-        <Suspense fallback={<div className="h-6 w-6 rounded-full bg-cyan-200 animate-pulse" aria-label="Loading cart" />}>
-          <CartIcon />
+        <Suspense fallback={<div className="h-6 w-6 rounded-full bg-cyan-200 hover:animate-pulse" aria-label="Loading cart" />}>
+          <CartIcon className="hover:animate-pulse" />
         </Suspense>
         <WishlistBadge />
       </div>

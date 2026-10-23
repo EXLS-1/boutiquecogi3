@@ -73,12 +73,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <ProductQuickView />
           </Suspense>
           {/* Injection directe de la session pour supprimer le délai d'hydratation */}
-          <Navbar />
+          <div className="group">
+            <Navbar />
 
-          {/* Suspense est crucial ici car NavbarSecondary utilise useSearchParams */}
-          <Suspense fallback={<div className="h-14 w-full bg-cyan-100 animate-pulse border-b border-cyan-700" />}>
-            <NavbarSecondary />
-          </Suspense>
+            {/* Suspense est crucial ici car NavbarSecondary utilise useSearchParams */}
+            <Suspense fallback={<div className="h-14 w-full bg-cyan-100 animate-pulse border-b border-cyan-700" />}>
+              <NavbarSecondary />
+            </Suspense>
+          </div>
 
           <LeftSidebar />
           <RightSidebar />

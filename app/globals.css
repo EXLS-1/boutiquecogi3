@@ -6,7 +6,9 @@
 
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "../app";
+@source "../components";
 
 /* ==========================================================================
    MAPPING next/font → TAILWIND (v4)
