@@ -6,8 +6,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
+import { AuditSeverity as PrismaAuditSeverity } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
+import { recordAuditLog } from "@/server/services/audit.service";
 import {
   AUDIT_ACTIONS,
   AUDIT_SEVERITY,
@@ -19,8 +20,6 @@ import {
 import {
   AUDIT_DEFAULT_LIMIT,
   AUDIT_MAX_LIMIT,
-  AUDIT_MAX_PAYLOAD_SIZE,
-  AUDIT_SANITIZE_FIELDS,
 } from "./constants";
 import { getCurrentUserWithRole } from "@/lib/auth/rbac";
 
@@ -28,43 +27,10 @@ import { getCurrentUserWithRole } from "@/lib/auth/rbac";
 // HELPERS INTERNES
 // ───────────────────────────────────────────
 
-/**
- * Sanitize les données sensibles avant stockage
- */
-function sanitizeData(data: unknown): unknown {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
-  
-  const sanitized: Record<string, unknown> = { ...data };
-  
-  for (const field of AUDIT_SANITIZE_FIELDS) {
-    if (field in sanitized) {
-      sanitized[field] = "[REDACTED]";
-    }
-  }
-  
-  // Vérifie la taille
-  const stringified = JSON.stringify(sanitized);
-  if (stringified.length > AUDIT_MAX_PAYLOAD_SIZE) {
-    return { _truncated: true, _size: stringified.length };
-  }
-  
-  return sanitized;
-}
-
-function attachSeverity(payload: unknown, severity: string): unknown {
-  const record =
-    payload && typeof payload === "object" && !Array.isArray(payload)
-      ? (payload as Record<string, unknown>)
-      : payload === undefined
-        ? {}
-        : { value: payload };
-
-  return { ...record, __auditSeverity: severity };
-}
-
 function getAuditSeverity(log: {
   payload: unknown;
   status: string | null;
+  severity?: string | null;
 }): string {
   if (
     log.payload &&
@@ -77,64 +43,8 @@ function getAuditSeverity(log: {
     }
   }
 
-  return log.status === "FAILED" ? AUDIT_SEVERITY.ERROR : AUDIT_SEVERITY.INFO;
-}
-
-/**
- * Extrait les métadonnées de la requête
- */
-async function extractRequestMetadata(): Promise<{
-  ipAddress: string;
-  userAgent: string;
-  location?: string;
-  browser?: string;
-  os?: string;
-  device?: string;
-}> {
-  const headersList = await headers();
-  
-  const ipAddress = 
-    headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headersList.get("x-real-ip") ||
-    "unknown";
-  
-  const userAgent = headersList.get("user-agent") || "unknown";
-  
-  // Parse user-agent pour extraire browser/os/device
-  const browser = extractBrowser(userAgent);
-  const os = extractOS(userAgent);
-  const device = extractDevice(userAgent);
-  
-  return {
-    ipAddress,
-    userAgent,
-    browser,
-    os,
-    device,
-  };
-}
-
-function extractBrowser(ua: string): string {
-  if (ua.includes("Firefox")) return "Firefox";
-  if (ua.includes("Chrome")) return "Chrome";
-  if (ua.includes("Safari")) return "Safari";
-  if (ua.includes("Edge")) return "Edge";
-  return "Unknown";
-}
-
-function extractOS(ua: string): string {
-  if (ua.includes("Windows")) return "Windows";
-  if (ua.includes("Mac")) return "macOS";
-  if (ua.includes("Linux")) return "Linux";
-  if (ua.includes("Android")) return "Android";
-  if (ua.includes("iOS")) return "iOS";
-  return "Unknown";
-}
-
-function extractDevice(ua: string): string {
-  if (ua.includes("Mobile")) return "Mobile";
-  if (ua.includes("Tablet")) return "Tablet";
-  return "Desktop";
+  if (log.status === "FAILED") return AUDIT_SEVERITY.ERROR;
+  return log.severity ?? AUDIT_SEVERITY.INFO;
 }
 
 // ───────────────────────────────────────────
@@ -142,13 +52,11 @@ function extractDevice(ua: string): string {
 // ───────────────────────────────────────────
 
 /**
- * Enregistre un événement d'audit de manière asynchrone et sécurisée.
- * Ne bloque pas le thread principal pour optimiser les performances.
+ * Met durablement l'événement dans l'outbox avant de rendre la main.
+ * L'insertion finale dans audit_log est traitée par le worker cron.
  */
 export async function logAudit(data: AuditLogData): Promise<void> {
   try {
-    const metadata = await extractRequestMetadata();
-    
     // Récupère l'utilisateur courant si non fourni
     let userId = data.userId;
     let roleLevel = 0;
@@ -161,60 +69,46 @@ export async function logAudit(data: AuditLogData): Promise<void> {
       }
     }
 
-    if (!userId) {
-      console.warn("[AuditLog] Skipping audit entry because no actor is available.");
-      return;
-    }
-    
-    // Sanitize les données sensibles
-    const sanitizedOldValue = sanitizeData(data.oldValue);
-    const sanitizedNewValue = sanitizeData(data.newValue);
-    const sanitizedMetadata = sanitizeData(data.metadata);
-    
-    // Détermine la sévérité par défaut
     const severity = data.severity || (data.success === false ? AUDIT_SEVERITY.ERROR : AUDIT_SEVERITY.INFO);
-    
-    // Écrit le log en arrière-plan (fire-and-forget)
-    void prisma.auditLog.create({
-      data: {
-        userId,
-        roleLevel,
-        action: data.action,
-        entity: data.entity,
-        entityType: data.entity,
-        entityId: data.entityId,
-        targetId: data.entityId,
-        targetType: data.entity,
-        oldValue: sanitizedOldValue ? JSON.parse(JSON.stringify(sanitizedOldValue)) : undefined,
-        newValue: sanitizedNewValue ? JSON.parse(JSON.stringify(sanitizedNewValue)) : undefined,
-        metadata: sanitizedMetadata ? JSON.parse(JSON.stringify(sanitizedMetadata)) : undefined,
-        status: data.success === false ? "FAILED" : "SUCCESS",
-        error: data.error,
-        details: data.details,
-        ipAddress: data.ipAddress || metadata.ipAddress,
-        userAgent: data.userAgent || metadata.userAgent,
-        browser: metadata.browser,
-        os: metadata.os,
-        device: metadata.device,
-        duration: data.duration,
-        payload: JSON.parse(JSON.stringify(attachSeverity(sanitizedMetadata, severity))),
+    await recordAuditLog({
+      action: data.action,
+      userId: userId ?? null,
+      actorId: data.actorId ?? userId ?? "anonymous",
+      actorType: data.actorType ?? (userId ? "user" : "anonymous"),
+      impersonatedBy: data.impersonatedBy,
+      roleLevel,
+      targetId: data.entityId,
+      targetType: data.entity,
+      oldValue: data.oldValue,
+      newValue: data.newValue,
+      metadata: {
+        ...(data.metadata ?? {}),
+        __auditSeverity: severity,
+        ...(data.duration !== undefined && { duration: data.duration }),
       },
-    }).catch((error) => {
-      // Log l'erreur dans un système de monitoring sans faire planter la requête
-      console.error("[AuditLog] Échec de l'écriture:", error);
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
+      sessionId: data.sessionId,
+      traceId: data.traceId,
+      reason: data.reason,
+      status: data.success === false ? "FAILED" : "SUCCESS",
+      error: data.error,
+      errorCode: data.errorCode,
+      details: data.details,
+      severity:
+        severity === AUDIT_SEVERITY.ERROR
+          ? PrismaAuditSeverity.CRITICAL
+          : severity,
     });
   } catch (error) {
-    // Capture les erreurs critiques
-    console.error("[AuditLog] Erreur critique:", error);
+    console.error("[AuditLog] Échec de l'enqueue:", error);
   }
 }
 
 /**
- * Version synchrone pour les cas critiques (à utiliser avec parcimonie)
+ * Version awaitée : garantit la persistance de l'événement dans l'outbox.
  */
 export async function logAuditSync(data: AuditLogData): Promise<void> {
-  const metadata = await extractRequestMetadata();
-  
   let userId = data.userId;
   let roleLevel = 0;
   
@@ -226,41 +120,36 @@ export async function logAuditSync(data: AuditLogData): Promise<void> {
     }
   }
 
-  if (!userId) {
-    console.warn("[AuditLog] Skipping audit entry because no actor is available.");
-    return;
-  }
-  
-  const sanitizedOldValue = sanitizeData(data.oldValue);
-  const sanitizedNewValue = sanitizeData(data.newValue);
-  const sanitizedMetadata = sanitizeData(data.metadata);
-  
   const severity = data.severity || (data.success === false ? AUDIT_SEVERITY.ERROR : AUDIT_SEVERITY.INFO);
-  
-  await prisma.auditLog.create({
-    data: {
-      userId,
-      roleLevel,
-      action: data.action,
-      entity: data.entity,
-      entityType: data.entity,
-      entityId: data.entityId,
-      targetId: data.entityId,
-      targetType: data.entity,
-      oldValue: sanitizedOldValue ? JSON.parse(JSON.stringify(sanitizedOldValue)) : undefined,
-      newValue: sanitizedNewValue ? JSON.parse(JSON.stringify(sanitizedNewValue)) : undefined,
-      metadata: sanitizedMetadata ? JSON.parse(JSON.stringify(sanitizedMetadata)) : undefined,
-      status: data.success === false ? "FAILED" : "SUCCESS",
-      error: data.error,
-      details: data.details,
-      ipAddress: data.ipAddress || metadata.ipAddress,
-      userAgent: data.userAgent || metadata.userAgent,
-      browser: metadata.browser,
-      os: metadata.os,
-      device: metadata.device,
-      duration: data.duration,
-      payload: JSON.parse(JSON.stringify(attachSeverity(sanitizedMetadata, severity))),
+  await recordAuditLog({
+    action: data.action,
+    userId: userId ?? null,
+    actorId: data.actorId ?? userId ?? "anonymous",
+    actorType: data.actorType ?? (userId ? "user" : "anonymous"),
+    impersonatedBy: data.impersonatedBy,
+    roleLevel,
+    targetId: data.entityId,
+    targetType: data.entity,
+    oldValue: data.oldValue,
+    newValue: data.newValue,
+    metadata: {
+      ...(data.metadata ?? {}),
+      __auditSeverity: severity,
+      ...(data.duration !== undefined && { duration: data.duration }),
     },
+    ipAddress: data.ipAddress,
+    userAgent: data.userAgent,
+    sessionId: data.sessionId,
+    traceId: data.traceId,
+    reason: data.reason,
+    status: data.success === false ? "FAILED" : "SUCCESS",
+    error: data.error,
+    errorCode: data.errorCode,
+    details: data.details,
+    severity:
+      severity === AUDIT_SEVERITY.ERROR
+        ? PrismaAuditSeverity.CRITICAL
+        : severity,
   });
 }
 
@@ -344,14 +233,6 @@ export async function getAuditLogs(query: AuditLogQuery = {}): Promise<{
       orderBy: { [orderBy]: orderDirection },
       skip,
       take: validLimit,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
     }),
     prisma.auditLog.count({ where }),
   ]);
@@ -359,6 +240,13 @@ export async function getAuditLogs(query: AuditLogQuery = {}): Promise<{
   return {
     logs: logs.map((log) => ({
       ...log,
+      user:
+        log.userId || log.actorName || log.actorEmail
+          ? {
+              name: log.actorName,
+              email: log.actorEmail ?? "",
+            }
+          : null,
       severity: getAuditSeverity(log),
     })),
     total,
@@ -372,21 +260,25 @@ export async function getAuditLogs(query: AuditLogQuery = {}): Promise<{
  * Récupère un log spécifique par ID
  */
 export async function getAuditLogById(id: string) {
-  const log = await prisma.auditLog.findUnique({
+  const log = await prisma.auditLog.findFirst({
     where: { id },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-        },
-      },
-    },
   });
 
-  return log ? { ...log, severity: getAuditSeverity(log) } : null;
+  return log
+    ? {
+        ...log,
+        user:
+          log.userId || log.actorName || log.actorEmail
+            ? {
+                id: log.userId,
+                name: log.actorName,
+                email: log.actorEmail ?? "",
+                roleLevel: log.roleLevel,
+              }
+            : null,
+        severity: getAuditSeverity(log),
+      }
+    : null;
 }
 
 /**
@@ -405,6 +297,7 @@ export async function getAuditStats(days: number = 30): Promise<AuditLogStats> {
       entity: true,
       payload: true,
       status: true,
+      severity: true,
       createdAt: true,
     },
   });
@@ -446,14 +339,7 @@ export async function getAuditStats(days: number = 30): Promise<AuditLogStats> {
  * Supprime les logs plus anciens que la rétention configurée
  */
 export async function cleanupOldAuditLogs(retentionDays: number = 365): Promise<number> {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-  
-  const result = await prisma.auditLog.deleteMany({
-    where: {
-      createdAt: { lt: cutoffDate },
-    },
-  });
-  
-  return result.count;
+  throw new Error(
+    `Audit logs are append-only. Archive partitions before removing data older than ${retentionDays} days.`,
+  );
 }

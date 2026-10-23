@@ -36,9 +36,9 @@ export type AssignmentRow = Prisma.RoleAssignmentGetPayload<{
   };
 }>;
 
-export type AuditLogRow = Prisma.AuditLogGetPayload<{
-  include: { user: { select: { id: true; name: true; email: true } } };
-}>;
+export type AuditLogRow = AuditLog & {
+  user: { id: string | null; name: string | null; email: string | null } | null;
+};
 
 const assignmentInclude = {
   user: { select: { id: true, name: true, email: true, status: true } },
@@ -172,7 +172,7 @@ export const RoleRepository = {
    */
   async createAuditLog(
     data: Prisma.AuditLogUncheckedCreateInput,
-  ): Promise<AuditLog | null> {
+  ): Promise<{ id: string; actorName: string | null; actorEmail: string | null } | null> {
     return recordAuditLog({
       action: data.action,
       targetId: data.targetId ?? undefined,
@@ -201,8 +201,19 @@ export const RoleRepository = {
       },
       orderBy: { createdAt: 'desc' },
       take: filter.take,
-      include: { user: { select: { id: true, name: true, email: true } } },
-    });
+    }).then((logs) =>
+      logs.map((log) => ({
+        ...log,
+        user:
+          log.userId || log.actorName || log.actorEmail
+            ? {
+                id: log.userId,
+                name: log.actorName,
+                email: log.actorEmail,
+              }
+            : null,
+      })),
+    );
   },
 
   listApprovalRequests(): Promise<AuditApprovalRequest[]> {

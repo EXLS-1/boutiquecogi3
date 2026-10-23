@@ -242,7 +242,7 @@ export const RoleAdminService = {
   },
 
   async listAuditLogs() {
-    return withSecurePrisma((ctx) => ctx.prisma.auditLog.findMany({
+    const logs = await withSecurePrisma((ctx) => ctx.prisma.auditLog.findMany({
       where: {
         OR: [
           { targetType: { in: ['ROLE', 'USER'] }, action: { startsWith: 'ROLE_' } },
@@ -260,11 +260,25 @@ export const RoleAdminService = {
         details: true,
         createdAt: true,
         roleLevel: true,
-        user: { select: { id: true, name: true, email: true } },
+        userId: true,
+        actorName: true,
+        actorEmail: true,
       },
     }), {
       minRoleLevel: 2,
       requiredPermissions: [PERMISSIONS['audit:view-logs']],
     });
+
+    return logs.map((log) => ({
+      ...log,
+      user:
+        log.userId || log.actorName || log.actorEmail
+          ? {
+              id: log.userId,
+              name: log.actorName,
+              email: log.actorEmail ?? "",
+            }
+          : null,
+    }));
   },
 };

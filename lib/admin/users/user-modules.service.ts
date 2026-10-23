@@ -146,19 +146,20 @@ export async function listUserAuditLogs(take = 50): Promise<UserAuditLogRow[]> {
     select: {
       id: true,
       action: true,
-      userId: true,
+      actorId: true,
+      actorName: true,
+      actorEmail: true,
       targetId: true,
       status: true,
       createdAt: true,
-      user: { select: { name: true, email: true } },
     },
   });
 
   return logs.map((log) => ({
     id: log.id,
     action: log.action,
-    actorId: log.userId,
-    actorName: log.user?.name ?? log.user?.email ?? null,
+    actorId: log.actorId,
+    actorName: log.actorName ?? log.actorEmail ?? null,
     targetId: log.targetId,
     status: log.status,
     createdAt: log.createdAt,

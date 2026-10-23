@@ -105,6 +105,9 @@ export type AuditSeverity = typeof AUDIT_SEVERITY[keyof typeof AUDIT_SEVERITY];
 // ───────────────────────────────────────────
 export interface AuditLogData {
   userId?: string;
+  actorId?: string;
+  actorType?: "user" | "system" | "service_account" | "admin" | "anonymous";
+  impersonatedBy?: string;
   role?: Role;
   action: AuditAction | string;
   entity?: AuditEntity | string;
@@ -115,8 +118,12 @@ export interface AuditLogData {
   severity?: AuditSeverity;
   success?: boolean;
   error?: string;
+  errorCode?: string;
+  reason?: string;
   ipAddress?: string;
   userAgent?: string;
+  sessionId?: string;
+  traceId?: string;
   duration?: number;
   details?: string;
 }

@@ -300,8 +300,6 @@ export const PERMISSIONS = {
   "audit:switch-self": "audit:switch-self",
   "audit:switch-others": "audit:switch-others",
   "audit:approve-request": "audit:approve-request",
-  "audit:view-logs": "audit:view-logs",
-
   // Legacy aliases retained for older seed/admin code references.
   USERS_READ: "users:read",
   USERS_CREATE: "users:create",

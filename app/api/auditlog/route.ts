@@ -1,47 +1,69 @@
 // app/api/auditlog/route.ts
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { generateUUIDv7 } from "@/lib/utils/uuid";
+import { timingSafeEqual } from "node:crypto";
+import { isIP } from "node:net";
+import { recordAuditLog } from "@/server/services/audit.service";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isAuthorized(provided: string | null): boolean {
+  const expected = process.env.AUTH_SECRET;
+  if (!expected || !provided) return false;
+
+  const expectedBytes = Buffer.from(expected);
+  const providedBytes = Buffer.from(provided);
+  return (
+    expectedBytes.length === providedBytes.length &&
+    timingSafeEqual(expectedBytes, providedBytes)
+  );
+}
+
 export async function POST(req: Request) {
   const secret = req.headers.get("x-internal-secret");
-  if (!secret || secret !== process.env.AUTH_SECRET) {
+  if (!isAuthorized(secret)) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   try {
-    const data = await req.json();
-
-    // `audit_log.userId` est une clé étrangère obligatoire pour le client
-    // Prisma généré (colonne @db.Uuid) : une entrée n'est écrite que lorsqu'un
-    // acteur réel et valide est fourni. Les alertes anonymes sont ignorées
-    // proprement (warn) au lieu de faire échouer la création en base.
-    const rawUserId = typeof data.userId === "string" ? data.userId.trim() : null;
-    const userId = rawUserId && UUID_REGEX.test(rawUserId) ? rawUserId : null;
-    if (!userId) {
-      console.warn(
-        "[INTERNAL_AUDIT_LOG] Entrée ignorée : aucun acteur (userId UUID) fourni.",
-      );
-      return NextResponse.json({ success: true });
+    const body: unknown = await req.json();
+    if (!isRecord(body)) {
+      return NextResponse.json({ success: false }, { status: 400 });
     }
 
-    await prisma.auditLog.create({
-      data: {
-        id: generateUUIDv7(),
-        userId,
-        action: data.action || "SECURITY_ALERT",
-        entityType: "RATE_LIMIT",
-        entityId: data.ip,
-        ip: data.ip,
-        userAgent: data.userAgent,
-        metadata: data.metadata || {},
-        createdAt: new Date(),
-      },
+    const rawUserId =
+      typeof body.userId === "string" ? body.userId.trim() : null;
+    const userId = rawUserId && UUID_REGEX.test(rawUserId) ? rawUserId : null;
+    const ip = typeof body.ip === "string" && isIP(body.ip) ? body.ip : null;
+    const metadata = isRecord(body.metadata) ? body.metadata : undefined;
+
+    const entry = await recordAuditLog({
+      userId,
+      actorId: userId ?? "rate-limit-service",
+      actorType: userId ? "user" : "service_account",
+      action:
+        typeof body.action === "string" ? body.action : "SECURITY_ALERT",
+      targetType: "RATE_LIMIT",
+      targetId: ip,
+      ipAddress: ip,
+      userAgent:
+        typeof body.userAgent === "string" ? body.userAgent : undefined,
+      metadata,
+      details: metadata,
+      status: "DENIED",
+      severity: undefined,
     });
+    if (!entry) {
+      return NextResponse.json(
+        { success: false, error: "Audit event could not be queued." },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

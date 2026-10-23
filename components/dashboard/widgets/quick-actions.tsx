@@ -51,7 +51,7 @@ interface QuickAction {
 // ───────────────────────────────────────────
 
 const ALL_ACTIONS: QuickAction[] = [
-  { label: "Audit", href: "/admin/dashboard/auditlog", icon: Shield, permissions: [PERMISSIONS["auditlog:view-logs"]], variant: "ghost", description: "Consulter les journaux d’audit" },
+  { label: "Audit", href: "/admin/dashboard/auditlog", icon: Shield, permissions: [PERMISSIONS["audit:view-logs"]], variant: "ghost", description: "Consulter les journaux d’audit" },
   { label: "Utilisateurs", href: "/admin/users", icon: Users, permissions: [PERMISSIONS["users:create"], PERMISSIONS["users:block"], PERMISSIONS["users:delete"]], variant: "secondary", description: "Gérer les comptes utilisateurs" },
   { label: "Rôles", href: "/admin/roles", icon: Shield, permissions: [PERMISSIONS["role:view"], PERMISSIONS["role:assign"]], variant: "outline", description: "Consulter et attribuer les rôles" },
   { label: "Produits", href: "/admin/products", icon: Package, permissions: [PERMISSIONS["products:create"], PERMISSIONS["products:update"], PERMISSIONS["products:delete"], PERMISSIONS["products:manage_variants"]], variant: "default", description: "Gérer le catalogue produits" },

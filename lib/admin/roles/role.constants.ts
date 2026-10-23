@@ -62,8 +62,8 @@ export type RoleAuditAction = (typeof ROLE_AUDIT_ACTIONS)[number];
 
 /** Permissions obligatoires par niveau (garde-fou anti-lockout). */
 export const MANDATORY_PERMISSIONS_BY_LEVEL: Record<number, PermissionCode[]> = {
-  1: ['role:view', 'role:edit', 'auditlog:view-logs'],
-  2: ['role:view', 'auditlog:view-logs'],
+  1: ['role:view', 'role:edit', 'audit:view-logs'],
+  2: ['role:view', 'audit:view-logs'],
   3: ['role:view'],
   4: [],
   5: [],

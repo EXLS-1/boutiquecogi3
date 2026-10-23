@@ -50,13 +50,16 @@ export default async function DashboardLayout({
   const validPermissionCodes = new Set<PermissionCode>(
     Object.values(PERMISSIONS),
   );
+  const isPermissionCode = (code: string): code is PermissionCode =>
+    validPermissionCodes.has(code as PermissionCode);
   const safeInitialPermissions: PermissionCode[] = permissions.flatMap(
     (permission) => {
+      const permissionCode: string = permission;
       const normalized =
-        permission === "auditlog:view-logs"
+        permissionCode === "auditlog:view-logs"
           ? "audit:view-logs"
-          : permission;
-      return validPermissionCodes.has(normalized)
+          : permissionCode;
+      return isPermissionCode(normalized)
         ? [normalized]
         : [];
     },

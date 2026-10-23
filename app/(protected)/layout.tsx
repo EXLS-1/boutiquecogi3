@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/rbac"; // Source de vérité unifiée
 import { getClientPermissions, getClientRestrictions } from "@/lib/auth/rbac";
 import { SwitchProvider } from "@/components/providers/switch-provider";
+import { PERMISSIONS as SHARED_PERMISSIONS, type Permission as SharedPermission } from "@/lib/auth/rbac-shared";
 
 interface ProtectedLayoutProps {
   children: ReactNode;
@@ -29,12 +30,19 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
     getClientPermissions(role),
     getClientRestrictions(role),
   ]);
+  const validPermissions = new Set<string>(Object.values(SHARED_PERMISSIONS));
+  const initialPermissions = permissions.flatMap((permission) => {
+    const code = String(permission) === "auditlog:view-logs"
+      ? SHARED_PERMISSIONS["audit:view-logs"]
+      : String(permission);
+    return validPermissions.has(code) ? [code as SharedPermission] : [];
+  });
 
   return (
     <SwitchProvider
       initialRole={role}
       initialLevel={level}
-      initialPermissions={permissions}
+      initialPermissions={initialPermissions}
       initialRestrictions={restrictions ?? []}
       requiresAuditApproval={level <= 2} // Évaluation explicite typée sans variable orpheline
     >
