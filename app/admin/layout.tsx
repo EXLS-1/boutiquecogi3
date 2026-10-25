@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
   // 2. Vérification 2FA
   if (!authContext.is2FAVerified) {
-    redirect("/admin/verify-2fa");
+    redirect("/admin/settings/verify-2fa");
   }
 
   // 3. Contrôle d'accès strict au périmètre Admin (RBAC Level Check)
