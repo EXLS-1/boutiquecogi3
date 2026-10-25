@@ -72,14 +72,14 @@ export function AuditLogTable({ logs, page, totalPages, onPageChange, onViewDeta
     <div className="space-y-4 rounded-xl border bg-card p-4">
       <div className="rounded-xl border border-cyan-400 bg-cyan-50 shadow-sm overflow-hidden">
         <Table>
-          <TableHeader className="bg-cyan-100">
+          <TableHeader className="bg-cyan-100 text-cyan-500">
             <TableRow>
               <TableHead className="w-[180px]">Date</TableHead>
               <TableHead>Utilisateur</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Entité</TableHead>
               <TableHead>Sévérité</TableHead>
-        
+
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>

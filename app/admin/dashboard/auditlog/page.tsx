@@ -24,6 +24,7 @@ import { AUDIT_DEFAULT_LIMIT } from "@/lib/audit/constants";
 // ─── Composants UI ─────────────────────────
 import { AuditLogViewer } from "@/components/auditlog/audit-log-viewer";
 import { AuditLogStatsCards } from "@/components/auditlog/audit-log-stats-cards";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 // ─── Metadata SEO ──────────────────────────
 export const metadata: Metadata = {
@@ -67,9 +68,13 @@ export default async function AuditLogPage() {
   ]);
 
   return (
-    <div className="p-6 lg:p-10 space-y-8">
+    <DashboardShell
+      userEmail={user.email}
+      userName={user.name ?? null}
+      userImage={user.image ?? null}
+    >
       {/* ─── En-tête ─────────────────────── */}
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
             <History className="h-6 w-6" />
@@ -105,7 +110,7 @@ export default async function AuditLogPage() {
       >
         <AuditLogViewer initialLogs={initialLogs} />
       </Suspense>
-    </div>
+    </DashboardShell>
   );
 }
 

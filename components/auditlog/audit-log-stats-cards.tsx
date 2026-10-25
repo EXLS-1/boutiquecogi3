@@ -43,15 +43,15 @@ export function AuditLogStatsCards({ stats }: { stats: AuditLogStats }) {
   return (
     <section
       aria-label="Statistiques des journaux d'audit sur les 30 derniers jours"
-      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 text-muted-foreground border-cyan-500"
     >
       {cards.map(({ label, value, icon: Icon, color }) => (
         <Card key={label}>
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+          <CardHeader className="flex-row items-center justify-between gap-3 text-red-500">
+            <CardTitle className="text-sm">{label}</CardTitle>
             <Icon aria-hidden className={`h-4 w-4 ${color}`} />
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-cyan-500">
             <p className="text-2xl font-semibold tabular-nums">
               {numberFormatter.format(value)}
             </p>
