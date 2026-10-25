@@ -40,8 +40,18 @@ export const DevAuditLogsSeeder: Seeder = {
       const action = ACTIONS[i % ACTIONS.length];
       const auditId = generateDeterministicUuidV7("audit", i + 1);
 
+      // `auditLog` has a compound unique constraint on (id, createdAt) at the
+      // database level. Prisma exposes this as `AuditLogWhereUniqueInput` for
+      // `upsert.where`, which requires `{ id_createdAt: { id, createdAt } }`.
+      // `AuditLogWhereInput` does not expose `id_createdAt`, so we use
+      // `upsert` (not `findFirst`+`update`) for the idempotent key.
       await ctx.prisma.auditLog.upsert({
-        where: { id: auditId },
+        where: {
+          id_createdAt: {
+            id: auditId,
+            createdAt: new Date(Date.now() - i * 3600000),
+          },
+        },
         update: {
           userId: user.id,
           roleLevel: (i % 6) + 1,
@@ -50,6 +60,7 @@ export const DevAuditLogsSeeder: Seeder = {
           entityType: action.entity,
           targetType: action.entity,
           details: JSON.stringify({ seed: "dev", reason: "Trace de démonstration" }),
+          // Keep createdAt stable on update so the compound key doesn't change.
           createdAt: new Date(Date.now() - i * 3600000),
         },
         create: {

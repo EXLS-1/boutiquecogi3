@@ -36,4 +36,4 @@
     { "code": "system:maintenance", "name": "Maintenance système", "category": "SYSTEM", "isDangerous": true }
   ]
 }
-</content>
+
