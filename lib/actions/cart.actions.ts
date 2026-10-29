@@ -1,10 +1,11 @@
 // lib/actions/cart.actions.ts
+// Actions sécurisées pour la gestion du panier avec isolation stricte des utilisateurs
+// Règle d'or : aucun utilisateur ne peut voir ni modifier le panier d'un autre utilisateur sauf permission RBAC.
 
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth"; // Instance Better-Auth serveur
-import { headers } from "next/headers";
+import { resolveAuthContext, assertAccessUserData } from "@/lib/auth/server";
 import { z } from "zod";
 import { getCatalogProductsByIds } from "@/lib/product-catalog/catalog-queries";
 import type { CatalogProduct } from "@/lib/product-catalog/catalog-types";
@@ -54,14 +55,6 @@ export type ResolveCartProductsResult =
 /**
  * Résout une liste d'identifiants produits (`id` OU `slug`) en `CatalogProduct`
  * complets, prêts à être ajoutés au panier Zustand.
- *
- * Pourquoi cette action : le store panier (`store/use-cart.ts`) exige un
- * `CatalogProduct` complet (`isAvailable`, `price`, `basePriceCDF/USD`,
- * `discountPercent`, `accessPolicy`…). Les stores clients légers (wishlist,
- * récemment vus) ne conservent qu'un sous-ensemble de champs : reconstruire un
- * objet partiel faisait échouer le typage ET l'ajout au panier (`addItem` sort
- * immédiatement si `isAvailable` est absent). La résolution se fait donc
- * côté serveur, via la source de vérité du catalogue.
  */
 export async function resolveCartProductsAction(
   ids: unknown,
@@ -94,7 +87,51 @@ export async function resolveCartProductsAction(
 }
 
 /**
+ * Récupère le panier d'un utilisateur en base de données.
+ * ISOLATION STRICTE : Un client ne peut consulter que son propre panier.
+ * La consultation du panier d'un autre utilisateur est interdite sauf privilèges RBAC (Admin).
+ */
+export async function getUserCartAction(targetUserId?: string) {
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) {
+    return { success: false, error: "Non authentifié", code: "UNAUTHENTICATED" };
+  }
+
+  const targetId = targetUserId || authContext.user.id;
+
+  try {
+    assertAccessUserData(authContext, targetId, ["users:read", "users:view:any"], {
+      minRoleLevel: 2, // Admin (Level 2) ou Super-Admin (Level 1)
+      action: "cart:read",
+      resource: "cart",
+      resourceId: targetId,
+    });
+  } catch {
+    return {
+      success: false,
+      error: "Accès refusé : vous n'êtes pas autorisé à consulter le panier d'un autre utilisateur.",
+      code: "FORBIDDEN",
+    };
+  }
+
+  try {
+    const cart = await prisma.cart.findUnique({
+      where: { userId: targetId },
+      include: {
+        items: true,
+      },
+    });
+
+    return { success: true, data: cart };
+  } catch (error) {
+    console.error("[getUserCartAction]", error);
+    return { success: false, error: "Impossible de récupérer le panier" };
+  }
+}
+
+/**
  * Synchronise le panier local avec la base de données.
+ * ISOLATION GARANTIE : L'enregistrement est strictement rattaché à l'utilisateur authentifié (session).
  * Utilise une transaction Prisma pour garantir l'atomicité.
  */
 export async function syncCartAction(localItems: unknown) {
@@ -108,15 +145,13 @@ export async function syncCartAction(localItems: unknown) {
     };
   }
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    return { success: false, error: "Non authentifié" };
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) {
+    return { success: false, error: "Non authentifié", code: "UNAUTHENTICATED" };
   }
 
-  const userId = session.user.id;
+  // Cloisonnement strict : le panier synchronisé est STRICTEMENT celui de l'utilisateur connecté
+  const userId = authContext.user.id;
   const validatedItems = validation.data;
 
   try {
@@ -135,11 +170,9 @@ export async function syncCartAction(localItems: unknown) {
         });
       }
 
-      if (!cart) throw new Error('Failed to create cart');
+      if (!cart) throw new Error("Failed to create cart");
 
-      // 2. Logique de fusion (Merging)
-      // Ici, nous privilégions les quantités locales pour la simplicité,
-      // mais vous pouvez implémenter une logique d'addition de quantités.
+      // 2. Logique de synchronisation sécurisée
       for (const item of validatedItems) {
         await tx.cartItem.upsert({
           where: {

@@ -1,11 +1,12 @@
+// app/profile/page.tsx
+
 import { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Profile } from "@/components/auth/profile";
 import { OrdersContainer } from "@/components/auth/orders-container";
 import { DeleteAccountSection } from "@/components/auth/delete-account-section";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "@/lib/auth/server";
+import { guardAuth } from "@/lib/auth/server";
 import { OrderCardData } from "@/types/order";
 import { mapOrdersToCards } from "@/lib/orders/map-order-to-card";
 
@@ -19,11 +20,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
-  const session = await getServerSession();
-
-  if (!session?.user) {
-    redirect("/auth/sign-in");
-  }
+  // Verrouillage serveur via guardAuth (remplace le getServerSession déprécié)
+  // Redirige de manière sûre vers la connexion avec conservation de la destination
+  const { user } = await guardAuth("/auth/sign-in?callbackUrl=/profile");
 
   let orders: OrderCardData[] = [];
   let totalCount: number = 0;
@@ -32,7 +31,7 @@ export default async function ProfilePage() {
   try {
     const [fetchedOrders, count] = await Promise.all([
       prisma.order.findMany({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
         include: {
           items: true,
           orderAddresses: true,
@@ -41,7 +40,7 @@ export default async function ProfilePage() {
         take: ORDERS_PAGE_SIZE,
       }),
       prisma.order.count({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
       }),
     ]);
 

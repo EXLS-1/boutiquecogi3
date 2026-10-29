@@ -1,12 +1,8 @@
-// app/account/orders/page.tsx
-// Compte client : montants, statuts et libellés proviennent de la logique
-// partagée (`lib/cart/cart-domain`) — MÊME formatage que le panier, le
-// checkout et l'admin (centimes `Int` Prisma → unités majeures).
+// app/orders/account/orders/page.tsx
+// Compte client : affichage sécurisé des commandes personnelles du client connecté
 
 import Link from "next/link";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { guardAuth } from "@/lib/auth/server";
 import { getUserOrders } from "@/lib/actions/order.actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,15 +19,9 @@ import {
 } from "@/lib/cart/cart-domain";
 
 export default async function AccountOrdersPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { user } = await guardAuth(buildSignInRedirect(CART_ROUTES.accountOrders));
 
-  if (!session?.user) {
-    redirect(buildSignInRedirect(CART_ROUTES.accountOrders));
-  }
-
-  const result = await getUserOrders(session.user.id);
+  const result = await getUserOrders(user.id);
   const orders = result.success ? result.data : [];
 
   return (

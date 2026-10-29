@@ -1,9 +1,12 @@
+// lib/actions/wishlist.actions.ts
+// Actions sécurisées pour la gestion de la liste de souhaits (wishlist)
+// Règle d'or : aucun utilisateur ne peut voir ni modifier la wishlist d'un autre utilisateur sauf permission RBAC.
+
 "use server";
 
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { resolveAuthContext, assertAccessUserData } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
 
 const PERSONAL_WISHLIST_FEATURE = "PERSONAL_WISHLIST";
 const DEFAULT_MAX_ITEMS = 50;
@@ -13,22 +16,12 @@ const productIdsSchema = z.array(productIdSchema).max(DEFAULT_MAX_ITEMS);
 export type WishlistProduct = {
   id: string;
   name: string;
-  /**
-   * Prix canonique — aligné sur `WishlistItem` (store/use-wishlist) pour que
-   * les Server Actions alimentent `setItems()` directement, sans mapping.
-   */
   price: number;
-  /** Alias historique (champ produit) — conservé pour compatibilité. */
   productPrice?: number;
   image: string;
   slug: string;
   category?: string;
 };
-
-async function getCurrentUserId() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  return session?.user.id ?? null;
-}
 
 async function getConfig() {
   return prisma.wishlistConfig.findUnique({
@@ -39,7 +32,10 @@ async function getConfig() {
 
 async function getOrCreateWishlist(userId: string) {
   return prisma.wishlist.upsert({
-    where: { userId }, update: {}, create: { userId }, select: { id: true },
+    where: { userId },
+    update: {},
+    create: { userId },
+    select: { id: true },
   });
 }
 
@@ -65,9 +61,6 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
     },
   });
 
-  // ─── Robust Decimal/number/string → number conversion ───
-  // Prisma Decimal exposes `.toNumber()`, but seed data or mocks may surface
-  // plain numbers/strings/null. This guard keeps TS strict-happy and runtime safe.
   const toPriceNumber = (value: unknown): number => {
     if (value === null || value === undefined) return 0;
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -87,7 +80,6 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
   };
 
   return (wishlist?.items ?? []).map(({ product }) => {
-    // `images` may be null/undefined at runtime even if typed as string[].
     const images = Array.isArray(product.images) ? product.images : [];
     const firstImage = images.length > 0 && typeof images[0] === "string" ? images[0] : "/placeholder.webp";
     const price = toPriceNumber(product.productPrice);
@@ -103,18 +95,48 @@ async function readItems(userId: string): Promise<WishlistProduct[]> {
   });
 }
 
-export async function getWishlistAction() {
-  const userId = await getCurrentUserId();
-  if (!userId) return { success: false as const, error: "Non authentifié" };
-  return { success: true as const, items: await readItems(userId) };
+/**
+ * Récupère la liste de souhaits d'un utilisateur.
+ * ISOLATION STRICTE : Un client ne peut consulter que sa propre liste de souhaits.
+ * La consultation de la liste d'un autre utilisateur est interdite sauf privilèges RBAC (Modérateur Level <= 4 ou 'users:read').
+ */
+export async function getWishlistAction(targetUserId?: string) {
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) {
+    return { success: false as const, error: "Non authentifié" };
+  }
+
+  const targetId = targetUserId || authContext.user.id;
+
+  try {
+    assertAccessUserData(authContext, targetId, ["users:read", "users:view:any"], {
+      minRoleLevel: 4, // Level 1 (Super-Admin), Level 2 (Admin), Level 3 (Manager), Level 4 (Moderator/Editor)
+      action: "wishlist:read",
+      resource: "wishlist",
+      resourceId: targetId,
+    });
+  } catch {
+    return {
+      success: false as const,
+      error: "Accès refusé : vous n'êtes pas autorisé à consulter la liste de favoris d'un autre utilisateur.",
+    };
+  }
+
+  return { success: true as const, items: await readItems(targetId) };
 }
 
-/** Merges guest selections once signed in; Prisma remains the source of truth. */
+/** 
+ * Synchronise les sélections locales avec la base de données.
+ * ISOLATION GARANTIE : L'opération est strictement liée à l'utilisateur authentifié (authContext.user.id).
+ */
 export async function syncWishlistAction(localItems: readonly { id: string }[]) {
   const validation = productIdsSchema.safeParse([...new Set(localItems.map((item) => item.id))]);
   if (!validation.success) return { success: false as const, error: "Favoris invalides" };
-  const userId = await getCurrentUserId();
-  if (!userId) return { success: false as const, error: "Non authentifié" };
+
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) return { success: false as const, error: "Non authentifié" };
+
+  const userId = authContext.user.id;
 
   try {
     const [config, wishlist] = await Promise.all([getConfig(), getOrCreateWishlist(userId)]);
@@ -141,11 +163,18 @@ export async function syncWishlistAction(localItems: readonly { id: string }[]) 
   }
 }
 
+/**
+ * Ajoute un article aux favoris du compte connecté.
+ */
 export async function addWishlistItemAction(productId: unknown) {
   const parsed = productIdSchema.safeParse(productId);
   if (!parsed.success) return { success: false as const, error: "Identifiant produit invalide" };
-  const userId = await getCurrentUserId();
-  if (!userId) return { success: false as const, error: "Non authentifié" };
+
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) return { success: false as const, error: "Non authentifié" };
+
+  const userId = authContext.user.id;
+
   try {
     const [config, product, wishlist] = await Promise.all([
       getConfig(),
@@ -170,18 +199,31 @@ export async function addWishlistItemAction(productId: unknown) {
   }
 }
 
+/**
+ * Supprime un article des favoris du compte connecté.
+ */
 export async function removeWishlistItemAction(productId: unknown) {
   const parsed = productIdSchema.safeParse(productId);
   if (!parsed.success) return { success: false as const, error: "Identifiant produit invalide" };
-  const userId = await getCurrentUserId();
-  if (!userId) return { success: false as const, error: "Non authentifié" };
+
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) return { success: false as const, error: "Non authentifié" };
+
+  const userId = authContext.user.id;
+
   await prisma.wishlistItem.deleteMany({ where: { wishlist: { userId }, productId: parsed.data } });
   return { success: true as const, items: await readItems(userId) };
 }
 
+/**
+ * Vide intégralement la liste de favoris du compte connecté.
+ */
 export async function clearWishlistAction() {
-  const userId = await getCurrentUserId();
-  if (!userId) return { success: false as const, error: "Non authentifié" };
+  const authContext = await resolveAuthContext();
+  if (!authContext?.user) return { success: false as const, error: "Non authentifié" };
+
+  const userId = authContext.user.id;
+
   await prisma.wishlistItem.deleteMany({ where: { wishlist: { userId } } });
   return { success: true as const, items: [] as WishlistProduct[] };
 }

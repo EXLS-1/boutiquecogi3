@@ -1,11 +1,12 @@
-// app/admin/orders/page.tsx
-// Liste admin : MÊME formatage monétaire et MÊMES libellés de statuts que le
-// panier, le checkout et le compte client (`lib/cart/cart-domain`).
-// Les `Int` Prisma (`totalAmount` en centimes) sont convertis via
-// `formatOrderAmountMinor` — jamais de `(x / 100).toFixed(2)` local.
+// app/orders/page.tsx
+// Page d'administration des commandes protégée par RBAC
+// Si un utilisateur non-staff consulte cette page, il est automatiquement redirigé vers sa propre page de commandes.
 
+import { redirect } from "next/navigation";
+import { resolveAuthContext } from "@/lib/auth/server";
 import { getAllOrdersAdmin } from "@/lib/actions/actions/admin/order.admin.actions";
 import {
+  CART_ROUTES,
   formatCartItemCount,
   formatOrderAmountMinor,
   formatOrderDate,
@@ -35,6 +36,22 @@ export default async function AdminOrdersPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const authContext = await resolveAuthContext();
+
+  if (!authContext?.user) {
+    redirect("/auth/sign-in?callbackUrl=/orders");
+  }
+
+  // Seul le personnel autorisé (Level <= 3 ou permissions RBAC globales) peut voir cette vue
+  const isStaff =
+    authContext.permissions.has("orders:read") ||
+    authContext.permissions.has("order:read:any") ||
+    authContext.user.level <= 3;
+
+  if (!isStaff) {
+    redirect(CART_ROUTES.accountOrders);
+  }
+
   const params = await searchParams;
   const orders: readonly AdminOrderRow[] = await getAllOrdersAdmin();
   const rawQuery = params?.q;

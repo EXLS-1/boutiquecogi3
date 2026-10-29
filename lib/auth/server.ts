@@ -63,6 +63,7 @@ import {
   getSessionWithUser,
   // Cache
   invalidateRBACCache,
+
   // Client helpers
   getClientPermissions,
   getClientRestrictions,
@@ -774,6 +775,119 @@ export function buildOwnDataFilterSync(context: AuthContext): {
   return restricted ? { userId: context.user.id } : {};
 }
 
+/**
+ * Détermine si un utilisateur a le droit d'accéder aux données d'un utilisateur cible (targetUserId).
+ *
+ * RÈGLE D'OR (Fail-closed & Isolation stricte) :
+ * 1. Tout utilisateur a TOUJOURS accès à ses propres données (targetUserId === context.user.id).
+ * 2. Un utilisateur ne peut JAMAIS accéder aux données d'un autre utilisateur (targetUserId !== context.user.id),
+ *    SAUF s'il détient une permission RBAC accordée (ex: "order:read:any", "users:read") ou un rôle d'administration (Level 1-2).
+ */
+export function canAccessUserData(
+  context: AuthContext | null | undefined,
+  targetUserId: string | null | undefined,
+  requiredPermissions: PermissionCode | PermissionCode[] = [],
+  options?: {
+    minRoleLevel?: number;
+    action?: string;
+    resource?: string;
+    resourceId?: string;
+  },
+): boolean {
+  try {
+    assertAccessUserData(context, targetUserId, requiredPermissions, options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Valide l'accès aux données d'un utilisateur (ownership OU permission RBAC) en mode fail-closed.
+ * Lève AuthorizationError si l'accès est refusé et consigne l'événement dans le journal d'audit.
+ */
+export function assertAccessUserData(
+  context: AuthContext | null | undefined,
+  targetUserId: string | null | undefined,
+  requiredPermissions: PermissionCode | PermissionCode[] = [],
+  options?: {
+    minRoleLevel?: number;
+    action?: string;
+    resource?: string;
+    resourceId?: string;
+  },
+): asserts context is AuthContext {
+  const action = options?.action ?? "access_user_data";
+  const resource = options?.resource ?? "user_data";
+  const resourceId = options?.resourceId ?? targetUserId ?? undefined;
+
+  if (!context || !context.user) {
+    void logAudit({
+      userId: "anonymous",
+      role: ROLES.GUEST,
+      roleLevel: LEVELS.LEVEL_7,
+      action,
+      resource,
+      resourceId,
+      success: false,
+      details: "Authentification requise pour accéder aux données utilisateur",
+    });
+    throw new AuthorizationError(
+      "Authentification requise pour accéder à cette ressource.",
+      "UNAUTHENTICATED",
+      401,
+    );
+  }
+
+  if (typeof targetUserId !== "string" || targetUserId.trim().length === 0) {
+    throw new AuthorizationError(
+      "Identifiant utilisateur cible invalide ou manquant.",
+      "INVALID_TARGET_USER",
+      400,
+    );
+  }
+
+  // 1. Autorisé si l'utilisateur est le propriétaire de la ressource
+  if (context.user.id === targetUserId) {
+    return;
+  }
+
+  // 2. Si ce n'est pas le propriétaire, vérifier les privilèges RBAC
+  const permissionsList = Array.isArray(requiredPermissions)
+    ? requiredPermissions
+    : [requiredPermissions];
+
+  const hasExplicitPermission = permissionsList.some((perm) => {
+    return context.permissions.has(perm);
+  });
+
+  const minLevel = options?.minRoleLevel ?? 2; // Par défaut, Admin (Level 2) ou Super-Admin (Level 1)
+  const hasSufficientLevel =
+    typeof context.user.level === "number" && context.user.level <= minLevel;
+
+  if (hasExplicitPermission || hasSufficientLevel) {
+    return;
+  }
+
+  // 3. Violation d'accès détectée (tentative IDOR / BOLA) -> Fail-closed + Audit
+  void logAudit({
+    userId: context.user.id,
+    role: context.user.role,
+    roleLevel: context.user.level,
+    action,
+    resource,
+    resourceId,
+    success: false,
+    details: `Tentative d'accès non autorisé aux données de l'utilisateur ${targetUserId} par ${context.user.id}`,
+  });
+
+  throw new AuthorizationError(
+    "Accès refusé : vous n'avez pas l'autorisation d'accéder aux données d'un autre utilisateur.",
+    "FORBIDDEN",
+    403,
+  );
+}
+
 // ═══════════════════════════════════════════
 // SECTION 9: COMPATIBILITÉ (deprecated)
 // ═══════════════════════════════════════════
@@ -897,6 +1011,7 @@ export {
   getClientPermissions,
   getClientRestrictions,
   invalidateRBACCache,
+
 };
 
 export type { Role, PermissionCode, Restriction, ToggleState };

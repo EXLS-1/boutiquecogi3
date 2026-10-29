@@ -274,5 +274,119 @@ export function assertResourceAccess(
   }
 }
 
+/**
+ * Vérifie si l'acteur authentifié a le droit d'accéder à la ressource d'un utilisateur cible (targetUserId).
+ *
+ * RÈGLE D'OR (Isolation des données & Prévention IDOR/BOLA) :
+ * - Un utilisateur peut TOUJOURS consulter et gérer ses PROPRES données (targetUserId === context.user.id).
+ * - Un utilisateur ne peut JAMAIS consulter ni gérer les données d'un autre utilisateur (targetUserId !== context.user.id),
+ *   SAUF s'il détient une permission RBAC explicite ou un niveau de rôle d'administration (Level 1-2 ou Level <= minRoleLevel).
+ */
+export function canAccessUserData(
+  context: AuthContext | null | undefined,
+  targetUserId: string | null | undefined,
+  requiredPermissions: Permission | Permission[] = [],
+  options?: {
+    minRoleLevel?: number;
+    action?: string;
+    resource?: string;
+    resourceId?: string;
+  },
+): boolean {
+  try {
+    assertAccessUserData(context, targetUserId, requiredPermissions, options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Valide l'accès à une ressource utilisateur (ownership OU permission RBAC) en mode fail-closed.
+ * Lève AuthorizationError si l'accès est refusé et consigne l'événement dans le journal d'audit.
+ */
+export function assertAccessUserData(
+  context: AuthContext | null | undefined,
+  targetUserId: string | null | undefined,
+  requiredPermissions: Permission | Permission[] = [],
+  options?: {
+    minRoleLevel?: number;
+    action?: string;
+    resource?: string;
+    resourceId?: string;
+  },
+): asserts context is AuthContext {
+  const action = options?.action ?? "access_user_data";
+  const resource = options?.resource ?? "user_data";
+  const resourceId = options?.resourceId ?? targetUserId ?? undefined;
+
+  if (!context || !context.user) {
+    void logAudit({
+      userId: "anonymous",
+      role: ROLES.GUEST,
+      roleLevel: MAX_ROLE_LEVEL,
+      action,
+      resource,
+      resourceId,
+      success: false,
+      details: "Authentification requise pour accéder aux données utilisateur",
+    });
+    throw new AuthorizationError(
+      "Authentification requise pour accéder à cette ressource.",
+      "UNAUTHENTICATED",
+      401,
+    );
+  }
+
+  if (!isNonEmptyString(targetUserId)) {
+    throw new AuthorizationError(
+      "Identifiant utilisateur cible invalide ou manquant.",
+      "INVALID_TARGET_USER",
+      400,
+    );
+  }
+
+  // 1. Accès direct si l'utilisateur est le propriétaire légitime
+  if (context.user.id === targetUserId) {
+    return;
+  }
+
+  // 2. Accès tiers conditionné par les permissions RBAC ou le niveau hiérarchique
+  const permissionsList = Array.isArray(requiredPermissions)
+    ? requiredPermissions
+    : [requiredPermissions];
+
+  const hasExplicitPermission = permissionsList.some((perm) => {
+    const normalized = normalizePermission(perm);
+    return normalized ? context.permissions.has(normalized) : false;
+  });
+
+  const minLevel = options?.minRoleLevel ?? 2; // Par défaut, Admin (Level 2) ou Super-Admin (Level 1)
+  const hasSufficientLevel =
+    typeof context.user.level === "number" && context.user.level <= minLevel;
+
+  if (hasExplicitPermission || hasSufficientLevel) {
+    return;
+  }
+
+  // 3. Violation d'accès détectée (tentative IDOR / BOLA) -> Fail-closed + Audit
+  void logAudit({
+    userId: context.user.id,
+    role: (context.user.role as Role) ?? ROLES.GUEST,
+    roleLevel: context.user.level ?? MAX_ROLE_LEVEL,
+    action,
+    resource,
+    resourceId,
+    success: false,
+    details: `Tentative d'accès non autorisé aux données de l'utilisateur ${targetUserId} par ${context.user.id}`,
+  });
+
+  throw new AuthorizationError(
+    "Accès refusé : vous n'êtes pas autorisé à consulter ou modifier les données d'un autre utilisateur.",
+    "FORBIDDEN",
+    403,
+  );
+}
+
 export { PERMISSIONS, RESTRICTIONS, ROLES, type Permission, type Restriction, type Role, type ToggleState };
 
