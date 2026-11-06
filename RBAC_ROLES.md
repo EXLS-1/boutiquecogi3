@@ -55,7 +55,9 @@ Principe : **héritage descendant** — chaque rôle possède ses propres permis
 **Rôle :** responsable opérationnel (catalogue, commandes, équipe éditoriale).
 
 ### Permissions
+
 - Tout ce qu'un Supervisor peut faire.
+
 - Création, modification et suppression de **produits** (hors publication finale si workflow de validation actif).
 - Gestion des **commandes** : consultation, changement de statut, remboursements, annulations.
 - Gestion des **stocks** : niveaux d'inventaire, alertes de réapprovisionnement.

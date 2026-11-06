@@ -31,8 +31,9 @@ Voici les differentes versions des dependances utilisées:
     "@better-auth/infra": "^0.3.7",
     "@headlessui/react": "^2.2.10",
     "@hookform/resolvers": "^5.7.1",
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "@prisma/orm-postgres": "^8.0.0-rc.22",
     "@radix-ui/react-checkbox": "^1.3.11",
     "@radix-ui/react-dropdown-menu": "^2.1.24",
     "@radix-ui/react-label": "^2.1.15",
@@ -111,7 +112,8 @@ Voici les differentes versions des dependances utilisées:
     "eslint-config-next": "^16.3.0",
     "jsdom": "^30.0.1",
     "postcss": "^8.5.26",
-    "prisma": "^7.9.1",
+    "@prisma/prisma7": "7.10.1",
+    "prisma": "8.0.0-rc.30",
     "supabase": "^2.113.0",
     "tailwindcss": "^4.3.3",
     "tailwindcss-animate": "^1.0.7",
@@ -158,7 +160,7 @@ Suivez ces étapes pour configurer et exécuter le projet en local.
 
 ### Prérequis
 
-- Node.js (version 18 ou supérieure recommandée)
+- Node.js 22.18+, 24.11+ ou 26+ (requis par Prisma ORM 8)
 - npm
 - Une instance PostgreSQL
 - Un compte Supabase pour le stockage des images
@@ -175,6 +177,16 @@ cd boutiquecogi3
 ```bash
 npm i
 ```
+
+### Prisma ORM 7 et 8 (migration progressive)
+
+Les routes et scripts existants restent sur Prisma ORM 7 (`prisma7`) ; Prisma ORM 8
+est installé en parallèle. Prisma ORM 7 conserve la propriété des migrations jusqu'à
+un transfert explicite vers Prisma ORM 8.
+
+- `npm run db:generate` régénère le client Prisma 7.
+- `npm run prisma8:contract:emit` émet le contrat Prisma 8 dans `generated/prisma8`.
+- `npm run db:push` utilise toujours Prisma 7.
 
 ### 3. Configuration des variables d'environnement
 

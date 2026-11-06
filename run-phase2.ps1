@@ -26,14 +26,14 @@ function Run($name, $argsStr) {
 
 Log "PHASE 2 — démarrage"
 
-Run "PRISMA VERSION" "prisma -v"
+Run "PRISMA VERSION" "prisma7 -v"
 # 1. Backfills A-E + DDL deltas (SQL idempotent)
-Run "DB EXECUTE (backfills A-E + DDL)" "prisma db execute --file prisma/migrations/20260911120000_product_domain_phase2/migration.sql --verbose"
+Run "DB EXECUTE (backfills A-E + DDL)" "prisma7 db execute --file prisma/migrations/20260911120000_product_domain_phase2/migration.sql --verbose"
 # 2. Alignement final du schéma (applique tout delta manqué, accepte la perte de données)
-Run "DB PUSH (alignement)" "prisma db push --accept-data-loss"
+Run "DB PUSH (alignement)" "prisma7 db push --accept-data-loss"
 # 3. Validation du schéma
-Run "PRISMA VALIDATE" "prisma validate"
+Run "PRISMA VALIDATE" "prisma7 validate"
 # 4. Régénération du client (types TS alignés sur l'enum réduit)
-Run "PRISMA GENERATE" "prisma generate"
+Run "PRISMA GENERATE" "prisma7 generate"
 
 Log "PHASE 2 — terminée (voir détails au-dessus)"

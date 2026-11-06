@@ -4,7 +4,7 @@ REM setup-local-pg.cmd — install PostgreSQL 16 local SANS admin/Docker
 REM   1. Telecharge les binaires officiels EDB (~340 Mo) dans .local-pg/
 REM   2. initdb : role postgres/postgres (dev local uniquement)
 REM   3. Demarre le serveur sur localhost:5432
-REM   4. prisma db push (aucune migration versionnee — /prisma/migrations)
+REM   4. prisma7 db push (Prisma ORM 7 garde la gestion du schema)
 REM   5. npm run db:check (SELECT 1 via le client de l'app)
 REM   6. npm run db:seed:dev (donnees de developpement)
 REM Journalise tout dans le fichier LOG. Long : ~5-15 min (340 Mo).
@@ -67,7 +67,7 @@ if %ERRORLEVEL%==0 (
 
 echo [%DATE% %TIME%] === 3/6 PRISMA DB PUSH (schema vers base vide) === >> "%LOG%"
 set PGPASSWORD=postgres
-call npx prisma db push >> "%LOG%" 2>&1
+call npx prisma7 db push >> "%LOG%" 2>&1
 echo [exit=%ERRORLEVEL%] fin db push >> "%LOG%"
 
 echo [%DATE% %TIME%] === 4/6 DB:CHECK (SELECT 1) === >> "%LOG%"

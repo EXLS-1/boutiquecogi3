@@ -78,6 +78,31 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Inspect Prisma 8 release availability",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"view",
+				"prisma@8.0.0-rc.30",
+				"@prisma/orm-postgres@8.0.0-rc.22",
+				"@prisma/prisma7@7.10.1",
+				"engines",
+				"version"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Temporary Prisma dependency install",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"install"
+			],
+			"isBackground": false,
+			"problemMatcher": []
 		}
 	]
 }
