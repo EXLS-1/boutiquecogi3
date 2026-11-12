@@ -1,6 +1,6 @@
 {
   "name": "boutiquecogi3",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "E-commerce Plateform Application",
   "private": true,
   "scripts": {
@@ -116,7 +116,7 @@
     "jsdom": "^30.0.1",
     "postcss": "^8.5.26",
     "@prisma/prisma7": "7.10.1",
-    "prisma": "8.0.0-rc.30",
+    "prisma": "8.0.0-rc.23",
     "supabase": "^2.113.0",
     "tailwindcss": "^4.3.3",
     "tailwindcss-animate": "^1.0.7",
@@ -142,7 +142,7 @@
     "redis@6.1.0": true,
     "@prisma/engines@7.10.1": true,
     "@prisma/prisma7@7.10.1": true,
-    "prisma@8.0.0-rc.30": true,
+    "prisma@8.0.0-rc.23": true,
     "sharp@0.34.5": true,
     "unrs-resolver@1.12.2": true,
     "esbuild@0.28.2": true,

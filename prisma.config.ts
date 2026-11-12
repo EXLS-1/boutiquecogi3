@@ -1,4 +1,4 @@
-import { defineConfig as definePrismaConfig } from "prisma/config";
+import { definePrismaConfig } from "prisma/config";
 import {
   defineConfig as definePostgresConfig,
   prisma7Schema,
