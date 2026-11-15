@@ -1,7 +1,7 @@
 // app/api/accounts/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/prisma";
 import { resolveAuthContext } from "@/lib/auth/server";
 import { PERMISSIONS } from "@/lib/auth/rbac-shared";
 
@@ -68,9 +68,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Exécution optimisée en parallèle (comptage total + récupération paginée)
+    // MIGRATION: Using Prisma ORM 8 client (db) for database queries
     const [totalItems, accounts] = await Promise.all([
-      prisma.user.count({ where: whereClause }),
-      prisma.user.findMany({
+      db.orm.public.User.count({ where: whereClause }),
+      db.orm.public.User.findMany({
         where: whereClause,
         select: {
           id: true,
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
         },
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { id: "desc" },
       }),
     ]);
 

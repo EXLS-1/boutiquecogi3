@@ -1,7 +1,0 @@
-{
-  "currencies": [
-    { "code": "USD", "symbol": "$", "decimals": 2, "isDefault": true },
-    { "code": "CDF", "symbol": "FC", "decimals": 0, "isDefault": false }
-  ]
-}
-
